@@ -3,6 +3,8 @@ import { serializeDocument } from '@/lib/formats';
 import { selectNextPair } from '@/lib/ranking/pairSelection';
 import { rankItems, replayComparisons } from '@/lib/ranking/rebuildRanking';
 import type { RankingStates } from '@/lib/ranking/rebuildRanking';
+import { collectSortFieldCandidates, describeObjectSchema } from '@/lib/validation/sortFieldRules';
+import type { ObjectSchemaHint, SortFieldCandidate } from '@/lib/validation/sortFieldRules';
 import { isComplexItemValue } from '@/types/list';
 import type { ListItem, TextFormat, WorkspaceList } from '@/types/list';
 import type { ComparisonEvent, RankedItem } from '@/types/ranking';
@@ -83,22 +85,32 @@ export function selectPreviewText(
   return serializeDocument(selectDocument(list, items, events), format);
 }
 
-/** Scalar fields shared by every object item — the choices for the sort field. */
-export function selectSortFieldCandidates(items: ListItem[]): string[] {
-  const objects = items
+/** The object values of the active items, for the sort-field rules. */
+export function selectObjectValues(items: ListItem[]) {
+  return items
     .filter((item) => item.active)
     .map((item) => item.value)
     .filter(isComplexItemValue);
+}
 
-  const first = objects[0];
-  if (first === undefined) return [];
+/** Every scalar field the user could pick as the label, with coverage details. */
+export function selectSortFieldOptions(items: ListItem[]): SortFieldCandidate[] {
+  return collectSortFieldCandidates(selectObjectValues(items));
+}
 
-  return Object.keys(first).filter((field) =>
-    objects.every((value) => {
-      const entry = value[field];
-      return typeof entry === 'string' || typeof entry === 'number' || typeof entry === 'boolean';
-    }),
-  );
+/**
+ * The shape of the imported objects, derived from the live items rather than
+ * stored, so it can never go stale after an edit or import.
+ */
+export function selectObjectSchema(items: ListItem[]): ObjectSchemaHint {
+  return describeObjectSchema(selectObjectValues(items));
+}
+
+/** Scalar fields shared by every object item — the safest sort-field choices. */
+export function selectSortFieldCandidates(items: ListItem[]): string[] {
+  return selectSortFieldOptions(items)
+    .filter((candidate) => candidate.coverage === 1)
+    .map((candidate) => candidate.field);
 }
 
 /** Object lists cannot be ranked until the user picks the label field. */

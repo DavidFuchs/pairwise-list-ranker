@@ -76,6 +76,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 12,
     lineHeight: 18,
-    color: colors.danger,
+    color: colors.dangerText,
   },
 });

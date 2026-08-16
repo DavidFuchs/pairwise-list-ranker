@@ -105,6 +105,107 @@ describe('ComparisonActions', () => {
     expect(screen.queryByRole('button', { name: /confirm deleting tacos/i })).toBeNull();
   });
 
+  it('chooses the left item with the left arrow key', async () => {
+    const { onOutcome, user } = setup();
+
+    await user.keyboard('{ArrowLeft}');
+
+    expect(onOutcome).toHaveBeenCalledWith('left');
+  });
+
+  it('chooses the right item with the right arrow key', async () => {
+    const { onOutcome, user } = setup();
+
+    await user.keyboard('{ArrowRight}');
+
+    expect(onOutcome).toHaveBeenCalledWith('right');
+  });
+
+  it('marks a much-better win with shift and an arrow key', async () => {
+    const { onOutcome, user } = setup();
+
+    await user.keyboard('{Shift>}{ArrowLeft}{/Shift}');
+
+    expect(onOutcome).toHaveBeenCalledWith('left_strong');
+  });
+
+  it('skips with the s key', async () => {
+    const { onOutcome, user } = setup();
+
+    await user.keyboard('s');
+
+    expect(onOutcome).toHaveBeenCalledWith('skip');
+  });
+
+  it('arms a delete with d then l, rather than deleting outright', async () => {
+    const { onDelete, user } = setup();
+
+    await user.keyboard('dl');
+
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /confirm deleting tacos/i })).toBeDefined();
+  });
+
+  it('arms the right item with d then r', async () => {
+    const { user } = setup();
+
+    await user.keyboard('dr');
+
+    expect(screen.getByRole('button', { name: /confirm deleting ramen/i })).toBeDefined();
+  });
+
+  it('confirms an armed delete with enter', async () => {
+    const { onDelete, user } = setup();
+
+    await user.keyboard('dl{Enter}');
+
+    expect(onDelete).toHaveBeenCalledWith('left');
+  });
+
+  it('cancels an armed delete with escape', async () => {
+    const { onDelete, user } = setup();
+
+    await user.keyboard('dl{Escape}');
+
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /delete tacos/i })).toBeDefined();
+  });
+
+  it('does not treat a lone d press as an action', async () => {
+    const { onOutcome, onDelete, user } = setup();
+
+    await user.keyboard('d');
+
+    expect(onOutcome).not.toHaveBeenCalled();
+    expect(onDelete).not.toHaveBeenCalled();
+  });
+
+  it('ignores shortcuts while the user is typing in a text field', async () => {
+    const { onOutcome, user } = setup();
+    const field = window.document.createElement('textarea');
+    window.document.body.appendChild(field);
+    field.focus();
+
+    await user.keyboard('{ArrowLeft}s');
+
+    expect(onOutcome).not.toHaveBeenCalled();
+    field.remove();
+  });
+
+  it('ignores shortcuts while disabled', async () => {
+    const { onOutcome, user } = setup({ disabled: true });
+
+    await user.keyboard('{ArrowLeft}');
+
+    expect(onOutcome).not.toHaveBeenCalled();
+  });
+
+  it('tells the user the shortcuts exist', () => {
+    setup();
+
+    expect(screen.getByText(/arrow keys/i)).toBeDefined();
+  });
+
   it('ignores comparison actions while disabled', async () => {
     const { onOutcome } = setup({ disabled: true });
     // Disabled buttons carry pointer-events: none, so bypass the pointer check

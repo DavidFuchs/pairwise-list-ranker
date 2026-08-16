@@ -320,6 +320,31 @@ describe('local persistence', () => {
     expect(store.getState().list).toBeNull();
   });
 
+  it('records when the workspace was last saved', () => {
+    const store = makeStore();
+
+    store.getState().importDocument(primitiveDoc);
+
+    expect(store.getState().lastSavedAt).toBe(NOW);
+  });
+
+  it('never claims a save happened when storage is unavailable', () => {
+    const store = makeStore(null);
+
+    store.getState().importDocument(primitiveDoc);
+
+    expect(store.getState().lastSavedAt).toBeUndefined();
+  });
+
+  it('forgets the save time when the workspace is reset', () => {
+    const store = makeStore();
+    store.getState().importDocument(primitiveDoc);
+
+    store.getState().reset();
+
+    expect(store.getState().lastSavedAt).toBeUndefined();
+  });
+
   it('reports when persistence is unavailable but still works in memory', () => {
     const store = makeStore(null);
 

@@ -25,7 +25,7 @@ export function AppShell({ listName, statusText, onReset, rail, stage, preview }
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
+      <View style={styles.header} role="banner">
         <View style={styles.brand}>
           <Text style={styles.wordmark}>Pairwise</Text>
           <Text style={styles.listName} numberOfLines={1}>
@@ -77,9 +77,13 @@ export function AppShell({ listName, statusText, onReset, rail, stage, preview }
         <View style={styles.body}>
           {rail !== null && <View style={styles.rail}>{rail}</View>}
 
-          <View style={styles.stage}>{stage}</View>
+          <View style={styles.stage} role="main">
+            {stage}
+          </View>
 
-          <View style={styles.preview}>{preview}</View>
+          <View style={styles.preview} role="complementary">
+            {preview}
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -121,7 +125,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     fontFamily: fonts.body,
     fontSize: 12,
-    color: colors.danger,
+    color: colors.dangerText,
     backgroundColor: '#FEF6F6',
   },
   scrollBody: { padding: space.lg },

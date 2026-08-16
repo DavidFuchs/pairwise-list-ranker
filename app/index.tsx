@@ -4,12 +4,17 @@ import { ComparisonDeck } from '@/components/comparison/ComparisonDeck';
 import { AppShell } from '@/components/layout/AppShell';
 import { EmptyState } from '@/components/lists/EmptyState';
 import { ListControls } from '@/components/lists/ListControls';
+import { SortFieldPicker } from '@/components/lists/SortFieldPicker';
 import { PreviewPane } from '@/components/preview/PreviewPane';
-import { exportFilename, serializeDocument } from '@/lib/formats';
+import { WorkspaceControls } from '@/components/editor/WorkspaceControls';
+import { downloadText } from '@/lib/browser/exportActions';
+import { exportFilename, mimeTypeFor, serializeDocument } from '@/lib/formats';
 import {
   selectDocument,
   selectNeedsSortField,
+  selectObjectSchema,
   selectProgress,
+  selectSortFieldOptions,
   selectWorkspaceView,
 } from '@/lib/state/selectors';
 import { listStore, useListStore } from '@/lib/state/useListStore';
@@ -23,6 +28,7 @@ export default function WorkspaceScreen() {
   const previewMode = useListStore((state) => state.previewMode);
   const editorDrafts = useListStore((state) => state.editorDrafts);
   const persistenceAvailable = useListStore((state) => state.persistenceAvailable);
+  const lastSavedAt = useListStore((state) => state.lastSavedAt);
   const hydrated = useListStore((state) => state.hydrated);
 
   /** Parse problems belong to the editor buffer, not to the live list. */
@@ -52,6 +58,20 @@ export default function WorkspaceScreen() {
       ? 'Saved in this browser'
       : 'Memory only';
 
+  function handleReset() {
+    listStore.getState().reset();
+    setIssues(null);
+  }
+
+  function handleDownload(format: TextFormat) {
+    if (document === null) return;
+    downloadText(
+      exportFilename(document, format),
+      serializeDocument(document, format),
+      mimeTypeFor(format),
+    );
+  }
+
   function handleModeChange(mode: ExportFormat) {
     listStore.getState().setPreviewMode(mode);
   }
@@ -75,18 +95,32 @@ export default function WorkspaceScreen() {
     <AppShell
       listName={list?.title ?? 'No list yet'}
       statusText={statusText}
-      onReset={() => {
-        listStore.getState().reset();
-        setIssues(null);
-      }}
+      onReset={handleReset}
       rail={
         list === null ? null : (
-          <ListControls
-            list={list}
-            items={items}
-            onAddItem={(value) => listStore.getState().addItem(value)}
-            onRemoveItem={(itemId) => listStore.getState().removeItem(itemId)}
-          />
+          <>
+            <ListControls
+              list={list}
+              items={items}
+              onAddItem={(value) => listStore.getState().addItem(value)}
+              onRemoveItem={(itemId) => listStore.getState().removeItem(itemId)}
+            />
+            {list.kind === 'object' && (
+              <SortFieldPicker
+                candidates={selectSortFieldOptions(items)}
+                schema={selectObjectSchema(items)}
+                value={list.sortField}
+                onChange={(field) => listStore.getState().setSortField(field)}
+              />
+            )}
+            <WorkspaceControls
+              persistenceAvailable={persistenceAvailable}
+              canExport={document !== null}
+              savedAt={lastSavedAt}
+              onDownload={handleDownload}
+              onReset={handleReset}
+            />
+          </>
         )
       }
       stage={

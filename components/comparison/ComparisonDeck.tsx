@@ -51,11 +51,21 @@ export function ComparisonDeck({
 
   return (
     <View style={styles.stage}>
-      <View style={styles.statusStrip}>
+      <View style={styles.statusStrip} accessibilityLiveRegion="polite">
         <Text style={styles.status}>
           {`${progress.comparisons} comparisons · ${progress.activeItems} items`}
         </Text>
-        <View style={styles.meter}>
+        <Text style={styles.announcement}>
+          {`Comparing ${selectItemLabel(pair.left, sortField)} and ${selectItemLabel(pair.right, sortField)}`}
+        </Text>
+        <View
+          style={styles.meter}
+          role="progressbar"
+          aria-valuenow={Math.round(progress.coverage * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Ranking progress"
+        >
           <View style={[styles.meterFill, { width: `${Math.round(progress.coverage * 100)}%` }]} />
         </View>
       </View>
@@ -93,6 +103,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.4,
     color: colors.textSecondary,
+  },
+  // Present for screen readers and announcements, but not visually.
+  announcement: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    overflow: 'hidden',
+    opacity: 0,
   },
   meter: {
     height: 3,

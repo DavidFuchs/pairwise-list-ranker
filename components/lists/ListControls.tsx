@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textPrimary,
   },
-  error: { fontFamily: fonts.body, fontSize: 12, color: colors.danger },
+  error: { fontFamily: fonts.body, fontSize: 12, color: colors.dangerText },
   itemScroll: { maxHeight: 280 },
   itemList: { gap: 2 },
   itemRow: {

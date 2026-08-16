@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { useComparisonShortcuts } from '@/lib/hooks/useComparisonShortcuts';
 import { colors, fonts, radius, space } from '@/lib/theme';
 import type { ComparisonOutcome } from '@/types/ranking';
 
@@ -26,10 +27,35 @@ export function ComparisonActions({
 }: ComparisonActionsProps) {
   const [armed, setArmed] = useState<'left' | 'right' | null>(null);
 
-  const choose = (outcome: ComparisonOutcome) => () => {
-    setArmed(null);
-    onOutcome(outcome);
-  };
+  const emit = useCallback(
+    (outcome: ComparisonOutcome) => {
+      setArmed(null);
+      onOutcome(outcome);
+    },
+    [onOutcome],
+  );
+
+  const choose = (outcome: ComparisonOutcome) => () => emit(outcome);
+
+  const confirmDelete = useCallback(() => {
+    setArmed((side) => {
+      if (side !== null) onDelete(side);
+      return null;
+    });
+  }, [onDelete]);
+
+  useComparisonShortcuts({
+    enabled: !disabled,
+    armed: armed !== null,
+    onChoose: useCallback(
+      (side, strong) => emit(strong ? `${side}_strong` : side),
+      [emit],
+    ),
+    onSkip: useCallback(() => emit('skip'), [emit]),
+    onArmDelete: useCallback((side) => setArmed(side), []),
+    onConfirmDelete: confirmDelete,
+    onCancelDelete: useCallback(() => setArmed(null), []),
+  });
 
   const armedLabel = armed === 'left' ? leftLabel : rightLabel;
 
@@ -118,15 +144,15 @@ export function ComparisonActions({
               accessibilityLabel={`Confirm deleting ${armedLabel}`}
               variant="danger"
               size="sm"
-              onPress={() => {
-                const side = armed;
-                setArmed(null);
-                onDelete(side);
-              }}
+              onPress={confirmDelete}
             />
           </View>
         </View>
       )}
+
+      <Text style={styles.shortcuts}>
+        Arrow keys choose · shift + arrow for much better · S skips · D then L or R deletes
+      </Text>
     </View>
   );
 }
@@ -164,8 +190,15 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: fonts.body,
     fontSize: 13,
-    color: colors.danger,
+    color: colors.dangerText,
     fontWeight: '600',
   },
   confirmActions: { flexDirection: 'row', gap: space.xs },
+  shortcuts: {
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    lineHeight: 16,
+    textAlign: 'center',
+    color: colors.textSecondary,
+  },
 });

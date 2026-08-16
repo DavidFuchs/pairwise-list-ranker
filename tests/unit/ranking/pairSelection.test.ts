@@ -162,6 +162,17 @@ describe('selectNextPair', () => {
     expect(pairIds(pair)).toEqual(['a', 'd']);
   });
 
+  it('starts from the top of the list when nothing distinguishes the items', () => {
+    // Ids are random uuids in the real app, so ordering must come from the
+    // list, not from the id, or the first pair shown would be arbitrary.
+    const items = [item('c'), item('a'), item('b')];
+    const states = statesFor({ a: {}, b: {}, c: {} });
+
+    const pair = selectNextPair(items, states, []);
+
+    expect([pair?.leftItemId, pair?.rightItemId]).toEqual(['c', 'a']);
+  });
+
   it('is deterministic for the same input', () => {
     const items = [item('a'), item('b'), item('c'), item('d')];
     const states = statesFor({ a: {}, b: {}, c: {}, d: {} });

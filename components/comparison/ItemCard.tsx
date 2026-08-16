@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { stringify as stringifyYaml } from 'yaml';
+import { useEffect, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ObjectDrilldown } from '@/components/comparison/ObjectDrilldown';
+import { useReducedMotion } from '@/lib/hooks/useReducedMotion';
 import { selectItemLabel } from '@/lib/state/selectors';
-import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
+import { colors, fonts, motion, radius, space, typeScale } from '@/lib/theme';
 import { isComplexItemValue } from '@/types/list';
 import type { ListItem } from '@/types/list';
 
@@ -20,6 +21,25 @@ export interface ItemCardProps {
 
 export function ItemCard({ item, side, sortField }: ItemCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const reducedMotion = useReducedMotion();
+  const [opacity] = useState(() => new Animated.Value(1));
+
+  // Fade the replacement card in after each decision, so the swap reads as a
+  // new pair rather than text mutating in place.
+  useEffect(() => {
+    if (reducedMotion) {
+      opacity.setValue(1);
+      return;
+    }
+    opacity.setValue(0);
+    const animation = Animated.timing(opacity, {
+      toValue: 1,
+      duration: motion.cardSwapMs,
+      useNativeDriver: false,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [item.id, opacity, reducedMotion]);
 
   const label = selectItemLabel(item, sortField);
   const fields = isComplexItemValue(item.value) ? Object.entries(item.value) : [];
@@ -27,8 +47,8 @@ export function ItemCard({ item, side, sortField }: ItemCardProps) {
   const chips = detailFields.filter(([, value]) => isChipValue(value)).slice(0, MAX_CHIPS);
 
   return (
-    <View
-      style={styles.card}
+    <Animated.View
+      style={[styles.card, { opacity }]}
       accessibilityLabel={`${side === 'left' ? 'Left' : 'Right'} option: ${label}`}
     >
       <Text style={styles.side}>{side === 'left' ? 'LEFT' : 'RIGHT'}</Text>
@@ -62,37 +82,18 @@ export function ItemCard({ item, side, sortField }: ItemCardProps) {
             <Text style={styles.detailsChevron}>{expanded ? '–' : '+'}</Text>
           </Pressable>
 
-          {expanded && (
-            <View style={styles.details}>
-              {detailFields.map(([key, value]) => (
-                <View key={key} style={styles.detailRow}>
-                  <Text style={styles.detailKey}>{key}</Text>
-                  {isScalar(value) ? (
-                    <Text style={styles.detailValue}>{String(value)}</Text>
-                  ) : (
-                    <Text style={styles.detailCode}>{formatNested(value)}</Text>
-                  )}
-                </View>
-              ))}
-            </View>
+          {expanded && isComplexItemValue(item.value) && (
+            <ObjectDrilldown value={item.value} omitField={sortField} />
           )}
         </View>
       )}
-    </View>
+    </Animated.View>
   );
-}
-
-function isScalar(value: unknown): boolean {
-  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }
 
 function isChipValue(value: unknown): boolean {
   if (typeof value === 'number' || typeof value === 'boolean') return true;
   return typeof value === 'string' && value.length <= CHIP_MAX_LENGTH && value.trim() !== '';
-}
-
-function formatNested(value: unknown): string {
-  return stringifyYaml(value, { lineWidth: 0 }).trimEnd();
 }
 
 const styles = StyleSheet.create({
@@ -150,27 +151,4 @@ const styles = StyleSheet.create({
     color: colors.accentStrong,
   },
   detailsChevron: { fontFamily: fonts.mono, fontSize: 14, color: colors.accentStrong },
-  details: { gap: space.sm },
-  detailRow: { gap: 2 },
-  detailKey: {
-    fontFamily: fonts.mono,
-    fontSize: 11,
-    letterSpacing: 0.6,
-    color: colors.textSecondary,
-  },
-  detailValue: {
-    ...typeScale.body,
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: fonts.body,
-    color: colors.textPrimary,
-  },
-  detailCode: {
-    ...typeScale.code,
-    fontFamily: fonts.mono,
-    color: colors.textPrimary,
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.sm,
-    padding: space.sm,
-  },
 });

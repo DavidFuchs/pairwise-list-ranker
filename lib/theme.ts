@@ -17,6 +17,13 @@ export const colors = {
   success: '#0F9F6E',
   warning: '#D28A12',
   danger: '#D14343',
+  /**
+   * Darker variants for small text. The accent shades above are tuned for fills
+   * and borders and fall below WCAG AA as body text on white.
+   */
+  warningText: '#8A5A0B',
+  dangerText: '#B02A2A',
+  successText: '#0A7350',
 } as const;
 
 export const fonts = {

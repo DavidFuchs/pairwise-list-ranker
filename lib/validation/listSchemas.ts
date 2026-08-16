@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { collectSortFieldCandidates, preferredSortField } from '@/lib/validation/sortFieldRules';
 import type { ListDocument } from '@/types/workspace';
 import { LIST_DOCUMENT_VERSION } from '@/types/workspace';
 
@@ -12,9 +13,6 @@ export interface ParseIssue {
 }
 
 export type ParseResult<T> = { ok: true; data: T } | { ok: false; issues: ParseIssue[] };
-
-/** Field names that are safe to preselect as the display label for object lists. */
-const PREFERRED_SORT_FIELDS = ['title', 'name', 'label'] as const;
 
 const DEFAULT_TITLE = 'Untitled list';
 
@@ -146,27 +144,14 @@ export function coerceToListDocument(
 }
 
 /**
- * Pick a display field for object lists: a well-known name if one is present,
- * otherwise the only string field shared by every item. Returns undefined when
- * the choice is ambiguous so the UI can ask the user.
+ * Pick a display field for object lists, or undefined when the choice is
+ * ambiguous so the UI can ask. See lib/validation/sortFieldRules.ts.
  */
 export function detectSortField(items: unknown[]): string | undefined {
   const objects = items.filter(
     (item): item is Record<string, unknown> =>
       typeof item === 'object' && item !== null && !Array.isArray(item),
   );
-  if (objects.length === 0) return undefined;
 
-  const firstObject = objects[0];
-  if (firstObject === undefined) return undefined;
-
-  const isStringInEveryItem = (field: string) =>
-    objects.every((item) => typeof item[field] === 'string');
-
-  for (const preferred of PREFERRED_SORT_FIELDS) {
-    if (isStringInEveryItem(preferred)) return preferred;
-  }
-
-  const sharedStringFields = Object.keys(firstObject).filter(isStringInEveryItem);
-  return sharedStringFields.length === 1 ? sharedStringFields[0] : undefined;
+  return preferredSortField(collectSortFieldCandidates(objects));
 }

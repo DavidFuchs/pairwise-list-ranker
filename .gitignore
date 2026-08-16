@@ -20,3 +20,8 @@ pnpm-debug.log*
 
 expo-env.d.ts
 # @end expo-cli
+
+# Playwright
+test-results/
+playwright-report/
+.playwright-mcp/

@@ -66,7 +66,7 @@ export function PreviewPane({
           />
         </View>
       ) : (
-        <View style={styles.body}>
+        <View style={styles.body} accessibilityLabel="Current ranking" role="region">
           <RankedListPreview ranking={ranking} sortField={sortField} />
         </View>
       )}

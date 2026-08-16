@@ -27,6 +27,8 @@ export interface ListState {
   previewMode: ExportFormat;
   editorDrafts: Partial<Record<TextFormat, string>>;
   persistenceAvailable: boolean;
+  /** When the browser copy was last written, if it was written at all. */
+  lastSavedAt?: string;
   hydrated: boolean;
 
   ranking(): RankedItem<ListItem>[];
@@ -76,6 +78,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         ui: { previewMode, editorDrafts },
       };
       storage.save(snapshot);
+      if (storage.available) set({ lastSavedAt: now() });
     }
 
     function touchList(patch: Partial<WorkspaceList>): void {
@@ -219,6 +222,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           comparisonEvents: [],
           previewMode: 'gui',
           editorDrafts: {},
+          lastSavedAt: undefined,
         });
         storage.clear();
       },
