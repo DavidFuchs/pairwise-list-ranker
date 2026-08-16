@@ -22,11 +22,12 @@ UI language:
 - concise labels
 - explicit consequences on destructive actions
 - clear success/failure feedback for imports and exports
+- honest guidance about what is stored locally in the browser
 
 ## Core layout
 
 Desktop default:
-- left rail: list metadata, sort-field control, add-item controls, share controls
+- left rail: list metadata, sort-field control, add-item controls, and workspace actions
 - center stage: pairwise comparison workspace with two large item cards
 - right rail: persistent preview pane with mode tabs for GUI, YAML, JSON, Markdown
 
@@ -46,9 +47,9 @@ Mobile:
 Contains:
 - product wordmark/title
 - current list name
-- save/sync state
-- share action
+- local workspace status
 - import/export quick actions
+- reset workspace action
 
 ### 2. Control rail
 
@@ -58,7 +59,7 @@ Contains:
 - sort-field picker for object lists
 - add item button
 - remove/edit list actions
-- share settings
+- local persistence controls if enabled
 
 ### 3. Comparison stage
 
@@ -99,7 +100,6 @@ Deletion from comparison:
 - delete is visually secondary and destructive-styled
 - deleting either item skips ranking for that pair
 - confirmation is inline for desktop and sheet/modal on mobile
-- if the list copy is not editable, delete controls are hidden or disabled with explanatory copy
 
 ### Adding items
 
@@ -130,6 +130,14 @@ Expanded details should show:
 - remaining fields in grouped key/value layout
 - collapsible nested structures
 - code-style blocks for large text or arrays where needed
+
+### Local workspace behavior
+
+Because the app is browser-only:
+- imported and ranked data should feel immediate
+- local persistence, if enabled, should be explained in plain English
+- export should be prominent enough that users understand it is the portable/saveable artifact
+- reset/clear actions should be obvious but never trigger accidentally
 
 ## Visual system
 
@@ -222,6 +230,16 @@ Text modes:
 - syntax-aware coloring if feasible
 - copy/download/import actions pinned near the top
 
+### Local status surfaces
+
+Use small, calm status elements for:
+- working locally
+- local persistence enabled/disabled
+- last local save time if shown
+- unsaved text-mode edits waiting for import/apply
+
+Avoid fake-cloud language. No “sync” badge for a thing that never met a server.
+
 ## Motion
 
 Motion should communicate state, not audition for a startup reel.
@@ -254,6 +272,7 @@ Keyboard suggestions:
 Empty list:
 - elegant onboarding panel
 - sample import snippets for YAML, JSON, Markdown
+- clear explanation that everything starts from pasted/imported data
 
 Import parse error:
 - keep user text intact
@@ -264,9 +283,13 @@ Object list without selected sort field:
 - block ranking until chosen
 - show candidate fields and examples
 
-Read-only shared copy:
-- show why delete/add/remove is unavailable
-- keep comparison actions available
+Local persistence unavailable:
+- app should still function fully in memory
+- show a small note that reload persistence is unavailable in the current browser context
+
+Reset workspace:
+- explain that current in-browser state will be cleared
+- never imply exported files are affected
 
 ## Export presentation rules
 
@@ -274,6 +297,7 @@ Read-only shared copy:
 - YAML/JSON/Markdown are the only exportable modes
 - download filenames should include list slug, format, and date
 - copy success should be subtle and immediate
+- export controls should feel primary enough that users understand how to keep their work
 
 ## Quality bar
 
@@ -281,6 +305,6 @@ A finished screen should feel:
 - balanced at 1440px wide
 - still clean at 1024px
 - readable and tappable on mobile
-- visually consistent across comparison, editing, and sharing flows
+- visually consistent across comparison, editing, persistence, and export flows
 
 If anything starts looking like an admin panel from a tax portal, redesign it. Ruthlessly.

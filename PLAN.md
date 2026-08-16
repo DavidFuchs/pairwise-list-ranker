@@ -2,11 +2,11 @@
 
 > For Hermes: use subagent-driven-development if implementing this later task-by-task.
 
-Goal: Build a polished Expo web app that imports simple lists and complex-object lists, ranks them through repeated pairwise comparisons, supports editable personal share copies, and exports/imports YAML, JSON, and Markdown.
+Goal: Build a polished static Expo web app that imports simple lists and complex-object lists, ranks them through repeated pairwise comparisons entirely in the browser, and exports/imports YAML, JSON, and Markdown.
 
-Architecture: Use Expo + React Native Web for the UI, a typed client-side ranking engine for pairwise updates, and a self-hosted TypeScript API backed by MongoDB. Package the web app, API, and MongoDB as a Docker Compose stack so the full system can be deployed without depending on a paid hosted backend.
+Architecture: Use Expo + React Native Web for the UI and a typed client-side ranking engine for pairwise updates. Keep all state in browser memory with optional local persistence via localStorage or IndexedDB so the app can be served as static files with no backend, no accounts, and no database.
 
-Tech stack: Expo, TypeScript, Expo Router, React Native Web, Zustand, TanStack Query, Fastify or Hono, MongoDB, Zod, yaml, Vitest, React Testing Library.
+Tech stack: Expo, TypeScript, Expo Router, React Native Web, Zustand, Zod, yaml, idb-keyval or localForage, Vitest, React Testing Library, Playwright.
 
 ---
 
@@ -20,32 +20,28 @@ Must support:
 - pairwise compare with actions: left wins, right wins, skip, much better left, much better right
 - delete from the comparison view without applying a rerank for that pair
 - add/remove items from the list
-- owner-created shared copies with a toggle controlling whether recipients may add/remove items in their own copy
 - persistent on-screen preview of the current list in GUI mode, YAML, JSON, or Markdown mode
 - copy and download actions for YAML/JSON/Markdown exports
 - editable YAML/JSON/Markdown views that can be pasted into and re-imported
 - non-exportable rich GUI preview as the default view
+- browser-only operation with no server dependency
 
 ## Proposed repository layout
 
 - `app/`
-  - `app/(marketing)/`
-  - `app/(app)/lists/[listId]/`
-  - `app/(app)/shares/[shareToken]/`
+  - `app/_layout.tsx`
+  - `app/index.tsx`
 - `components/`
   - `comparison/`
   - `preview/`
   - `editor/`
   - `lists/`
   - `layout/`
-- `server/`
-  - `src/`
-  - `tests/`
 - `lib/`
   - `ranking/`
   - `formats/`
   - `validation/`
-  - `api-client/`
+  - `persistence/`
   - `state/`
 - `types/`
 - `tests/`
@@ -54,15 +50,11 @@ Must support:
   - `e2e/`
 - `docker/`
   - `web/`
-  - `api/`
-- `infra/`
-  - `mongo/`
-- `docker-compose.yml`
 - `docs/`
 
-## Phase 1: Repository and app scaffold
+## Phase 1: Repository and static app scaffold
 
-Objective: Create the Expo web project skeleton, backend API scaffold, and deployment-ready Docker Compose layout.
+Objective: Create the Expo web project skeleton and static deployment setup.
 
 Files:
 - Create: `package.json`
@@ -72,36 +64,32 @@ Files:
 - Create: `eslint.config.js`
 - Create: `vitest.config.ts`
 - Create: `app.json`
-- Create: `server/package.json`
-- Create: `server/src/index.ts`
-- Create: `docker-compose.yml`
 - Create: `docker/web/Dockerfile`
-- Create: `docker/api/Dockerfile`
+- Create: `docker-compose.yml`
 
 Steps:
-1. Initialize the Expo TypeScript app configured for web.
-2. Add Expo Router and create route groups for marketing, authenticated app pages, and share entry pages.
-3. Scaffold a TypeScript API service for auth, list persistence, and sharing endpoints.
-4. Add Dockerfiles for the web and API containers plus a MongoDB service in `docker-compose.yml`.
-5. Add linting, formatting, and test scripts.
-6. Add a polished base theme and font-loading setup.
-7. Verify the app runs in browser mode, the API boots, and the Compose stack validates.
+1. Initialize the Expo TypeScript app configured for web static output.
+2. Add Expo Router and create the single-app workspace route structure.
+3. Add linting, formatting, and test scripts.
+4. Add a polished base theme and font-loading setup.
+5. Add a minimal static-serving container for local or self-hosted deployment.
+6. Verify the app runs in browser mode and the static container config validates.
 
 Verification:
 - `npm install`
-- `docker compose config`
 - `npm run lint`
 - `npm run test`
 - `npm run web`
+- `docker compose config`
 
 ## Phase 2: Core domain types and validation
 
-Objective: Define canonical list, item, share-copy, and comparison-event models.
+Objective: Define canonical list, item, workspace, and comparison-event models.
 
 Files:
 - Create: `types/list.ts`
-- Create: `types/share.ts`
 - Create: `types/ranking.ts`
+- Create: `types/workspace.ts`
 - Create: `lib/validation/listSchemas.ts`
 - Create: `tests/unit/listSchemas.test.ts`
 
@@ -158,21 +146,22 @@ Steps:
 Verification:
 - `npm run test -- formats`
 
-## Phase 5: Local state and persistence plumbing
+## Phase 5: Client state and local persistence
 
-Objective: Build client state management and draft persistence.
+Objective: Build browser-only state management and draft persistence.
 
 Files:
 - Create: `lib/state/useListStore.ts`
 - Create: `lib/state/selectors.ts`
-- Create: `lib/state/draftPersistence.ts`
+- Create: `lib/persistence/browserStorage.ts`
 - Create: `tests/unit/state/useListStore.test.ts`
 
 Steps:
 1. Create the main list workspace store.
 2. Persist in-progress editor text and UI mode locally.
-3. Keep comparison history append-only.
+3. Keep comparison history append-only within the browser workspace.
 4. Add selectors for current ranking, preview text, active pair, and drill-in panel state.
+5. Add explicit reset/clear-local-data controls.
 
 Verification:
 - `npm run test -- state`
@@ -182,7 +171,7 @@ Verification:
 Objective: Build the two-card ranking experience and persistent preview panel.
 
 Files:
-- Create: `app/(app)/lists/[listId]/index.tsx`
+- Create: `app/index.tsx`
 - Create: `components/comparison/ComparisonDeck.tsx`
 - Create: `components/comparison/ItemCard.tsx`
 - Create: `components/comparison/ComparisonActions.tsx`
@@ -234,7 +223,7 @@ Files:
 Steps:
 1. Detect candidate scalar fields from imported objects.
 2. Require explicit sort-field selection when no safe default exists.
-3. Store both the chosen sort field and object schema hints with the list.
+3. Store both the chosen sort field and object schema hints in the local workspace.
 4. Surface remaining fields in drill-in details during comparisons.
 5. Preserve hidden fields through all export formats.
 
@@ -242,31 +231,26 @@ Verification:
 - Tests for field detection and persistence
 - Manual QA with nested objects and mixed-value fields
 
-## Phase 9: Auth, sharing, and personal reranking copies
+## Phase 9: Static deployment and browser resilience
 
-Objective: Support owner-controlled shared copies that never modify the master list.
+Objective: Make the static app durable and pleasant without a backend.
 
 Files:
-- Create: `app/(app)/lists/[listId]/share.tsx`
-- Create: `app/(app)/shares/[shareToken].tsx`
-- Create: `server/src/routes/auth.ts`
-- Create: `server/src/routes/shares.ts`
-- Create: `server/src/routes/lists.ts`
-- Create: `server/src/db/collections.ts`
-- Create: `server/src/db/indexes.ts`
-- Create: `tests/integration/sharing.test.ts`
+- Create: `components/editor/WorkspaceControls.tsx`
+- Create: `tests/integration/localPersistence.test.tsx`
+- Create: `docs/DEPLOYMENT.md`
 
 Steps:
-1. Model master lists, share links, and recipient-owned copies separately.
-2. Add a share toggle for whether the recipient copy may add/remove items.
-3. On share open, fork the current list state into a personal copy for that recipient.
-4. Block any mutation of the master list through API authorization and ownership checks.
-5. Allow recipient deletion during ranking only when their copy is editable.
-6. Add password hashing and session or JWT handling for self-hosted accounts.
+1. Add clear reset/import/export entry points for the local workspace.
+2. Recover cleanly from stale or malformed locally persisted data.
+3. Add a static-serving Docker image and Compose setup for easy hosting.
+4. Document that data lives in the browser unless explicitly exported.
+5. Verify that a reload restores state when local persistence is enabled.
 
 Verification:
-- Integration tests for owner vs recipient permissions
-- Manual QA with two accounts
+- Integration tests for reload persistence
+- Manual QA of clear/reset/export flows
+- `docker compose up --build` smoke test
 
 ## Phase 10: Polish, accessibility, and launch readiness
 
@@ -282,7 +266,7 @@ Steps:
 2. Tune mobile and tablet layouts.
 3. Add focus management, ARIA labels, and high-contrast checks.
 4. Add motion polish without reducing clarity.
-5. Run end-to-end browser QA across import, ranking, sharing, editing, and export.
+5. Run end-to-end browser QA across import, ranking, editing, reload persistence, and export.
 
 Verification:
 - `npm run test`
@@ -291,9 +275,9 @@ Verification:
 
 ## Recommended delivery order
 
-1. Phases 1-4 for a local-only MVP
+1. Phases 1-4 for a working in-browser MVP
 2. Phases 5-8 for polished single-user experience
-3. Phase 9 for multi-user sharing
+3. Phase 9 for durable static deployment and local persistence
 4. Phase 10 for release hardening
 
 ## Risks and mitigations
@@ -302,16 +286,16 @@ Verification:
   - Mitigation: support a strict app-defined Markdown dialect and document it clearly.
 - Pair selection can feel repetitive or random if based only on ratings.
   - Mitigation: include exposure balancing and recent-pair cooldown logic.
-- Shared-copy permissions can leak into master-list operations if ownership boundaries are fuzzy.
-  - Mitigation: separate collections, separate IDs, and server-side ownership checks on every mutation.
 - Large imports can make preview rendering and text serialization sluggish.
   - Mitigation: memoized selectors and virtualization for large GUI previews.
-- Mongo can become sloppy if arbitrary object shapes are stored without validation discipline.
-  - Mitigation: validate all inbound payloads with Zod and normalize imported data before persistence.
+- Browser-local data can be lost if users clear storage or switch devices.
+  - Mitigation: make export obvious, explain the storage model, and add a clear save/export rhythm in the UI.
+- Persisted local drafts can become incompatible with future app versions.
+  - Mitigation: version the workspace format and add migration or reset handling.
 
 ## Open items
 
-- Should anonymous share recipients be supported, or should reranking require login?
-- Should owners be able to compare their master list against a recipient copy or merge recipient-added items later?
-- Should the app expose algorithm settings, or keep weighting rules fixed for simplicity?
+- Should local persistence be enabled by default, or should the app remain memory-only until the user opts in?
 - What is the maximum expected list size for performance targets?
+- Should the app expose algorithm settings, or keep weighting rules fixed for simplicity?
+- Should there be an explicit “snapshot” export separate from the editable YAML/JSON/Markdown views?

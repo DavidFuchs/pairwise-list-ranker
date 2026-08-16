@@ -2,18 +2,20 @@
 
 ## 1. Technical goals
 
-Build a web-first Expo application that:
-- stores structured lists and comparison history safely
+Build a static web application that:
+- stores working state entirely in the browser
 - reranks items deterministically from pairwise decisions
 - supports both primitive and object-shaped items
-- provides owner-controlled sharing through personal editable copies
 - supports round-trip import/export through JSON, YAML, and app-defined Markdown
+- can be hosted as static files with no backend dependency
 
 ## 2. Non-goals for v1
 
-- collaborative real-time editing on the same list
+- user accounts
+- shared lists or personal reranking copies
+- collaborative real-time editing
+- server-side persistence
 - arbitrary third-party Markdown import compatibility
-- merge-back from recipient copies into the owner master list
 - configurable ranking algorithms in the UI
 
 ## 3. Stack choice
@@ -23,45 +25,36 @@ Frontend:
 - Expo Router
 - React Native Web
 - Zustand for local workspace state
-- TanStack Query for server data fetching/caching
 - Zod for schema validation
 - `yaml` package for YAML parsing/serialization
-
-Backend:
-- Node.js TypeScript API using Fastify or Hono
-- MongoDB for persistence
-- Argon2 password hashing
-- signed cookie sessions or JWT-based auth
-- optional Redis later if session fan-out or rate limiting needs it
+- `idb-keyval` or `localForage` for optional browser persistence
 
 Testing:
 - Vitest for unit tests
 - React Testing Library for component/integration tests
 - Playwright for web end-to-end tests
 
-## 4. Backend direction: self-hosted Compose stack with MongoDB
+Deployment:
+- static build output
+- optional single-container Docker image for serving built files
+- optional one-service Docker Compose stack for hosting convenience
 
-The app should be deployable as a fully self-hosted Docker Compose stack without requiring a paid hosted backend. That pushes the design toward a custom API plus a bundled database rather than Supabase.
+## 4. Architecture direction: static browser-only app
 
-Why MongoDB is a reasonable fit here:
-- the core item payloads can be highly variable user-defined objects
-- import/export flows already normalize around JSON-like structures
-- share copies and comparison events can still be modeled cleanly as separate collections
-- it keeps deployment simple: web container, API container, MongoDB container
+The app should run entirely in the browser.
 
-Why not Supabase as the default:
-- even though Supabase can be self-hosted, it is a broader platform with more moving parts than this app needs
-- the project goal here is a bundleable stack with minimal operational drag
-- the app’s most irregular data shape is the user item payload, which maps naturally to document storage
+That means:
+- no backend API
+- no database
+- no authentication
+- no server-managed sharing
 
-Why PostgreSQL remains a valid fallback:
-- PostgreSQL is fully open source under a very permissive license
-- JSONB would handle the flexible item payloads just fine
-- relational constraints are excellent for ownership and sharing models
-
-Current recommendation:
-- default to MongoDB for v1, given the app’s unstructured item values and the desire for a simple self-hosted Compose deployment
-- keep the API boundary clean so a later PostgreSQL migration remains possible if analytics or relational reporting become more important
+Why this is a strong fit:
+- the user’s primary workflow is import -> compare -> export
+- the ranking engine is deterministic and purely client-side
+- the imported item payloads are already JSON-like and easy to keep in browser state
+- cutting sharing removes nearly all of the hard distributed-state and permissions complexity
+- deployment becomes radically simpler: build static files, serve static files, go outside and enjoy the weather or at least stare at it resentfully
 
 ## 5. Data model
 
@@ -78,9 +71,8 @@ type ListKind = 'primitive' | 'object';
 type ExportFormat = 'gui' | 'yaml' | 'json' | 'markdown';
 type ComparisonOutcome = 'left' | 'right' | 'left_strong' | 'right_strong' | 'skip';
 
-interface ListDefinition {
+interface WorkspaceList {
   id: string;
-  ownerUserId: string;
   title: string;
   description?: string;
   kind: ListKind;
@@ -92,7 +84,6 @@ interface ListDefinition {
 interface ListItem {
   id: string;
   listId: string;
-  sourceItemId?: string | null;
   value: ItemValue;
   active: boolean;
   createdAt: string;
@@ -115,62 +106,39 @@ interface ComparisonEvent {
   leftItemId: string;
   rightItemId: string;
   outcome: ComparisonOutcome;
-  actorUserId: string;
   createdAt: string;
 }
 
-interface ShareLink {
-  id: string;
-  ownerListId: string;
-  token: string;
-  allowRecipientEdits: boolean;
-  createdByUserId: string;
-  createdAt: string;
-}
-
-interface SharedCopy {
-  id: string;
-  shareLinkId: string;
-  sourceListId: string;
-  recipientUserId: string;
-  title: string;
-  description?: string;
-  kind: ListKind;
-  sortField?: string;
-  allowEdits: boolean;
-  createdAt: string;
-  updatedAt: string;
+interface WorkspaceSnapshot {
+  version: number;
+  list: WorkspaceList;
+  items: ListItem[];
+  comparisonEvents: ComparisonEvent[];
+  ui: {
+    previewMode: ExportFormat;
+    editorDrafts: Partial<Record<'yaml' | 'json' | 'markdown', string>>;
+  };
 }
 ```
 
-### 5.2 Database collections
+### 5.2 Persistence model
 
-Recommended collections:
-- `users`
-- `sessions`
-- `lists`
-- `list_items`
-- `comparison_events`
-- `share_links`
-- `shared_copies`
-- `shared_copy_items`
-- `shared_copy_comparison_events`
+There is no server database in v1.
+
+Persistent state is optional and browser-local only.
+
+Recommended persistence layers:
+- in-memory Zustand store for live interaction
+- localStorage or IndexedDB for optional draft persistence and reload recovery
+- exported YAML/JSON/Markdown as the durable user-controlled backup path
 
 Important rule:
-- the owner master list and recipient copy are different records with different item rows and different comparison histories
-- recipient operations never mutate `lists` or `list_items`
-
-Recommended indexes:
-- `lists.ownerUserId + updatedAt`
-- `list_items.listId + active`
-- `comparison_events.listId + createdAt`
-- `share_links.token` unique
-- `shared_copies.shareLinkId + recipientUserId` unique
-- `shared_copy_items.sharedCopyId + active`
+- browser persistence is a convenience, not the system of record
+- exported files are the user’s durable portable artifact
 
 ## 6. Ranking design
 
-## 6.1 Algorithm choice
+### 6.1 Algorithm choice
 
 Use weighted Elo for v1.
 
@@ -203,13 +171,11 @@ Deletion during comparison:
 
 ### 6.3 Pair selection
 
-Do not pick pairs randomly forever. Use a heuristic score combining:
+Use a heuristic score combining:
 - rating proximity: compare neighbors and near-neighbors often
 - low exposure: prioritize items with fewer total comparisons
 - recency cooldown: avoid repeating the exact same pair too soon
 - uncertainty proxy: prefer items whose rating is still volatile
-
-This keeps the experience from feeling both repetitive and useless, which is a remarkable trick many ranking interfaces fail to pull off.
 
 ### 6.4 Deterministic ranking rebuild
 
@@ -227,7 +193,7 @@ Recommended tie order:
 
 ## 7. Import/export design
 
-## 7.1 Canonical interchange shape
+### 7.1 Canonical interchange shape
 
 JSON is the canonical interchange model. YAML and Markdown import/export map to and from this shape.
 
@@ -245,16 +211,16 @@ JSON is the canonical interchange model. YAML and Markdown import/export map to 
 }
 ```
 
-## 7.2 Simple list handling
+### 7.2 Simple list handling
 
 Simple list import accepts:
 - JSON array of strings
 - YAML sequence of strings
 - Markdown bullet list
 
-Internal representation still normalizes to item objects with IDs.
+Internal representation normalizes to item objects with IDs.
 
-## 7.3 Complex object handling
+### 7.3 Complex object handling
 
 Complex object import accepts:
 - JSON object using canonical app schema
@@ -266,7 +232,7 @@ Sort field rules:
 - otherwise require the user to choose before ranking begins
 - preserve all object fields during exports, not just the chosen display field
 
-## 7.4 Markdown dialect
+### 7.4 Markdown dialect
 
 Use a strict app-defined dialect for round-trippable complex-object exports.
 
@@ -303,96 +269,70 @@ Important product rule:
 
 ## 8. Client architecture
 
-## 8.1 Main modules
+### 8.1 Main modules
 
 - `lib/validation/`: import schemas and data guards
 - `lib/formats/`: JSON/YAML/Markdown parse + serialize
 - `lib/ranking/`: Elo updates, pair scoring, ranking rebuild
 - `lib/state/`: Zustand store and selectors
-- `lib/api-client/`: typed API client and fetch helpers
-- `server/src/routes/`: auth, lists, shares, exports
-- `server/src/services/`: ranking persistence, sharing, import/export orchestration
-- `server/src/db/`: Mongo client, collection access, indexes
+- `lib/persistence/`: localStorage or IndexedDB adapters
 - `components/comparison/`: pairwise UI
 - `components/preview/`: GUI preview and text preview modes
 - `components/editor/`: editable text modes and import actions
 
-## 8.2 State boundaries
+### 8.2 State boundaries
 
-Server state:
+Persistent browser-local state:
 - list metadata
 - list items
 - comparison history
-- share links
-- shared-copy records
+- preview mode
+- editor drafts
 
-Local UI state:
-- current preview mode
-- current editor text buffer
-- unsaved import draft
+Ephemeral UI state:
 - expanded drill-in sections
 - active pair selection state
-- ephemeral toasts/confirmations
+- transient toasts and confirmations
 
-## 8.3 Persistence strategy
+### 8.3 Persistence strategy
 
 Recommended approach:
-- authoritative persistent data in MongoDB behind the API service
-- local draft cache in IndexedDB for editor text and unsaved import work
-- optimistic UI for comparison actions and item edits
+- authoritative live state in a local Zustand store
+- optional snapshot persistence in localStorage or IndexedDB
+- explicit export to YAML/JSON/Markdown for portability and backup
 
-Server-side persistence rule:
-- never trust raw imported objects directly from the client
-- validate, normalize, and stamp item IDs before writing to MongoDB
+Persistence safety rules:
+- never overwrite the current live workspace just because a text editor draft is invalid
+- version persisted workspace snapshots
+- fail safely when reading malformed saved data
+- provide a visible clear/reset action
 
-## 9. Sharing model
+## 9. Static deployment model
 
-## 9.1 Share creation
+### 9.1 Hosting shape
 
-Owner creates a share link from a master list with:
-- tokenized URL
-- toggle: `allowRecipientEdits`
+Recommended deployment shape:
+- static Expo web bundle
+- served by nginx, caddy, or another static file server
+- optional single-service Docker Compose stack purely as a hosting wrapper
 
-## 9.2 Share open flow
+### 9.2 Docker option
 
-1. recipient opens share URL
-2. app requires login or creates a gated anonymous session if that feature is later approved
-3. app creates a personal shared-copy record if one does not already exist
-4. recipient compares and edits only against that copy
+A Compose file is still fine if you want easy deployment, but it becomes tiny:
+- `web` service only
+- no API
+- no database
 
-## 9.3 Permission rules
+### 9.3 User expectations
 
-Owner on master list can:
-- add/remove/edit items
-- compare items
-- create share links
-
-Recipient on shared copy can always:
-- compare items
-- skip items
-- export their copy
-
-Recipient on editable shared copy can also:
-- add items
-- remove items
-- delete from pair during comparison
-
-Recipient can never:
-- mutate owner master list
-- modify owner share settings
-- alter another recipient’s copy
-
-## 9.4 Authorization intent
-
-Server checks should enforce:
-- list owners only on `lists` and `list_items`
-- recipient access only to their `shared_copies` and associated collections
-- share-link token lookup limited to the link resolution flow
-- every mutating route checks both authenticated identity and resource ownership/editability
+Users should understand:
+- their data lives in the browser while they work
+- exported files are how they keep or move their ranked list
+- clearing browser storage may remove saved local workspace state
 
 ## 10. UI-specific technical behavior
 
-## 10.1 Persistent preview pane
+### 10.1 Persistent preview pane
 
 The preview pane should subscribe to derived ranking selectors so it updates immediately after:
 - comparison result
@@ -402,7 +342,7 @@ The preview pane should subscribe to derived ranking selectors so it updates imm
 - import apply
 - sort-field change
 
-## 10.2 Editable text modes
+### 10.2 Editable text modes
 
 YAML/JSON/Markdown modes need a decoupled text buffer.
 
@@ -411,33 +351,14 @@ Rules:
 - parse errors remain local to the editor buffer
 - successful import replaces the live working list state
 
-## 10.3 Object drill-in
+### 10.3 Object drill-in
 
 Comparison cards display:
 - primary label from `sortField`
 - optional summary chips for 1-3 secondary fields
 - expandable detail region rendering remaining fields recursively
 
-## 11. API/query shape
-
-Representative operations:
-- `registerUser`
-- `loginUser`
-- `logoutUser`
-- `createList`
-- `updateListMetadata`
-- `replaceListItems`
-- `appendComparisonEvent`
-- `createShareLink`
-- `resolveShareLink`
-- `createOrLoadSharedCopy`
-- `appendSharedCopyComparisonEvent`
-- `addSharedCopyItem`
-- `removeSharedCopyItem`
-
-Prefer coarse, explicit mutations over magical generic ones.
-
-## 12. Testing strategy
+## 11. Testing strategy
 
 Unit tests:
 - Elo math
@@ -447,57 +368,35 @@ Unit tests:
 - pair selection heuristics
 - JSON/YAML/Markdown round-trip
 - sort-field detection
+- snapshot persistence serialization
 
 Integration tests:
 - import object list -> choose sort field -> compare -> export
-- shared read-only copy permissions
-- shared editable copy permissions
 - editor buffer parse errors do not destroy live list state
+- reload restores persisted workspace when enabled
+- reset clears local workspace cleanly
 
 End-to-end tests:
 - create list from YAML
 - perform several comparisons
 - switch preview formats
 - copy/download export
-- open shared link as recipient
-- verify shared copy isolation
+- reload and recover local state
+- clear workspace and start fresh
 
-## 13. Deployment notes
-
-Recommended deployment shape:
-- `web` service serving the Expo web build
-- `api` service exposing authenticated JSON endpoints
-- `mongo` service for persistence
-- named Docker volumes for Mongo data
-- reverse proxy or ingress in front if publishing publicly
-
-Representative Compose layout:
-- `docker-compose.yml`
-- `docker/web/Dockerfile`
-- `docker/api/Dockerfile`
-- Mongo volume mounted under the stack’s persistent data path
-
-Expected environment variables:
-- `APP_BASE_URL`
-- `API_BASE_URL`
-- `MONGODB_URI`
-- `MONGODB_DB_NAME`
-- `SESSION_SECRET`
-- `COOKIE_SECURE=true` in TLS deployments
-
-## 14. Future extension paths
+## 12. Future extension paths
 
 Potential later additions:
-- merge suggestions from shared copies back to owner inbox
+- optional share-by-file workflow instead of server-backed sharing
 - algorithm alternatives like Bradley-Terry or TrueSkill
 - analytics on confidence/convergence
 - list templates
-- collaborative comments on items
+- optional encrypted local snapshots
 
-## 15. Implementation guardrails
+## 13. Implementation guardrails
 
 - preserve canonical data shape across all formats
-- never allow shared-copy writes to touch master-list records
 - keep ranking derivable from event history
 - treat Markdown import as strict dialect support, not free-form Markdown fantasy
 - keep GUI preview gorgeous and useful, but never export it
+- keep the app fully useful without any server dependency
