@@ -28,24 +28,40 @@ Frontend:
 - `yaml` package for YAML parsing/serialization
 
 Backend:
-- Supabase Postgres
-- Supabase Auth
-- Supabase Row Level Security
-- Supabase Storage only if attachments or future assets are added
+- Node.js TypeScript API using Fastify or Hono
+- MongoDB for persistence
+- Argon2 password hashing
+- signed cookie sessions or JWT-based auth
+- optional Redis later if session fan-out or rate limiting needs it
 
 Testing:
 - Vitest for unit tests
 - React Testing Library for component/integration tests
 - Playwright for web end-to-end tests
 
-## 4. Why Supabase
+## 4. Backend direction: self-hosted Compose stack with MongoDB
 
-The app needs authenticated ownership, shareable personal copies, and strict separation between master lists and recipient copies. Supabase is a pragmatic fit because it provides:
-- authentication
-- relational data modeling
-- row-level security
-- simple linkable share-token workflows
-- a straightforward TypeScript client story
+The app should be deployable as a fully self-hosted Docker Compose stack without requiring a paid hosted backend. That pushes the design toward a custom API plus a bundled database rather than Supabase.
+
+Why MongoDB is a reasonable fit here:
+- the core item payloads can be highly variable user-defined objects
+- import/export flows already normalize around JSON-like structures
+- share copies and comparison events can still be modeled cleanly as separate collections
+- it keeps deployment simple: web container, API container, MongoDB container
+
+Why not Supabase as the default:
+- even though Supabase can be self-hosted, it is a broader platform with more moving parts than this app needs
+- the project goal here is a bundleable stack with minimal operational drag
+- the app’s most irregular data shape is the user item payload, which maps naturally to document storage
+
+Why PostgreSQL remains a valid fallback:
+- PostgreSQL is fully open source under a very permissive license
+- JSONB would handle the flexible item payloads just fine
+- relational constraints are excellent for ownership and sharing models
+
+Current recommendation:
+- default to MongoDB for v1, given the app’s unstructured item values and the desire for a simple self-hosted Compose deployment
+- keep the API boundary clean so a later PostgreSQL migration remains possible if analytics or relational reporting become more important
 
 ## 5. Data model
 
@@ -127,9 +143,11 @@ interface SharedCopy {
 }
 ```
 
-### 5.2 Database tables
+### 5.2 Database collections
 
-Recommended tables:
+Recommended collections:
+- `users`
+- `sessions`
 - `lists`
 - `list_items`
 - `comparison_events`
@@ -141,6 +159,14 @@ Recommended tables:
 Important rule:
 - the owner master list and recipient copy are different records with different item rows and different comparison histories
 - recipient operations never mutate `lists` or `list_items`
+
+Recommended indexes:
+- `lists.ownerUserId + updatedAt`
+- `list_items.listId + active`
+- `comparison_events.listId + createdAt`
+- `share_links.token` unique
+- `shared_copies.shareLinkId + recipientUserId` unique
+- `shared_copy_items.sharedCopyId + active`
 
 ## 6. Ranking design
 
@@ -283,7 +309,10 @@ Important product rule:
 - `lib/formats/`: JSON/YAML/Markdown parse + serialize
 - `lib/ranking/`: Elo updates, pair scoring, ranking rebuild
 - `lib/state/`: Zustand store and selectors
-- `lib/supabase/`: auth, queries, mutations
+- `lib/api-client/`: typed API client and fetch helpers
+- `server/src/routes/`: auth, lists, shares, exports
+- `server/src/services/`: ranking persistence, sharing, import/export orchestration
+- `server/src/db/`: Mongo client, collection access, indexes
 - `components/comparison/`: pairwise UI
 - `components/preview/`: GUI preview and text preview modes
 - `components/editor/`: editable text modes and import actions
@@ -308,9 +337,13 @@ Local UI state:
 ## 8.3 Persistence strategy
 
 Recommended approach:
-- authoritative persistent data in Supabase
+- authoritative persistent data in MongoDB behind the API service
 - local draft cache in IndexedDB for editor text and unsaved import work
 - optimistic UI for comparison actions and item edits
+
+Server-side persistence rule:
+- never trust raw imported objects directly from the client
+- validate, normalize, and stamp item IDs before writing to MongoDB
 
 ## 9. Sharing model
 
@@ -349,12 +382,13 @@ Recipient can never:
 - modify owner share settings
 - alter another recipient’s copy
 
-## 9.4 Row-level security intent
+## 9.4 Authorization intent
 
-Policies should enforce:
+Server checks should enforce:
 - list owners only on `lists` and `list_items`
-- recipient access only to their `shared_copies` and associated tables
+- recipient access only to their `shared_copies` and associated collections
 - share-link token lookup limited to the link resolution flow
+- every mutating route checks both authenticated identity and resource ownership/editability
 
 ## 10. UI-specific technical behavior
 
@@ -387,6 +421,9 @@ Comparison cards display:
 ## 11. API/query shape
 
 Representative operations:
+- `registerUser`
+- `loginUser`
+- `logoutUser`
 - `createList`
 - `updateListMetadata`
 - `replaceListItems`
@@ -428,9 +465,25 @@ End-to-end tests:
 ## 13. Deployment notes
 
 Recommended deployment shape:
-- static Expo web bundle hosted on a standard web host or CDN
-- Supabase project for auth and database
-- environment variables for Supabase URL and anon key
+- `web` service serving the Expo web build
+- `api` service exposing authenticated JSON endpoints
+- `mongo` service for persistence
+- named Docker volumes for Mongo data
+- reverse proxy or ingress in front if publishing publicly
+
+Representative Compose layout:
+- `docker-compose.yml`
+- `docker/web/Dockerfile`
+- `docker/api/Dockerfile`
+- Mongo volume mounted under the stack’s persistent data path
+
+Expected environment variables:
+- `APP_BASE_URL`
+- `API_BASE_URL`
+- `MONGODB_URI`
+- `MONGODB_DB_NAME`
+- `SESSION_SECRET`
+- `COOKIE_SECURE=true` in TLS deployments
 
 ## 14. Future extension paths
 

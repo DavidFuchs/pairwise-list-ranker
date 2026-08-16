@@ -4,9 +4,9 @@
 
 Goal: Build a polished Expo web app that imports simple lists and complex-object lists, ranks them through repeated pairwise comparisons, supports editable personal share copies, and exports/imports YAML, JSON, and Markdown.
 
-Architecture: Use Expo + React Native Web for the UI, a typed client-side ranking engine for pairwise updates, and Supabase for authentication, persistence, and shareable personal reranking copies. Keep the ranking history append-only so the displayed order is always reproducible from recorded comparison events.
+Architecture: Use Expo + React Native Web for the UI, a typed client-side ranking engine for pairwise updates, and a self-hosted TypeScript API backed by MongoDB. Package the web app, API, and MongoDB as a Docker Compose stack so the full system can be deployed without depending on a paid hosted backend.
 
-Tech stack: Expo, TypeScript, Expo Router, React Native Web, Zustand, TanStack Query, Supabase, Zod, yaml, Vitest, React Testing Library.
+Tech stack: Expo, TypeScript, Expo Router, React Native Web, Zustand, TanStack Query, Fastify or Hono, MongoDB, Zod, yaml, Vitest, React Testing Library.
 
 ---
 
@@ -38,25 +38,31 @@ Must support:
   - `editor/`
   - `lists/`
   - `layout/`
+- `server/`
+  - `src/`
+  - `tests/`
 - `lib/`
   - `ranking/`
   - `formats/`
   - `validation/`
-  - `supabase/`
+  - `api-client/`
   - `state/`
 - `types/`
 - `tests/`
   - `unit/`
   - `integration/`
   - `e2e/`
-- `supabase/`
-  - `migrations/`
-  - `policies/`
+- `docker/`
+  - `web/`
+  - `api/`
+- `infra/`
+  - `mongo/`
+- `docker-compose.yml`
 - `docs/`
 
 ## Phase 1: Repository and app scaffold
 
-Objective: Create the Expo web project skeleton, baseline tooling, and deployment-ready scripts.
+Objective: Create the Expo web project skeleton, backend API scaffold, and deployment-ready Docker Compose layout.
 
 Files:
 - Create: `package.json`
@@ -66,16 +72,24 @@ Files:
 - Create: `eslint.config.js`
 - Create: `vitest.config.ts`
 - Create: `app.json`
+- Create: `server/package.json`
+- Create: `server/src/index.ts`
+- Create: `docker-compose.yml`
+- Create: `docker/web/Dockerfile`
+- Create: `docker/api/Dockerfile`
 
 Steps:
 1. Initialize the Expo TypeScript app configured for web.
 2. Add Expo Router and create route groups for marketing, authenticated app pages, and share entry pages.
-3. Add linting, formatting, and test scripts.
-4. Add a polished base theme and font-loading setup.
-5. Verify the app runs in browser mode and tests execute.
+3. Scaffold a TypeScript API service for auth, list persistence, and sharing endpoints.
+4. Add Dockerfiles for the web and API containers plus a MongoDB service in `docker-compose.yml`.
+5. Add linting, formatting, and test scripts.
+6. Add a polished base theme and font-loading setup.
+7. Verify the app runs in browser mode, the API boots, and the Compose stack validates.
 
 Verification:
 - `npm install`
+- `docker compose config`
 - `npm run lint`
 - `npm run test`
 - `npm run web`
@@ -228,23 +242,27 @@ Verification:
 - Tests for field detection and persistence
 - Manual QA with nested objects and mixed-value fields
 
-## Phase 9: Sharing and personal reranking copies
+## Phase 9: Auth, sharing, and personal reranking copies
 
 Objective: Support owner-controlled shared copies that never modify the master list.
 
 Files:
 - Create: `app/(app)/lists/[listId]/share.tsx`
 - Create: `app/(app)/shares/[shareToken].tsx`
-- Create: `lib/supabase/shareQueries.ts`
-- Create: `supabase/migrations/001_initial_schema.sql`
+- Create: `server/src/routes/auth.ts`
+- Create: `server/src/routes/shares.ts`
+- Create: `server/src/routes/lists.ts`
+- Create: `server/src/db/collections.ts`
+- Create: `server/src/db/indexes.ts`
 - Create: `tests/integration/sharing.test.ts`
 
 Steps:
 1. Model master lists, share links, and recipient-owned copies separately.
 2. Add a share toggle for whether the recipient copy may add/remove items.
 3. On share open, fork the current list state into a personal copy for that recipient.
-4. Block any mutation of the master list through client and database policy layers.
+4. Block any mutation of the master list through API authorization and ownership checks.
 5. Allow recipient deletion during ranking only when their copy is editable.
+6. Add password hashing and session or JWT handling for self-hosted accounts.
 
 Verification:
 - Integration tests for owner vs recipient permissions
@@ -285,9 +303,11 @@ Verification:
 - Pair selection can feel repetitive or random if based only on ratings.
   - Mitigation: include exposure balancing and recent-pair cooldown logic.
 - Shared-copy permissions can leak into master-list operations if ownership boundaries are fuzzy.
-  - Mitigation: separate tables, separate IDs, and row-level security.
+  - Mitigation: separate collections, separate IDs, and server-side ownership checks on every mutation.
 - Large imports can make preview rendering and text serialization sluggish.
   - Mitigation: memoized selectors and virtualization for large GUI previews.
+- Mongo can become sloppy if arbitrary object shapes are stored without validation discipline.
+  - Mitigation: validate all inbound payloads with Zod and normalize imported data before persistence.
 
 ## Open items
 
