@@ -1,29 +1,37 @@
 /**
- * Base visual tokens for the app, following the palette and type scale in UX.md.
+ * Visual tokens for the app, following UX.md.
  *
- * Fonts use platform stacks rather than bundled webfonts so the static build has
- * no network dependency; swap `fonts` for loaded families if that changes.
+ * Colours resolve to the CSS custom properties defined in `lib/themeCss.ts`, so
+ * light and dark are handled by the stylesheet rather than by React state. That
+ * keeps the static export and the hydrated page rendering identical markup.
+ *
+ * Fonts use platform stacks so the static build has no network dependency.
  */
 
 export const colors = {
-  canvas: '#F6F7FB',
-  surface: '#FFFFFF',
-  surfaceMuted: '#EEF1F7',
-  textPrimary: '#111827',
-  textSecondary: '#5B6474',
-  border: '#D9DFEA',
-  accent: '#345CFF',
-  accentStrong: '#2446D8',
-  success: '#0F9F6E',
-  warning: '#D28A12',
-  danger: '#D14343',
-  /**
-   * Darker variants for small text. The accent shades above are tuned for fills
-   * and borders and fall below WCAG AA as body text on white.
-   */
-  warningText: '#8A5A0B',
-  dangerText: '#B02A2A',
-  successText: '#0A7350',
+  canvas: 'var(--canvas)',
+  surface: 'var(--surface)',
+  surfaceMuted: 'var(--surface-muted)',
+  surfaceSunken: 'var(--surface-sunken)',
+  textPrimary: 'var(--text-primary)',
+  textSecondary: 'var(--text-secondary)',
+  textFaint: 'var(--text-faint)',
+  border: 'var(--border)',
+  borderStrong: 'var(--border-strong)',
+  accent: 'var(--accent)',
+  accentStrong: 'var(--accent-strong)',
+  accentContrast: 'var(--accent-contrast)',
+  accentSoft: 'var(--accent-soft)',
+  accentSoftBorder: 'var(--accent-soft-border)',
+  violet: 'var(--violet)',
+  success: 'var(--success)',
+  successText: 'var(--success-text)',
+  warning: 'var(--warning)',
+  warningText: 'var(--warning-text)',
+  danger: 'var(--danger)',
+  dangerText: 'var(--danger-text)',
+  dangerSoft: 'var(--danger-soft)',
+  dangerSoftBorder: 'var(--danger-soft-border)',
 } as const;
 
 export const fonts = {

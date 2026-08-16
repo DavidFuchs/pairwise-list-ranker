@@ -39,7 +39,7 @@ export function PreviewPane({
   const isTextMode = mode !== 'gui';
 
   return (
-    <View style={styles.pane}>
+    <View style={styles.pane} dataSet={{ surface: 'panel' }}>
       <View style={styles.header}>
         <Text style={styles.title}>Preview</Text>
         <Text style={styles.subtitle}>

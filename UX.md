@@ -63,18 +63,28 @@ Contains:
 
 ### 3. Comparison stage
 
-Contains:
-- two balanced comparison cards
-- a compact progress/status strip
-- primary actions:
-  - Choose left
-  - Choose right
-  - Left is much better
-  - Right is much better
-  - Skip
-  - Delete left
-  - Delete right
-- optional details toggle for object drill-in
+Each card owns the decisions about its own item. There is no shared row of
+buttons underneath the pair: a detached bank of actions makes the reader map
+"left" and "right" back onto two cards on every single comparison, which is the
+one thing this screen asks them to do hundreds of times.
+
+Each card contains, top to bottom:
+- a side marker (LEFT / RIGHT) and a quiet remove control in the corner
+- the item label, from the sort field for object lists
+- summary chips for short scalar fields
+- an expandable details region for the rest of the object
+- a footer, aligned across both cards, holding:
+  - **Choose** — full width, the accent gradient, the only loud element
+  - **Much better** — a soft accent strip beneath it
+
+Removing an item swaps that card's footer for an inline confirmation, so the
+question is asked on the card being removed rather than in a separate bar.
+
+Between and below the pair:
+- a compact status strip: comparisons made, item count, and a progress meter
+- a single **Skip this pair** pill, centred — it belongs to the pair, not to
+  either item
+- a one-line keyboard hint
 
 ### 4. Persistent preview pane
 
@@ -141,6 +151,16 @@ Because the app is browser-only:
 
 ## Visual system
 
+### Themes
+
+The app ships light and dark. Dark mode is not an inverted light mode: surfaces
+are deep neutral slate rather than black, the accent lightens so it stays
+readable, and shadows deepen while the inset highlight almost disappears.
+
+A three-way control in the header selects System, Light, or Dark. System is the
+default. A pre-paint script applies a saved choice before the first frame, so
+the page never flashes the wrong palette.
+
 ### Style direction
 
 Use a refined editorial-meets-product aesthetic:
@@ -153,31 +173,77 @@ Use a refined editorial-meets-product aesthetic:
 
 ### Color palette
 
-Base:
-- background: warm off-white or cool near-white
-- elevated surface: pure white or very light neutral
-- text primary: deep charcoal
-- text secondary: muted slate
-- border: soft gray with low contrast
+The interface is mostly neutral. One indigo accent, warmed slightly towards
+violet in gradients, is the only saturated colour, and it is reserved for the
+primary action, the progress meter, and focus rings.
 
-Accent:
-- primary accent: deep cobalt or indigo
-- success accent: emerald
-- warning accent: amber
-- destructive accent: crimson
+Both themes are defined as CSS custom properties in `lib/themeCss.ts`. Dark mode
+follows the OS setting and can be overridden per visitor; because the palette is
+resolved by the stylesheet rather than by React state, both themes render the
+same markup.
 
-Suggested palette:
-- canvas: `#F6F7FB`
-- surface: `#FFFFFF`
-- surface-muted: `#EEF1F7`
-- text-primary: `#111827`
-- text-secondary: `#5B6474`
-- border: `#D9DFEA`
-- accent: `#345CFF`
-- accent-strong: `#2446D8`
-- success: `#0F9F6E`
-- warning: `#D28A12`
-- danger: `#D14343`
+#### Light
+
+| Token | Value | Used for |
+| --- | --- | --- |
+| `--canvas` | `#F6F7FB` | app ground, under a faint indigo/violet wash |
+| `--surface` | `#FFFFFF` | panels and cards |
+| `--surface-muted` | `#EEF1F8` | chips, meter track |
+| `--surface-sunken` | `#F3F5FA` | editors, tab groups, inputs |
+| `--border` | `#DEE3EC` | hairlines |
+| `--border-strong` | `#C7D0DF` | emphasised edges |
+| `--text-primary` | `#131722` | headings and item labels |
+| `--text-secondary` | `#58627A` | supporting copy |
+| `--text-faint` | `#838DA3` | metadata, shortcut hints |
+| `--accent` | `#4C63F5` | primary action, focus ring |
+| `--accent-strong` | `#3244D4` | accent text on light surfaces |
+| `--accent-soft` | `#EEF1FE` | "much better", selected states |
+| `--accent-soft-border` | `#CBD4FD` | edge of soft accent surfaces |
+| `--violet` | `#7C5CFF` | gradient partner, canvas wash |
+| `--success` / `--success-text` | `#0F9F6E` / `#0A7350` | positive states |
+| `--warning` / `--warning-text` | `#D28A12` / `#8A5A0B` | coverage warnings |
+| `--danger` / `--danger-text` | `#D14343` / `#B02A2A` | destructive actions |
+
+#### Dark
+
+| Token | Value | Used for |
+| --- | --- | --- |
+| `--canvas` | `#0D1016` | app ground |
+| `--surface` | `#161A23` | panels and cards |
+| `--surface-muted` | `#1E2430` | chips, meter track |
+| `--surface-sunken` | `#11151D` | editors, tab groups, inputs |
+| `--border` | `#262D3B` | hairlines |
+| `--text-primary` | `#E9EDF6` | headings and item labels |
+| `--text-secondary` | `#9AA5BC` | supporting copy |
+| `--text-faint` | `#74809A` | metadata, shortcut hints |
+| `--accent` | `#7C8CFF` | primary action, focus ring |
+| `--accent-strong` | `#A0ABFF` | accent text on dark surfaces |
+| `--accent-soft` | `#1A2036` | "much better", selected states |
+| `--violet` | `#9E7BFF` | gradient partner, canvas wash |
+| `--danger` / `--danger-text` | `#EE7168` / `#FF9C94` | destructive actions |
+
+The `*-text` variants exist because the fill colours are tuned for backgrounds
+and fall below WCAG AA as small text. Use the text variant for anything under
+16px.
+
+### Shading and gradients
+
+Gradients are atmosphere, never decoration. Four, and no more:
+
+1. **Canvas wash** — two large, very low-alpha radial gradients (indigo, then
+   violet) anchored off the top edge. It gives the page a light source without
+   reading as a coloured background.
+2. **Panel and card fill** — a 180° gradient between two near-identical
+   neutrals, plus a 1px inset top highlight. Barely perceptible in isolation;
+   what stops large surfaces from looking flat.
+3. **Primary action** — a 140° indigo gradient, `--accent` to
+   `--accent-gradient-end`. Deliberately a single hue family rather than a
+   two-tone sweep, so it stays calm next to its twin on the other card.
+4. **Progress meter** — indigo to violet across the filled width, the one place
+   the full accent range appears.
+
+Elevation is a two-layer shadow: a tight contact shadow plus a wide, soft cast
+shadow. On hover, cards lift 2px and the cast shadow picks up accent tint.
 
 ### Typography
 
@@ -205,17 +271,19 @@ Type scale:
 
 - generous padding
 - strong title hierarchy
-- hover/focus elevation on desktop
+- hover lift plus accent-tinted shadow on desktop; disabled under reduced motion
+- footers aligned across both cards regardless of content height
 - selected-action feedback should be immediate but tasteful
 - when details are expanded, card height may grow without reflow chaos
 
 ### Buttons
 
 Hierarchy:
-- primary: choose left/right
-- secondary: skip, drill-in, add item
-- tertiary/destructive: delete item
-- nuanced emphasis variant: much better actions, visually distinct but not louder than primary winners
+- primary: **Choose**, inside its card, carrying the accent gradient
+- emphasis: **Much better**, a soft accent surface directly below Choose —
+  distinct, but never louder than the primary
+- secondary: skip, drill-in, add item, downloads
+- tertiary/destructive: remove item, a faint glyph until it is armed
 
 ### Preview modes
 

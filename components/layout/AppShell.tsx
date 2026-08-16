@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { Button } from '@/components/ui/Button';
 import { colors, fonts, space } from '@/lib/theme';
 
@@ -24,7 +25,7 @@ export function AppShell({ listName, statusText, onReset, rail, stage, preview }
   const [confirmingReset, setConfirmingReset] = useState(false);
 
   return (
-    <View style={styles.root}>
+    <View style={styles.root} dataSet={{ surface: 'canvas' }}>
       <View style={styles.header} role="banner">
         <View style={styles.brand}>
           <Text style={styles.wordmark}>Pairwise</Text>
@@ -35,6 +36,7 @@ export function AppShell({ listName, statusText, onReset, rail, stage, preview }
 
         <View style={styles.headerActions}>
           <Text style={styles.status}>{statusText}</Text>
+          <ThemeToggle />
           {confirmingReset ? (
             <>
               <Button
@@ -126,7 +128,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 12,
     color: colors.dangerText,
-    backgroundColor: '#FEF6F6',
+    backgroundColor: colors.dangerSoft,
   },
   scrollBody: { padding: space.lg },
   body: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg, alignItems: 'flex-start' },

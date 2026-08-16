@@ -1,7 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ComparisonActions } from '@/components/comparison/ComparisonActions';
 import { ItemCard } from '@/components/comparison/ItemCard';
+import { useComparisonShortcuts } from '@/lib/hooks/useComparisonShortcuts';
 import { selectItemLabel } from '@/lib/state/selectors';
 import type { ActivePair } from '@/lib/state/selectors';
 import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
@@ -23,6 +24,12 @@ export interface ComparisonDeckProps {
   onDelete: (itemId: string) => void;
 }
 
+/**
+ * The comparison stage. Each card owns the actions for its own item — choose,
+ * much better, remove — so there is no detached bank of buttons to map back
+ * onto the two options. Only Skip, which belongs to the pair rather than to
+ * either item, sits between them.
+ */
 export function ComparisonDeck({
   pair,
   progress,
@@ -31,6 +38,38 @@ export function ComparisonDeck({
   onOutcome,
   onDelete,
 }: ComparisonDeckProps) {
+  const [armed, setArmed] = useState<'left' | 'right' | null>(null);
+
+  const emit = useCallback(
+    (outcome: ComparisonOutcome) => {
+      setArmed(null);
+      onOutcome(outcome);
+    },
+    [onOutcome],
+  );
+
+  const confirmDelete = useCallback(() => {
+    setArmed((side) => {
+      if (side !== null && pair !== null) {
+        onDelete(side === 'left' ? pair.left.id : pair.right.id);
+      }
+      return null;
+    });
+  }, [onDelete, pair]);
+
+  useComparisonShortcuts({
+    enabled: pair !== null && !needsSortField,
+    armed: armed !== null,
+    onChoose: useCallback(
+      (side, strong) => emit(strong ? (`${side}_strong` as ComparisonOutcome) : side),
+      [emit],
+    ),
+    onSkip: useCallback(() => emit('skip'), [emit]),
+    onArmDelete: useCallback((side) => setArmed(side), []),
+    onConfirmDelete: confirmDelete,
+    onCancelDelete: useCallback(() => setArmed(null), []),
+  });
+
   if (needsSortField) {
     return (
       <Notice
@@ -49,46 +88,78 @@ export function ComparisonDeck({
     );
   }
 
+  const percent = Math.round(progress.coverage * 100);
+
   return (
     <View style={styles.stage}>
       <View style={styles.statusStrip} accessibilityLiveRegion="polite">
-        <Text style={styles.status}>
-          {`${progress.comparisons} comparisons · ${progress.activeItems} items`}
-        </Text>
+        <View style={styles.statusRow}>
+          <Text style={styles.status}>
+            {`${progress.comparisons} comparisons · ${progress.activeItems} items`}
+          </Text>
+          <Text style={styles.statusPercent}>{`${percent}%`}</Text>
+        </View>
         <Text style={styles.announcement}>
           {`Comparing ${selectItemLabel(pair.left, sortField)} and ${selectItemLabel(pair.right, sortField)}`}
         </Text>
         <View
           style={styles.meter}
           role="progressbar"
-          aria-valuenow={Math.round(progress.coverage * 100)}
+          aria-valuenow={percent}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label="Ranking progress"
         >
-          <View style={[styles.meterFill, { width: `${Math.round(progress.coverage * 100)}%` }]} />
+          <View style={[styles.meterFill, { width: `${percent}%` }]} dataSet={{ fill: 'meter' }} />
         </View>
       </View>
 
       {/* Wraps to stacked cards on narrow screens without measuring anything. */}
       <View style={styles.cards}>
-        <ItemCard item={pair.left} side="left" sortField={sortField} />
-        <ItemCard item={pair.right} side="right" sortField={sortField} />
+        <ItemCard
+          item={pair.left}
+          side="left"
+          sortField={sortField}
+          pendingDelete={armed === 'left'}
+          onChoose={() => emit('left')}
+          onChooseStrong={() => emit('left_strong')}
+          onRequestDelete={() => setArmed('left')}
+          onConfirmDelete={confirmDelete}
+          onCancelDelete={() => setArmed(null)}
+        />
+        <ItemCard
+          item={pair.right}
+          side="right"
+          sortField={sortField}
+          pendingDelete={armed === 'right'}
+          onChoose={() => emit('right')}
+          onChooseStrong={() => emit('right_strong')}
+          onRequestDelete={() => setArmed('right')}
+          onConfirmDelete={confirmDelete}
+          onCancelDelete={() => setArmed(null)}
+        />
       </View>
 
-      <ComparisonActions
-        leftLabel={selectItemLabel(pair.left, sortField)}
-        rightLabel={selectItemLabel(pair.right, sortField)}
-        onOutcome={onOutcome}
-        onDelete={(side) => onDelete(side === 'left' ? pair.left.id : pair.right.id)}
-      />
+      <View style={styles.tray}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Skip this pair"
+          onPress={() => emit('skip')}
+          style={styles.skip}
+        >
+          <Text style={styles.skipText}>Skip this pair</Text>
+        </Pressable>
+        <Text style={styles.shortcuts}>
+          Arrow keys choose · shift + arrow for much better · S skips · D then L or R removes
+        </Text>
+      </View>
     </View>
   );
 }
 
 function Notice({ title, body }: { title: string; body: string }) {
   return (
-    <View style={styles.notice}>
+    <View style={styles.notice} dataSet={{ surface: 'panel' }}>
       <Text style={styles.noticeTitle}>{title}</Text>
       <Text style={styles.noticeBody}>{body}</Text>
     </View>
@@ -98,12 +169,14 @@ function Notice({ title, body }: { title: string; body: string }) {
 const styles = StyleSheet.create({
   stage: { gap: space.lg },
   statusStrip: { gap: space.sm },
+  statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   status: {
     fontFamily: fonts.mono,
     fontSize: 12,
     letterSpacing: 0.4,
     color: colors.textSecondary,
   },
+  statusPercent: { fontFamily: fonts.mono, fontSize: 11, color: colors.textFaint },
   // Present for screen readers and announcements, but not visually.
   announcement: {
     position: 'absolute',
@@ -113,18 +186,43 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   meter: {
-    height: 3,
+    height: 4,
     borderRadius: 999,
     backgroundColor: colors.surfaceMuted,
     overflow: 'hidden',
   },
-  meterFill: { height: 3, borderRadius: 999, backgroundColor: colors.accent },
+  meterFill: { height: 4, borderRadius: 999, backgroundColor: colors.accent },
   cards: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'stretch',
     justifyContent: 'center',
     gap: space.md,
+  },
+  tray: {
+    alignItems: 'center',
+    gap: space.xs,
+    paddingTop: space.xs,
+  },
+  skip: {
+    paddingVertical: space.sm,
+    paddingHorizontal: space.lg,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  skipText: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  shortcuts: {
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    lineHeight: 16,
+    textAlign: 'center',
+    color: colors.textFaint,
   },
   notice: {
     gap: space.sm,

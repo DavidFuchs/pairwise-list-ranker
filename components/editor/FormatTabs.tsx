@@ -17,7 +17,7 @@ export interface FormatTabsProps {
 
 export function FormatTabs({ mode, onChange }: FormatTabsProps) {
   return (
-    <View style={styles.row} accessibilityRole="tablist">
+    <View style={styles.row} accessibilityRole="tablist" dataSet={{ surface: 'sunken' }}>
       {TABS.map((tab) => {
         const selected = tab.mode === mode;
         return (

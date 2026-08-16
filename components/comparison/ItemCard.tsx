@@ -17,9 +17,30 @@ export interface ItemCardProps {
   item: ListItem;
   side: 'left' | 'right';
   sortField?: string;
+  /**
+   * Each card carries its own actions, so a decision is made on the thing being
+   * decided about rather than in a detached row of buttons.
+   */
+  onChoose?: () => void;
+  onChooseStrong?: () => void;
+  onRequestDelete?: () => void;
+  onConfirmDelete?: () => void;
+  onCancelDelete?: () => void;
+  /** True while this card is waiting for the user to confirm a delete. */
+  pendingDelete?: boolean;
 }
 
-export function ItemCard({ item, side, sortField }: ItemCardProps) {
+export function ItemCard({
+  item,
+  side,
+  sortField,
+  onChoose,
+  onChooseStrong,
+  onRequestDelete,
+  onConfirmDelete,
+  onCancelDelete,
+  pendingDelete = false,
+}: ItemCardProps) {
   const [expanded, setExpanded] = useState(false);
   const reducedMotion = useReducedMotion();
   const [opacity] = useState(() => new Animated.Value(1));
@@ -45,13 +66,27 @@ export function ItemCard({ item, side, sortField }: ItemCardProps) {
   const fields = isComplexItemValue(item.value) ? Object.entries(item.value) : [];
   const detailFields = fields.filter(([key]) => key !== sortField);
   const chips = detailFields.filter(([, value]) => isChipValue(value)).slice(0, MAX_CHIPS);
+  const interactive = onChoose !== undefined;
 
   return (
     <Animated.View
       style={[styles.card, { opacity }]}
+      dataSet={{ surface: 'card' }}
       accessibilityLabel={`${side === 'left' ? 'Left' : 'Right'} option: ${label}`}
     >
-      <Text style={styles.side}>{side === 'left' ? 'LEFT' : 'RIGHT'}</Text>
+      <View style={styles.topRow}>
+        <Text style={styles.side}>{side === 'left' ? 'LEFT' : 'RIGHT'}</Text>
+        {interactive && !pendingDelete && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Delete ${label}`}
+            onPress={onRequestDelete}
+            style={styles.removeButton}
+          >
+            <Text style={styles.removeGlyph}>×</Text>
+          </Pressable>
+        )}
+      </View>
 
       <Text style={styles.title} numberOfLines={4}>
         {label}
@@ -87,6 +122,58 @@ export function ItemCard({ item, side, sortField }: ItemCardProps) {
           )}
         </View>
       )}
+
+      {interactive && (
+        <View style={styles.footer}>
+          {pendingDelete ? (
+            <View style={styles.confirm}>
+              <Text style={styles.confirmText}>{`Remove "${label}" from the list?`}</Text>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Keep ${label}`}
+                  onPress={onCancelDelete}
+                  style={styles.confirmCancel}
+                >
+                  <Text style={styles.confirmCancelText}>Keep</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Confirm deleting ${label}`}
+                  onPress={onConfirmDelete}
+                  style={styles.confirmDelete}
+                >
+                  <Text style={styles.confirmDeleteText}>Remove</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Choose ${label}`}
+                onPress={onChoose}
+                style={styles.choose}
+                dataSet={{ fill: 'accent' }}
+              >
+                <Text style={styles.chooseText} numberOfLines={1}>
+                  Choose
+                </Text>
+                <Text style={styles.chooseArrow}>→</Text>
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${label} is much better`}
+                onPress={onChooseStrong}
+                style={styles.strong}
+              >
+                <Text style={styles.strongText}>Much better</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      )}
     </Animated.View>
   );
 }
@@ -100,32 +187,41 @@ const styles = StyleSheet.create({
   card: {
     flexGrow: 1,
     flexShrink: 1,
-    flexBasis: 260,
-    minWidth: 240,
+    flexBasis: 280,
+    minWidth: 250,
     gap: space.md,
-    padding: space.xl,
+    padding: space.lg,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    boxShadow: '0 8px 18px rgba(16, 24, 40, 0.06)',
   },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   side: {
     fontFamily: fonts.mono,
-    fontSize: 11,
-    letterSpacing: 1.4,
-    color: colors.textSecondary,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    color: colors.textFaint,
   },
+  removeButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+  },
+  removeGlyph: { fontFamily: fonts.body, fontSize: 15, lineHeight: 18, color: colors.textFaint },
   title: {
     ...typeScale.cardTitle,
     fontFamily: fonts.heading,
     fontWeight: '600',
+    letterSpacing: -0.3,
     color: colors.textPrimary,
   },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
   chip: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 9,
     borderRadius: 999,
     backgroundColor: colors.surfaceMuted,
   },
@@ -135,20 +231,84 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     color: colors.textSecondary,
   },
-  detailsBlock: { gap: space.sm, marginTop: 'auto' },
-  detailsToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: space.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
+  detailsBlock: { gap: space.sm },
+  detailsToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   detailsToggleText: {
     fontFamily: fonts.body,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.accentStrong,
   },
-  detailsChevron: { fontFamily: fonts.mono, fontSize: 14, color: colors.accentStrong },
+  detailsChevron: { fontFamily: fonts.mono, fontSize: 13, color: colors.accentStrong },
+  // Pinned to the bottom so both cards line their actions up, whatever height
+  // their content takes.
+  footer: {
+    marginTop: 'auto',
+    paddingTop: space.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: space.sm,
+  },
+  choose: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.sm,
+    minHeight: 46,
+    paddingHorizontal: space.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.accent,
+  },
+  chooseText: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.accentContrast,
+  },
+  chooseArrow: { fontFamily: fonts.body, fontSize: 14, color: colors.accentContrast },
+  strong: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 34,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.accentSoftBorder,
+    backgroundColor: colors.accentSoft,
+  },
+  strongText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    color: colors.accentStrong,
+  },
+  confirm: {
+    gap: space.sm,
+    padding: space.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.dangerSoftBorder,
+    backgroundColor: colors.dangerSoft,
+  },
+  confirmText: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.dangerText },
+  confirmActions: { flexDirection: 'row', gap: space.xs },
+  confirmCancel: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 34,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  confirmCancelText: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
+  confirmDelete: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 34,
+    borderRadius: radius.sm,
+    backgroundColor: colors.danger,
+  },
+  confirmDeleteText: { fontFamily: fonts.body, fontSize: 12, fontWeight: '600', color: 'var(--danger-on-fill)' },
 });

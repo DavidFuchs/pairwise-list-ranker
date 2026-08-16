@@ -28,6 +28,7 @@ export function TextFormatEditor({ format, value, onChange, issues }: TextFormat
         autoCapitalize="none"
         autoCorrect={false}
         style={[styles.input, issues.length > 0 && styles.inputInvalid]}
+        dataSet={{ surface: 'sunken' }}
       />
 
       {issues.length > 0 && (
@@ -57,20 +58,20 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: '#FBFCFE',
+    backgroundColor: colors.surfaceSunken,
     color: colors.textPrimary,
     ...typeScale.code,
     fontFamily: fonts.mono,
     textAlignVertical: 'top',
   },
-  inputInvalid: { borderColor: colors.danger, backgroundColor: '#FEF9F9' },
+  inputInvalid: { borderColor: colors.danger, backgroundColor: colors.dangerSoft },
   issues: {
     gap: space.xs,
     padding: space.sm,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: '#F0D2D2',
-    backgroundColor: '#FEF6F6',
+    borderColor: colors.dangerSoftBorder,
+    backgroundColor: colors.dangerSoft,
   },
   issue: {
     fontFamily: fonts.mono,

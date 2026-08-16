@@ -158,6 +158,40 @@ test('clears the workspace and starts fresh', async ({ page }) => {
   await expect(page.getByText('Start with a list')).toBeVisible();
 });
 
+test('switches to the dark theme and remembers it', async ({ page }) => {
+  await page.getByRole('button', { name: 'Use the dark theme' }).click();
+
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  const canvas = await page
+    .locator('body')
+    .evaluate((body) => getComputedStyle(body).backgroundColor);
+
+  await page.reload();
+
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('body')).toHaveCSS('background-color', canvas);
+});
+
+test('hands the theme back to the operating system', async ({ page }) => {
+  await page.getByRole('button', { name: 'Use the dark theme' }).click();
+
+  await page.getByRole('button', { name: 'Match system theme' }).click();
+
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme', /.*/);
+});
+
+test('renders the dark palette when the system prefers it', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.reload();
+
+  const background = await page
+    .locator('body')
+    .evaluate((body) => getComputedStyle(body).backgroundColor);
+
+  // The dark canvas, resolved by the stylesheet rather than by React.
+  expect(background).toBe('rgb(13, 16, 22)');
+});
+
 test('runs the whole flow without a console error', async ({ page }) => {
   await importList(page, 'yaml', DINNERS);
   await page.getByRole('button', { name: /^Choose / }).first().click();

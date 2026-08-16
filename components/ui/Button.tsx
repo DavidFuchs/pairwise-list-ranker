@@ -39,6 +39,7 @@ export function Button({
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
+      dataSet={variant === 'primary' ? { fill: 'accent' } : undefined}
       style={({ pressed }) => [
         styles.base,
         size === 'sm' ? styles.sizeSm : styles.sizeMd,
@@ -82,10 +83,10 @@ const styles = StyleSheet.create({
 
 const variantStyles = StyleSheet.create({
   primary: { backgroundColor: colors.accent, borderColor: colors.accentStrong },
-  emphasis: { backgroundColor: '#E7ECFF', borderColor: '#C4D0FF' },
+  emphasis: { backgroundColor: colors.accentSoft, borderColor: colors.accentSoftBorder },
   secondary: { backgroundColor: colors.surface, borderColor: colors.border },
   ghost: { backgroundColor: 'transparent', borderColor: 'transparent' },
-  danger: { backgroundColor: colors.surface, borderColor: '#F0D2D2' },
+  danger: { backgroundColor: colors.surface, borderColor: colors.dangerSoftBorder },
 });
 
 const labelStyles = StyleSheet.create({

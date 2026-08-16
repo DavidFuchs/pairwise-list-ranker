@@ -36,7 +36,7 @@ export function ListControls({ list, items, onAddItem, onRemoveItem }: ListContr
   }
 
   return (
-    <View style={styles.panel}>
+    <View style={styles.panel} dataSet={{ surface: 'panel' }}>
       <View style={styles.headerBlock}>
         <Text style={styles.title} numberOfLines={2}>
           {list.title}
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: '#FBFCFE',
+    backgroundColor: colors.surfaceSunken,
     fontFamily: fonts.body,
     fontSize: 14,
     color: colors.textPrimary,

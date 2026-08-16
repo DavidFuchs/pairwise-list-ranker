@@ -34,7 +34,7 @@ export function WorkspaceControls({
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <View style={styles.panel}>
+    <View style={styles.panel} dataSet={{ surface: 'panel' }}>
       <Text style={styles.heading}>Workspace</Text>
 
       <Text style={styles.body}>
@@ -131,8 +131,8 @@ const styles = StyleSheet.create({
     padding: space.sm,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#F0D2D2',
-    backgroundColor: '#FEF6F6',
+    borderColor: colors.dangerSoftBorder,
+    backgroundColor: colors.dangerSoft,
   },
   confirmText: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.dangerText },
   confirmActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.xs },

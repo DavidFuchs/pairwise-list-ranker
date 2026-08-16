@@ -17,7 +17,7 @@ export interface SortFieldPickerProps {
 export function SortFieldPicker({ candidates, schema, value, onChange }: SortFieldPickerProps) {
   if (candidates.length === 0) {
     return (
-      <View style={styles.panel}>
+      <View style={styles.panel} dataSet={{ surface: 'panel' }}>
         <Text style={styles.heading}>Label field</Text>
         <Text style={styles.prompt}>
           No fields on these objects can be used as a label. Import objects with a text or number
@@ -30,7 +30,7 @@ export function SortFieldPicker({ candidates, schema, value, onChange }: SortFie
   const hiddenFields = schema.fields.filter((field) => !field.labelCandidate).length;
 
   return (
-    <View style={styles.panel}>
+    <View style={styles.panel} dataSet={{ surface: 'panel' }}>
       <Text style={styles.heading}>Label field</Text>
 
       {value === undefined && (
@@ -100,9 +100,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.canvas,
+    backgroundColor: colors.surfaceSunken,
   },
-  optionSelected: { borderColor: colors.accent, backgroundColor: '#EEF2FF' },
+  optionSelected: { borderColor: colors.accentSoftBorder, backgroundColor: colors.accentSoft },
   optionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   field: {
     fontFamily: fonts.mono,

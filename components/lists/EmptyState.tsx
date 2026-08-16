@@ -20,7 +20,7 @@ const SAMPLES: { label: string; body: string }[] = [
 /** First-run onboarding: everything starts from pasted or imported data. */
 export function EmptyState() {
   return (
-    <View style={styles.panel}>
+    <View style={styles.panel} dataSet={{ surface: 'panel' }}>
       <Text style={styles.title}>Start with a list</Text>
       <Text style={styles.body}>
         Paste a list into the YAML, JSON, or Markdown tab of the preview pane, then press Import.

@@ -104,7 +104,19 @@ Check 1440, 1280, 1024, 820, and 390 px wide.
 - [ ] No horizontal page scrollbar at any width.
 - [ ] Long item labels and long field values wrap instead of overflowing.
 
-## 10. Motion and appearance
+## 10. Themes
+
+- [ ] With the OS set to dark, the app loads dark with no flash of light.
+- [ ] With the OS set to light, the app loads light.
+- [ ] The header control switches between System, Light, and Dark.
+- [ ] A chosen theme survives a reload, and still applies before first paint.
+- [ ] Returning to System follows the OS again, immediately.
+- [ ] Changing the theme in one tab moves other open tabs.
+- [ ] In dark mode: card gradients, the accent button, and the progress meter
+      all read correctly, and no surface is pure black or pure white.
+- [ ] Error, warning, and success text is legible in both themes.
+
+## 11. Motion and appearance
 
 - [ ] The card swap reads as a new pair, not a text flicker.
 - [ ] With "reduce motion" enabled at the OS level, transitions do not animate
