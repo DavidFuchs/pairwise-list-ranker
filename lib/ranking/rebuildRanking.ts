@@ -1,0 +1,110 @@
+import { applyComparison, createRankingState } from '@/lib/ranking/elo';
+import type { ListItem } from '@/types/list';
+import type { ComparisonEvent, RankedItem, RankingState } from '@/types/ranking';
+
+/**
+ * Ratings this close are treated as tied, so items that display the same rating
+ * are ordered by the deterministic tiebreaks below rather than by float noise.
+ */
+export const RANK_EPSILON = 0.5;
+
+export type RankingStates = Map<string, RankingState>;
+
+/**
+ * Replay the comparison history over every known item, deleted ones included:
+ * a survivor keeps the rating it earned against an item that was later removed.
+ * Events referencing unknown items are ignored so malformed saved data cannot
+ * corrupt the rebuild.
+ */
+export function replayComparisons(items: ListItem[], events: ComparisonEvent[]): RankingStates {
+  const states: RankingStates = new Map(
+    items.map((item) => [item.id, createRankingState(item.id)]),
+  );
+
+  const ordered = [...events].sort(byEventTime);
+
+  for (const event of ordered) {
+    const left = states.get(event.leftItemId);
+    const right = states.get(event.rightItemId);
+    if (!left || !right) continue;
+
+    const update = applyComparison(left, right, event.outcome, event.createdAt);
+    states.set(event.leftItemId, update.left);
+    states.set(event.rightItemId, update.right);
+  }
+
+  return states;
+}
+
+/**
+ * Order the active items. Tie order follows ARCHITECTURE.md section 6.4:
+ * rating, then head-to-head, then wins, then creation order.
+ */
+export function rankItems(
+  items: ListItem[],
+  states: RankingStates,
+  events: ComparisonEvent[],
+): RankedItem<ListItem>[] {
+  const headToHead = buildHeadToHead(events);
+
+  const active = items
+    .filter((item) => item.active)
+    .map((item) => ({ item, state: states.get(item.id) ?? createRankingState(item.id) }));
+
+  const sorted = active.sort((a, b) => {
+    const ratingGap = b.state.rating - a.state.rating;
+    if (Math.abs(ratingGap) > RANK_EPSILON) return ratingGap;
+
+    const h2h = headToHeadAdvantage(headToHead, a.item.id, b.item.id);
+    if (h2h !== 0) return h2h;
+
+    if (b.state.wins !== a.state.wins) return b.state.wins - a.state.wins;
+
+    if (a.item.createdAt !== b.item.createdAt) {
+      return a.item.createdAt < b.item.createdAt ? -1 : 1;
+    }
+    return a.item.id < b.item.id ? -1 : 1;
+  });
+
+  return sorted.map((entry, index) => ({ rank: index + 1, item: entry.item, state: entry.state }));
+}
+
+/** The displayed ranking: replay history, then order the surviving items. */
+export function rebuildRanking(
+  items: ListItem[],
+  events: ComparisonEvent[],
+): RankedItem<ListItem>[] {
+  return rankItems(items, replayComparisons(items, events), events);
+}
+
+function byEventTime(a: ComparisonEvent, b: ComparisonEvent): number {
+  if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? -1 : 1;
+  return a.id < b.id ? -1 : 1;
+}
+
+/** `wins.get(winnerId)` holds every item that winner has beaten. */
+type HeadToHead = Map<string, Map<string, number>>;
+
+function buildHeadToHead(events: ComparisonEvent[]): HeadToHead {
+  const wins: HeadToHead = new Map();
+
+  for (const event of events) {
+    if (event.outcome === 'skip') continue;
+    const leftWon = event.outcome === 'left' || event.outcome === 'left_strong';
+    const winner = leftWon ? event.leftItemId : event.rightItemId;
+    const loser = leftWon ? event.rightItemId : event.leftItemId;
+
+    const against = wins.get(winner) ?? new Map<string, number>();
+    against.set(loser, (against.get(loser) ?? 0) + 1);
+    wins.set(winner, against);
+  }
+
+  return wins;
+}
+
+/** Negative when `a` leads the head-to-head, positive when `b` does, 0 when even. */
+function headToHeadAdvantage(headToHead: HeadToHead, a: string, b: string): number {
+  const aWins = headToHead.get(a)?.get(b) ?? 0;
+  const bWins = headToHead.get(b)?.get(a) ?? 0;
+  return bWins - aWins;
+}

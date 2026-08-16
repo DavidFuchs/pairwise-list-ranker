@@ -1,0 +1,9 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    image: pairwise-list-ranker-web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    restart: unless-stopped
