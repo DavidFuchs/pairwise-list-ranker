@@ -124,7 +124,6 @@ export function RankedListPreview({
               label={selectItemLabel(entry.item, sortField)}
               meta={metaFor(entry.item, sortField)}
               rating={entry.state.rating}
-              y={offsets.current.get(id)?.y ?? 0}
               dragging={dragging?.id === id}
               target={dragging !== null && dragging.id !== id && dragging.targetIndex === index}
               onLayout={(event) => {

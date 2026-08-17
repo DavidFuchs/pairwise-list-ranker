@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { LayoutChangeEvent } from 'react-native';
 
@@ -10,8 +11,6 @@ export interface RankedRowProps {
   label: string;
   meta: string | null;
   rating: number;
-  /** Measured top of the row, used to animate it between positions. */
-  y: number;
   dragging: boolean;
   /** True while this row is the drop target under the pointer. */
   target: boolean;
@@ -26,19 +25,24 @@ export function RankedRow({
   label,
   meta,
   rating,
-  y,
   dragging,
   target,
   onLayout,
   onGrab,
   onKeyMove,
 }: RankedRowProps) {
+  // The row owns the geometry it animates from: the parent's copy exists for
+  // pointer maths and is only ever read inside event handlers.
+  const [y, setY] = useState(0);
   const offset = useFlipAnimation(id, y);
 
   return (
     <Animated.View
       role="listitem"
-      onLayout={onLayout}
+      onLayout={(event) => {
+        setY(event.nativeEvent.layout.y);
+        onLayout(event);
+      }}
       style={[
         styles.row,
         target && styles.rowTarget,
