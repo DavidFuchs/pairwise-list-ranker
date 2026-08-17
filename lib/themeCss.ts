@@ -45,6 +45,7 @@ const LIGHT_TOKENS = `
   --shadow-lift: 0 2px 4px rgba(16, 17, 20, 0.06), 0 22px 40px -18px rgba(47, 163, 24, 0.4);
   --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --ring: rgba(69, 209, 36, 0.4);
+  --overlay: rgba(22, 23, 26, 0.45);
 `;
 
 const DARK_TOKENS = `
@@ -81,6 +82,7 @@ const DARK_TOKENS = `
   --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.55), 0 26px 48px -20px rgba(57, 255, 20, 0.45);
   --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --ring: rgba(57, 255, 20, 0.5);
+  --overlay: rgba(0, 0, 0, 0.65);
 `;
 
 export const themeCss = `

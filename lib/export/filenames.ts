@@ -30,8 +30,8 @@ export function slugify(name: string): string {
 }
 
 /**
- * What to call the downloaded file. Lists are not named by the user — there is
- * nowhere to save them to — so the name comes from what is being ranked: the
+ * What to call the downloaded file. Lists are not named by the user - there is
+ * nowhere to save them to - so the name comes from what is being ranked: the
  * array's own key, or simply "list" when the document is the array.
  */
 export function downloadName(source: DataSource): string {

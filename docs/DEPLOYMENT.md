@@ -35,7 +35,7 @@ Two rules matter for a correct deployment:
    deploy is picked up on the next reload.
 
 A client-side route with no matching file should fall back to `index.html`.
-The included nginx config does all of this — see `docker/web/nginx.conf`.
+The included nginx config does all of this - see `docker/web/nginx.conf`.
 
 ## Docker
 
@@ -60,7 +60,7 @@ variables, no secrets, and no network access at runtime.
 Any static host works, because the build output is just files:
 
 - Netlify, Vercel, Cloudflare Pages, GitHub Pages, S3 + CloudFront
-- an existing nginx/Caddy/Apache virtual host — copy `dist/` into the web root
+- an existing nginx/Caddy/Apache virtual host - copy `dist/` into the web root
 
 If your host serves the app from a subpath rather than the domain root, set an
 `experiments.baseUrl` in `app.json` and rebuild; otherwise the hashed asset URLs
@@ -104,7 +104,7 @@ docker compose config
 
 Then, against the running site:
 
-1. Load the page — the browser console should be clean.
+1. Load the page - the browser console should be clean.
 2. Paste a list into the YAML tab and press Import.
 3. Make a comparison and confirm the preview reorders.
 4. Reload and confirm the list and ranking come back.

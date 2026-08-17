@@ -48,7 +48,7 @@ export function findArrayCandidates(document: unknown): CandidateScan {
         candidates.push(candidate);
       } else if (value.length >= MIN_RANKABLE) {
         warnings.push(
-          `Skipped "${formatPath(path)}" — it mixes text and objects, so it cannot be ranked as one list.`,
+          `Skipped "${formatPath(path)}" - it mixes text and objects, so it cannot be ranked as one list.`,
         );
       }
       return;

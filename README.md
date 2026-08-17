@@ -62,8 +62,8 @@ Two behaviours worth knowing:
 
 ## Documentation
 
-- [PLAN.md](PLAN.md) — implementation plan by phase
-- [ARCHITECTURE.md](ARCHITECTURE.md) — data model, ranking design, formats
-- [UX.md](UX.md) — layout, visual system, interaction model
-- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — building, hosting, and where user data lives
-- [docs/QA.md](docs/QA.md) — manual QA pass before a release
+- [PLAN.md](PLAN.md) - implementation plan by phase
+- [ARCHITECTURE.md](ARCHITECTURE.md) - data model, ranking design, formats
+- [UX.md](UX.md) - layout, visual system, interaction model
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - building, hosting, and where user data lives
+- [docs/QA.md](docs/QA.md) - manual QA pass before a release

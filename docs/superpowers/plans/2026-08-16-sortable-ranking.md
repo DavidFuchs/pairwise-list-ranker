@@ -2,13 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let the user drag the ranked list into the order they want — which starts a fresh ranking session from that order — and rebuild the comparison cards so the card itself is the choice.
+**Goal:** Let the user drag the ranked list into the order they want - which starts a fresh ranking session from that order - and rebuild the comparison cards so the card itself is the choice.
 
 **Architecture:** The ranking stays a pure derivation from comparison history. A drag commits by rewriting the source document's array order and running it through `startRanking`, the existing fresh-import path, so no override layer is added. The comparison card's root becomes the pressable; the two footer buttons are replaced by the card itself plus a small circular 🔥 button.
 
 **Tech Stack:** Expo Router, React Native Web, Zustand, the `Animated` API (no new dependencies), Vitest + React Testing Library, Playwright.
 
-**Spec:** `docs/superpowers/specs/2026-08-16-sortable-ranking-and-card-redesign-design.md` — read it before starting.
+**Spec:** `docs/superpowers/specs/2026-08-16-sortable-ranking-and-card-redesign-design.md` - read it before starting.
 
 ## Global Constraints
 
@@ -25,7 +25,7 @@
 
 | File | Responsibility |
 | --- | --- |
-| `lib/ranking/reorder.ts` (new) | `moveItem`, `dropIndexFor`, `RowOffset` — pure, no DOM |
+| `lib/ranking/reorder.ts` (new) | `moveItem`, `dropIndexFor`, `RowOffset` - pure, no DOM |
 | `lib/hooks/useFlipAnimation.ts` (new) | measure → diff → animate to zero, per row |
 | `components/preview/RankedRow.tsx` (new) | one row: grip, label, meta, rating, its own animation |
 | `components/comparison/StrongChoiceButton.tsx` (new) | the circular 🔥 |
@@ -140,7 +140,7 @@ describe('dropIndexFor', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/ranking/reorder.test.ts`
-Expected: FAIL — `Failed to resolve import "@/lib/ranking/reorder"`.
+Expected: FAIL - `Failed to resolve import "@/lib/ranking/reorder"`.
 
 - [ ] **Step 3: Implement**
 
@@ -310,7 +310,7 @@ describe('reorderAndRestart', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/state/useListStore.test.ts`
-Expected: FAIL — `reorderAndRestart is not a function`.
+Expected: FAIL - `reorderAndRestart is not a function`.
 
 - [ ] **Step 3: Implement**
 
@@ -390,9 +390,9 @@ git commit -m "feat: reordering by hand restarts ranking from that order"
 
 **Interfaces:**
 - Consumes: `useReducedMotion` (`@/lib/hooks/useReducedMotion`), `motion` tokens (`@/lib/theme`).
-- Produces: `useFlipAnimation(key: string, y: number): Animated.Value` — a `translateY` that starts at the distance the row just moved and animates to zero.
+- Produces: `useFlipAnimation(key: string, y: number): Animated.Value` - a `translateY` that starts at the distance the row just moved and animates to zero.
 
-**How FLIP works here:** each row reports its measured `y`. When that `y` changes, the row is already painted in its new place, so the row is offset *backwards* by the difference and animated to zero — it appears to slide from where it was.
+**How FLIP works here:** each row reports its measured `y`. When that `y` changes, the row is already painted in its new place, so the row is offset *backwards* by the difference and animated to zero - it appears to slide from where it was.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -483,7 +483,7 @@ describe('useFlipAnimation', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/component/useFlipAnimation.test.tsx`
-Expected: FAIL — `Failed to resolve import "@/lib/hooks/useFlipAnimation"`.
+Expected: FAIL - `Failed to resolve import "@/lib/hooks/useFlipAnimation"`.
 
 - [ ] **Step 3: Implement**
 
@@ -564,7 +564,7 @@ git commit -m "feat: add a FLIP animation hook for list reordering"
 - Consumes: `moveItem`, `dropIndexFor`, `RowOffset` (Task 1); `useFlipAnimation` (Task 3); `selectItemLabel` (`@/lib/state/selectors`).
 - Produces:
   - `<RankedRow entry index label meta dragging onLayout onGrab onKeyMove />`
-  - `<RankedListPreview ranking sortField comparisonCount onReorder />` — `onReorder: (itemIds: string[]) => void`
+  - `<RankedListPreview ranking sortField comparisonCount onReorder />` - `onReorder: (itemIds: string[]) => void`
 
 **Interaction contract:** the grip starts a drag; the pointer moves it; release commits. `Alt+ArrowUp` / `Alt+ArrowDown` on a focused row moves it one slot. Both routes end at the same place: a pending order held in local state, which is either applied straight away (no comparisons to lose) or held behind the confirmation.
 
@@ -722,7 +722,7 @@ describe('RankedListPreview', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/component/RankedListPreview.test.tsx`
-Expected: FAIL — the component takes no `comparisonCount` or `onReorder`, and has no grips.
+Expected: FAIL - the component takes no `comparisonCount` or `onReorder`, and has no grips.
 
 - [ ] **Step 3: Write the row**
 
@@ -1143,7 +1143,7 @@ git commit -m "feat: drag or keyboard-arrange the ranked list"
 
 **Interfaces:**
 - Consumes: `useReducedMotion`, theme tokens.
-- Produces: `<StrongChoiceButton label onPress />` — a 40px circular 🔥.
+- Produces: `<StrongChoiceButton label onPress />` - a 40px circular 🔥.
 - `ItemCardProps` is unchanged: the same `onChoose`, `onChooseStrong`, and delete callbacks, driven from new places on the card.
 
 **The propagation rule:** the card's root is the pressable. Every nested control calls `stopPropagation` on the press event before doing its own work, or pressing *Show details* would also cast a vote. On react-native-web the press event exposes `stopPropagation()`.
@@ -1236,7 +1236,7 @@ under test is `{ title: 'Arrival', year: 2016 }` with `sortField="title"`.
 - [ ] **Step 2: Run the tests to verify they fail**
 
 Run: `npx vitest run tests/component/ItemCard.test.tsx`
-Expected: FAIL — no `Choose Arrival` role button on the card root; the flame does not exist.
+Expected: FAIL - no `Choose Arrival` role button on the card root; the flame does not exist.
 
 - [ ] **Step 3: Build the flame**
 
@@ -1517,7 +1517,7 @@ pattern in `tests/component/RankRail.test.tsx`.
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/component/ComparisonDeck.test.tsx`
-Expected: FAIL — there is no `or` in the gutter.
+Expected: FAIL - there is no `or` in the gutter.
 
 - [ ] **Step 3: Implement**
 
@@ -1540,8 +1540,8 @@ In `components/comparison/ComparisonDeck.tsx`:
 
    placed between the two `<ItemCard />` elements.
 
-3. Replace the keyboard hint line beneath the cards — the cards now carry their
-   own keycaps — with the shortcut that has nowhere else to live:
+3. Replace the keyboard hint line beneath the cards - the cards now carry their
+   own keycaps - with the shortcut that has nowhere else to live:
 
 ```tsx
       <Text style={styles.hint}>Hold shift while choosing for “much better”. S skips.</Text>

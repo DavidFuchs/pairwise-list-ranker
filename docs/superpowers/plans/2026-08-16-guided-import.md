@@ -8,7 +8,7 @@
 
 **Tech Stack:** Expo Router, React Native Web, Zustand, Zod, the `yaml` package, Vitest + React Testing Library, Playwright.
 
-**Spec:** `docs/superpowers/specs/2026-08-16-guided-import-design.md` — read it before starting. Every task below implements a section of it.
+**Spec:** `docs/superpowers/specs/2026-08-16-guided-import-design.md` - read it before starting. Every task below implements a section of it.
 
 ## Global Constraints
 
@@ -20,34 +20,34 @@
 - **Every commit message ends with the trailer** `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>` on its own line after a blank line.
 - **Accessibility:** every interactive element needs an `accessibilityLabel`. Selected states use `aria-pressed` or `aria-checked`. Tests query by role and accessible name, following `tests/component/SortFieldPicker.test.tsx`.
 - **The workspace `name` is never written into the user's document.** It titles the header and the download filename only.
-- **Tasks 1–10 are additive** — the existing app keeps compiling and its tests keep passing. Tasks 11 and 12 are the switchover: 11 replaces the store, 12 rewires the screens and deletes the old model.
+- **Tasks 1–10 are additive** - the existing app keeps compiling and its tests keep passing. Tasks 11 and 12 are the switchover: 11 replaces the store, 12 rewires the screens and deletes the old model.
 
 ## File Structure
 
-**New — `lib/import/` (pure, no React, no store access)**
+**New - `lib/import/` (pure, no React, no store access)**
 
 | File | Responsibility |
 | --- | --- |
 | `types.ts` | `ParseIssue`, `ParseResult<T>` (moved out of the deleted `listSchemas.ts`) |
 | `text.ts` | `normalizeText`, `isBlank` (moved out of the deleted `canonical.ts`) |
-| `sniff.ts` | `sniffFormat`, `parseSource` — text to a parsed value |
-| `plainList.ts` | `parsePlainList` — one item per line, markers stripped |
+| `sniff.ts` | `sniffFormat`, `parseSource` - text to a parsed value |
+| `plainList.ts` | `parsePlainList` - one item per line, markers stripped |
 | `arrayCandidates.ts` | `findArrayCandidates`, `entriesAtPath`, `formatPath` |
 | `labelField.ts` | moved `sortFieldRules.ts`, renamed to label-field vocabulary |
 | `positionField.ts` | `detectPositionFields`, `preferredPositionField` |
-| `roles.ts` | `resolveRoles` — auto-pick label and position fields |
-| `analyze.ts` | `analyzeSource` — the data screen's whole read of a text blob |
-| `deepEqual.ts` | `deepEqual` — structural equality for diffing |
-| `diff.ts` | `diffImport` — match re-imported entries to existing items |
+| `roles.ts` | `resolveRoles` - auto-pick label and position fields |
+| `analyze.ts` | `analyzeSource` - the data screen's whole read of a text blob |
+| `deepEqual.ts` | `deepEqual` - structural equality for diffing |
+| `diff.ts` | `diffImport` - match re-imported entries to existing items |
 
-**New — `lib/export/`**
+**New - `lib/export/`**
 
 | File | Responsibility |
 | --- | --- |
 | `buildExport.ts` | `buildExportDocument`, `buildExport`, `setAtPath` |
 | `filenames.ts` | `slugify`, `exportFilename`, `mimeTypeFor`, `extensionFor` |
 
-**New — components and routes**
+**New - components and routes**
 
 | File | Responsibility |
 | --- | --- |
@@ -65,7 +65,7 @@
 | `components/preview/ReadOnlyCode.tsx` | monospace scroll block |
 | `app/rank.tsx` | the comparison route |
 
-`app/_layout.tsx` needs **no change** — expo-router registers `app/rank.tsx` from the filename.
+`app/_layout.tsx` needs **no change** - expo-router registers `app/rank.tsx` from the filename.
 
 **Deleted in Task 12:** all of `lib/formats/`, `lib/validation/listSchemas.ts`, `lib/validation/sortFieldRules.ts`, `components/lists/`, `components/editor/`, and their tests.
 
@@ -179,7 +179,7 @@ describe('parseSource', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/import/sniff.test.ts`
-Expected: FAIL — `Failed to resolve import "@/lib/import/sniff"`.
+Expected: FAIL - `Failed to resolve import "@/lib/import/sniff"`.
 
 - [ ] **Step 3: Create the shared types**
 
@@ -355,7 +355,7 @@ function parseYamlSource(source: string): ParseResult<unknown> {
 }
 ```
 
-Create a placeholder `lib/import/plainList.ts` so this compiles — Task 2 replaces its body with the tested implementation:
+Create a placeholder `lib/import/plainList.ts` so this compiles - Task 2 replaces its body with the tested implementation:
 
 ```ts
 export function parsePlainList(text: string): string[] {
@@ -390,7 +390,7 @@ git commit -m "feat: add source types and format detection"
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `parsePlainList(text: string): string[]` — one item per non-blank line, with a single leading list marker stripped.
+- Produces: `parsePlainList(text: string): string[]` - one item per non-blank line, with a single leading list marker stripped.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -420,7 +420,7 @@ describe('parsePlainList', () => {
   });
 
   it('strips en dashes, em dashes, and blockquote markers', () => {
-    expect(parsePlainList('– Alien\n— Arrival\n> Solaris')).toEqual([
+    expect(parsePlainList('– Alien\n- Arrival\n> Solaris')).toEqual([
       'Alien',
       'Arrival',
       'Solaris',
@@ -471,7 +471,7 @@ describe('parsePlainList', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/import/plainList.test.ts`
-Expected: FAIL — the placeholder does not strip markers, so the bullet tests fail.
+Expected: FAIL - the placeholder does not strip markers, so the bullet tests fail.
 
 - [ ] **Step 3: Implement the parser**
 
@@ -485,7 +485,7 @@ import { normalizeText } from '@/lib/import/text';
  * what keeps `-40 below zero` and `1984` intact while still reading every
  * common bullet and numbering style as a list.
  */
-const MARKER = /^(?:[-*+•–—>]|\d+[.)]|\(\d+\))\s+/;
+const MARKER = /^(?:[-*+•–->]|\d+[.)]|\(\d+\))\s+/;
 const TASK_BOX = /^\[[ xX]\]\s+/;
 
 export function parsePlainList(text: string): string[] {
@@ -535,7 +535,7 @@ git commit -m "feat: parse plain lists with any common bullet style"
   - `interface CandidateScan { candidates: ArrayCandidate[]; warnings: string[] }`
   - `findArrayCandidates(document: unknown): CandidateScan`
   - `entriesAtPath(document: unknown, path: string[]): unknown[]`
-  - `formatPath(path: string[]): string` — `[]` renders as `the list`, `['a','b']` as `a.b`
+  - `formatPath(path: string[]): string` - `[]` renders as `the list`, `['a','b']` as `a.b`
   - `MIN_RANKABLE = 2`
   - `interface SourceAnalysis { format: SourceFormat; document: unknown; candidates: ArrayCandidate[]; warnings: string[]; issues: ParseIssue[] }`
   - `analyzeSource(rawText: string, override: SourceFormat | 'auto'): SourceAnalysis`
@@ -653,7 +653,7 @@ describe('formatPath', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/import/arrayCandidates.test.ts`
-Expected: FAIL — `Failed to resolve import "@/lib/import/arrayCandidates"`.
+Expected: FAIL - `Failed to resolve import "@/lib/import/arrayCandidates"`.
 
 - [ ] **Step 3: Implement array discovery**
 
@@ -706,7 +706,7 @@ export function findArrayCandidates(document: unknown): CandidateScan {
         candidates.push(candidate);
       } else if (value.length >= MIN_RANKABLE) {
         warnings.push(
-          `Skipped "${formatPath(path)}" — it mixes text and objects, so it cannot be ranked as one list.`,
+          `Skipped "${formatPath(path)}" - it mixes text and objects, so it cannot be ranked as one list.`,
         );
       }
       return;
@@ -824,7 +824,7 @@ describe('analyzeSource', () => {
 - [ ] **Step 6: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/import/analyze.test.ts`
-Expected: FAIL — `Failed to resolve import "@/lib/import/analyze"`.
+Expected: FAIL - `Failed to resolve import "@/lib/import/analyze"`.
 
 - [ ] **Step 7: Implement `analyzeSource`**
 
@@ -879,7 +879,7 @@ git commit -m "feat: discover rankable arrays in an imported document"
 
 ---
 
-### Task 4: Field roles — label and position
+### Task 4: Field roles - label and position
 
 **Files:**
 - Create: `lib/import/labelField.ts` (moved from `lib/validation/sortFieldRules.ts`), `lib/import/positionField.ts`, `lib/import/roles.ts`
@@ -899,7 +899,7 @@ git commit -m "feat: discover rankable arrays in an imported document"
   - `preferredPositionField(entries: unknown[]): string | undefined`
   - `resolveRoles(entries: unknown[], previous?: FieldRoles): FieldRoles`
 
-**Note on the move:** `sortFieldRules.ts` keeps its behaviour exactly. Only the vocabulary changes, because "sort field" meant two different things — the field we display, and an ordering. The old file and its test are deleted in this task, not in Task 11, because nothing else about them changes: their consumers are repointed in the same commit.
+**Note on the move:** `sortFieldRules.ts` keeps its behaviour exactly. Only the vocabulary changes, because "sort field" meant two different things - the field we display, and an ordering. The old file and its test are deleted in this task, not in Task 11, because nothing else about them changes: their consumers are repointed in the same commit.
 
 - [ ] **Step 1: Move the module and rename its vocabulary**
 
@@ -916,7 +916,7 @@ In `lib/import/labelField.ts`, rename exactly these identifiers, leaving every f
 - `isUsableSortField` → `isUsableLabelField`
 - `PREFERRED_SORT_FIELDS` → `PREFERRED_LABEL_FIELDS`
 
-`ScalarType`, `ObjectSchemaField`, `ObjectSchemaHint`, and `describeObjectSchema` keep their names. The import of `ComplexItemValue` from `@/types/list` stays as it is — that type survives Task 11.
+`ScalarType`, `ObjectSchemaField`, `ObjectSchemaHint`, and `describeObjectSchema` keep their names. The import of `ComplexItemValue` from `@/types/list` stays as it is - that type survives Task 11.
 
 Apply the same renames throughout `tests/unit/import/labelField.test.ts`, and repoint its import to `@/lib/import/labelField`.
 
@@ -1020,7 +1020,7 @@ describe('preferredPositionField', () => {
 - [ ] **Step 5: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/import/positionField.test.ts`
-Expected: FAIL — `Failed to resolve import "@/lib/import/positionField"`.
+Expected: FAIL - `Failed to resolve import "@/lib/import/positionField"`.
 
 - [ ] **Step 6: Implement position-field detection**
 
@@ -1154,7 +1154,7 @@ describe('resolveRoles', () => {
 - [ ] **Step 9: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/import/roles.test.ts`
-Expected: FAIL — `Failed to resolve import "@/lib/import/roles"`.
+Expected: FAIL - `Failed to resolve import "@/lib/import/roles"`.
 
 - [ ] **Step 10: Implement `resolveRoles`**
 
@@ -1419,7 +1419,7 @@ describe('buildExport', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/export/buildExport.test.ts`
-Expected: FAIL — `Failed to resolve import "@/lib/export/buildExport"`.
+Expected: FAIL - `Failed to resolve import "@/lib/export/buildExport"`.
 
 - [ ] **Step 3: Implement the exporter**
 
@@ -1569,7 +1569,7 @@ describe('extensionFor and mimeTypeFor', () => {
 - [ ] **Step 6: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/export/filenames.test.ts`
-Expected: FAIL — `Failed to resolve import "@/lib/export/filenames"`.
+Expected: FAIL - `Failed to resolve import "@/lib/export/filenames"`.
 
 - [ ] **Step 7: Implement the filename helpers**
 
@@ -1778,7 +1778,7 @@ describe('diffImport', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/import/diff.test.ts`
-Expected: FAIL — `Failed to resolve import "@/lib/import/deepEqual"`.
+Expected: FAIL - `Failed to resolve import "@/lib/import/deepEqual"`.
 
 - [ ] **Step 3: Implement structural equality**
 
@@ -2009,7 +2009,7 @@ describe('parseWorkspaceSnapshot', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/persistence/workspaceSnapshot.test.ts`
-Expected: FAIL — `Failed to resolve import "@/lib/persistence/workspaceSnapshot"`.
+Expected: FAIL - `Failed to resolve import "@/lib/persistence/workspaceSnapshot"`.
 
 - [ ] **Step 3: Implement the snapshot type and schema**
 
@@ -2237,7 +2237,7 @@ describe('createWorkspaceStorage', () => {
 - [ ] **Step 6: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/persistence/workspaceStorage.test.ts`
-Expected: FAIL — `Failed to resolve import "@/lib/persistence/workspaceStorage"`.
+Expected: FAIL - `Failed to resolve import "@/lib/persistence/workspaceStorage"`.
 
 - [ ] **Step 7: Implement the storage adapter**
 
@@ -2388,9 +2388,9 @@ git commit -m "feat: store the source document in a version 2 snapshot"
   - `interface ReadinessInput { candidates: ArrayCandidate[]; selectedPath: string[] | null; entries: unknown[]; roles: FieldRoles; hasIssues: boolean }`
   - `interface Readiness { ready: boolean; reason?: string }`
   - `describeReadiness(input: ReadinessInput): Readiness`
-  - `<ArrayPicker candidates value onChange />` — `value: string[] | null`, `onChange: (path: string[]) => void`
-  - `<LabelPicker candidates schema value onChange />` — `onChange: (field: string) => void`
-  - `<PositionPicker candidates value onChange />` — `onChange: (field: string | undefined) => void`
+  - `<ArrayPicker candidates value onChange />` - `value: string[] | null`, `onChange: (path: string[]) => void`
+  - `<LabelPicker candidates schema value onChange />` - `onChange: (field: string) => void`
+  - `<PositionPicker candidates value onChange />` - `onChange: (field: string | undefined) => void`
 
 These components are presentational: they take props and report choices. No store access, so Task 11 can wire them without touching them.
 
@@ -2471,7 +2471,7 @@ describe('describeReadiness', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/import/readiness.test.ts`
-Expected: FAIL — `Failed to resolve import "@/lib/import/readiness"`.
+Expected: FAIL - `Failed to resolve import "@/lib/import/readiness"`.
 
 - [ ] **Step 3: Implement readiness**
 
@@ -2545,7 +2545,7 @@ git mv components/lists/SortFieldPicker.tsx components/data/LabelPicker.tsx
 git mv tests/component/SortFieldPicker.test.tsx tests/component/LabelPicker.test.tsx
 ```
 
-In `components/data/LabelPicker.tsx`, rename `SortFieldPicker` to `LabelPicker`, `SortFieldPickerProps` to `LabelPickerProps`, and the `SortFieldCandidate` type import to `LabelFieldCandidate` from `@/lib/import/labelField`. Everything else — the markup, the `Label items by X` accessible labels, the styles — stays exactly as it is.
+In `components/data/LabelPicker.tsx`, rename `SortFieldPicker` to `LabelPicker`, `SortFieldPickerProps` to `LabelPickerProps`, and the `SortFieldCandidate` type import to `LabelFieldCandidate` from `@/lib/import/labelField`. Everything else - the markup, the `Label items by X` accessible labels, the styles - stays exactly as it is.
 
 Apply the same renames in `tests/component/LabelPicker.test.tsx`.
 
@@ -2703,7 +2703,7 @@ describe('PositionPicker', () => {
 - [ ] **Step 8: Run the tests to verify they fail**
 
 Run: `npx vitest run tests/component/ArrayPicker.test.tsx tests/component/PositionPicker.test.tsx`
-Expected: FAIL — neither component module resolves.
+Expected: FAIL - neither component module resolves.
 
 - [ ] **Step 9: Implement the array picker**
 
@@ -2901,7 +2901,7 @@ git commit -m "feat: add the array, label, and position pickers"
 **Interfaces:**
 - Consumes: `SourceAnalysis` (Task 3); `describeReadiness` (Task 8); `ArrayPicker`, `LabelPicker`, `PositionPicker` (Task 8); `collectLabelFieldCandidates`, `describeObjectSchema`, `detectPositionFields` (Task 4); `entriesAtPath` (Task 3); `ParseIssue`, `SourceFormat`, `FieldRoles` (Task 1); `Button` from `@/components/ui/Button`.
 - Produces:
-  - `<FileDrop onFile />` — `onFile: (text: string) => void`
+  - `<FileDrop onFile />` - `onFile: (text: string) => void`
   - `<SourceInput value onChange override onOverrideChange format issues />`
   - `<FoundPanel analysis selectedPath roles entries ctaLabel onSelectPath onRolesChange onSubmit />`
 
@@ -2997,7 +2997,7 @@ describe('SourceInput', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/component/SourceInput.test.tsx`
-Expected: FAIL — `Failed to resolve import "@/components/data/SourceInput"`.
+Expected: FAIL - `Failed to resolve import "@/components/data/SourceInput"`.
 
 - [ ] **Step 3: Implement the file drop**
 
@@ -3361,7 +3361,7 @@ describe('FoundPanel', () => {
 - [ ] **Step 7: Run the test to verify it fails**
 
 Run: `npx vitest run tests/component/FoundPanel.test.tsx`
-Expected: FAIL — `Failed to resolve import "@/components/data/FoundPanel"`.
+Expected: FAIL - `Failed to resolve import "@/components/data/FoundPanel"`.
 
 - [ ] **Step 8: Implement the found panel**
 
@@ -3535,8 +3535,8 @@ git commit -m "feat: add the data screen's input and found panel"
 **Interfaces:**
 - Consumes: `PreviewTab`, `SourceFormat` (Task 1); `mimeTypeFor` (Task 5); `copyText`, `downloadText` from `@/lib/browser/exportActions`; `Button` from `@/components/ui/Button`.
 - Produces:
-  - `<PreviewTabs tab tabs onChange />` — `tabs: PreviewTab[]`, `onChange: (tab: PreviewTab) => void`
-  - `<ExportToolbar format text filename />` — copy and download only
+  - `<PreviewTabs tab tabs onChange />` - `tabs: PreviewTab[]`, `onChange: (tab: PreviewTab) => void`
+  - `<ExportToolbar format text filename />` - copy and download only
   - `<ReadOnlyCode text label />`
   - `<RankRail name context progress removedCount onRename onEditData onStartOver />`
 
@@ -3638,7 +3638,7 @@ describe('ExportToolbar', () => {
 - [ ] **Step 2: Run the tests to verify they fail**
 
 Run: `npx vitest run tests/component/PreviewTabs.test.tsx tests/component/ExportToolbar.test.tsx`
-Expected: FAIL — neither module resolves.
+Expected: FAIL - neither module resolves.
 
 - [ ] **Step 3: Implement the preview tabs**
 
@@ -3916,7 +3916,7 @@ describe('RankRail', () => {
 - [ ] **Step 7: Run the test to verify it fails**
 
 Run: `npx vitest run tests/component/RankRail.test.tsx`
-Expected: FAIL — `Failed to resolve import "@/components/rank/RankRail"`.
+Expected: FAIL - `Failed to resolve import "@/components/rank/RankRail"`.
 
 - [ ] **Step 8: Implement the rank rail**
 
@@ -4064,7 +4064,7 @@ git commit -m "feat: add the rank screen's rail and read-only preview parts"
 
 ---
 
-### Task 11: The switchover — store, selectors, and the draft hook
+### Task 11: The switchover - store, selectors, and the draft hook
 
 **This is the one task that is not additive.** It replaces the model the app runs on. The repo does not typecheck between Step 3 and Step 11, which is expected; Task 12 wires the screens and restores green. Work through the steps in order and do not stop halfway.
 
@@ -4319,7 +4319,7 @@ describe('renaming', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/unit/state/useListStore.test.ts`
-Expected: FAIL — `startRanking` does not exist on the store.
+Expected: FAIL - `startRanking` does not exist on the store.
 
 - [ ] **Step 3: Rewrite the store**
 
@@ -4697,7 +4697,7 @@ describe('selectAvailableTabs', () => {
 
 - [ ] **Step 5: Rewrite the selectors**
 
-In `lib/state/selectors.ts`, keep `selectWorkspaceView`, `selectRanking`, `selectCurrentPair`, `selectProgress`, and the memoization cache exactly as they are. Delete `selectDocument`, `selectPreviewText`, `selectObjectValues`, `selectSortFieldOptions`, `selectObjectSchema`, `selectSortFieldCandidates`, and `selectNeedsSortField` — the found panel derives those itself now. Rename the `sortField` parameter of `selectItemLabel` to `labelField`, leaving its body unchanged.
+In `lib/state/selectors.ts`, keep `selectWorkspaceView`, `selectRanking`, `selectCurrentPair`, `selectProgress`, and the memoization cache exactly as they are. Delete `selectDocument`, `selectPreviewText`, `selectObjectValues`, `selectSortFieldOptions`, `selectObjectSchema`, `selectSortFieldCandidates`, and `selectNeedsSortField` - the found panel derives those itself now. Rename the `sortField` parameter of `selectItemLabel` to `labelField`, leaving its body unchanged.
 
 Replace the imports at the top with:
 
@@ -4868,7 +4868,7 @@ describe('useSourceDraft', () => {
 - [ ] **Step 8: Run the test to verify it fails**
 
 Run: `npx vitest run tests/component/useSourceDraft.test.tsx`
-Expected: FAIL — `Failed to resolve import "@/lib/hooks/useSourceDraft"`.
+Expected: FAIL - `Failed to resolve import "@/lib/hooks/useSourceDraft"`.
 
 - [ ] **Step 9: Implement the draft hook**
 
@@ -5019,7 +5019,7 @@ git commit -m "feat: rebuild the store around the user's source document"
 - Produces:
   - `<AppShell listName statusText onReset? headerAction? rail? stage preview />`
   - `<PreviewPane tab tabs onTabChange ranking labelField exportText filename format />`
-  - route `/` — the data screen; route `/rank` — the comparison screen
+  - route `/` - the data screen; route `/rank` - the comparison screen
 
 - [ ] **Step 1: Trim `types/list.ts`**
 
@@ -5047,7 +5047,7 @@ export interface AppShellProps {
 }
 ```
 
-Destructure `onReset` and `headerAction` with no default, render `{headerAction}` immediately before `<ThemeToggle />`, and wrap the existing reset block so it renders only when `onReset !== undefined`. Where the rail is laid out, render the rail column only when `rail` is truthy — it already handles `null`, so guard on `rail != null`. Leave the flexbox layout, the styles, and everything else untouched.
+Destructure `onReset` and `headerAction` with no default, render `{headerAction}` immediately before `<ThemeToggle />`, and wrap the existing reset block so it renders only when `onReset !== undefined`. Where the rail is laid out, render the rail column only when `rail` is truthy - it already handles `null`, so guard on `rail != null`. Leave the flexbox layout, the styles, and everything else untouched.
 
 - [ ] **Step 3: Rewrite the preview pane**
 
@@ -5674,7 +5674,7 @@ describe('ApplySummary', () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/component/ApplySummary.test.tsx`
-Expected: FAIL — `Failed to resolve import "@/components/data/ApplySummary"`.
+Expected: FAIL - `Failed to resolve import "@/components/data/ApplySummary"`.
 
 - [ ] **Step 3: Implement the summary**
 
@@ -5704,12 +5704,12 @@ export function ApplySummary({ diff, onCancel, onConfirm }: ApplySummaryProps) {
       <Text style={styles.title}>Applying your edits</Text>
 
       <Text style={styles.line}>
-        {`${diff.kept.length} ${plural(diff.kept.length)} unchanged — rankings kept`}
+        {`${diff.kept.length} ${plural(diff.kept.length)} unchanged - rankings kept`}
       </Text>
 
       {diff.added.length > 0 && (
         <Text style={styles.line}>
-          {`${diff.added.length} ${plural(diff.added.length)} added — not yet ranked`}
+          {`${diff.added.length} ${plural(diff.added.length)} added - not yet ranked`}
         </Text>
       )}
 
@@ -6008,7 +6008,7 @@ test('resumes after a reload and can start over', async ({ page }) => {
 });
 ```
 
-The second test relies on the nested document having exactly one rankable array, so no array choice is needed — `movies` is auto-selected and `title` is the obvious label.
+The second test relies on the nested document having exactly one rankable array, so no array choice is needed - `movies` is auto-selected and `title` is the obvious label.
 
 - [ ] **Step 2: Run the end-to-end suite**
 

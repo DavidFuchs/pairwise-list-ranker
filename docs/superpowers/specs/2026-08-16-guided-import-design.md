@@ -22,7 +22,7 @@ app-defined `ListDocument`:
 
 `title` is required. `kind` must be declared. An app-invented Markdown dialect
 is treated as a first-class format. Most importantly, the imported document is
-**discarded** at the boundary — `workspaceFromDocument` maps it into
+**discarded** at the boundary - `workspaceFromDocument` maps it into
 `ListItem[]` and export re-serializes from the app's shape. A user who imports
 
 ```yaml
@@ -46,7 +46,7 @@ the rank) are annotations on top of it.
 | --- | --- |
 | What does export return for a complex import? | The original document verbatim, with the chosen array reordered in place |
 | Does the user pick an id/key field? | No. Array position carries the rank |
-| Is there a second field role? | Yes — an optional *position field*, rewritten `1..N` on export |
+| Is there a second field role? | Yes - an optional *position field*, rewritten `1..N` on export |
 | The app-defined Markdown dialect? | Deleted, import and export |
 | Flow shape? | Two routes: `/` data screen with inline config, `/rank` comparison |
 | Is the preview rail editable? | No. Read-only preview and export; edits go through the data screen |
@@ -94,8 +94,8 @@ interface Workspace {
 }
 ```
 
-`ListItem` keeps its current shape — `id`, `listId`, `value`, `active`,
-`createdAt`, `updatedAt` — where `value` is an entry of the ranked array as
+`ListItem` keeps its current shape - `id`, `listId`, `value`, `active`,
+`createdAt`, `updatedAt` - where `value` is an entry of the ranked array as
 imported. `ComparisonEvent`, `RankingState`, and everything in `lib/ranking/`
 are unchanged.
 
@@ -103,7 +103,7 @@ are unchanged.
 
 - `ListKind` (`'primitive' | 'object'`). Whether entries are scalars or objects
   is *derived* from the data, not declared by the user.
-- `WorkspaceList.sortField` — becomes `roles.labelField`. The word *sort* was
+- `WorkspaceList.sortField` - becomes `roles.labelField`. The word *sort* was
   overloaded: it meant both "the field we display" and "an ordering". The two
   roles are now named separately.
 - `ListDocument`, `ListDocumentItem`, `LIST_DOCUMENT_VERSION`,
@@ -122,7 +122,7 @@ field, which forced a concept onto data that had no room for it.
 
 New module `lib/import/`, all pure functions, no React and no store access.
 
-### 4.1 Format detection — `sniffFormat(text): SourceFormat`
+### 4.1 Format detection - `sniffFormat(text): SourceFormat`
 
 1. `JSON.parse` succeeds → `json`.
 2. YAML parse succeeds *and* yields an object or array → `yaml`.
@@ -140,19 +140,19 @@ Arrival: 2016
 is a YAML mapping with no rankable array, but the user may have meant two
 items. The override is the escape hatch; without it that input is a dead end.
 
-### 4.2 Plain lists — `parsePlainList(text): string[]`
+### 4.2 Plain lists - `parsePlainList(text): string[]`
 
 Split on newlines, trim, drop blank lines, then strip **one** leading marker
 per line, and **only when whitespace follows it**:
 
-- bullets: `-` `*` `+` `•` `–` `—` `>`
+- bullets: `-` `*` `+` `•` `–` `-` `>`
 - numbers: `1.` `1)` `(1)`
 - task boxes: `- [ ]` `- [x]`
 
 The whitespace requirement is what keeps `-40 below zero` intact. No other
 transformation is applied: the remaining text is the item, verbatim.
 
-### 4.3 Array discovery — `findArrayCandidates(document): ArrayCandidate[]`
+### 4.3 Array discovery - `findArrayCandidates(document): ArrayCandidate[]`
 
 ```ts
 interface ArrayCandidate {
@@ -168,7 +168,7 @@ maximum depth of 5. An array qualifies when it has at least 2 entries and its
 entries are uniformly objects or uniformly scalars.
 
 Not descending into elements is what prevents nonsense candidates like
-`movies.0.tags` — a per-item field, not a list the user means to rank.
+`movies.0.tags` - a per-item field, not a list the user means to rank.
 
 Mixed-type arrays are excluded and reported as a non-blocking warning naming
 the path, so the user understands why an array they can see is not offered.
@@ -186,13 +186,13 @@ only fields with full coverage and uniformly string values auto-select, with
 
 Scalar-entry arrays have no label field. The entry is the label.
 
-### 4.5 Position field — `detectPositionField(entries)`
+### 4.5 Position field - `detectPositionField(entries)`
 
 Offers every field whose value is numeric across all entries that carry it.
 Preselects one whose name matches `/^(order|rank|position|index|sort|priority|seq(uence)?)$/i`.
 Otherwise defaults to none: writing into the user's data is opt-in.
 
-Not offered for scalar-entry arrays — there is nowhere to write.
+Not offered for scalar-entry arrays - there is nowhere to write.
 
 ### 4.6 Zero-decision path
 
@@ -202,7 +202,7 @@ and offers `Start ranking`.
 
 ## 5. Screens
 
-### 5.1 `/` — the data screen
+### 5.1 `/` - the data screen
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -234,7 +234,7 @@ on a debounce as the text changes.
 The found-panel re-renders live on every choice: the label picker shows the
 actual string that will appear on the cards.
 
-Warnings are non-blocking and specific — a mixed-type array was excluded, N
+Warnings are non-blocking and specific - a mixed-type array was excluded, N
 entries are missing the label field, N labels are duplicates.
 
 The CTA disables only when something is genuinely unresolved, and states which:
@@ -244,7 +244,7 @@ with no label field chosen.
 Parse failures keep the user's text intact and report a line number when the
 format can pinpoint one.
 
-### 5.2 `/rank` — the comparison screen
+### 5.2 `/rank` - the comparison screen
 
 The existing `AppShell` with its rails re-tasked.
 
@@ -253,7 +253,7 @@ The existing `AppShell` with its rails re-tasked.
 `Start over`. The sort-field picker moves to the data screen, where the
 decision belongs. `ListControls`' add/remove is gone.
 
-**Centre:** `ComparisonDeck` unchanged — the cards, remove-during-comparison,
+**Centre:** `ComparisonDeck` unchanged - the cards, remove-during-comparison,
 and the keyboard shortcuts all keep working against the same `ListItem` shape.
 
 **Right rail:** `Ranked` / `YAML` / `JSON` tabs (plus `List` for plain-list
@@ -267,7 +267,7 @@ On load the store hydrates. If a saved workspace exists, redirect once to
 `/rank`, guarded by a flag so `Edit data` does not bounce back.
 
 `Edit data` returns to `/` with `rawText` prefilled, the workspace intact, and
-a banner — `Editing "Sci-fi films" · 47 comparisons so far`. The CTA becomes
+a banner - `Editing "Sci-fi films" · 47 comparisons so far`. The CTA becomes
 `Apply edits` and opens the summary in §7.
 
 `Start over` confirms, clears local storage, and returns to `/`.
@@ -330,7 +330,7 @@ position among equals.
 
 - **Matched** entries keep their existing item id. This is what preserves the
   comparison events pointing at them, and therefore their ratings.
-- **Absent** items are marked `active: false` rather than deleted — the same
+- **Absent** items are marked `active: false` rather than deleted - the same
   mechanism as removing during a comparison. Their events stay resolvable and
   `rebuildRanking` needs no change.
 - **New** entries become fresh items with no comparisons, entering the pair
@@ -342,9 +342,9 @@ applied:
 ```
 Applying your edits
 ──────────────────────────────
-  9 items unchanged  — rankings kept
-  2 items added      — not yet ranked
-  1 item removed     — 47 comparisons kept
+  9 items unchanged  - rankings kept
+  2 items added      - not yet ranked
+  1 item removed     - 47 comparisons kept
 
      [ Cancel ]  [ Apply edits ]
 ```
@@ -368,7 +368,7 @@ not on roles.
 }
 ```
 
-Version 1 snapshots **cannot** be migrated — they hold no source document, so
+Version 1 snapshots **cannot** be migrated - they hold no source document, so
 there is nothing to reconstruct an export from. They are dropped on load rather
 than half-restored, and the user lands on the data screen.
 
@@ -420,20 +420,20 @@ when localStorage is unavailable.
 
 **Rewritten**
 
-- `app/index.tsx` — becomes the data screen
-- `app/_layout.tsx` — route registration
-- `lib/state/useListStore.ts` — actions become `setSourceText`,
+- `app/index.tsx` - becomes the data screen
+- `app/_layout.tsx` - route registration
+- `lib/state/useListStore.ts` - actions become `setSourceText`,
   `setFormatOverride`, `setArrayPath`, `setRoles`, `setName`, `startRanking`,
   `applyEdits`, `recordComparison`, `removeItem`, `reset`
-- `lib/state/selectors.ts` — label resolution reads `roles.labelField`
-- `components/preview/PreviewPane.tsx` — read-only
+- `lib/state/selectors.ts` - label resolution reads `roles.labelField`
+- `components/preview/PreviewPane.tsx` - read-only
 - `components/layout/AppShell.tsx`, `components/lists/SortFieldPicker.tsx`
   (retargeted as `LabelPicker`), `components/editor/FormatTabs.tsx`
   (retargeted as the preview tabs), `components/editor/WorkspaceControls.tsx`
   (becomes the left-rail context, `Edit data`, and `Start over`)
 - `types/list.ts`, `types/workspace.ts`
-- `lib/persistence/browserStorage.ts` — v2 shape, size guard
-- `lib/formats/index.ts` — serializers and filename helpers only
+- `lib/persistence/browserStorage.ts` - v2 shape, size guard
+- `lib/formats/index.ts` - serializers and filename helpers only
 
 **Deleted**
 
@@ -457,8 +457,8 @@ when localStorage is unavailable.
 
 **Untouched**
 
-- all of `lib/ranking/` — Elo, pair selection, ranking rebuild
-- `components/comparison/` — the cards do not care that the model beneath them
+- all of `lib/ranking/` - Elo, pair selection, ranking rebuild
+- `components/comparison/` - the cards do not care that the model beneath them
   changed
 
 **Docs**

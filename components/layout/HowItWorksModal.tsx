@@ -1,0 +1,197 @@
+import type { ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { ItemCard } from '@/components/comparison/ItemCard';
+import { Modal } from '@/components/ui/Modal';
+import { colors, fonts, space, typeScale } from '@/lib/theme';
+import type { ListItem } from '@/types/list';
+
+export interface HowItWorksModalProps {
+  visible: boolean;
+  onClose: () => void;
+}
+
+export function HowItWorksModal({ visible, onClose }: HowItWorksModalProps) {
+  return (
+    <Modal visible={visible} onClose={onClose} title="How Pairwise works">
+      <Section title="What this is">
+        <Text style={styles.body}>
+          Pairwise takes a list of things - books, ideas, candidates, anything - and puts it in
+          order by asking simple one-on-one questions, instead of making you sort the whole list
+          at once.
+        </Text>
+      </Section>
+
+      <Section title="Pick a side">
+        <Text style={styles.body}>
+          Each round shows two items, just like this. Choose the one you prefer, or mark it{' '}
+          <Text style={styles.emphasis}>“Much better”</Text> when it isn&apos;t close.
+          Can&apos;t compare them fairly? Skip the pair and move on to the next one. Alternatively,
+          click the X at the top-right to remove an item from the list.
+        </Text>
+        <ChooseSideDiagram />
+      </Section>
+
+      <Section title="How the ranking is built">
+        <Text style={styles.body}>
+          Every item starts even - unless you told it the list was already ranked best to worst,
+          in which case it starts from that order instead, so comparisons refine it rather than
+          rebuild it from scratch. Each choice you make nudges the winner&apos;s rating up and the
+          loser&apos;s down - a bit more for a “Much better” pick. Rather than comparing every
+          possible pair, the app keeps choosing whichever pair is most likely to sharpen the
+          order: usually two items with close ratings that haven&apos;t faced off yet. The ranking
+          updates after every answer, so you can stop as soon as it looks right.
+        </Text>
+        <RatingShiftDiagram />
+      </Section>
+    </Modal>
+  );
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {children}
+    </View>
+  );
+}
+
+const SAMPLE_ITEM_A: ListItem = {
+  id: 'how-it-works-sample-a',
+  listId: 'how-it-works-sample',
+  value: 'Option A',
+  active: true,
+  createdAt: '',
+  updatedAt: '',
+};
+
+const SAMPLE_ITEM_B: ListItem = { ...SAMPLE_ITEM_A, id: 'how-it-works-sample-b', value: 'Option B' };
+
+function noop() {}
+
+/** The real comparison cards, gutter, and skip control - not a mockup. */
+function ChooseSideDiagram() {
+  return (
+    <View style={styles.diagramWrap}>
+      <View style={styles.cards}>
+        <ItemCard item={SAMPLE_ITEM_A} side="left" onChoose={noop} onChooseStrong={noop} />
+        <View style={styles.gutter} aria-hidden>
+          <View style={styles.gutterLine} />
+          <Text style={styles.gutterText}>or</Text>
+          <View style={styles.gutterLine} />
+        </View>
+        <ItemCard item={SAMPLE_ITEM_B} side="right" onChoose={noop} onChooseStrong={noop} />
+      </View>
+      <Pressable accessibilityRole="button" accessibilityLabel="Example: skip this pair" style={styles.skip}>
+        <Text style={styles.skipText}>Skip this pair</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+/** Two rating bars moving apart after a single decision. */
+function RatingShiftDiagram() {
+  return (
+    <View style={styles.ratingBlock} aria-hidden>
+      <RatingRow label="Winner" after={0.62} direction="up" />
+      <RatingRow label="Runner-up" after={0.38} direction="down" />
+    </View>
+  );
+}
+
+function RatingRow({
+  label,
+  after,
+  direction,
+}: {
+  label: string;
+  after: number;
+  direction: 'up' | 'down';
+}) {
+  return (
+    <View style={styles.ratingRow}>
+      <Text style={styles.ratingLabel}>{label}</Text>
+      <View style={styles.ratingTrack}>
+        <View style={[styles.ratingFillBase, { width: '50%' }]} />
+        <View
+          style={[
+            styles.ratingFillAfter,
+            direction === 'up' ? styles.ratingFillUp : styles.ratingFillDown,
+            { width: `${after * 100}%` },
+          ]}
+        />
+      </View>
+      <Text style={[styles.ratingArrow, direction === 'down' && styles.ratingArrowDown]}>
+        {direction === 'up' ? '↑' : '↓'}
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  section: { gap: space.sm },
+  sectionTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  body: { ...typeScale.meta, fontFamily: fonts.body, color: colors.textSecondary },
+  emphasis: { color: colors.accentStrong, fontWeight: '600' },
+
+  // Choose-a-side diagram: mirrors ComparisonDeck's cards/gutter/skip exactly.
+  diagramWrap: { alignItems: 'center', gap: space.sm, paddingTop: space.sm },
+  cards: {
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'stretch',
+    justifyContent: 'center',
+    gap: space.md,
+  },
+  gutter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.xs,
+  },
+  gutterLine: { flex: 1, width: 1, minHeight: space.lg, backgroundColor: colors.border },
+  gutterText: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    letterSpacing: 0.4,
+    color: colors.textFaint,
+  },
+  skip: {
+    paddingVertical: space.sm,
+    paddingHorizontal: space.lg,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  skipText: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+
+  // Rating-shift diagram
+  ratingBlock: { gap: space.xs, paddingTop: space.sm },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  ratingLabel: { width: 68, fontFamily: fonts.body, fontSize: 11, color: colors.textSecondary },
+  ratingTrack: {
+    flex: 1,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceMuted,
+    overflow: 'hidden',
+  },
+  ratingFillBase: { position: 'absolute', height: 8, backgroundColor: colors.border },
+  ratingFillAfter: { height: 8, borderRadius: 999 },
+  ratingFillUp: { backgroundColor: colors.accent },
+  ratingFillDown: { backgroundColor: colors.textFaint },
+  ratingArrow: { width: 14, fontFamily: fonts.body, fontSize: 13, color: colors.accentStrong },
+  ratingArrowDown: { color: colors.textFaint },
+});

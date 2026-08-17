@@ -264,8 +264,8 @@ describe('states with nothing to compare', () => {
     expect(screen.queryByLabelText(/^Choose /)).toBeNull();
   });
 
-  // Ranking can no longer start without a label field — the data screen blocks
-  // it — so the deck has no such state left to render.
+  // Ranking can no longer start without a label field - the data screen blocks
+  // it - so the deck has no such state left to render.
 });
 
 describe('the gutter', () => {

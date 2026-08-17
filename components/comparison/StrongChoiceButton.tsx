@@ -11,7 +11,7 @@ export interface StrongChoiceButtonProps {
 /**
  * The stronger of the two verdicts, on the card it applies to.
  *
- * It says what it does. An icon alone — a flame, a bolt, a double chevron —
+ * It says what it does. An icon alone - a flame, a bolt, a double chevron -
  * reads as decoration to anyone who has not already been told what it means,
  * and this button changes how much the ranking moves, which is not something
  * to leave a first-time user guessing about.

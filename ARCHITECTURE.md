@@ -227,10 +227,10 @@ not carried into the new session.
 There is no interchange format. The app reads three shapes and keeps whichever
 it was handed:
 
-- a **plain list** — one item per line, with a leading bullet or number
+- a **plain list** - one item per line, with a leading bullet or number
   stripped only when whitespace follows it, so `-40 below zero` survives intact
-- **YAML** — parsed to its value, verbatim
-- **JSON** — parsed to its value, verbatim
+- **YAML** - parsed to its value, verbatim
+- **JSON** - parsed to its value, verbatim
 
 Detection is a default, not a verdict. `sniffFormat` tries JSON, then YAML, and
 falls back to a plain list; the data screen exposes a `Read as` override,
@@ -245,8 +245,8 @@ uniformly objects or uniformly scalars. Not descending into elements is what
 keeps per-item fields like `movies[].tags` out of the candidate list.
 
 Exactly one candidate is auto-selected. Mixed-type arrays are excluded with a
-named reason. A one-entry array is still offered — it is the list the user
-meant — and `describeReadiness` is the single place that blocks ranking, so
+named reason. A one-entry array is still offered - it is the list the user
+meant - and `describeReadiness` is the single place that blocks ranking, so
 the user is told "a ranking needs at least two items" rather than "no list
 found".
 
@@ -254,10 +254,10 @@ found".
 
 Two roles, both derived from the selected array:
 
-- **label field** — required for object entries, chosen automatically only when
+- **label field** - required for object entries, chosen automatically only when
   a full-coverage text field named `title`, `name`, or `label` exists, or when
   exactly one full-coverage text field exists at all
-- **position field** — optional and opt-in, offered for any field numeric
+- **position field** - optional and opt-in, offered for any field numeric
   wherever it appears, preselected only when its name plainly means an ordering
 
 No id or key field is ever requested: array position carries the rank.

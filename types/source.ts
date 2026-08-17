@@ -28,7 +28,7 @@ export interface Workspace {
   source: DataSource;
   roles: FieldRoles;
   /** True when the imported order is a trusted best-to-worst ranking, not an
-   * arbitrary sequence — seeds initial ratings from it instead of flat 1500. */
+   * arbitrary sequence - seeds initial ratings from it instead of flat 1500. */
   alreadyRanked: boolean;
   createdAt: string;
   updatedAt: string;

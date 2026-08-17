@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { HowItWorksModal } from '@/components/layout/HowItWorksModal';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { Button } from '@/components/ui/Button';
 import { colors, fonts, space } from '@/lib/theme';
@@ -34,6 +35,7 @@ export function AppShell({
   preview,
 }: AppShellProps) {
   const [confirmingReset, setConfirmingReset] = useState(false);
+  const [howItWorksOpen, setHowItWorksOpen] = useState(false);
 
   return (
     <View style={styles.root} dataSet={{ surface: 'canvas' }}>
@@ -48,6 +50,13 @@ export function AppShell({
         <View style={styles.headerActions}>
           <Text style={styles.status}>{statusText}</Text>
           {headerAction}
+          <Button
+            label="How it works"
+            accessibilityLabel="How this app works"
+            variant="ghost"
+            size="sm"
+            onPress={() => setHowItWorksOpen(true)}
+          />
           <ThemeToggle />
           {onReset === undefined ? null : confirmingReset ? (
             <>
@@ -86,6 +95,8 @@ export function AppShell({
           This clears the list held in this browser. Files you already exported are untouched.
         </Text>
       )}
+
+      <HowItWorksModal visible={howItWorksOpen} onClose={() => setHowItWorksOpen(false)} />
 
       <ScrollView contentContainerStyle={styles.scrollBody}>
         <View style={styles.body}>

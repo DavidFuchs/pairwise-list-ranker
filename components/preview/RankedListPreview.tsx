@@ -85,7 +85,7 @@ export function RankedListPreview({
       /*
        * Measured from the DOM, in the same viewport space the pointer reports.
        * Deriving this from onLayout instead means holding two coordinate
-       * systems at once — the earlier attempt did, and every drag silently
+       * systems at once - the earlier attempt did, and every drag silently
        * landed at the end of the list.
        *
        * Taken once, at grab: the rows hold still for the whole drag, so a

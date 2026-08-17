@@ -28,18 +28,18 @@ UI language:
 
 The app is two screens, in the order the work actually happens.
 
-**`/` — the data screen.** One job: get their data in and confirm what we
+**`/` - the data screen.** One job: get their data in and confirm what we
 understood.
 - center stage: a large text area for pasting, typing, or dropping a file, with
   a `Read as` override beneath it
-- right: **What we found** — which array to rank, which field titles each card,
+- right: **What we found** - which array to rank, which field titles each card,
   which field receives the new order, and the one primary action
 
 A pasted plain list resolves every question on its own, so the right column
 collapses to a count and a button. Questions appear only when the data is
 genuinely ambiguous.
 
-**`/rank` — the comparison screen.**
+**`/rank` - the comparison screen.**
 - left rail: list name, what is being ranked, progress, `Edit data`, `Start over`
 - center stage: pairwise comparison workspace with two large item cards
 - right rail: read-only preview with tabs for the ranked view and the formats
@@ -68,8 +68,8 @@ Contains:
 
 ### 2. Header actions
 
-The rank screen has no left rail. Lists are not named — there is nowhere to save
-them to, so a name would be a label for an audience of one — and what is left is
+The rank screen has no left rail. Lists are not named - there is nowhere to save
+them to, so a name would be a label for an audience of one - and what is left is
 small enough to live in the top bar beside the theme control:
 - what is being ranked, beside the wordmark: `movies · shown by title`
 - local storage status
@@ -116,7 +116,7 @@ question is asked on the card being removed rather than in a separate bar.
 
 Between and below the pair:
 - a compact status strip: comparisons made, item count, and a progress meter
-- a single **Skip this pair** pill, centred — it belongs to the pair, not to
+- a single **Skip this pair** pill, centred - it belongs to the pair, not to
   either item
 - a one-line keyboard hint
 
@@ -143,8 +143,8 @@ Arranging the list by hand starts a new ranking session from that order; when
 there are comparisons to lose, the pane asks first.
 
 Editing goes back to the data screen via `Edit data`, where re-importing is an
-explicit act with a summary. The old editable buffer — a text area that may or
-may not have been applied to the live list — is gone, because "is what I see
+explicit act with a summary. The old editable buffer - a text area that may or
+may not have been applied to the live list - is gone, because "is what I see
 what I have?" is not a question a preview should raise.
 
 ## Interaction model
@@ -166,8 +166,8 @@ Deletion from comparison:
 
 There is one way, and it is the same way the data arrived: the data screen.
 `Edit data` returns there with the current text prefilled, and applying shows a
-summary — how many entries are unchanged, added, removed, and how many
-comparisons survive — before anything changes. Entries the user did not touch
+summary - how many entries are unchanged, added, removed, and how many
+comparisons survive - before anything changes. Entries the user did not touch
 keep their ranking.
 
 ### Field roles
@@ -279,16 +279,16 @@ and fall below WCAG AA as small text. Use the text variant for anything under
 
 Gradients are atmosphere, never decoration. Four, and no more:
 
-1. **Canvas wash** — two large, very low-alpha radial gradients (indigo, then
+1. **Canvas wash** - two large, very low-alpha radial gradients (indigo, then
    violet) anchored off the top edge. It gives the page a light source without
    reading as a coloured background.
-2. **Panel and card fill** — a 180° gradient between two near-identical
+2. **Panel and card fill** - a 180° gradient between two near-identical
    neutrals, plus a 1px inset top highlight. Barely perceptible in isolation;
    what stops large surfaces from looking flat.
-3. **Primary action** — a 140° indigo gradient, `--accent` to
+3. **Primary action** - a 140° indigo gradient, `--accent` to
    `--accent-gradient-end`. Deliberately a single hue family rather than a
    two-tone sweep, so it stays calm next to its twin on the other card.
-4. **Progress meter** — indigo to violet across the filled width, the one place
+4. **Progress meter** - indigo to violet across the filled width, the one place
    the full accent range appears.
 
 Elevation is a two-layer shadow: a tight contact shadow plus a wide, soft cast
@@ -328,7 +328,7 @@ Type scale:
 ### Buttons
 
 Hierarchy:
-- primary: the comparison card itself — the largest target on the screen, so it
+- primary: the comparison card itself - the largest target on the screen, so it
   needs no button inside it. It lifts on hover and dips on press.
 - emphasis: **Much better**, a labelled pill in the card's bottom-right corner,
   on the soft accent surface reserved for it.
@@ -337,7 +337,7 @@ Hierarchy:
 
 ### Switches
 
-For a plain yes/no setting — not a choice between named options — use a true
+For a plain yes/no setting - not a choice between named options - use a true
 binary switch (`components/ui/Switch.tsx`): a pill track that fills with the
 accent colour and a thumb that slides to the far side when on. Label the
 setting in text beside it; the switch communicates state by position and

@@ -26,8 +26,8 @@ export interface ComparisonDeckProps {
 }
 
 /**
- * The comparison stage. Each card owns the actions for its own item — choose,
- * much better, remove — so there is no detached bank of buttons to map back
+ * The comparison stage. Each card owns the actions for its own item - choose,
+ * much better, remove - so there is no detached bank of buttons to map back
  * onto the two options. Only Skip, which belongs to the pair rather than to
  * either item, sits between them.
  */

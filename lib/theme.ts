@@ -18,6 +18,7 @@ export const colors = {
   textFaint: 'var(--text-faint)',
   border: 'var(--border)',
   borderStrong: 'var(--border-strong)',
+  overlay: 'var(--overlay)',
   accent: 'var(--accent)',
   accentStrong: 'var(--accent-strong)',
   accentContrast: 'var(--accent-contrast)',

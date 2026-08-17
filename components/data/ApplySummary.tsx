@@ -23,18 +23,18 @@ export function ApplySummary({ diff, onCancel, onConfirm }: ApplySummaryProps) {
       {diff.reordered && (
         <Text style={styles.line}>
           {diff.keptComparisons > 0
-            ? `Order changed — it becomes the starting order, but your ${diff.keptComparisons} comparisons still decide the ranking`
-            : 'Order changed — the list will follow your text'}
+            ? `Order changed - it becomes the starting order, but your ${diff.keptComparisons} comparisons still decide the ranking`
+            : 'Order changed - the list will follow your text'}
         </Text>
       )}
 
       <Text style={styles.line}>
-        {`${diff.kept.length} ${plural(diff.kept.length)} unchanged — rankings kept`}
+        {`${diff.kept.length} ${plural(diff.kept.length)} unchanged - rankings kept`}
       </Text>
 
       {diff.added.length > 0 && (
         <Text style={styles.line}>
-          {`${diff.added.length} ${plural(diff.added.length)} added — not yet ranked`}
+          {`${diff.added.length} ${plural(diff.added.length)} added - not yet ranked`}
         </Text>
       )}
 
@@ -45,7 +45,7 @@ export function ApplySummary({ diff, onCancel, onConfirm }: ApplySummaryProps) {
       )}
 
       {!diff.reordered && diff.added.length === 0 && diff.removed.length === 0 ? (
-        <Text style={styles.note}>Nothing changed — applying will leave the list as it is.</Text>
+        <Text style={styles.note}>Nothing changed - applying will leave the list as it is.</Text>
       ) : (
         <Text style={styles.note}>{`${diff.keptComparisons} comparisons kept`}</Text>
       )}

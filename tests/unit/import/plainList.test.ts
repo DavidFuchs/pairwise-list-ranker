@@ -21,7 +21,7 @@ describe('parsePlainList', () => {
   });
 
   it('strips en dashes, em dashes, and blockquote markers', () => {
-    expect(parsePlainList('– Alien\n— Arrival\n> Solaris')).toEqual([
+    expect(parsePlainList('– Alien\n- Arrival\n> Solaris')).toEqual([
       'Alien',
       'Arrival',
       'Solaris',

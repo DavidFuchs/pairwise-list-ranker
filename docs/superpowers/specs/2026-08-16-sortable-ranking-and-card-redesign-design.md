@@ -15,8 +15,8 @@ no motion at all, so a reshuffle after a comparison is easy to miss.
 **The comparison stage is doing too much with buttons.** Each card carries a
 full-width gradient **Choose** and a **Much better** strip beneath it. Two
 stacked buttons per card, four across the pair, is a lot of chrome for a screen
-whose entire job is "pick one of these two". The card itself — the large,
-obvious target — is not clickable.
+whose entire job is "pick one of these two". The card itself - the large,
+obvious target - is not clickable.
 
 ## 2. Decisions
 
@@ -29,7 +29,7 @@ obvious target — is not clickable.
 | How is "much better" expressed? | A small circular 🔥 button, bottom-right of the card |
 
 The drag decision is the load-bearing one. The ranking is a pure derivation
-from comparison history — `rebuildRanking` replays every event and sorts by
+from comparison history - `rebuildRanking` replays every event and sorts by
 rating, head-to-head, wins, then creation order. There is nowhere for "the user
 put this here" to live, and adding a manual-override layer would give the list
 two sources of truth.
@@ -48,7 +48,7 @@ user).
 ### 3.1 Drag mechanics
 
 React Native Web has no drag primitive. `react-native-draggable-flatlist` would
-require Reanimated and Gesture Handler — two large dependencies for a static
+require Reanimated and Gesture Handler - two large dependencies for a static
 web app that has neither. Drag is implemented directly on pointer events:
 
 - each row carries a grip handle (`⠿`), revealed on hover and focus
@@ -117,7 +117,7 @@ does make removal permanent at that moment.
 
 FLIP, using the `Animated` API already in the project: record each row's `y`
 before a change, compare after render, set `translateY` to the difference and
-animate it to zero. One mechanism covers both cases — rows sliding when a
+animate it to zero. One mechanism covers both cases - rows sliding when a
 comparison reshuffles the list, and neighbours parting to make room during a
 drag.
 
@@ -133,7 +133,7 @@ positions change instantly and the drag still works.
 name `Choose Arrival`. The full-width **Choose** button and the **Much better**
 strip are both removed from the footer.
 
-Nested controls — delete, *Show details*, the flame — call `stopPropagation` on
+Nested controls - delete, *Show details*, the flame - call `stopPropagation` on
 press so they never choose by accident. While a delete confirmation is showing,
 the card is not pressable at all.
 
@@ -155,7 +155,7 @@ The resting state stays calm; the card earns its polish on interaction.
 - **Hover**: lifts 2px, border warms to the accent, and a quiet `Click to
   choose` hint fades in at the bottom-left
 - **Press**: brief scale to 0.98 and an accent flash, then the pair cross-fades
-  to the next — the existing swap animation
+  to the next - the existing swap animation
 - **Keycaps**: a small `←` / `→` chip on each card, so the shortcut lives on the
   thing it acts on rather than in a hint line underneath
 - **Gutter**: a thin divider with a small `or` between the two cards
@@ -192,20 +192,20 @@ keyboard shortcut.
 ## 6. File plan
 
 **New**
-- `lib/ranking/reorder.ts` — `moveItem`, `dropIndexFor`, `RowOffset`
-- `lib/hooks/useFlipAnimation.ts` — measure, diff, animate to zero
-- `components/preview/RankedRow.tsx` — one row, its grip, and its animation
-- `components/comparison/StrongChoiceButton.tsx` — the flame
+- `lib/ranking/reorder.ts` - `moveItem`, `dropIndexFor`, `RowOffset`
+- `lib/hooks/useFlipAnimation.ts` - measure, diff, animate to zero
+- `components/preview/RankedRow.tsx` - one row, its grip, and its animation
+- `components/comparison/StrongChoiceButton.tsx` - the flame
 
 **Changed**
-- `components/preview/RankedListPreview.tsx` — drag state, confirmation footer
-- `components/comparison/ItemCard.tsx` — pressable root, flame, hover hint,
+- `components/preview/RankedListPreview.tsx` - drag state, confirmation footer
+- `components/comparison/ItemCard.tsx` - pressable root, flame, hover hint,
   keycap; the two footer buttons removed
-- `components/comparison/ComparisonDeck.tsx` — gutter divider, hint line
-- `lib/state/useListStore.ts` — `reorderAndRestart`
+- `components/comparison/ComparisonDeck.tsx` - gutter divider, hint line
+- `lib/state/useListStore.ts` - `reorderAndRestart`
 - `ARCHITECTURE.md` §6, `UX.md` comparison stage and preview sections
 
 **Untouched**
-- `lib/ranking/elo.ts`, `pairSelection.ts`, `rebuildRanking.ts` — the ranking
+- `lib/ranking/elo.ts`, `pairSelection.ts`, `rebuildRanking.ts` - the ranking
   model is unchanged, which is the point of the restart decision
 - everything in `lib/import/` and `lib/export/`

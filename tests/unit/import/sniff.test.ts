@@ -29,7 +29,7 @@ describe('sniffFormat', () => {
 
   it('treats a list whose first line looks like a YAML key as a plain list', () => {
     // "2001: A Space Odyssey" reads as a YAML mapping key on its own, but the
-    // following bare lines make the whole blob invalid YAML — sniffing must
+    // following bare lines make the whole blob invalid YAML - sniffing must
     // reject it the same way parseSource would, not hand back a format it
     // cannot actually parse.
     const text = '2001: A Space Odyssey\nBlade Runner\nAlien\n';
