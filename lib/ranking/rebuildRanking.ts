@@ -1,4 +1,4 @@
-import { applyComparison, createRankingState } from '@/lib/ranking/elo';
+import { applyComparison, createRankingState, seedRating } from '@/lib/ranking/elo';
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent, RankedItem, RankingState } from '@/types/ranking';
 
@@ -16,9 +16,16 @@ export type RankingStates = Map<string, RankingState>;
  * Events referencing unknown items are ignored so malformed saved data cannot
  * corrupt the rebuild.
  */
-export function replayComparisons(items: ListItem[], events: ComparisonEvent[]): RankingStates {
+export function replayComparisons(
+  items: ListItem[],
+  events: ComparisonEvent[],
+  alreadyRanked = false,
+): RankingStates {
   const states: RankingStates = new Map(
-    items.map((item) => [item.id, createRankingState(item.id)]),
+    items.map((item, index) => [
+      item.id,
+      createRankingState(item.id, seedRating(index, items.length, alreadyRanked)),
+    ]),
   );
 
   const ordered = [...events].sort(byEventTime);
@@ -75,8 +82,9 @@ export function rankItems(
 export function rebuildRanking(
   items: ListItem[],
   events: ComparisonEvent[],
+  alreadyRanked = false,
 ): RankedItem<ListItem>[] {
-  return rankItems(items, replayComparisons(items, events), events);
+  return rankItems(items, replayComparisons(items, events, alreadyRanked), events);
 }
 
 function byEventTime(a: ComparisonEvent, b: ComparisonEvent): number {

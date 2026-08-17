@@ -63,6 +63,19 @@ describe('startRanking', () => {
     expect(store.getState().previewTab).toBe('ranked');
   });
 
+  it('defaults alreadyRanked to false', () => {
+    store.getState().startRanking({ source: nested, roles: {} });
+
+    expect(store.getState().workspace?.alreadyRanked).toBe(false);
+  });
+
+  it('records alreadyRanked when the caller marks the list as ranked', () => {
+    store.getState().startRanking({ source: nested, roles: {}, alreadyRanked: true });
+
+    expect(store.getState().workspace?.alreadyRanked).toBe(true);
+    expect(store.getState().ranking()[0]?.state.rating).toBeGreaterThan(1500);
+  });
+
   it('clears history from a previous list', () => {
     store.getState().startRanking({ source: nested, roles: {} });
     const [left, right] = store.getState().items;
@@ -186,6 +199,20 @@ describe('applyEdits', () => {
     store.getState().applyEdits({ source: nested, roles: {} });
 
     expect(store.getState().workspace?.id).toBe(id);
+  });
+
+  it('leaves alreadyRanked untouched when the caller does not specify it', () => {
+    store.getState().applyEdits({ source: nested, roles: { labelField: 'title' } });
+
+    expect(store.getState().workspace?.alreadyRanked).toBe(false);
+  });
+
+  it('updates alreadyRanked when the caller specifies it', () => {
+    store
+      .getState()
+      .applyEdits({ source: nested, roles: { labelField: 'title' }, alreadyRanked: true });
+
+    expect(store.getState().workspace?.alreadyRanked).toBe(true);
   });
 });
 
@@ -329,5 +356,15 @@ describe('reorderAndRestart', () => {
     empty.getState().reorderAndRestart(['a']);
 
     expect(empty.getState().workspace).toBeNull();
+  });
+
+  it('seeds ratings from the hand-arranged order instead of resetting flat', () => {
+    const ids = store.getState().items.map((item) => item.id);
+
+    store.getState().reorderAndRestart([...ids].reverse());
+
+    expect(store.getState().workspace?.alreadyRanked).toBe(true);
+    expect(store.getState().ranking()[0]?.item.value).toEqual({ title: 'Arrival' });
+    expect(store.getState().ranking()[0]?.state.rating).toBeGreaterThan(1500);
   });
 });

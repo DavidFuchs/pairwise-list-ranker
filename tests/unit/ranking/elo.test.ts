@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  ALREADY_RANKED_SPREAD,
   BASE_K_FACTOR,
   INITIAL_RATING,
   PROVISIONAL_COMPARISONS,
   applyComparison,
   createRankingState,
   expectedScore,
+  seedRating,
 } from '@/lib/ranking/elo';
 import type { RankingState } from '@/types/ranking';
 
@@ -36,6 +38,38 @@ describe('createRankingState', () => {
       losses: 0,
       skips: 0,
     });
+  });
+});
+
+describe('createRankingState', () => {
+  it('accepts a seed rating that overrides the initial rating', () => {
+    expect(createRankingState('item-1', 1800).rating).toBe(1800);
+  });
+});
+
+describe('seedRating', () => {
+  it('is the initial rating when the list is not marked as already ranked', () => {
+    expect(seedRating(0, 5, false)).toBe(INITIAL_RATING);
+    expect(seedRating(4, 5, false)).toBe(INITIAL_RATING);
+  });
+
+  it('is the initial rating for a list too short to have a gradient', () => {
+    expect(seedRating(0, 1, true)).toBe(INITIAL_RATING);
+    expect(seedRating(0, 0, true)).toBe(INITIAL_RATING);
+  });
+
+  it('puts the first item at the top of the spread and the last at the bottom', () => {
+    expect(seedRating(0, 5, true)).toBe(INITIAL_RATING + ALREADY_RANKED_SPREAD);
+    expect(seedRating(4, 5, true)).toBe(INITIAL_RATING - ALREADY_RANKED_SPREAD);
+  });
+
+  it('centers the middle item of an odd-length list on the initial rating', () => {
+    expect(seedRating(2, 5, true)).toBe(INITIAL_RATING);
+  });
+
+  it('spaces items evenly between the two items of a pair', () => {
+    expect(seedRating(0, 2, true)).toBe(INITIAL_RATING + ALREADY_RANKED_SPREAD);
+    expect(seedRating(1, 2, true)).toBe(INITIAL_RATING - ALREADY_RANKED_SPREAD);
   });
 });
 

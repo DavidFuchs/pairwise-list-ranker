@@ -18,6 +18,7 @@ export interface SourceDraftSeed {
   rawText: string;
   arrayPath: string[];
   roles: FieldRoles;
+  alreadyRanked: boolean;
 }
 
 export interface SourceDraft {
@@ -26,6 +27,8 @@ export interface SourceDraft {
   analysis: SourceAnalysis;
   selectedPath: string[] | null;
   roles: FieldRoles;
+  /** True when the imported order is a trusted best-to-worst ranking. */
+  alreadyRanked: boolean;
   entries: unknown[];
   /** The format tabs the current data can honestly be shown as. Plain list
    * drops out once an entry is more than a bare scalar, the same rule the
@@ -37,6 +40,7 @@ export interface SourceDraft {
   setOverride: (override: FormatOverride) => void;
   selectPath: (path: string[]) => void;
   setRoles: (roles: FieldRoles) => void;
+  setAlreadyRanked: (alreadyRanked: boolean) => void;
   /** The committed source, or null while a choice is still outstanding. */
   toSource: () => DataSource | null;
 }
@@ -57,6 +61,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
   const [rawText, setRawText] = useState(seed?.rawText ?? '');
   const [override, setOverrideState] = useState<FormatOverride>('auto');
   const [chosenPath, setChosenPath] = useState<string[] | null>(seed?.arrayPath ?? null);
+  const [alreadyRanked, setAlreadyRanked] = useState(seed?.alreadyRanked ?? false);
   const [rolesOverride, setRolesOverride] = useState<RolesOverride>({
     labelField: seed?.roles.labelField,
     positionField: seed?.roles.positionField,
@@ -133,12 +138,14 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     analysis,
     selectedPath,
     roles,
+    alreadyRanked,
     entries,
     availableOverrides,
     setRawText,
     setOverride,
     selectPath: setChosenPath,
     setRoles,
+    setAlreadyRanked,
     toSource,
   };
 }

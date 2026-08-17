@@ -14,6 +14,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof FoundPanel>> = {})
     analysis: analyzeSource(NESTED, 'auto'),
     selectedPath: ['movies'],
     roles: { labelField: 'title' },
+    alreadyRanked: false,
     entries: [
       { title: 'Alien', order: 2 },
       { title: 'Arrival', order: 1 },
@@ -21,6 +22,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof FoundPanel>> = {})
     ctaLabel: 'Start ranking',
     onSelectPath: vi.fn(),
     onRolesChange: vi.fn(),
+    onAlreadyRankedChange: vi.fn(),
     onSubmit: vi.fn(),
     ...overrides,
   };
@@ -122,5 +124,29 @@ describe('FoundPanel', () => {
     setup({ ctaLabel: 'Apply edits' });
 
     expect(screen.getByRole('button', { name: /apply edits/i })).toBeDefined();
+  });
+
+  it('defaults the already-ranked switch to off', () => {
+    setup();
+
+    expect(
+      screen.getByRole('switch', { name: /already ranked, best to worst/i }).getAttribute('aria-checked'),
+    ).toBe('false');
+  });
+
+  it('reports switching the already-ranked toggle', async () => {
+    const { onAlreadyRankedChange, user } = setup();
+
+    await user.click(screen.getByRole('switch', { name: /already ranked, best to worst/i }));
+
+    expect(onAlreadyRankedChange).toHaveBeenCalledWith(true);
+  });
+
+  it('reflects an already-ranked value passed in', () => {
+    setup({ alreadyRanked: true });
+
+    expect(
+      screen.getByRole('switch', { name: /already ranked, best to worst/i }).getAttribute('aria-checked'),
+    ).toBe('true');
   });
 });

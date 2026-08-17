@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { INITIAL_RATING, createRankingState } from '@/lib/ranking/elo';
+import { ALREADY_RANKED_SPREAD, INITIAL_RATING, createRankingState } from '@/lib/ranking/elo';
 import { rankItems, rebuildRanking, replayComparisons } from '@/lib/ranking/rebuildRanking';
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent, ComparisonOutcome, RankingState } from '@/types/ranking';
@@ -112,6 +112,17 @@ describe('rebuildRanking', () => {
     expect(ranked[0]?.state.wins).toBe(1);
   });
 
+  it('lets a run of comparisons overturn the seeded order of an already-ranked list', () => {
+    const items = [item('a'), item('b')];
+    const oneEvent = [event('a', 'b', 'right', 1)];
+    const manyEvents = Array.from({ length: 14 }, (_, i) => event('a', 'b', 'right', i + 1));
+
+    // A single upset against the seeded gap is not enough to flip the order...
+    expect(ids(rebuildRanking(items, oneEvent, true))).toEqual(['a', 'b']);
+    // ...but a sustained run of them is.
+    expect(ids(rebuildRanking(items, manyEvents, true))).toEqual(['b', 'a']);
+  });
+
   it('ignores events that reference items the list no longer has', () => {
     const ranked = rebuildRanking(
       [item('a'), item('b')],
@@ -128,6 +139,21 @@ describe('replayComparisons', () => {
     const states = replayComparisons([item('a'), item('b', { active: false })], []);
 
     expect([...states.keys()].sort()).toEqual(['a', 'b']);
+  });
+
+  it('seeds ratings flat by default even with a defined order', () => {
+    const states = replayComparisons([item('a'), item('b'), item('c')], []);
+
+    expect(states.get('a')?.rating).toBe(INITIAL_RATING);
+    expect(states.get('c')?.rating).toBe(INITIAL_RATING);
+  });
+
+  it('seeds ratings from item order when the list is already ranked', () => {
+    const states = replayComparisons([item('a'), item('b'), item('c')], [], true);
+
+    expect(states.get('a')?.rating).toBe(INITIAL_RATING + ALREADY_RANKED_SPREAD);
+    expect(states.get('b')?.rating).toBe(INITIAL_RATING);
+    expect(states.get('c')?.rating).toBe(INITIAL_RATING - ALREADY_RANKED_SPREAD);
   });
 });
 

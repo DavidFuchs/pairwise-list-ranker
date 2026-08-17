@@ -35,6 +35,16 @@ describe('parseWorkspaceSnapshot', () => {
     expect(parseWorkspaceSnapshot(valid)?.workspace.id).toBe('ws-1');
   });
 
+  it('defaults alreadyRanked to false for a snapshot saved before the field existed', () => {
+    expect(parseWorkspaceSnapshot(valid)?.workspace.alreadyRanked).toBe(false);
+  });
+
+  it('round-trips an explicit alreadyRanked value', () => {
+    const ranked = { ...valid, workspace: { ...valid.workspace, alreadyRanked: true } };
+
+    expect(parseWorkspaceSnapshot(ranked)?.workspace.alreadyRanked).toBe(true);
+  });
+
   it('keeps an arbitrary source document untouched', () => {
     const wild = {
       ...valid,

@@ -36,7 +36,7 @@ export default function RankScreen() {
     if (hydrated && workspace === null) router.replace('/');
   }, [hydrated, workspace, router]);
 
-  const view = selectWorkspaceView(items, comparisonEvents);
+  const view = selectWorkspaceView(items, comparisonEvents, workspace?.alreadyRanked ?? false);
   const progress = selectProgress(items, comparisonEvents);
   const format: SourceFormat =
     previewTab === 'ranked' ? (workspace?.source.format ?? 'list') : previewTab;

@@ -24,6 +24,7 @@ const workspace: Workspace = {
     arrayPath: ['movies'],
   },
   roles: { labelField: 'title' },
+  alreadyRanked: false,
   createdAt: NOW,
   updatedAt: NOW,
 };
@@ -79,6 +80,13 @@ describe('selectRanking', () => {
       'item-3',
     ]);
   });
+
+  it('seeds ratings from the given order when the list is already ranked', () => {
+    const view = selectWorkspaceView(items, [], true);
+
+    expect(view.states.get('item-1')!.rating).toBeGreaterThan(1500);
+    expect(view.states.get('item-3')!.rating).toBeLessThan(1500);
+  });
 });
 
 describe('selectCurrentPair', () => {
@@ -125,6 +133,12 @@ describe('selectContextLine', () => {
     };
 
     expect(selectContextLine(withOrder)).toBe('movies · shown by title · order written back');
+  });
+
+  it('mentions already-ranked status when set', () => {
+    const ranked = { ...workspace, alreadyRanked: true };
+
+    expect(selectContextLine(ranked)).toBe('movies · shown by title · already ranked');
   });
 
   it('names a bare list plainly', () => {

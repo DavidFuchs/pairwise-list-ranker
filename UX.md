@@ -335,6 +335,16 @@ Hierarchy:
 - secondary: skip, drill-in, downloads, reorder grips
 - tertiary/destructive: remove item, a faint glyph until it is armed
 
+### Switches
+
+For a plain yes/no setting — not a choice between named options — use a true
+binary switch (`components/ui/Switch.tsx`): a pill track that fills with the
+accent colour and a thumb that slides to the far side when on. Label the
+setting in text beside it; the switch communicates state by position and
+colour alone, so it never needs words like "On"/"Off" inside it. Reserve the
+segmented `radiogroup` pattern (as in the theme control or field-role pickers)
+for choosing among several named options instead.
+
 ### Preview modes
 
 Ranked view:

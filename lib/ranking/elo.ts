@@ -3,6 +3,13 @@ import type { ComparisonOutcome, RankingState } from '@/types/ranking';
 /** Rating every item starts from. See ARCHITECTURE.md section 6.2. */
 export const INITIAL_RATING = 1500;
 
+/**
+ * Total rating spread, best item to worst, used to seed an import the user
+ * has marked as already ranked. A fixed total (not a per-step gap) keeps the
+ * top-to-bottom range bounded no matter how long the list is.
+ */
+export const ALREADY_RANKED_SPREAD = 300;
+
 /** Standard rating movement for a settled item. */
 export const BASE_K_FACTOR = 24;
 
@@ -15,8 +22,20 @@ export const PROVISIONAL_COMPARISONS = 5;
 /** Provisional items move faster so early rounds converge sooner. */
 export const PROVISIONAL_K_MULTIPLIER = 1.5;
 
-export function createRankingState(itemId: string): RankingState {
-  return { itemId, rating: INITIAL_RATING, comparisons: 0, wins: 0, losses: 0, skips: 0 };
+export function createRankingState(itemId: string, rating: number = INITIAL_RATING): RankingState {
+  return { itemId, rating, comparisons: 0, wins: 0, losses: 0, skips: 0 };
+}
+
+/**
+ * The initial rating for the item at `index` of `total`, given the user's
+ * claim about whether that order is already a trusted ranking. `index` 0 is
+ * the best item. Unranked imports (or lists too short to have a gradient)
+ * fall back to the flat `INITIAL_RATING`.
+ */
+export function seedRating(index: number, total: number, alreadyRanked: boolean): number {
+  if (!alreadyRanked || total < 2) return INITIAL_RATING;
+  const step = (2 * ALREADY_RANKED_SPREAD) / (total - 1);
+  return INITIAL_RATING + ALREADY_RANKED_SPREAD - step * index;
 }
 
 /** Probability that `rating` beats `opponentRating` under the logistic Elo curve. */

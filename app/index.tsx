@@ -27,6 +27,7 @@ export default function DataScreen() {
             rawText: listStore.getState().workspace!.source.rawText,
             arrayPath: listStore.getState().workspace!.source.arrayPath,
             roles: listStore.getState().workspace!.roles,
+            alreadyRanked: listStore.getState().workspace!.alreadyRanked,
           },
     [],
   );
@@ -55,7 +56,11 @@ export default function DataScreen() {
     if (source === null) return;
 
     if (!editing) {
-      listStore.getState().startRanking({ source, roles: draft.roles });
+      listStore.getState().startRanking({
+        source,
+        roles: draft.roles,
+        alreadyRanked: draft.alreadyRanked,
+      });
       router.replace('/rank');
       return;
     }
@@ -67,7 +72,9 @@ export default function DataScreen() {
   function handleConfirm() {
     const source = draft.toSource();
     if (source === null) return;
-    listStore.getState().applyEdits({ source, roles: draft.roles });
+    listStore
+      .getState()
+      .applyEdits({ source, roles: draft.roles, alreadyRanked: draft.alreadyRanked });
     setPending(null);
     router.replace('/rank');
   }
@@ -107,10 +114,12 @@ export default function DataScreen() {
             analysis={rawTextIsBlank ? { ...draft.analysis, issues: [] } : draft.analysis}
             selectedPath={draft.selectedPath}
             roles={draft.roles}
+            alreadyRanked={draft.alreadyRanked}
             entries={draft.entries}
             ctaLabel={editing ? 'Apply edits' : 'Start ranking'}
             onSelectPath={draft.selectPath}
             onRolesChange={draft.setRoles}
+            onAlreadyRankedChange={draft.setAlreadyRanked}
             onSubmit={handleSubmit}
           />
         ) : (

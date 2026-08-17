@@ -44,6 +44,7 @@ const workspaceSchema = z.object({
     labelField: z.string().optional(),
     positionField: z.string().optional(),
   }),
+  alreadyRanked: z.boolean().optional().default(false),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

@@ -126,10 +126,30 @@ describe('useSourceDraft', () => {
 
   it('seeds from an existing workspace', () => {
     const { result } = renderHook(() =>
-      useSourceDraft({ rawText: NESTED, arrayPath: ['movies'], roles: { labelField: 'title' } }),
+      useSourceDraft({
+        rawText: NESTED,
+        arrayPath: ['movies'],
+        roles: { labelField: 'title' },
+        alreadyRanked: true,
+      }),
     );
 
     expect(result.current.selectedPath).toEqual(['movies']);
     expect(result.current.roles.labelField).toBe('title');
+    expect(result.current.alreadyRanked).toBe(true);
+  });
+
+  it('defaults alreadyRanked to false with no seed', () => {
+    const { result } = renderHook(() => useSourceDraft());
+
+    expect(result.current.alreadyRanked).toBe(false);
+  });
+
+  it('updates alreadyRanked', () => {
+    const { result } = renderHook(() => useSourceDraft());
+
+    act(() => result.current.setAlreadyRanked(true));
+
+    expect(result.current.alreadyRanked).toBe(true);
   });
 });

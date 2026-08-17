@@ -22,6 +22,7 @@ export interface WorkspaceView {
 interface ViewCache {
   items: ListItem[];
   events: ComparisonEvent[];
+  alreadyRanked: boolean;
   view: WorkspaceView;
 }
 
@@ -32,12 +33,21 @@ let cache: ViewCache | null = null;
  * the items and event arrays. The store replaces those arrays on every change,
  * so re-renders that change nothing reuse the previous result.
  */
-export function selectWorkspaceView(items: ListItem[], events: ComparisonEvent[]): WorkspaceView {
-  if (cache !== null && cache.items === items && cache.events === events) {
+export function selectWorkspaceView(
+  items: ListItem[],
+  events: ComparisonEvent[],
+  alreadyRanked = false,
+): WorkspaceView {
+  if (
+    cache !== null &&
+    cache.items === items &&
+    cache.events === events &&
+    cache.alreadyRanked === alreadyRanked
+  ) {
     return cache.view;
   }
 
-  const states = replayComparisons(items, events);
+  const states = replayComparisons(items, events, alreadyRanked);
   const ranking = rankItems(items, states, events);
   const candidate = selectNextPair(items, states, events);
 
@@ -51,16 +61,24 @@ export function selectWorkspaceView(items: ListItem[], events: ComparisonEvent[]
     pair: left && right ? { left, right } : null,
   };
 
-  cache = { items, events, view };
+  cache = { items, events, alreadyRanked, view };
   return view;
 }
 
-export function selectRanking(items: ListItem[], events: ComparisonEvent[]): RankedItem<ListItem>[] {
-  return selectWorkspaceView(items, events).ranking;
+export function selectRanking(
+  items: ListItem[],
+  events: ComparisonEvent[],
+  alreadyRanked = false,
+): RankedItem<ListItem>[] {
+  return selectWorkspaceView(items, events, alreadyRanked).ranking;
 }
 
-export function selectCurrentPair(items: ListItem[], events: ComparisonEvent[]): ActivePair | null {
-  return selectWorkspaceView(items, events).pair;
+export function selectCurrentPair(
+  items: ListItem[],
+  events: ComparisonEvent[],
+  alreadyRanked = false,
+): ActivePair | null {
+  return selectWorkspaceView(items, events, alreadyRanked).pair;
 }
 
 /** The exportable text for one tab, built from the user's own document. */
@@ -71,7 +89,7 @@ export function selectExportText(
   format: SourceFormat,
 ): string {
   if (workspace === null) return '';
-  const ranked = selectRanking(items, events).map((entry) => entry.item);
+  const ranked = selectRanking(items, events, workspace.alreadyRanked).map((entry) => entry.item);
   return buildExport(workspace.source, workspace.roles, ranked, format);
 }
 
@@ -90,6 +108,9 @@ export function selectContextLine(workspace: Workspace | null): string {
   }
   if (workspace.roles.positionField !== undefined) {
     parts.push(`${workspace.roles.positionField} written back`);
+  }
+  if (workspace.alreadyRanked) {
+    parts.push('already ranked');
   }
 
   return parts.join(' · ');

@@ -25,6 +25,8 @@ export interface ListStoreOptions {
 export interface StartInput {
   source: DataSource;
   roles: FieldRoles;
+  /** True when the imported order is a trusted best-to-worst ranking. */
+  alreadyRanked?: boolean;
 }
 
 export interface ListState {
@@ -112,13 +114,13 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       resumed: false,
 
       ranking() {
-        const { items, comparisonEvents } = get();
-        return selectRanking(items, comparisonEvents);
+        const { items, comparisonEvents, workspace } = get();
+        return selectRanking(items, comparisonEvents, workspace?.alreadyRanked ?? false);
       },
 
       currentPair() {
-        const { items, comparisonEvents } = get();
-        return selectCurrentPair(items, comparisonEvents);
+        const { items, comparisonEvents, workspace } = get();
+        return selectCurrentPair(items, comparisonEvents, workspace?.alreadyRanked ?? false);
       },
 
       hydrate() {
@@ -137,12 +139,13 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       },
 
       /** A fresh list: new workspace, new items, no history to carry over. */
-      startRanking({ source, roles }: StartInput) {
+      startRanking({ source, roles, alreadyRanked = false }: StartInput) {
         const timestamp = now();
         const workspace: Workspace = {
           id: createId(),
           source,
           roles,
+          alreadyRanked,
           createdAt: timestamp,
           updatedAt: timestamp,
         };
@@ -162,7 +165,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
        * Edited data on the same workspace. Entries the user did not touch keep
        * their item id, and therefore their rating and their history.
        */
-      applyEdits({ source, roles }: StartInput) {
+      applyEdits({ source, roles, alreadyRanked }: StartInput) {
         const workspace = get().workspace;
         if (workspace === null) return;
 
@@ -196,6 +199,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
             ...workspace,
             source,
             roles,
+            alreadyRanked: alreadyRanked ?? workspace.alreadyRanked,
             updatedAt: timestamp,
           },
           items,
@@ -231,6 +235,9 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         get().startRanking({
           source: { ...workspace.source, document, rawText },
           roles: workspace.roles,
+          // A hand-arranged order is the user asserting a correct ranking,
+          // so it seeds ratings from that order rather than resetting flat.
+          alreadyRanked: true,
         });
       },
 

@@ -26,6 +26,7 @@ function snapshot(rawText = 'Alien\nArrival\n'): WorkspaceSnapshot {
       id: 'ws-1',
       source: { format: 'list', rawText, document: ['Alien', 'Arrival'], arrayPath: [] },
       roles: {},
+      alreadyRanked: false,
       createdAt: '2026-08-16T00:00:00.000Z',
       updatedAt: '2026-08-16T00:00:00.000Z',
     },

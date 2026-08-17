@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { AlreadyRankedToggle } from '@/components/data/AlreadyRankedToggle';
 import { ArrayPicker } from '@/components/data/ArrayPicker';
 import { LabelPicker } from '@/components/data/LabelPicker';
 import { PositionPicker } from '@/components/data/PositionPicker';
@@ -16,11 +17,13 @@ export interface FoundPanelProps {
   analysis: SourceAnalysis;
   selectedPath: string[] | null;
   roles: FieldRoles;
+  alreadyRanked: boolean;
   /** The entries of the selected array, resolved by the screen. */
   entries: unknown[];
   ctaLabel: string;
   onSelectPath: (path: string[]) => void;
   onRolesChange: (roles: FieldRoles) => void;
+  onAlreadyRankedChange: (alreadyRanked: boolean) => void;
   onSubmit: () => void;
 }
 
@@ -36,10 +39,12 @@ export function FoundPanel({
   analysis,
   selectedPath,
   roles,
+  alreadyRanked,
   entries,
   ctaLabel,
   onSelectPath,
   onRolesChange,
+  onAlreadyRankedChange,
   onSubmit,
 }: FoundPanelProps) {
   const objects = entries.filter(isPlainObject);
@@ -67,6 +72,8 @@ export function FoundPanel({
       </View>
 
       <ArrayPicker candidates={analysis.candidates} value={selectedPath} onChange={onSelectPath} />
+
+      <AlreadyRankedToggle value={alreadyRanked} onChange={onAlreadyRankedChange} />
 
       {objects.length > 0 && (
         <LabelPicker
