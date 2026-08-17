@@ -168,14 +168,27 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
 
         const entries = entriesAtPath(source.document, source.arrayPath);
         const diff = diffImport(get().items, entries, get().comparisonEvents);
-        const removedIds = new Set(diff.removed.map((item) => item.id));
+        const kept = new Set(diff.kept.map((entry) => entry.item.id));
         const timestamp = now();
 
+        /*
+         * Rebuilt in the order the edited document lists them, because that is
+         * the order the user just wrote. Appending new entries instead would
+         * send an edited item to the bottom: changing a title reads as one
+         * entry removed and another added.
+         *
+         * Items that are gone stay on the end, deactivated: comparison events
+         * still refer to them, and only active items are ever displayed.
+         */
         const items: ListItem[] = [
-          ...get().items.map((item) =>
-            removedIds.has(item.id) ? { ...item, active: false, updatedAt: timestamp } : item,
+          ...diff.ordered.map(({ item, entry }) =>
+            item === null ? makeItem(workspace.id, entry) : item,
           ),
-          ...diff.added.map((entry) => makeItem(workspace.id, entry)),
+          ...get().items
+            .filter((item) => !kept.has(item.id))
+            .map((item) =>
+              item.active ? { ...item, active: false, updatedAt: timestamp } : item,
+            ),
         ];
 
         set({

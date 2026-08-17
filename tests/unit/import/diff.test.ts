@@ -127,3 +127,45 @@ describe('diffImport', () => {
     expect(diffImport([item('a', 'Alien')], ['Alien']).keptComparisons).toBe(0);
   });
 });
+
+describe('the order the edited document lists', () => {
+  it('reports every entry in document order, matched where it can be', () => {
+    const items = [item('a', 'Alien'), item('b', 'Arrival')];
+    const diff = diffImport(items, ['Solaris', 'Arrival']);
+
+    expect(diff.ordered.map((entry) => entry.item?.id ?? null)).toEqual([null, 'b']);
+    expect(diff.ordered.map((entry) => entry.entry)).toEqual(['Solaris', 'Arrival']);
+  });
+
+  /** An edited entry is a removal plus an addition, and must not fall to the end. */
+  it('keeps an edited entry in its own position', () => {
+    const items = [item('a', 'Alien'), item('b', 'Arrival'), item('c', 'Solaris')];
+    const diff = diffImport(items, ['Aliens', 'Arrival', 'Solaris']);
+
+    expect(diff.ordered.map((entry) => entry.item?.id ?? 'new')).toEqual(['new', 'b', 'c']);
+  });
+
+  it('reports a reorder of the very same entries', () => {
+    const items = [item('a', 'Alien'), item('b', 'Arrival')];
+
+    expect(diffImport(items, ['Arrival', 'Alien']).reordered).toBe(true);
+  });
+
+  it('reports no reorder when the sequence is untouched', () => {
+    const items = [item('a', 'Alien'), item('b', 'Arrival')];
+
+    expect(diffImport(items, ['Alien', 'Arrival']).reordered).toBe(false);
+  });
+
+  it('ignores added entries when judging the order of the kept ones', () => {
+    const items = [item('a', 'Alien'), item('b', 'Arrival')];
+
+    expect(diffImport(items, ['Alien', 'Solaris', 'Arrival']).reordered).toBe(false);
+  });
+
+  it('reports a reorder around a removal', () => {
+    const items = [item('a', 'Alien'), item('b', 'Arrival'), item('c', 'Solaris')];
+
+    expect(diffImport(items, ['Solaris', 'Alien']).reordered).toBe(true);
+  });
+});

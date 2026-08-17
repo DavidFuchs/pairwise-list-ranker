@@ -20,6 +20,14 @@ export function ApplySummary({ diff, onCancel, onConfirm }: ApplySummaryProps) {
     <View style={styles.panel} dataSet={{ surface: 'panel' }}>
       <Text style={styles.title}>Applying your edits</Text>
 
+      {diff.reordered && (
+        <Text style={styles.line}>
+          {diff.keptComparisons > 0
+            ? `Order changed — it becomes the starting order, but your ${diff.keptComparisons} comparisons still decide the ranking`
+            : 'Order changed — the list will follow your text'}
+        </Text>
+      )}
+
       <Text style={styles.line}>
         {`${diff.kept.length} ${plural(diff.kept.length)} unchanged — rankings kept`}
       </Text>
@@ -36,7 +44,11 @@ export function ApplySummary({ diff, onCancel, onConfirm }: ApplySummaryProps) {
         </Text>
       )}
 
-      <Text style={styles.note}>{`${diff.keptComparisons} comparisons kept`}</Text>
+      {!diff.reordered && diff.added.length === 0 && diff.removed.length === 0 ? (
+        <Text style={styles.note}>Nothing changed — applying will leave the list as it is.</Text>
+      ) : (
+        <Text style={styles.note}>{`${diff.keptComparisons} comparisons kept`}</Text>
+      )}
 
       <View style={styles.actions}>
         <Button label="Cancel" accessibilityLabel="Cancel" variant="ghost" onPress={onCancel} />

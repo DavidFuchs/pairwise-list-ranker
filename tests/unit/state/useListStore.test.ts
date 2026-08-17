@@ -139,6 +139,47 @@ describe('applyEdits', () => {
     expect(store.getState().workspace?.roles.positionField).toBe('order');
   });
 
+  /** The reported bug: an edited entry fell to the bottom of the list. */
+  it('keeps an edited entry where the user put it', () => {
+    const edited: DataSource = {
+      ...nested,
+      document: { owner: 'david', movies: [{ title: 'Aliens' }, { title: 'Arrival' }] },
+    };
+
+    store.getState().applyEdits({ source: edited, roles: { labelField: 'title' } });
+
+    expect(store.getState().ranking().map((entry) => entry.item.value)).toEqual([
+      { title: 'Aliens' },
+      { title: 'Arrival' },
+    ]);
+  });
+
+  it('applies a reorder of the very same entries', () => {
+    const edited: DataSource = {
+      ...nested,
+      document: { owner: 'david', movies: [{ title: 'Arrival' }, { title: 'Alien' }] },
+    };
+
+    store.getState().applyEdits({ source: edited, roles: { labelField: 'title' } });
+
+    expect(store.getState().items.filter((item) => item.active).map((item) => item.value)).toEqual([
+      { title: 'Arrival' },
+      { title: 'Alien' },
+    ]);
+  });
+
+  it('keeps deactivated items so their comparisons still resolve', () => {
+    const edited: DataSource = {
+      ...nested,
+      document: { owner: 'david', movies: [{ title: 'Alien' }] },
+    };
+
+    store.getState().applyEdits({ source: edited, roles: { labelField: 'title' } });
+
+    expect(store.getState().items).toHaveLength(2);
+    expect(store.getState().items.filter((item) => !item.active)).toHaveLength(1);
+  });
+
   it('keeps the workspace id, so items still belong to it', () => {
     const id = store.getState().workspace?.id;
 

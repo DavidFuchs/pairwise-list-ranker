@@ -24,6 +24,8 @@ function setup(overrides: Partial<React.ComponentProps<typeof ApplySummary>> = {
       added: ['y'] as unknown[],
       removed: [item('c')],
       keptComparisons: 47,
+      ordered: [],
+      reordered: false,
     },
     onCancel: vi.fn(),
     onConfirm: vi.fn(),
@@ -66,11 +68,95 @@ describe('ApplySummary', () => {
 
   it('reads sensibly when nothing changed', () => {
     setup({
-      diff: { kept: [{ item: item('a'), entry: 'x' }], added: [], removed: [], keptComparisons: 0 },
+      diff: {
+        kept: [{ item: item('a'), entry: 'x' }],
+        added: [],
+        removed: [],
+        keptComparisons: 0,
+        ordered: [],
+        reordered: false,
+      },
     });
 
     expect(screen.getByText(/1 item unchanged/i)).toBeDefined();
     expect(screen.queryByText(/added/i)).toBeNull();
     expect(screen.queryByText(/removed/i)).toBeNull();
+  });
+
+  it('says plainly when applying would change nothing', () => {
+    setup({
+      diff: {
+        kept: [{ item: item('a'), entry: 'x' }],
+        added: [],
+        removed: [],
+        keptComparisons: 0,
+        ordered: [],
+        reordered: false,
+      },
+    });
+
+    expect(screen.getByText(/nothing changed/i)).toBeDefined();
+  });
+
+  /**
+   * Reordering the text changes nothing a count of added and removed entries
+   * can show, so the summary has to say it outright.
+   */
+  it('reports an order change even when every entry is untouched', () => {
+    setup({
+      diff: {
+        kept: [
+          { item: item('a'), entry: 'x' },
+          { item: item('b'), entry: 'y' },
+        ],
+        added: [],
+        removed: [],
+        keptComparisons: 3,
+        ordered: [],
+        reordered: true,
+      },
+    });
+
+    expect(screen.getByText(/order changed/i)).toBeDefined();
+    expect(screen.queryByText(/nothing changed/i)).toBeNull();
+  });
+
+  /**
+   * Reordering the text sets the starting order, but a ranking that already
+   * has comparisons behind it will not simply follow the text. Saying it would
+   * is a promise the app cannot keep.
+   */
+  it('does not promise the list will follow the text when comparisons survive', () => {
+    setup({
+      diff: {
+        kept: [
+          { item: item('a'), entry: 'x' },
+          { item: item('b'), entry: 'y' },
+        ],
+        added: [],
+        removed: [],
+        keptComparisons: 12,
+        ordered: [],
+        reordered: true,
+      },
+    });
+
+    expect(screen.getByText(/12 comparisons still decide/i)).toBeDefined();
+    expect(screen.queryByText(/will follow your text/i)).toBeNull();
+  });
+
+  it('says the list will follow the text when nothing has been compared', () => {
+    setup({
+      diff: {
+        kept: [{ item: item('a'), entry: 'x' }],
+        added: [],
+        removed: [],
+        keptComparisons: 0,
+        ordered: [],
+        reordered: true,
+      },
+    });
+
+    expect(screen.getByText(/will follow your text/i)).toBeDefined();
   });
 });

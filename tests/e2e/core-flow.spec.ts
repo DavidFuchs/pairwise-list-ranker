@@ -229,3 +229,33 @@ test('a drag that goes nowhere leaves the order alone', async ({ page }) => {
 
   await expect(page.getByRole('listitem').first()).toContainText('Tacos');
 });
+
+test('editing an entry leaves it where the user put it', async ({ page }) => {
+  await enterData(page, DINNERS);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+  await expect(page.getByRole('listitem').first()).toContainText('Tacos');
+
+  await page.getByRole('button', { name: 'Edit data' }).click();
+  await enterData(page, 'Tostadas\nRamen\nCurry\nPho');
+  await page.getByRole('button', { name: 'Apply edits' }).click();
+  await page.getByRole('button', { name: /^Apply edits$/ }).click();
+
+  // The edited entry keeps first place rather than falling to the bottom.
+  await expect(page.getByRole('listitem').first()).toContainText('Tostadas');
+});
+
+test('reordering the text is reported as an order change', async ({ page }) => {
+  await enterData(page, DINNERS);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  await page.getByRole('button', { name: 'Edit data' }).click();
+  await enterData(page, 'Pho\nCurry\nRamen\nTacos');
+  await page.getByRole('button', { name: 'Apply edits' }).click();
+
+  await expect(page.getByText(/order changed/i)).toBeVisible();
+  await expect(page.getByText(/nothing changed/i)).toBeHidden();
+
+  await page.getByRole('button', { name: /^Apply edits$/ }).click();
+
+  await expect(page.getByRole('listitem').first()).toContainText('Pho');
+});

@@ -363,6 +363,12 @@ Rules:
   and removed, and how many comparisons survive
 - entries matched by deep value equality keep their item id, and therefore
   their rating and history; absent entries are deactivated, not deleted
+- items are rebuilt in the order the edited document lists them. Appending new
+  entries instead sends an edited one to the bottom, because changing a field
+  reads as one entry removed and another added
+- reordering the text alone is reported as such. It changes nothing a count of
+  added and removed entries can show, and silence there reads as the app having
+  missed the edit
 
 ### 10.3 Object drill-in
 
