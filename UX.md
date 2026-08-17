@@ -85,14 +85,22 @@ buttons underneath the pair: a detached bank of actions makes the reader map
 "left" and "right" back onto two cards on every single comparison, which is the
 one thing this screen asks them to do hundreds of times.
 
+Each card is itself the choice: pressing anywhere on it picks that item. That
+removes four buttons from a screen whose whole job is picking one of two things.
+
 Each card contains, top to bottom:
 - a side marker (LEFT / RIGHT) and a quiet remove control in the corner
 - the item label, from the label field for object entries
 - summary chips for short scalar fields
 - an expandable details region for the rest of the object
 - a footer, aligned across both cards, holding:
-  - **Choose** — full width, the accent gradient, the only loud element
-  - **Much better** — a soft accent strip beneath it
+  - the keycap for its arrow key, and a `Click to choose` hint that fades in on
+    hover
+  - a circular 🔥 for "much better", always visible so it survives touch
+
+Nested controls stop the press from reaching the card, and the card is not
+pressable at all while a delete confirmation is showing. A hairline divider
+with a small `or` sits in the gutter between the two cards.
 
 Removing an item swaps that card's footer for an inline confirmation, so the
 question is asked on the card being removed rather than in a separate bar.
@@ -109,10 +117,16 @@ Read-only. It shows the user their data, ranked; it never edits it.
 
 Contains:
 - tabs: Ranked, plus the formats the source can produce
+- a grip on each ranked row for dragging it into place, with `Alt` + arrow keys
+  as the keyboard equivalent
 - copy button
 - download button
 - a monospace, selectable view of the exported document
 - a note when removed items are being excluded from the export
+
+Rows slide between positions rather than jumping, so a reshuffle after a
+comparison is visible. Arranging the list by hand starts a new ranking session
+from that order; when there are comparisons to lose, the pane asks first.
 
 Editing goes back to the data screen via `Edit data`, where re-importing is an
 explicit act with a summary. The old editable buffer — a text area that may or
@@ -300,10 +314,12 @@ Type scale:
 ### Buttons
 
 Hierarchy:
-- primary: **Choose**, inside its card, carrying the accent gradient
-- emphasis: **Much better**, a soft accent surface directly below Choose —
-  distinct, but never louder than the primary
-- secondary: skip, drill-in, add item, downloads
+- primary: the comparison card itself — the largest target on the screen, so it
+  needs no button inside it. It lifts on hover and dips on press.
+- emphasis: **much better**, a circular 🔥 in the card's bottom-right corner.
+  The emoji carries the warmth, so the interface keeps exactly one saturated
+  colour.
+- secondary: skip, drill-in, downloads, reorder grips
 - tertiary/destructive: remove item, a faint glyph until it is armed
 
 ### Preview modes

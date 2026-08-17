@@ -198,7 +198,25 @@ Recommended tie order:
 1. higher rating
 2. head-to-head result if available
 3. more wins
-4. earlier creation order
+4. the order the items arrived in
+
+The last one matters more than it looks. Every item of one import is created in
+the same millisecond, so a timestamp cannot separate them, and falling back to
+the item id would display an unranked list in random UUID order. The position
+in the items array is the user's own order, and it is what an unranked list
+shows.
+
+### 6.5 Manual ordering
+
+Dragging a row does not override the derived ranking. It rewrites the source
+document's array into the dragged order and re-imports it through
+`startRanking`, so the ranking stays a pure derivation of comparison history
+and there is never a second source of truth for order.
+
+Because that clears the comparison history, it is confirmed whenever there are
+rated comparisons to lose. With none, it applies silently, which is what makes
+arranging several rows in a row bearable. Items removed during comparison are
+not carried into the new session.
 
 ## 7. Import/export design
 
