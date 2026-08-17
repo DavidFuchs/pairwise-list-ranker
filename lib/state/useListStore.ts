@@ -2,6 +2,7 @@ import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
 
+import { buildExport, buildExportDocument } from '@/lib/export/buildExport';
 import { entriesAtPath } from '@/lib/import/arrayCandidates';
 import { diffImport } from '@/lib/import/diff';
 import { WORKSPACE_VERSION } from '@/lib/persistence/workspaceSnapshot';
@@ -47,6 +48,8 @@ export interface ListState {
   hydrate(): void;
   startRanking(input: StartInput): void;
   applyEdits(input: StartInput): void;
+  /** Manual ordering restarts ranking from that order. See the spec, section 3. */
+  reorderAndRestart(itemIds: string[]): void;
   setName(name: string): void;
   setPreviewTab(tab: PreviewTab): void;
   recordComparison(leftItemId: string, rightItemId: string, outcome: ComparisonOutcome): void;
@@ -190,6 +193,38 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           items,
         });
         persist();
+      },
+
+      /**
+       * A hand-arranged order becomes the new starting point. Rather than
+       * layering manual positions over the derived ranking, the reordered array
+       * is written back into the user's document and re-imported, so the
+       * ranking stays a pure derivation of comparison history.
+       */
+      reorderAndRestart(itemIds: string[]) {
+        const { workspace, items } = get();
+        if (workspace === null) return;
+
+        const byId = new Map(items.map((item) => [item.id, item]));
+        const ordered = itemIds
+          .map((id) => byId.get(id))
+          .filter((item): item is ListItem => item !== undefined && item.active);
+        if (ordered.length === 0) return;
+
+        const entries = ordered.map((item) => item.value);
+        const document = buildExportDocument(workspace.source, workspace.roles, entries);
+        const rawText = buildExport(
+          workspace.source,
+          workspace.roles,
+          ordered,
+          workspace.source.format,
+        );
+
+        get().startRanking({
+          source: { ...workspace.source, document, rawText },
+          roles: workspace.roles,
+          name: workspace.name,
+        });
       },
 
       setName(name: string) {

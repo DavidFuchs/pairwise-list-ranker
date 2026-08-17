@@ -229,3 +229,96 @@ describe('renaming', () => {
     expect(store.getState().workspace?.source.document).toEqual(nested.document);
   });
 });
+
+describe('reorderAndRestart', () => {
+  let store: ReturnType<typeof makeStore>;
+
+  beforeEach(() => {
+    store = makeStore();
+    store.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
+    const [left, right] = store.getState().items;
+    store.getState().recordComparison(left?.id ?? '', right?.id ?? '', 'left');
+  });
+
+  it('applies the new order', () => {
+    const ids = store.getState().items.map((item) => item.id);
+
+    store.getState().reorderAndRestart([...ids].reverse());
+
+    expect(store.getState().items.map((item) => item.value)).toEqual([
+      { title: 'Arrival' },
+      { title: 'Alien' },
+    ]);
+  });
+
+  it('clears the comparison history', () => {
+    const ids = store.getState().items.map((item) => item.id);
+
+    store.getState().reorderAndRestart([...ids].reverse());
+
+    expect(store.getState().comparisonEvents).toEqual([]);
+  });
+
+  it('writes the new order into the source document', () => {
+    const ids = store.getState().items.map((item) => item.id);
+
+    store.getState().reorderAndRestart([...ids].reverse());
+    const document = store.getState().workspace?.source.document as {
+      movies: { title: string }[];
+    };
+
+    expect(document.movies.map((entry) => entry.title)).toEqual(['Arrival', 'Alien']);
+  });
+
+  it('keeps the wrapper keys of the source document', () => {
+    const ids = store.getState().items.map((item) => item.id);
+
+    store.getState().reorderAndRestart([...ids].reverse());
+
+    expect(store.getState().workspace?.source.document).toMatchObject({ owner: 'david' });
+  });
+
+  it('regenerates the raw text, so editing shows the new order', () => {
+    const ids = store.getState().items.map((item) => item.id);
+
+    store.getState().reorderAndRestart([...ids].reverse());
+    const rawText = store.getState().workspace?.source.rawText ?? '';
+
+    expect(rawText.indexOf('Arrival')).toBeLessThan(rawText.indexOf('Alien'));
+  });
+
+  it('keeps the workspace name', () => {
+    store.getState().setName('Films');
+    const ids = store.getState().items.map((item) => item.id);
+
+    store.getState().reorderAndRestart([...ids].reverse());
+
+    expect(store.getState().workspace?.name).toBe('Films');
+  });
+
+  it('drops items that were removed during comparison', () => {
+    const ids = store.getState().items.map((item) => item.id);
+    store.getState().removeItem(ids[0] ?? '');
+
+    store.getState().reorderAndRestart([ids[1] ?? '']);
+
+    expect(store.getState().items).toHaveLength(1);
+    expect(store.getState().items[0]?.value).toEqual({ title: 'Arrival' });
+  });
+
+  it('ignores ids that are not in the list', () => {
+    const ids = store.getState().items.map((item) => item.id);
+
+    store.getState().reorderAndRestart([...ids, 'nonsense']);
+
+    expect(store.getState().items).toHaveLength(2);
+  });
+
+  it('does nothing without a workspace', () => {
+    const empty = makeStore();
+
+    empty.getState().reorderAndRestart(['a']);
+
+    expect(empty.getState().workspace).toBeNull();
+  });
+});
