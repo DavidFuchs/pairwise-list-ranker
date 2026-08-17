@@ -65,7 +65,7 @@ export function FoundPanel({
       <View style={styles.header}>
         <Text style={styles.title}>What we found</Text>
         <Text style={styles.subtitle}>
-          {entries.length > 0
+          {entries.length > 0 || analysis.candidates.length <= 1
             ? `${entries.length} items`
             : `${analysis.candidates.length} lists`}
         </Text>
