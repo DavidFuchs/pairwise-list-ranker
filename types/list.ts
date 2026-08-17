@@ -1,28 +1,10 @@
-/** Canonical list and item shapes. See ARCHITECTURE.md section 5.1. */
+/** Item shapes. The list itself now lives in types/source.ts. */
 
 export type PrimitiveItemValue = string;
 
 export type ComplexItemValue = Record<string, unknown>;
 
 export type ItemValue = PrimitiveItemValue | ComplexItemValue;
-
-export type ListKind = 'primitive' | 'object';
-
-export type ExportFormat = 'gui' | 'yaml' | 'json' | 'markdown';
-
-/** The formats that produce copyable/downloadable output. `gui` is preview-only. */
-export type TextFormat = Exclude<ExportFormat, 'gui'>;
-
-export interface WorkspaceList {
-  id: string;
-  title: string;
-  description?: string;
-  kind: ListKind;
-  /** Object lists only: which scalar field drives the display label. */
-  sortField?: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface ListItem {
   id: string;

@@ -4,141 +4,93 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PreviewPane } from '@/components/preview/PreviewPane';
-import { selectRanking } from '@/lib/state/selectors';
 import type { ListItem } from '@/types/list';
+import type { RankedItem } from '@/types/ranking';
 
-const NOW = '2026-08-15T12:00:00.000Z';
+const NOW = '2026-08-16T00:00:00.000Z';
 
-function item(id: string, value: ListItem['value']): ListItem {
-  return { id, listId: 'list-1', value, active: true, createdAt: NOW, updatedAt: NOW };
+function ranked(): RankedItem<ListItem>[] {
+  return [{ title: 'Arrival' }, { title: 'Alien' }].map((value, index) => ({
+    rank: index + 1,
+    item: {
+      id: `item-${index}`,
+      listId: 'ws-1',
+      value,
+      active: true,
+      createdAt: NOW,
+      updatedAt: NOW,
+    },
+    state: {
+      itemId: `item-${index}`,
+      rating: 1500,
+      comparisons: 0,
+      wins: 0,
+      losses: 0,
+      skips: 0,
+    },
+  }));
 }
 
-const items = [item('item-1', 'Tacos'), item('item-2', 'Ramen')];
-const ranking = selectRanking(items, []);
-
 function setup(overrides: Partial<React.ComponentProps<typeof PreviewPane>> = {}) {
-  const props = {
-    mode: 'gui' as const,
-    ranking,
-    exportText: 'version: 1\ntitle: Dinners\n',
-    filename: 'dinners-2026-08-15.yaml',
-    issues: [],
-    onModeChange: vi.fn(),
-    onDraftChange: vi.fn(),
-    onApply: vi.fn(),
+  const props: React.ComponentProps<typeof PreviewPane> = {
+    tab: 'ranked',
+    tabs: ['ranked', 'yaml', 'json'],
+    onTabChange: vi.fn(),
+    ranking: ranked(),
+    labelField: 'title',
+    exportText: 'movies:\n  - title: Arrival\n',
+    filename: 'films-2026-08-16.yaml',
+    format: 'yaml',
     ...overrides,
   };
   render(<PreviewPane {...props} />);
   return { ...props, user: userEvent.setup() };
 }
 
-describe('PreviewPane in GUI mode', () => {
-  it('shows the ranked list with positions', () => {
+describe('PreviewPane', () => {
+  it('shows the ranking on the ranked tab', () => {
     setup();
 
-    expect(screen.getByText('1')).toBeDefined();
-    expect(screen.getByText('Tacos')).toBeDefined();
-    expect(screen.getByText('2')).toBeDefined();
+    expect(screen.getByText('Arrival')).toBeDefined();
   });
 
-  it('offers no copy or download, because the GUI view is not exportable', () => {
-    setup();
-
-    expect(screen.queryByRole('button', { name: /copy/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /download/i })).toBeNull();
-  });
-
-  it('offers no editor in GUI mode', () => {
+  it('offers no editor on the ranked tab', () => {
     setup();
 
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  it('switches modes from the tabs', async () => {
-    const { onModeChange, user } = setup();
+  it('shows the exported text on a format tab', () => {
+    setup({ tab: 'yaml' });
 
-    await user.click(screen.getByRole('tab', { name: /yaml/i }));
-
-    expect(onModeChange).toHaveBeenCalledWith('yaml');
+    expect(screen.getByText(/movies:/)).toBeDefined();
   });
 
-  it('marks the active tab as selected', () => {
-    setup();
+  it('never offers an editable buffer', () => {
+    setup({ tab: 'yaml' });
 
-    expect(screen.getByRole('tab', { name: /gui/i }).getAttribute('aria-selected')).toBe('true');
-  });
-});
-
-describe('PreviewPane in a text mode', () => {
-  it('shows the serialized list in an editable field', () => {
-    setup({ mode: 'yaml' });
-
-    const editor = screen.getByRole('textbox');
-    expect((editor as HTMLTextAreaElement).value).toContain('title: Dinners');
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.queryByRole('button', { name: /import|apply/i })).toBeNull();
   });
 
-  it('offers copy and download', () => {
-    setup({ mode: 'yaml' });
+  it('offers copy and download on a format tab', () => {
+    setup({ tab: 'yaml' });
 
     expect(screen.getByRole('button', { name: /copy/i })).toBeDefined();
     expect(screen.getByRole('button', { name: /download/i })).toBeDefined();
   });
 
-  it('shows the download filename so the user knows what they get', () => {
-    setup({ mode: 'yaml' });
+  it('shows only the tabs the source can produce', () => {
+    setup({ tabs: ['ranked', 'yaml'] });
 
-    expect(screen.getByText(/dinners-2026-08-15\.yaml/)).toBeDefined();
+    expect(screen.queryByRole('tab', { name: /json/i })).toBeNull();
   });
 
-  it('reports typing without importing anything', async () => {
-    const { onDraftChange, onApply, user } = setup({ mode: 'yaml' });
+  it('reports a tab change', async () => {
+    const { onTabChange, user } = setup();
 
-    await user.type(screen.getByRole('textbox'), 'x');
+    await user.click(screen.getByRole('tab', { name: /json/i }));
 
-    expect(onDraftChange).toHaveBeenCalled();
-    expect(onApply).not.toHaveBeenCalled();
-  });
-
-  it('shows the edited draft instead of the export text', () => {
-    setup({ mode: 'json', draft: '{"draft": true}' });
-
-    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('{"draft": true}');
-  });
-
-  it('imports the draft when asked', async () => {
-    const { onApply, user } = setup({ mode: 'json', draft: '[]' });
-
-    await user.click(screen.getByRole('button', { name: /import/i }));
-
-    expect(onApply).toHaveBeenCalled();
-  });
-
-  it('has nothing to import until the text is edited', () => {
-    setup({ mode: 'json' });
-
-    expect(
-      screen.getByRole('button', { name: /import/i }).getAttribute('aria-disabled'),
-    ).toBe('true');
-  });
-
-  it('shows parse problems with their line numbers', () => {
-    setup({
-      mode: 'json',
-      draft: '{ broken',
-      issues: [{ path: '', message: 'Invalid JSON: unexpected token', line: 1 }],
-    });
-
-    expect(screen.getByText(/line 1/i)).toBeDefined();
-    expect(screen.getByText(/unexpected token/i)).toBeDefined();
-  });
-
-  it('keeps the user text on screen when parsing failed', () => {
-    setup({
-      mode: 'json',
-      draft: '{ broken',
-      issues: [{ path: '', message: 'Invalid JSON', line: 1 }],
-    });
-
-    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('{ broken');
+    expect(onTabChange).toHaveBeenCalledWith('json');
   });
 });

@@ -47,8 +47,14 @@ describe('findArrayCandidates', () => {
     ]);
   });
 
-  it('skips arrays with fewer than two entries', () => {
-    expect(findArrayCandidates({ only: [{ a: 1 }] }).candidates).toEqual([]);
+  // Too short to rank, but still the list the user meant. describeReadiness
+  // blocks it with a message that says so, rather than "no list found".
+  it('offers a one-entry array, leaving the too-short rule to readiness', () => {
+    expect(findArrayCandidates({ only: [{ a: 1 }] }).candidates).toHaveLength(1);
+  });
+
+  it('skips empty arrays, which have nothing to rank or describe', () => {
+    expect(findArrayCandidates({ none: [] }).candidates).toEqual([]);
   });
 
   it('skips arrays that mix scalars and objects, and says why', () => {

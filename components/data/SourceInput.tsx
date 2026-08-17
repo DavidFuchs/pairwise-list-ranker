@@ -87,7 +87,7 @@ export function SourceInput({
       )}
 
       {issues.map((issue, index) => (
-        <Text key={`${issue.path}-${index}`} style={styles.issue}>
+        <Text key={`${issue.path}-${index}`} role="alert" style={styles.issue}>
           {issue.line === undefined ? issue.message : `Line ${issue.line}: ${issue.message}`}
         </Text>
       ))}

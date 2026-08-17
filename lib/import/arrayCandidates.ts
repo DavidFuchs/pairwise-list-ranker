@@ -12,7 +12,11 @@ export interface CandidateScan {
   warnings: string[];
 }
 
-/** Ranking one item is not ranking. */
+/**
+ * Ranking one item is not ranking, but that rule belongs to describeReadiness,
+ * not here: a one-item array is still the list the user meant, and saying "no
+ * list found" about it would be a lie. Discovery offers it; readiness blocks it.
+ */
 export const MIN_RANKABLE = 2;
 
 const MAX_DEPTH = 5;
@@ -62,7 +66,7 @@ export function findArrayCandidates(document: unknown): CandidateScan {
 }
 
 function describeArray(entries: unknown[], path: string[]): ArrayCandidate | null {
-  if (entries.length < MIN_RANKABLE) return null;
+  if (entries.length === 0) return null;
 
   const allObjects = entries.every(isPlainObject);
   const allScalars = entries.every(isScalar);

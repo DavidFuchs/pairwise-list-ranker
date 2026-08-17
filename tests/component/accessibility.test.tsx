@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ComparisonDeck } from '@/components/comparison/ComparisonDeck';
+import { SourceInput } from '@/components/data/SourceInput';
 import { AppShell } from '@/components/layout/AppShell';
 import { PreviewPane } from '@/components/preview/PreviewPane';
 import type { ListItem } from '@/types/list';
@@ -67,32 +68,46 @@ describe('preview pane', () => {
   it('labels the ranked list for screen readers', () => {
     render(
       <PreviewPane
-        mode="gui"
+        tab="ranked"
+        tabs={['ranked', 'yaml']}
         ranking={[]}
         exportText=""
         filename="list.yaml"
-        issues={[]}
-        onModeChange={vi.fn()}
-        onDraftChange={vi.fn()}
-        onApply={vi.fn()}
+        format="yaml"
+        onTabChange={vi.fn()}
       />,
     );
 
     expect(screen.getByLabelText(/current ranking/i)).toBeDefined();
   });
 
-  it('announces parse problems as an alert', () => {
+  it('labels the exported text region for screen readers', () => {
     render(
       <PreviewPane
-        mode="json"
+        tab="yaml"
+        tabs={['ranked', 'yaml']}
         ranking={[]}
-        exportText=""
-        filename="list.json"
-        draft="{ broken"
+        exportText="movies: []"
+        filename="list.yaml"
+        format="yaml"
+        onTabChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText(/yaml export/i)).toBeDefined();
+  });
+});
+
+describe('source input', () => {
+  it('announces parse problems as an alert', () => {
+    render(
+      <SourceInput
+        value="{ broken"
+        onChange={vi.fn()}
+        override="json"
+        onOverrideChange={vi.fn()}
+        format="json"
         issues={[{ path: '', message: 'Invalid JSON', line: 1 }]}
-        onModeChange={vi.fn()}
-        onDraftChange={vi.fn()}
-        onApply={vi.fn()}
       />,
     );
 

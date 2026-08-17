@@ -1,73 +1,60 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { FormatTabs } from '@/components/editor/FormatTabs';
-import { ImportToolbar } from '@/components/editor/ImportToolbar';
-import { TextFormatEditor } from '@/components/editor/TextFormatEditor';
+import { ExportToolbar } from '@/components/preview/ExportToolbar';
+import { PreviewTabs } from '@/components/preview/PreviewTabs';
 import { RankedListPreview } from '@/components/preview/RankedListPreview';
+import { ReadOnlyCode } from '@/components/preview/ReadOnlyCode';
 import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
-import type { ParseIssue } from '@/lib/validation/listSchemas';
-import type { ExportFormat, ListItem, TextFormat } from '@/types/list';
+import type { ListItem } from '@/types/list';
 import type { RankedItem } from '@/types/ranking';
+import type { PreviewTab, SourceFormat } from '@/types/source';
 
 export interface PreviewPaneProps {
-  mode: ExportFormat;
-  onModeChange: (mode: ExportFormat) => void;
+  tab: PreviewTab;
+  tabs: PreviewTab[];
+  onTabChange: (tab: PreviewTab) => void;
   ranking: RankedItem<ListItem>[];
-  sortField?: string;
-  /** The current list serialized in the active text format. */
+  labelField?: string;
+  /** The user's document, ranked and serialized for the active tab. */
   exportText: string;
   filename: string;
-  /** Unsaved editor text, if the user has typed something. */
-  draft?: string;
-  onDraftChange: (text: string) => void;
-  onApply: () => void;
-  issues: ParseIssue[];
+  format: SourceFormat;
 }
 
+/**
+ * Read-only by design. Editing happens on the data screen, where re-importing
+ * is an explicit act with a summary, rather than a buffer that may or may not
+ * have been applied.
+ */
 export function PreviewPane({
-  mode,
-  onModeChange,
+  tab,
+  tabs,
+  onTabChange,
   ranking,
-  sortField,
+  labelField,
   exportText,
   filename,
-  draft,
-  onDraftChange,
-  onApply,
-  issues,
+  format,
 }: PreviewPaneProps) {
-  const isTextMode = mode !== 'gui';
-
   return (
     <View style={styles.pane} dataSet={{ surface: 'panel' }}>
       <View style={styles.header}>
-        <Text style={styles.title}>Preview</Text>
+        <Text style={styles.title}>Your data</Text>
         <Text style={styles.subtitle}>
-          {isTextMode ? 'Edit and import, or copy and download' : 'Live ranking · not exportable'}
+          {tab === 'ranked' ? 'Live ranking' : 'Your document, in the new order'}
         </Text>
       </View>
 
-      <FormatTabs mode={mode} onChange={onModeChange} />
+      <PreviewTabs tab={tab} tabs={tabs} onChange={onTabChange} />
 
-      {isTextMode ? (
-        <View style={styles.body}>
-          <ImportToolbar
-            format={mode as TextFormat}
-            text={draft ?? exportText}
-            filename={filename}
-            canApply={draft !== undefined}
-            onApply={onApply}
-          />
-          <TextFormatEditor
-            format={mode as TextFormat}
-            value={draft ?? exportText}
-            onChange={onDraftChange}
-            issues={issues}
-          />
+      {tab === 'ranked' ? (
+        <View style={styles.body} accessibilityLabel="Current ranking" role="region">
+          <RankedListPreview ranking={ranking} sortField={labelField} />
         </View>
       ) : (
-        <View style={styles.body} accessibilityLabel="Current ranking" role="region">
-          <RankedListPreview ranking={ranking} sortField={sortField} />
+        <View style={styles.body}>
+          <ExportToolbar format={format} text={exportText} filename={filename} />
+          <ReadOnlyCode text={exportText} label={`${format} export`} />
         </View>
       )}
     </View>

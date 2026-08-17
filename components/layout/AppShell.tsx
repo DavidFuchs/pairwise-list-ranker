@@ -9,8 +9,11 @@ import { colors, fonts, space } from '@/lib/theme';
 export interface AppShellProps {
   listName: string;
   statusText: string;
-  onReset: () => void;
-  rail: ReactNode;
+  /** Omitted on the data screen, where there is nothing to reset yet. */
+  onReset?: () => void;
+  /** e.g. a "Back to ranking" link. */
+  headerAction?: ReactNode;
+  rail?: ReactNode;
   stage: ReactNode;
   preview: ReactNode;
 }
@@ -21,7 +24,15 @@ export interface AppShellProps {
  * Doing this in flexbox rather than from a measured window width keeps the
  * static build and the hydrated page rendering the same markup.
  */
-export function AppShell({ listName, statusText, onReset, rail, stage, preview }: AppShellProps) {
+export function AppShell({
+  listName,
+  statusText,
+  onReset,
+  headerAction,
+  rail,
+  stage,
+  preview,
+}: AppShellProps) {
   const [confirmingReset, setConfirmingReset] = useState(false);
 
   return (
@@ -36,8 +47,9 @@ export function AppShell({ listName, statusText, onReset, rail, stage, preview }
 
         <View style={styles.headerActions}>
           <Text style={styles.status}>{statusText}</Text>
+          {headerAction}
           <ThemeToggle />
-          {confirmingReset ? (
+          {onReset === undefined ? null : confirmingReset ? (
             <>
               <Button
                 label="Cancel"
@@ -77,7 +89,7 @@ export function AppShell({ listName, statusText, onReset, rail, stage, preview }
 
       <ScrollView contentContainerStyle={styles.scrollBody}>
         <View style={styles.body}>
-          {rail !== null && <View style={styles.rail}>{rail}</View>}
+          {rail != null && <View style={styles.rail}>{rail}</View>}
 
           <View style={styles.stage} role="main">
             {stage}
