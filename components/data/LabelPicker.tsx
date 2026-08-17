@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, radius, space } from '@/lib/theme';
 import type { ObjectSchemaHint, LabelFieldCandidate } from '@/lib/import/labelField';
 
-export interface SortFieldPickerProps {
+export interface LabelPickerProps {
   candidates: LabelFieldCandidate[];
   schema: ObjectSchemaHint;
   value?: string;
@@ -14,7 +14,7 @@ export interface SortFieldPickerProps {
  * Object lists need a label field before ranking can start. When no safe
  * default exists the app asks here, showing what each choice would look like.
  */
-export function SortFieldPicker({ candidates, schema, value, onChange }: SortFieldPickerProps) {
+export function LabelPicker({ candidates, schema, value, onChange }: LabelPickerProps) {
   if (candidates.length === 0) {
     return (
       <View style={styles.panel} dataSet={{ surface: 'panel' }}>

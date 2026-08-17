@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { SortFieldPicker } from '@/components/lists/SortFieldPicker';
+import { LabelPicker } from '@/components/data/LabelPicker';
 import { collectLabelFieldCandidates } from '@/lib/import/labelField';
 
 const films = [
@@ -11,18 +11,18 @@ const films = [
   { title: 'Alien', year: 1979, director: 'Ridley Scott', cast: ['Sigourney Weaver'] },
 ];
 
-function setup(overrides: Partial<React.ComponentProps<typeof SortFieldPicker>> = {}) {
+function setup(overrides: Partial<React.ComponentProps<typeof LabelPicker>> = {}) {
   const props = {
     candidates: collectLabelFieldCandidates(films),
     schema: { itemCount: 2, fields: [] },
     onChange: vi.fn(),
     ...overrides,
   };
-  render(<SortFieldPicker {...props} />);
+  render(<LabelPicker {...props} />);
   return { ...props, user: userEvent.setup() };
 }
 
-describe('SortFieldPicker', () => {
+describe('LabelPicker', () => {
   it('offers every scalar field as a choice', () => {
     setup();
 

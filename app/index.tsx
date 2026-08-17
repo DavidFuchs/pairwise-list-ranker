@@ -4,7 +4,7 @@ import { ComparisonDeck } from '@/components/comparison/ComparisonDeck';
 import { AppShell } from '@/components/layout/AppShell';
 import { EmptyState } from '@/components/lists/EmptyState';
 import { ListControls } from '@/components/lists/ListControls';
-import { SortFieldPicker } from '@/components/lists/SortFieldPicker';
+import { LabelPicker } from '@/components/data/LabelPicker';
 import { PreviewPane } from '@/components/preview/PreviewPane';
 import { WorkspaceControls } from '@/components/editor/WorkspaceControls';
 import { downloadText } from '@/lib/browser/exportActions';
@@ -106,7 +106,7 @@ export default function WorkspaceScreen() {
               onRemoveItem={(itemId) => listStore.getState().removeItem(itemId)}
             />
             {list.kind === 'object' && (
-              <SortFieldPicker
+              <LabelPicker
                 candidates={selectSortFieldOptions(items)}
                 schema={selectObjectSchema(items)}
                 value={list.sortField}
