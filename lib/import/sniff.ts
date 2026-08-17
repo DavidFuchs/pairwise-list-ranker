@@ -21,7 +21,10 @@ export function sniffFormat(text: string): SourceFormat {
   }
 
   try {
-    const payload = parseYamlText(source, { logLevel: 'silent' });
+    // 'error' matches parseYamlSource's strictness: sniffing something as YAML
+    // that then fails to actually parse as YAML would strand the user on a
+    // format the app picked for them but can't itself read.
+    const payload = parseYamlText(source, { logLevel: 'error' });
     // A bare scalar means YAML read the whole blob as one string, which is
     // never what a user pasting a list meant.
     if (payload !== null && typeof payload === 'object') return 'yaml';

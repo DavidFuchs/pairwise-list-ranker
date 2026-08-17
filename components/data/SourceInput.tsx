@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { FileDrop } from '@/components/data/FileDrop';
+import { SAMPLE_JSON, SAMPLE_LIST, SAMPLE_YAML } from '@/lib/import/sampleData';
 import type { ParseIssue } from '@/lib/import/types';
 import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
 import type { SourceFormat } from '@/types/source';
@@ -15,6 +16,8 @@ export interface SourceInputProps {
   /** The format actually in use, whether detected or forced. */
   format: SourceFormat;
   issues: ParseIssue[];
+  /** Which format tabs the current data honestly supports. */
+  availableOverrides?: FormatOverride[];
 }
 
 const OVERRIDES: { key: FormatOverride; label: string; accessibilityLabel: string }[] = [
@@ -30,6 +33,14 @@ const FORMAT_NAMES: Record<SourceFormat, string> = {
   json: 'JSON',
 };
 
+// Sample text per format: the plain-list titles alone, or the richer
+// year/genre data for YAML and JSON, matching whichever tab is active.
+const SAMPLE_TEXT: Record<SourceFormat, string> = {
+  list: SAMPLE_LIST,
+  yaml: SAMPLE_YAML,
+  json: SAMPLE_JSON,
+};
+
 export function SourceInput({
   value,
   onChange,
@@ -37,7 +48,9 @@ export function SourceInput({
   onOverrideChange,
   format,
   issues,
+  availableOverrides = OVERRIDES.map((option) => option.key),
 }: SourceInputProps) {
+  const visibleOverrides = OVERRIDES.filter((option) => availableOverrides.includes(option.key));
   return (
     <View style={styles.panel} dataSet={{ surface: 'panel' }}>
       <View style={styles.header}>
@@ -58,10 +71,29 @@ export function SourceInput({
       />
 
       <View style={styles.controls}>
-        <FileDrop onFile={onChange} />
+        <View style={styles.sources}>
+          <FileDrop onFile={onChange} />
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Load sample data"
+            onPress={() => {
+              // Load data that matches the active tab: the plain titles on
+              // Auto/Plain list, or the richer year/genre data on YAML/JSON.
+              // Some titles (e.g. "2001: A Space Odyssey") read as YAML keys
+              // to the auto-sniffer, so Auto still pins to Plain list.
+              const target = override === 'yaml' || override === 'json' ? override : 'list';
+              onOverrideChange(target);
+              onChange(SAMPLE_TEXT[target]);
+            }}
+            style={styles.sampleButton}
+          >
+            <Text style={styles.sampleButtonLabel}>Load sample data</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.overrides} role="radiogroup" aria-label="How to read the text">
-          {OVERRIDES.map((option) => {
+          {visibleOverrides.map((option) => {
             const selected = option.key === override;
 
             return (
@@ -132,6 +164,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: space.sm,
   },
+  sources: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  sampleButton: {
+    paddingVertical: space.xs,
+    paddingHorizontal: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceSunken,
+  },
+  sampleButtonLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.textPrimary },
   overrides: { flexDirection: 'row', gap: space.xs },
   override: {
     paddingVertical: space.xs,

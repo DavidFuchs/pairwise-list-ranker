@@ -89,4 +89,38 @@ describe('SourceInput', () => {
 
     expect(screen.getByLabelText(/choose a file to import/i)).toBeDefined();
   });
+
+  it('loads the plain-list sample by default', async () => {
+    const { onChange, onOverrideChange, user } = setup();
+
+    await user.click(screen.getByRole('button', { name: /load sample data/i }));
+
+    expect(onOverrideChange).toHaveBeenCalledWith('list');
+    expect(onChange).toHaveBeenCalledWith(expect.not.stringContaining('genre'));
+  });
+
+  it('loads the complex sample while on the YAML tab', async () => {
+    const { onChange, onOverrideChange, user } = setup({ override: 'yaml' });
+
+    await user.click(screen.getByRole('button', { name: /load sample data/i }));
+
+    expect(onOverrideChange).toHaveBeenCalledWith('yaml');
+    expect(onChange).toHaveBeenCalledWith(expect.stringContaining('genre'));
+  });
+
+  it('loads the complex sample while on the JSON tab', async () => {
+    const { onChange, onOverrideChange, user } = setup({ override: 'json' });
+
+    await user.click(screen.getByRole('button', { name: /load sample data/i }));
+
+    expect(onOverrideChange).toHaveBeenCalledWith('json');
+    expect(onChange).toHaveBeenCalledWith(expect.stringContaining('"genre"'));
+  });
+
+  it('hides a format tab the current data cannot honestly become', () => {
+    setup({ availableOverrides: ['auto', 'yaml', 'json'] });
+
+    expect(screen.queryByRole('radio', { name: /read the text as a plain list/i })).toBeNull();
+    expect(screen.getByRole('radio', { name: /read the text as yaml/i })).toBeDefined();
+  });
 });

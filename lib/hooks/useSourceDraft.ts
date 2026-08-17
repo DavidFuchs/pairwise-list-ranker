@@ -5,7 +5,14 @@ import { analyzeSource } from '@/lib/import/analyze';
 import type { SourceAnalysis } from '@/lib/import/analyze';
 import { entriesAtPath } from '@/lib/import/arrayCandidates';
 import { resolveRoles } from '@/lib/import/roles';
+import { serializeDocument } from '@/lib/import/serialize';
 import type { DataSource, FieldRoles } from '@/types/source';
+
+const ALL_FORMATS: FormatOverride[] = ['auto', 'list', 'yaml', 'json'];
+
+function isComplexEntry(value: unknown): boolean {
+  return typeof value === 'object' && value !== null;
+}
 
 export interface SourceDraftSeed {
   rawText: string;
@@ -20,7 +27,13 @@ export interface SourceDraft {
   selectedPath: string[] | null;
   roles: FieldRoles;
   entries: unknown[];
+  /** The format tabs the current data can honestly be shown as. Plain list
+   * drops out once an entry is more than a bare scalar, the same rule the
+   * ranking screen's export tabs use. */
+  availableOverrides: FormatOverride[];
   setRawText: (text: string) => void;
+  /** Switching to list/yaml/json re-renders the current data in that syntax,
+   * the same transform the ranking screen's preview tabs perform. */
   setOverride: (override: FormatOverride) => void;
   selectPath: (path: string[]) => void;
   setRoles: (roles: FieldRoles) => void;
@@ -42,7 +55,7 @@ interface RolesOverride {
  */
 export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
   const [rawText, setRawText] = useState(seed?.rawText ?? '');
-  const [override, setOverride] = useState<FormatOverride>('auto');
+  const [override, setOverrideState] = useState<FormatOverride>('auto');
   const [chosenPath, setChosenPath] = useState<string[] | null>(seed?.arrayPath ?? null);
   const [rolesOverride, setRolesOverride] = useState<RolesOverride>({
     labelField: seed?.roles.labelField,
@@ -74,6 +87,28 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     return { ...resolved, positionField: undefined };
   }, [entries, rolesOverride]);
 
+  const availableOverrides = useMemo(() => {
+    const complex = entries.some(isComplexEntry);
+    return complex ? ALL_FORMATS.filter((format) => format !== 'list') : ALL_FORMATS;
+  }, [entries]);
+
+  const setOverride = useCallback(
+    (next: FormatOverride) => {
+      // 'auto' isn't a syntax to render into, and re-clicking the active tab
+      // shouldn't reformat text the user may have hand-edited since.
+      const canTransform = next !== 'auto' && next !== override && analysis.issues.length === 0;
+
+      if (canTransform && next === 'list' && entries.length > 0 && !entries.some(isComplexEntry)) {
+        setRawText(`${entries.map(String).join('\n')}\n`);
+      } else if (canTransform && (next === 'yaml' || next === 'json')) {
+        setRawText(serializeDocument(analysis.document, next));
+      }
+
+      setOverrideState(next);
+    },
+    [analysis, entries, override],
+  );
+
   const setRoles = useCallback((next: FieldRoles) => {
     setRolesOverride({
       labelField: next.labelField,
@@ -99,6 +134,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     selectedPath,
     roles,
     entries,
+    availableOverrides,
     setRawText,
     setOverride,
     selectPath: setChosenPath,

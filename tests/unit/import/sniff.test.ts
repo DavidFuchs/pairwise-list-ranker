@@ -26,6 +26,20 @@ describe('sniffFormat', () => {
   it('treats a single word as a plain list, not a YAML scalar', () => {
     expect(sniffFormat('Alien')).toBe('list');
   });
+
+  it('treats a list whose first line looks like a YAML key as a plain list', () => {
+    // "2001: A Space Odyssey" reads as a YAML mapping key on its own, but the
+    // following bare lines make the whole blob invalid YAML — sniffing must
+    // reject it the same way parseSource would, not hand back a format it
+    // cannot actually parse.
+    const text = '2001: A Space Odyssey\nBlade Runner\nAlien\n';
+
+    expect(sniffFormat(text)).toBe('list');
+    expect(parseSource(text, sniffFormat(text))).toEqual({
+      ok: true,
+      data: ['2001: A Space Odyssey', 'Blade Runner', 'Alien'],
+    });
+  });
 });
 
 describe('parseSource', () => {

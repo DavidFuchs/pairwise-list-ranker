@@ -47,6 +47,8 @@ export default function DataScreen() {
   }, [hydrated, resumed, workspace, router]);
 
   const editing = workspace !== null;
+  // An empty box isn't a parse error, so neither panel should treat it as one.
+  const rawTextIsBlank = draft.rawText.trim() === '';
 
   function handleSubmit() {
     const source = draft.toSource();
@@ -95,13 +97,14 @@ export default function DataScreen() {
           override={draft.override}
           onOverrideChange={draft.setOverride}
           format={draft.analysis.format}
-          issues={draft.rawText.trim() === '' ? [] : draft.analysis.issues}
+          issues={rawTextIsBlank ? [] : draft.analysis.issues}
+          availableOverrides={draft.availableOverrides}
         />
       }
       preview={
         pending === null ? (
           <FoundPanel
-            analysis={draft.analysis}
+            analysis={rawTextIsBlank ? { ...draft.analysis, issues: [] } : draft.analysis}
             selectedPath={draft.selectedPath}
             roles={draft.roles}
             entries={draft.entries}

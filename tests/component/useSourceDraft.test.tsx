@@ -72,6 +72,43 @@ describe('useSourceDraft', () => {
     expect(result.current.entries).toHaveLength(2);
   });
 
+  it('transforms a plain list into YAML when the tab switches', () => {
+    const { result } = renderHook(() => useSourceDraft());
+    act(() => result.current.setRawText('Alien\nArrival\n'));
+
+    act(() => result.current.setOverride('yaml'));
+
+    expect(result.current.analysis.format).toBe('yaml');
+    expect(result.current.entries).toEqual(['Alien', 'Arrival']);
+    expect(result.current.rawText).not.toBe('Alien\nArrival\n');
+  });
+
+  it('round-trips a transform back to a plain list', () => {
+    const { result } = renderHook(() => useSourceDraft());
+    act(() => result.current.setRawText('Alien\nArrival\n'));
+    act(() => result.current.setOverride('json'));
+
+    act(() => result.current.setOverride('list'));
+
+    expect(result.current.analysis.format).toBe('list');
+    expect(result.current.entries).toEqual(['Alien', 'Arrival']);
+  });
+
+  it('hides plain list once entries are complex objects', () => {
+    const { result } = renderHook(() => useSourceDraft());
+    act(() => result.current.setRawText(NESTED));
+    act(() => result.current.selectPath(['movies']));
+
+    expect(result.current.availableOverrides).not.toContain('list');
+  });
+
+  it('offers plain list while entries stay scalar', () => {
+    const { result } = renderHook(() => useSourceDraft());
+    act(() => result.current.setRawText('Alien\nArrival\n'));
+
+    expect(result.current.availableOverrides).toContain('list');
+  });
+
   it('builds a data source from the current choices', () => {
     const { result } = renderHook(() => useSourceDraft());
     act(() => result.current.setRawText(NESTED));

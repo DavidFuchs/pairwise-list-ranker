@@ -1,5 +1,4 @@
-import { stringify as stringifyYaml } from 'yaml';
-
+import { serializeDocument } from '@/lib/import/serialize';
 import type { ListItem } from '@/types/list';
 import type { DataSource, FieldRoles, SourceFormat } from '@/types/source';
 
@@ -65,9 +64,8 @@ export function buildExport(
 
   switch (format) {
     case 'json':
-      return `${JSON.stringify(document, null, 2)}\n`;
     case 'yaml':
-      return stringifyYaml(document, { lineWidth: 0 });
+      return serializeDocument(document, format);
     case 'list':
       return `${entries.map((entry) => labelOf(entry, roles.labelField)).join('\n')}\n`;
   }
