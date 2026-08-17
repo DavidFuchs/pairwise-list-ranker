@@ -79,7 +79,9 @@ export function ItemCard({
   return (
     <Animated.View style={[styles.card, { opacity }]} dataSet={{ surface: 'card' }}>
       <Pressable
-        accessibilityRole={canChoose ? 'button' : undefined}
+        // Not accessibilityRole="button": the card contains real buttons
+        // (delete, confirm/cancel, "Much better"), and a <button> can't
+        // legally contain another <button> on web.
         accessibilityLabel={
           canChoose
             ? `Choose ${label}`
