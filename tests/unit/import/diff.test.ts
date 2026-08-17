@@ -1,0 +1,129 @@
+import { describe, expect, it } from 'vitest';
+
+import { deepEqual } from '@/lib/import/deepEqual';
+import { diffImport } from '@/lib/import/diff';
+import type { ListItem } from '@/types/list';
+import type { ComparisonEvent } from '@/types/ranking';
+
+function item(id: string, value: unknown, active = true): ListItem {
+  return {
+    id,
+    listId: 'list-1',
+    value: value as ListItem['value'],
+    active,
+    createdAt: '2026-08-16T00:00:00.000Z',
+    updatedAt: '2026-08-16T00:00:00.000Z',
+  };
+}
+
+function event(leftItemId: string, rightItemId: string): ComparisonEvent {
+  return {
+    id: `${leftItemId}-${rightItemId}`,
+    listId: 'list-1',
+    leftItemId,
+    rightItemId,
+    outcome: 'left',
+    createdAt: '2026-08-16T00:00:00.000Z',
+  };
+}
+
+describe('deepEqual', () => {
+  it('compares scalars', () => {
+    expect(deepEqual('Alien', 'Alien')).toBe(true);
+    expect(deepEqual('Alien', 'Arrival')).toBe(false);
+  });
+
+  it('compares objects regardless of key order', () => {
+    expect(deepEqual({ a: 1, b: 2 }, { b: 2, a: 1 })).toBe(true);
+  });
+
+  it('compares nested arrays and objects', () => {
+    expect(deepEqual({ a: [{ b: 1 }] }, { a: [{ b: 1 }] })).toBe(true);
+    expect(deepEqual({ a: [{ b: 1 }] }, { a: [{ b: 2 }] })).toBe(false);
+  });
+
+  it('treats a missing key as different from an undefined one', () => {
+    expect(deepEqual({ a: 1 }, { a: 1, b: undefined })).toBe(false);
+  });
+});
+
+describe('diffImport', () => {
+  it('keeps every item when nothing changed', () => {
+    const items = [item('a', { title: 'Alien' }), item('b', { title: 'Arrival' })];
+    const diff = diffImport(items, [{ title: 'Alien' }, { title: 'Arrival' }]);
+
+    expect(diff.kept.map((entry) => entry.item.id)).toEqual(['a', 'b']);
+    expect(diff.added).toEqual([]);
+    expect(diff.removed).toEqual([]);
+  });
+
+  it('keeps items whose position moved', () => {
+    const items = [item('a', { title: 'Alien' }), item('b', { title: 'Arrival' })];
+    const diff = diffImport(items, [{ title: 'Arrival' }, { title: 'Alien' }]);
+
+    expect(diff.kept.map((entry) => entry.item.id).sort()).toEqual(['a', 'b']);
+    expect(diff.added).toEqual([]);
+  });
+
+  it('reports new entries', () => {
+    const diff = diffImport(
+      [item('a', { title: 'Alien' })],
+      [{ title: 'Alien' }, { title: 'Solaris' }],
+    );
+
+    expect(diff.added).toEqual([{ title: 'Solaris' }]);
+  });
+
+  it('reports entries that disappeared', () => {
+    const items = [item('a', { title: 'Alien' }), item('b', { title: 'Arrival' })];
+    const diff = diffImport(items, [{ title: 'Alien' }]);
+
+    expect(diff.removed.map((entry) => entry.id)).toEqual(['b']);
+  });
+
+  it('treats an edited field as a removal plus an addition', () => {
+    const diff = diffImport(
+      [item('a', { title: 'Alien', year: 1979 })],
+      [{ title: 'Alien', year: 1980 }],
+    );
+
+    expect(diff.kept).toEqual([]);
+    expect(diff.removed.map((entry) => entry.id)).toEqual(['a']);
+    expect(diff.added).toEqual([{ title: 'Alien', year: 1980 }]);
+  });
+
+  it('matches duplicates by position among equals', () => {
+    const items = [item('a', 'Alien'), item('b', 'Alien'), item('c', 'Arrival')];
+    const diff = diffImport(items, ['Alien', 'Arrival']);
+
+    expect(diff.kept.map((entry) => entry.item.id)).toEqual(['a', 'c']);
+    expect(diff.removed.map((entry) => entry.id)).toEqual(['b']);
+  });
+
+  it('ignores items already removed during comparison', () => {
+    const items = [item('a', 'Alien'), item('b', 'Arrival', false)];
+    const diff = diffImport(items, ['Alien']);
+
+    expect(diff.removed).toEqual([]);
+  });
+
+  it('reports a wholesale replacement without special-casing it', () => {
+    const diff = diffImport([item('a', 'Alien')], ['Solaris', 'Stalker']);
+
+    expect(diff.kept).toEqual([]);
+    expect(diff.added).toHaveLength(2);
+    expect(diff.removed.map((entry) => entry.id)).toEqual(['a']);
+  });
+
+  it('counts the comparisons that survive', () => {
+    const items = [item('a', 'Alien'), item('b', 'Arrival'), item('c', 'Solaris')];
+    const events = [event('a', 'b'), event('a', 'c'), event('b', 'c')];
+    const diff = diffImport(items, ['Alien', 'Arrival'], events);
+
+    expect(diff.keptComparisons).toBe(1);
+  });
+
+  it('counts no comparisons when none were passed', () => {
+    expect(diffImport([item('a', 'Alien')], ['Alien']).keptComparisons).toBe(0);
+  });
+});
