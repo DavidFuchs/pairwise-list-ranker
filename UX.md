@@ -89,7 +89,8 @@ Each card is itself the choice: pressing anywhere on it picks that item. That
 removes four buttons from a screen whose whole job is picking one of two things.
 
 Each card contains, top to bottom:
-- a side marker (LEFT / RIGHT) and a quiet remove control in the corner
+- a quiet remove control in the corner. There is no LEFT/RIGHT marker: which
+  side a card is on is self-evident from where it sits.
 - the item label, from the label field for object entries
 - summary chips for short scalar fields
 - an expandable details region for the rest of the object

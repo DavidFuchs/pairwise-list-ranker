@@ -83,8 +83,8 @@ export function ItemCard({
         onPress={canChoose ? onChoose : undefined}
         style={({ pressed }) => [styles.pressArea, canChoose && pressed && styles.pressed]}
       >
+      {/* Which side a card is on is self-evident from where it sits. */}
       <View style={styles.topRow}>
-        <Text style={styles.side}>{side === 'left' ? 'LEFT' : 'RIGHT'}</Text>
         {interactive && !pendingDelete && (
           <Pressable
             accessibilityRole="button"
@@ -213,18 +213,16 @@ const styles = StyleSheet.create({
    */
   pressArea: {
     flex: 1,
+    // The card is the tap target, so it keeps a substantial presence even when
+    // the item is a bare string with nothing to show but its name. Without it
+    // the footer rule rides up under the title and reads as an underline.
+    minHeight: 230,
     gap: space.md,
     padding: space.lg,
     borderRadius: radius.lg,
   },
   pressed: { backgroundColor: colors.accentSoft },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  side: {
-    fontFamily: fonts.mono,
-    fontSize: 10,
-    letterSpacing: 1.6,
-    color: colors.textFaint,
-  },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', minHeight: 24 },
   removeButton: {
     width: 24,
     height: 24,
