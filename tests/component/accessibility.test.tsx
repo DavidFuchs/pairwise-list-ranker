@@ -75,6 +75,7 @@ describe('preview pane', () => {
         filename="list.yaml"
         format="yaml"
         comparisonCount={0}
+        removedCount={0}
         onReorder={vi.fn()}
         onTabChange={vi.fn()}
       />,
@@ -93,6 +94,7 @@ describe('preview pane', () => {
         filename="list.yaml"
         format="yaml"
         comparisonCount={0}
+        removedCount={0}
         onReorder={vi.fn()}
         onTabChange={vi.fn()}
       />,

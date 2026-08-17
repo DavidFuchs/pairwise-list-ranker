@@ -72,7 +72,7 @@ export default function DataScreen() {
 
   return (
     <AppShell
-      listName={workspace?.name ?? 'New list'}
+      listName={editing ? 'Editing your data' : 'New list'}
       statusText={editing ? 'Editing your data' : 'Nothing saved yet'}
       headerAction={
         editing ? (

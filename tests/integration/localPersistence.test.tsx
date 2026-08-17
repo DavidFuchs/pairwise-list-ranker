@@ -22,7 +22,7 @@ const dinners: DataSource = {
 };
 
 function startRanking() {
-  listStore.getState().startRanking({ source: dinners, roles: {}, name: 'Weeknight dinners' });
+  listStore.getState().startRanking({ source: dinners, roles: {} });
 }
 
 /**
@@ -59,7 +59,8 @@ describe('local persistence', () => {
       'Ramen',
       'Curry',
     ]);
-    expect(screen.getAllByDisplayValue('Weeknight dinners').length).toBeGreaterThan(0);
+    // Lists have no name to restore; the ranked rows are the proof.
+    expect(screen.getAllByRole('listitem').length).toBe(3);
   });
 
   it('restores the source document, so exports still work after a reload', () => {

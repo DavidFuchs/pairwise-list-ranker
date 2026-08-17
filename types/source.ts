@@ -25,12 +25,8 @@ export interface FieldRoles {
 
 export interface Workspace {
   id: string;
-  /** App-local metadata. Never written into the user's document. */
-  name: string;
   source: DataSource;
   roles: FieldRoles;
   createdAt: string;
   updatedAt: string;
 }
-
-export const DEFAULT_WORKSPACE_NAME = 'Untitled list';

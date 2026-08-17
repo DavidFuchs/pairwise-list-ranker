@@ -4,8 +4,8 @@ import { useEffect } from 'react';
 import { ComparisonDeck } from '@/components/comparison/ComparisonDeck';
 import { AppShell } from '@/components/layout/AppShell';
 import { PreviewPane } from '@/components/preview/PreviewPane';
-import { RankRail } from '@/components/rank/RankRail';
-import { exportFilename } from '@/lib/export/filenames';
+import { Button } from '@/components/ui/Button';
+import { downloadName, exportFilename } from '@/lib/export/filenames';
 import {
   selectAvailableTabs,
   selectContextLine,
@@ -55,27 +55,23 @@ export default function RankScreen() {
 
   if (workspace === null) return null;
 
-  function startOver() {
-    listStore.getState().reset();
-    router.replace('/');
-  }
-
   return (
     <AppShell
-      listName={workspace.name}
+      listName={selectContextLine(workspace)}
       statusText={statusText}
-      onReset={startOver}
-      rail={
-        <RankRail
-          name={workspace.name}
-          context={selectContextLine(workspace)}
-          progress={progress}
-          removedCount={selectRemovedCount(items)}
-          onRename={(name) => listStore.getState().setName(name)}
-          onEditData={() => router.replace('/')}
-          onStartOver={startOver}
+      headerAction={
+        <Button
+          label="Edit data"
+          accessibilityLabel="Edit data"
+          variant="ghost"
+          size="sm"
+          onPress={() => router.replace('/')}
         />
       }
+      onReset={() => {
+        listStore.getState().reset();
+        router.replace('/');
+      }}
       stage={
         <ComparisonDeck
           pair={view.pair}
@@ -96,9 +92,10 @@ export default function RankScreen() {
           ranking={view.ranking}
           labelField={workspace.roles.labelField}
           exportText={exportText}
-          filename={exportFilename(workspace.name, format)}
+          filename={exportFilename(downloadName(workspace.source), format)}
           format={format}
           comparisonCount={progress.comparisons}
+          removedCount={selectRemovedCount(items)}
           onReorder={(itemIds) => listStore.getState().reorderAndRestart(itemIds)}
         />
       }

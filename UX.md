@@ -66,17 +66,19 @@ Contains:
 - import/export quick actions
 - reset workspace action
 
-### 2. Control rail
+### 2. Header actions
 
-On the rank screen. Contains:
-- the list name, editable inline
-- a context line: what is being ranked, what titles it, where the order is
-  written back
-- progress: comparisons made and items remaining
-- a note when removed items are excluded from the export
-- `Edit data`, and `Start over` behind an inline confirmation
+The rank screen has no left rail. Lists are not named — there is nowhere to save
+them to, so a name would be a label for an audience of one — and what is left is
+small enough to live in the top bar beside the theme control:
+- what is being ranked, beside the wordmark: `movies · shown by title`
+- local storage status
+- `Edit data`
+- `Start over`, behind an inline confirmation
 
-Field choices live on the data screen, where the decision is actually made.
+Progress sits above the cards, and the note about removed items sits with the
+export it affects. Field choices live on the data screen, where the decision is
+actually made.
 
 ### 3. Comparison stage
 
@@ -132,8 +134,13 @@ Contains:
 - a note when removed items are being excluded from the export
 
 Rows slide between positions rather than jumping, so a reshuffle after a
-comparison is visible. Arranging the list by hand starts a new ranking session
-from that order; when there are comparisons to lose, the pane asks first.
+comparison is visible.
+
+Dragging a row never disturbs the list underneath it: the rows hold still and a
+line marks the gap the row will drop into, so the target cannot slide away from
+the pointer aiming at it. No line means dropping there would change nothing.
+Arranging the list by hand starts a new ranking session from that order; when
+there are comparisons to lose, the pane asks first.
 
 Editing goes back to the data screen via `Edit data`, where re-importing is an
 explicit act with a summary. The old editable buffer — a text area that may or

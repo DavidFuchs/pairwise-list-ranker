@@ -1,4 +1,4 @@
-import type { SourceFormat } from '@/types/source';
+import type { DataSource, SourceFormat } from '@/types/source';
 
 const EXTENSIONS: Record<SourceFormat, string> = {
   yaml: 'yaml',
@@ -29,7 +29,16 @@ export function slugify(name: string): string {
   return slug === '' ? 'list' : slug;
 }
 
-/** e.g. `favorite-sci-fi-films-2026-08-16.yaml` */
+/**
+ * What to call the downloaded file. Lists are not named by the user — there is
+ * nowhere to save them to — so the name comes from what is being ranked: the
+ * array's own key, or simply "list" when the document is the array.
+ */
+export function downloadName(source: DataSource): string {
+  return source.arrayPath.at(-1) ?? 'list';
+}
+
+/** e.g. `movies-2026-08-16.yaml` */
 export function exportFilename(name: string, format: SourceFormat, at: Date = new Date()): string {
   return `${slugify(name)}-${at.toISOString().slice(0, 10)}.${extensionFor(format)}`;
 }

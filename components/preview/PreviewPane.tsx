@@ -21,6 +21,8 @@ export interface PreviewPaneProps {
   format: SourceFormat;
   /** Rated comparisons a manual reorder would discard. */
   comparisonCount: number;
+  /** Items deleted during comparison, which the export leaves out. */
+  removedCount: number;
   onReorder: (itemIds: string[]) => void;
 }
 
@@ -39,6 +41,7 @@ export function PreviewPane({
   filename,
   format,
   comparisonCount,
+  removedCount,
   onReorder,
 }: PreviewPaneProps) {
   return (
@@ -46,9 +49,15 @@ export function PreviewPane({
       <View style={styles.header}>
         <Text style={styles.title}>Your data</Text>
         <Text style={styles.subtitle}>
-          {tab === 'ranked' ? 'Live ranking' : 'Your document, in the new order'}
+          {tab === 'ranked' ? 'Drag a row to arrange it' : 'Your document, in the new order'}
         </Text>
       </View>
+
+      {removedCount > 0 && (
+        <Text style={styles.removed}>
+          {`${removedCount} removed ${removedCount === 1 ? 'item is' : 'items are'} excluded from the export.`}
+        </Text>
+      )}
 
       <PreviewTabs tab={tab} tabs={tabs} onChange={onTabChange} />
 
@@ -89,5 +98,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   subtitle: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
+  removed: { fontFamily: fonts.body, fontSize: 12, color: colors.warningText },
   body: { flex: 1, gap: space.md, minHeight: 260 },
 });

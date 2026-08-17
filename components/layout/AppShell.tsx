@@ -53,14 +53,14 @@ export function AppShell({
             <>
               <Button
                 label="Cancel"
-                accessibilityLabel="Keep the current workspace"
+                accessibilityLabel="Keep this list"
                 variant="ghost"
                 size="sm"
                 onPress={() => setConfirmingReset(false)}
               />
               <Button
-                label="Confirm reset"
-                accessibilityLabel="Confirm reset workspace"
+                label="Start over"
+                accessibilityLabel="Confirm start over"
                 variant="danger"
                 size="sm"
                 onPress={() => {
@@ -71,8 +71,8 @@ export function AppShell({
             </>
           ) : (
             <Button
-              label="Reset"
-              accessibilityLabel="Reset workspace"
+              label="Start over"
+              accessibilityLabel="Start over"
               variant="ghost"
               size="sm"
               onPress={() => setConfirmingReset(true)}

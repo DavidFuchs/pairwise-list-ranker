@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { dropIndexFor, moveItem } from '@/lib/ranking/reorder';
+import {
+  dragInsertIndex,
+  gapMovesRow,
+  insertIndexFor,
+  moveItem,
+  targetIndexForGap,
+} from '@/lib/ranking/reorder';
 import type { RowOffset } from '@/lib/ranking/reorder';
 
 const ids = ['a', 'b', 'c', 'd'];
@@ -53,29 +59,90 @@ const offsets: RowOffset[] = [
   { y: 140, height: 40 },
 ];
 
-describe('dropIndexFor', () => {
-  it('lands on the first row above everything', () => {
-    expect(dropIndexFor(offsets, -20)).toBe(0);
+describe('insertIndexFor', () => {
+  it('puts the line above everything when the pointer is above the list', () => {
+    expect(insertIndexFor(offsets, -20)).toBe(0);
   });
 
-  it('lands on the last row below everything', () => {
-    expect(dropIndexFor(offsets, 999)).toBe(3);
+  it('puts the line below everything when the pointer is past the end', () => {
+    expect(insertIndexFor(offsets, 999)).toBe(4);
   });
 
-  it('stays on a row above its midpoint', () => {
-    expect(dropIndexFor(offsets, 45)).toBe(1);
-  });
-
-  it('moves to the next row past a midpoint', () => {
-    expect(dropIndexFor(offsets, 75)).toBe(2);
+  it('keeps the line above a row until the pointer passes its midpoint', () => {
+    expect(insertIndexFor(offsets, 15)).toBe(0);
+    expect(insertIndexFor(offsets, 25)).toBe(1);
   });
 
   it('respects the midpoint of a taller row', () => {
-    expect(dropIndexFor(offsets, 105)).toBe(2);
-    expect(dropIndexFor(offsets, 115)).toBe(3);
+    expect(insertIndexFor(offsets, 105)).toBe(2);
+    expect(insertIndexFor(offsets, 115)).toBe(3);
   });
 
-  it('returns 0 for an empty list', () => {
-    expect(dropIndexFor([], 50)).toBe(0);
+  it('has one gap for an empty list', () => {
+    expect(insertIndexFor([], 50)).toBe(0);
+  });
+});
+
+describe('dragInsertIndex', () => {
+  // Either gap touching the row means "no move"; gapMovesRow rejects both.
+  it('reports a gap touching the row before the pointer has moved', () => {
+    const gap = dragInsertIndex(offsets, 0, 0);
+
+    expect(gapMovesRow(0, gap)).toBe(false);
+  });
+
+  it('moves down as the pointer passes each midpoint', () => {
+    // Row 0's centre starts at 20; +45 puts it at 65, past row 1's midpoint of 60.
+    expect(dragInsertIndex(offsets, 0, 45)).toBe(2);
+  });
+
+  it('moves up when dragged back', () => {
+    expect(dragInsertIndex(offsets, 3, -80)).toBe(2);
+  });
+
+  it('reaches the end on a long drag down', () => {
+    expect(dragInsertIndex(offsets, 0, 500)).toBe(4);
+  });
+
+  it('reaches the start on a long drag up', () => {
+    expect(dragInsertIndex(offsets, 3, -500)).toBe(0);
+  });
+
+  /**
+   * The bug this guards: rows are measured in content space, pointers report
+   * viewport space. Feeding a raw viewport y in sent every drag to the end.
+   */
+  it('is driven by the delta, not by an absolute pointer position', () => {
+    expect(dragInsertIndex(offsets, 0, 0)).not.toBe(offsets.length);
+  });
+
+  it('leaves an unknown row where it is', () => {
+    expect(dragInsertIndex(offsets, 9, 100)).toBe(9);
+  });
+});
+
+describe('targetIndexForGap', () => {
+  it('keeps the gap when moving up', () => {
+    expect(targetIndexForGap(3, 1)).toBe(1);
+  });
+
+  it('closes the hole the row leaves when moving down', () => {
+    expect(targetIndexForGap(0, 3)).toBe(2);
+  });
+
+  it('moves a row to the end', () => {
+    expect(targetIndexForGap(0, 4)).toBe(3);
+  });
+});
+
+describe('gapMovesRow', () => {
+  it('ignores the gaps either side of the row itself', () => {
+    expect(gapMovesRow(1, 1)).toBe(false);
+    expect(gapMovesRow(1, 2)).toBe(false);
+  });
+
+  it('reports a real move', () => {
+    expect(gapMovesRow(1, 0)).toBe(true);
+    expect(gapMovesRow(1, 3)).toBe(true);
   });
 });

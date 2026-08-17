@@ -6,7 +6,6 @@ const valid = {
   version: 2,
   workspace: {
     id: 'ws-1',
-    name: 'Sci-fi films',
     source: {
       format: 'yaml',
       rawText: 'movies:\n  - title: Alien\n',
@@ -33,7 +32,7 @@ const valid = {
 
 describe('parseWorkspaceSnapshot', () => {
   it('accepts a well-formed v2 snapshot', () => {
-    expect(parseWorkspaceSnapshot(valid)?.workspace.name).toBe('Sci-fi films');
+    expect(parseWorkspaceSnapshot(valid)?.workspace.id).toBe('ws-1');
   });
 
   it('keeps an arbitrary source document untouched', () => {

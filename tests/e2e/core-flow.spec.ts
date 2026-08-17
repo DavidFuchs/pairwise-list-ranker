@@ -68,10 +68,10 @@ test('keeps the whole document when ranking one array inside it', async ({ page 
 test('resumes after a reload, then can start over', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
-  await expect(page.getByLabel('List name')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Edit data' })).toBeVisible();
 
   await page.reload();
-  await expect(page.getByLabel('List name')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Edit data' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Start over' }).click();
   await page.getByRole('button', { name: 'Confirm start over' }).click();
@@ -96,10 +96,10 @@ test('chooses by clicking anywhere on a card', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
 
-  await expect(page.getByText('0 comparisons', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^0 comparisons ·/)).toBeVisible();
   await page.getByRole('button', { name: /^Choose / }).first().click();
 
-  await expect(page.getByText('1 comparisons', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^1 comparisons ·/)).toBeVisible();
 });
 
 /**
@@ -111,12 +111,12 @@ test('pressing a control inside a card does not cast a vote', async ({ page }) =
   await enterData(page, FILMS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
 
-  await expect(page.getByText('0 comparisons', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^0 comparisons ·/)).toBeVisible();
   // The delete control is the remaining control nested inside the press area.
   await page.getByRole('button', { name: /^Delete / }).first().click();
 
   await expect(page.getByRole('button', { name: /^Confirm deleting / })).toBeVisible();
-  await expect(page.getByText('0 comparisons', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^0 comparisons ·/)).toBeVisible();
 });
 
 test('details open on both cards from one toggle', async ({ page }) => {
@@ -146,14 +146,14 @@ test('much better records a strong win in one click', async ({ page }) => {
 
   await page.getByRole('button', { name: /is much better$/ }).first().click();
 
-  await expect(page.getByText('1 comparisons', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^1 comparisons ·/)).toBeVisible();
 });
 
 test('reordering by hand restarts the ranking', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
   await page.getByRole('button', { name: /^Choose / }).first().click();
-  await expect(page.getByText('1 comparisons', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^1 comparisons ·/)).toBeVisible();
 
   // Keyboard reordering is the same commit path as a drop, and is stable to drive.
   await page.getByRole('button', { name: /^Reorder / }).first().focus();
@@ -162,7 +162,7 @@ test('reordering by hand restarts the ranking', async ({ page }) => {
   await expect(page.getByText(/starts a new ranking session/)).toBeVisible();
   await page.getByRole('button', { name: 'Reorder and restart' }).click();
 
-  await expect(page.getByText('0 comparisons', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^0 comparisons ·/)).toBeVisible();
 });
 
 test('reordering applies silently when there is nothing to lose', async ({ page }) => {
@@ -174,4 +174,58 @@ test('reordering applies silently when there is nothing to lose', async ({ page 
 
   await expect(page.getByText(/starts a new ranking session/)).toBeHidden();
   await expect(page.getByRole('button', { name: /^Reorder Tacos, position 2/ })).toBeVisible();
+});
+
+/**
+ * The pointer path cannot be exercised in jsdom, which has no layout. It also
+ * had a real bug: rows are measured against the scrolling content while
+ * pointer events report viewport coordinates, and mixing the two sent every
+ * drag to the last row.
+ */
+test('a drag shows where the row will land, and moves it on release', async ({ page }) => {
+  await enterData(page, DINNERS);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  const rows = page.getByRole('listitem');
+  await expect(rows.first()).toContainText('Tacos');
+
+  const grip = page.getByRole('button', { name: /^Reorder Tacos/ });
+  const box = await grip.boundingBox();
+  if (box === null) throw new Error('The grip should be laid out.');
+
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 40, { steps: 5 });
+  await page.mouse.move(x, y + 80, { steps: 5 });
+
+  // The line marks the destination; the rows themselves hold still.
+  await expect(page.locator('[data-insertion]')).toBeVisible();
+  await expect(rows.first()).toContainText('Tacos');
+
+  await page.mouse.up();
+
+  await expect(page.locator('[data-insertion]')).toBeHidden();
+  await expect(rows.first()).toContainText('Ramen');
+  await expect(rows.nth(1)).toContainText('Tacos');
+});
+
+test('a drag that goes nowhere leaves the order alone', async ({ page }) => {
+  await enterData(page, DINNERS);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  const grip = page.getByRole('button', { name: /^Reorder Tacos/ });
+  const box = await grip.boundingBox();
+  if (box === null) throw new Error('The grip should be laid out.');
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 4, { steps: 3 });
+
+  // No line, because dropping here would change nothing.
+  await expect(page.locator('[data-insertion]')).toBeHidden();
+  await page.mouse.up();
+
+  await expect(page.getByRole('listitem').first()).toContainText('Tacos');
 });

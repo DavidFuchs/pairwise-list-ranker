@@ -138,7 +138,7 @@ html, body { background-color: var(--canvas); }
 
 /*
  * The card is the choice, so it says so on hover rather than carrying a
- * permanent button. Touch devices never hover, which is why the flame stays
+ * permanent button. Touch devices never hover, which is why Much better stays
  * visible and this is only ever a hint.
  */
 [data-hint='choose'] { transition: opacity 160ms ease; }
@@ -150,6 +150,12 @@ html, body { background-color: var(--canvas); }
   transform: translateY(-1px);
   filter: saturate(1.15) brightness(0.99);
   border-color: var(--accent) !important;
+}
+
+/* The row being dragged lifts off the list it is moving through. */
+[data-dragging] {
+  box-shadow: var(--shadow-lift);
+  cursor: grabbing;
 }
 
 /* Keyboard focus stays obvious in both themes. */

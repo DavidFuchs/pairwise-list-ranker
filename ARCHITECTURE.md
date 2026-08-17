@@ -81,8 +81,7 @@ interface FieldRoles {
 }
 
 interface Workspace {
-  id: string;
-  name: string;           // app-local only; never written into the document
+  id: string;             // lists are not named: there is nowhere to save them
   source: DataSource;
   roles: FieldRoles;
   createdAt: string;
@@ -207,6 +206,9 @@ in the items array is the user's own order, and it is what an unranked list
 shows.
 
 ### 6.5 Manual ordering
+
+Dragging shows a line where the row would land and moves nothing until it is
+released, so the list never shifts under the pointer aiming at it.
 
 Dragging a row does not override the derived ranking. It rewrites the source
 document's array into the dragged order and re-imports it through

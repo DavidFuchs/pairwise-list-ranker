@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
-import type { LayoutChangeEvent } from 'react-native';
 
 import { useFlipAnimation } from '@/lib/hooks/useFlipAnimation';
 import { colors, fonts, radius, space } from '@/lib/theme';
@@ -11,11 +10,12 @@ export interface RankedRowProps {
   label: string;
   meta: string | null;
   rating: number;
+  /** True while this row is the one being dragged. */
   dragging: boolean;
-  /** True while this row is the drop target under the pointer. */
-  target: boolean;
-  onLayout: (event: LayoutChangeEvent) => void;
-  onGrab: (pointerY: number) => void;
+  /** Draw the drop indicator above this row, or below it for the last gap. */
+  insertBefore?: boolean;
+  insertAfter?: boolean;
+  onGrab: (pointerY: number, grip: HTMLElement) => void;
   onKeyMove: (direction: -1 | 1) => void;
 }
 
@@ -26,36 +26,31 @@ export function RankedRow({
   meta,
   rating,
   dragging,
-  target,
-  onLayout,
+  insertBefore = false,
+  insertAfter = false,
   onGrab,
   onKeyMove,
 }: RankedRowProps) {
-  // The row owns the geometry it animates from: the parent's copy exists for
-  // pointer maths and is only ever read inside event handlers.
-  const [y, setY] = useState(0);
+  // Null until measured: the first layout is a baseline, not a movement.
+  const [y, setY] = useState<number | null>(null);
   const offset = useFlipAnimation(id, y);
 
   return (
     <Animated.View
       role="listitem"
-      onLayout={(event) => {
-        setY(event.nativeEvent.layout.y);
-        onLayout(event);
-      }}
-      style={[
-        styles.row,
-        target && styles.rowTarget,
-        dragging && styles.rowDragging,
-        { transform: [{ translateY: offset }] },
-      ]}
+      onLayout={(event) => setY(event.nativeEvent.layout.y)}
+      dataSet={dragging ? { dragging: 'true' } : undefined}
+      style={[styles.row, dragging && styles.rowDragging, { transform: [{ translateY: offset }] }]}
     >
+      {insertBefore && <View style={styles.insertBefore} dataSet={{ insertion: 'true' }} />}
+      {insertAfter && <View style={styles.insertAfter} dataSet={{ insertion: 'true' }} />}
+
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Reorder ${label}, position ${rank}. Hold alt and press the arrow keys to move it.`}
         onPointerDown={(event) => {
           event.preventDefault();
-          onGrab(event.nativeEvent.clientY);
+          onGrab(event.nativeEvent.clientY, event.currentTarget);
         }}
         onKeyDown={(event) => {
           if (!event.altKey) return;
@@ -106,8 +101,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  rowTarget: { borderColor: colors.accentSoftBorder, backgroundColor: colors.accentSoft },
-  rowDragging: { opacity: 0.92, borderColor: colors.accent },
+  rowDragging: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
+  /** Sits in the 4px gap between rows, so nothing shifts to make room. */
+  insertBefore: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: -3,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: colors.accent,
+  },
+  insertAfter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: -3,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: colors.accent,
+  },
   grip: { paddingHorizontal: space.xs, paddingVertical: space.xs },
   gripGlyph: { fontFamily: fonts.mono, fontSize: 13, color: colors.textFaint },
   position: {

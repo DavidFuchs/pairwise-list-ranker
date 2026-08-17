@@ -120,3 +120,35 @@ describe('useFlipAnimation', () => {
     expect(seen).toEqual([]);
   });
 });
+
+describe('the first measurement', () => {
+  /**
+   * The bug this guards: rows report their position after mount, and treating
+   * that first report as a move offset every row by its own height at once,
+   * stacking the whole list on top of itself and swallowing every pointer.
+   */
+  it('treats the first measured position as a baseline, not a move', () => {
+    stubReducedMotion(false);
+    const { result, rerender } = renderHook(({ y }) => useFlipAnimation('a', y), {
+      initialProps: { y: null as number | null },
+    });
+    const seen = track(result.current);
+
+    rerender({ y: 144 });
+
+    expect(seen).toEqual([]);
+  });
+
+  it('still animates a move that follows the first measurement', () => {
+    stubReducedMotion(false);
+    const { result, rerender } = renderHook(({ y }) => useFlipAnimation('a', y), {
+      initialProps: { y: null as number | null },
+    });
+    const seen = track(result.current);
+
+    rerender({ y: 144 });
+    rerender({ y: 48 });
+
+    expect(seen[0]).toBe(96);
+  });
+});

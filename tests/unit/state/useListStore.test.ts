@@ -57,19 +57,6 @@ describe('startRanking', () => {
     expect(workspace?.roles).toEqual({ labelField: 'title' });
   });
 
-  it('names the workspace, without touching the document', () => {
-    store.getState().startRanking({ source: nested, roles: {}, name: 'Films' });
-
-    expect(store.getState().workspace?.name).toBe('Films');
-    expect(store.getState().workspace?.source.document).toEqual(nested.document);
-  });
-
-  it('defaults the name', () => {
-    store.getState().startRanking({ source: nested, roles: {} });
-
-    expect(store.getState().workspace?.name).toBe('Untitled list');
-  });
-
   it('starts the preview on the ranked tab', () => {
     store.getState().startRanking({ source: nested, roles: {} });
 
@@ -165,12 +152,13 @@ describe('persistence', () => {
   it('round-trips through storage', () => {
     const backend = memoryBackend();
     const first = makeStore(backend);
-    first.getState().startRanking({ source: nested, roles: { labelField: 'title' }, name: 'Films' });
+    first.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
 
     const second = makeStore(backend);
     second.getState().hydrate();
 
-    expect(second.getState().workspace?.name).toBe('Films');
+    expect(second.getState().workspace?.roles.labelField).toBe('title');
+    expect(second.getState().workspace?.source.document).toEqual(nested.document);
     expect(second.getState().items).toHaveLength(2);
     expect(second.getState().hydrated).toBe(true);
   });
@@ -218,17 +206,6 @@ describe('resume', () => {
   });
 });
 
-describe('renaming', () => {
-  it('renames without touching the document', () => {
-    const store = makeStore();
-    store.getState().startRanking({ source: nested, roles: {} });
-
-    store.getState().setName('Best films');
-
-    expect(store.getState().workspace?.name).toBe('Best films');
-    expect(store.getState().workspace?.source.document).toEqual(nested.document);
-  });
-});
 
 describe('reorderAndRestart', () => {
   let store: ReturnType<typeof makeStore>;
@@ -285,15 +262,6 @@ describe('reorderAndRestart', () => {
     const rawText = store.getState().workspace?.source.rawText ?? '';
 
     expect(rawText.indexOf('Arrival')).toBeLessThan(rawText.indexOf('Alien'));
-  });
-
-  it('keeps the workspace name', () => {
-    store.getState().setName('Films');
-    const ids = store.getState().items.map((item) => item.id);
-
-    store.getState().reorderAndRestart([...ids].reverse());
-
-    expect(store.getState().workspace?.name).toBe('Films');
   });
 
   it('drops items that were removed during comparison', () => {

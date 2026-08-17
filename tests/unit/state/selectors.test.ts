@@ -17,7 +17,6 @@ const NOW = '2026-08-15T12:00:00.000Z';
 
 const workspace: Workspace = {
   id: 'list-1',
-  name: 'Weeknight dinners',
   source: {
     format: 'yaml',
     rawText: '',

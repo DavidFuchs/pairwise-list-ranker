@@ -39,7 +39,6 @@ const dataSourceSchema = z.object({
 
 const workspaceSchema = z.object({
   id: z.string().min(1),
-  name: z.string(),
   source: dataSourceSchema,
   roles: z.object({
     labelField: z.string().optional(),

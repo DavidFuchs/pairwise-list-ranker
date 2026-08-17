@@ -23,6 +23,7 @@ declare module 'react-native' {
     onKeyDown?: (event: import('react').KeyboardEvent<HTMLElement>) => void;
     onPointerDown?: (event: {
       preventDefault: () => void;
+      currentTarget: HTMLElement;
       nativeEvent: { clientY: number; pointerId: number };
     }) => void;
   }

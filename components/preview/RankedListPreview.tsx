@@ -1,10 +1,9 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RankedRow } from '@/components/preview/RankedRow';
 import { Button } from '@/components/ui/Button';
-import { dropIndexFor, moveItem } from '@/lib/ranking/reorder';
-import type { RowOffset } from '@/lib/ranking/reorder';
+import { gapMovesRow, insertIndexFor, moveItem, targetIndexForGap } from '@/lib/ranking/reorder';
 import { selectItemLabel } from '@/lib/state/selectors';
 import { colors, fonts, radius, space } from '@/lib/theme';
 import { isComplexItemValue } from '@/types/list';
@@ -21,6 +20,7 @@ export interface RankedListPreviewProps {
 
 const MAX_META_FIELDS = 2;
 
+
 /**
  * The ranking, and the one place it can be arranged by hand. A manual order
  * restarts ranking from that order, so anything that would discard real work
@@ -34,12 +34,24 @@ export function RankedListPreview({
 }: RankedListPreviewProps) {
   const derivedIds = useMemo(() => ranking.map((entry) => entry.item.id), [ranking]);
   const [pendingIds, setPendingIds] = useState<string[] | null>(null);
-  const [dragging, setDragging] = useState<{ id: string; targetIndex: number } | null>(null);
+  /**
+   * Nothing moves until the drop. The rows hold still and a line shows where
+   * the row will land, so the list never shifts under the pointer that is
+   * aiming at it. `rows` is the geometry snapshot taken at grab.
+   */
+  const [dragging, setDragging] = useState<{ id: string; gap: number } | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const offsets = useRef(new Map<string, RowOffset>());
 
   const byId = useMemo(() => new Map(ranking.map((entry) => [entry.item.id, entry])), [ranking]);
   const orderedIds = pendingIds ?? derivedIds;
+
+  /** Which gap to mark, or null when dropping here would change nothing. */
+  const insertionGap = useMemo(() => {
+    if (dragging === null) return null;
+    const from = orderedIds.indexOf(dragging.id);
+    if (from < 0 || !gapMovesRow(from, dragging.gap)) return null;
+    return dragging.gap;
+  }, [dragging, orderedIds]);
 
   /** Apply straight away when nothing is at stake; otherwise ask first. */
   const commit = useCallback(
@@ -66,13 +78,36 @@ export function RankedListPreview({
   );
 
   const handleGrab = useCallback(
-    (id: string) => {
-      setDragging({ id, targetIndex: orderedIds.indexOf(id) });
+    (id: string, startClientY: number, grip: HTMLElement) => {
+      const from = orderedIds.indexOf(id);
+      if (from < 0) return;
 
-      const rows = () =>
-        orderedIds
-          .map((rowId) => offsets.current.get(rowId))
-          .filter((row): row is RowOffset => row !== undefined);
+      /*
+       * Measured from the DOM, in the same viewport space the pointer reports.
+       * Deriving this from onLayout instead means holding two coordinate
+       * systems at once — the earlier attempt did, and every drag silently
+       * landed at the end of the list.
+       *
+       * Taken once, at grab: the rows hold still for the whole drag, so a
+       * single snapshot stays true.
+       */
+      const list = grip.closest('[role="list"]');
+      if (list === null) return;
+
+      /*
+       * Measured fresh from the DOM on every move, in the same viewport space
+       * the pointer reports. Nothing moves until the drop, so re-measuring is
+       * both safe and simpler than keeping a snapshot in step.
+       */
+      const gapFor = (clientY: number) => {
+        const rows = [...list.querySelectorAll('[role="listitem"]')].map((row) => {
+          const rect = row.getBoundingClientRect();
+          return { y: rect.top, height: rect.height };
+        });
+        return insertIndexFor(rows, clientY);
+      };
+
+      setDragging({ id, gap: gapFor(startClientY) });
 
       const stop = () => {
         window.removeEventListener('pointermove', onMove);
@@ -81,16 +116,15 @@ export function RankedListPreview({
       };
 
       const onMove = (event: PointerEvent) => {
-        const index = dropIndexFor(rows(), event.clientY);
-        setDragging((current) => (current === null ? null : { ...current, targetIndex: index }));
+        const gap = gapFor(event.clientY);
+        setDragging((current) => (current === null ? null : { ...current, gap }));
       };
 
       const onUp = (event: PointerEvent) => {
         stop();
-        const from = orderedIds.indexOf(id);
-        const to = dropIndexFor(rows(), event.clientY);
+        const gap = gapFor(event.clientY);
         setDragging(null);
-        if (from !== to) commit(moveItem(orderedIds, from, to));
+        if (gapMovesRow(from, gap)) commit(moveItem(orderedIds, from, targetIndexForGap(from, gap)));
       };
 
       const onCancel = () => {
@@ -111,7 +145,11 @@ export function RankedListPreview({
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.list} role="list">
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.list}
+        role="list"
+      >
         {orderedIds.map((id, index) => {
           const entry = byId.get(id);
           if (entry === undefined) return null;
@@ -125,12 +163,9 @@ export function RankedListPreview({
               meta={metaFor(entry.item, sortField)}
               rating={entry.state.rating}
               dragging={dragging?.id === id}
-              target={dragging !== null && dragging.id !== id && dragging.targetIndex === index}
-              onLayout={(event) => {
-                const { y, height } = event.nativeEvent.layout;
-                offsets.current.set(id, { y, height });
-              }}
-              onGrab={() => handleGrab(id)}
+              insertBefore={insertionGap === index}
+              insertAfter={insertionGap === orderedIds.length && index === orderedIds.length - 1}
+              onGrab={(pointerY, grip) => handleGrab(id, pointerY, grip)}
               onKeyMove={(direction) => handleKeyMove(id, direction)}
             />
           );

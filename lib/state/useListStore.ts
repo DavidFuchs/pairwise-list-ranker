@@ -14,7 +14,6 @@ import { selectCurrentPair, selectRanking } from '@/lib/state/selectors';
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent, ComparisonOutcome, RankedItem } from '@/types/ranking';
 import type { DataSource, FieldRoles, PreviewTab, Workspace } from '@/types/source';
-import { DEFAULT_WORKSPACE_NAME } from '@/types/source';
 
 export interface ListStoreOptions {
   storage?: WorkspaceStorage;
@@ -26,7 +25,6 @@ export interface ListStoreOptions {
 export interface StartInput {
   source: DataSource;
   roles: FieldRoles;
-  name?: string;
 }
 
 export interface ListState {
@@ -50,7 +48,6 @@ export interface ListState {
   applyEdits(input: StartInput): void;
   /** Manual ordering restarts ranking from that order. See the spec, section 3. */
   reorderAndRestart(itemIds: string[]): void;
-  setName(name: string): void;
   setPreviewTab(tab: PreviewTab): void;
   recordComparison(leftItemId: string, rightItemId: string, outcome: ComparisonOutcome): void;
   removeItem(itemId: string): void;
@@ -140,11 +137,10 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       },
 
       /** A fresh list: new workspace, new items, no history to carry over. */
-      startRanking({ source, roles, name }: StartInput) {
+      startRanking({ source, roles }: StartInput) {
         const timestamp = now();
         const workspace: Workspace = {
           id: createId(),
-          name: name ?? DEFAULT_WORKSPACE_NAME,
           source,
           roles,
           createdAt: timestamp,
@@ -166,7 +162,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
        * Edited data on the same workspace. Entries the user did not touch keep
        * their item id, and therefore their rating and their history.
        */
-      applyEdits({ source, roles, name }: StartInput) {
+      applyEdits({ source, roles }: StartInput) {
         const workspace = get().workspace;
         if (workspace === null) return;
 
@@ -185,7 +181,6 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         set({
           workspace: {
             ...workspace,
-            ...(name === undefined ? {} : { name }),
             source,
             roles,
             updatedAt: timestamp,
@@ -223,15 +218,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         get().startRanking({
           source: { ...workspace.source, document, rawText },
           roles: workspace.roles,
-          name: workspace.name,
         });
-      },
-
-      setName(name: string) {
-        const workspace = get().workspace;
-        if (workspace === null) return;
-        set({ workspace: { ...workspace, name, updatedAt: now() } });
-        persist();
       },
 
       setPreviewTab(tab: PreviewTab) {

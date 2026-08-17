@@ -24,7 +24,6 @@ function snapshot(rawText = 'Alien\nArrival\n'): WorkspaceSnapshot {
     version: 2,
     workspace: {
       id: 'ws-1',
-      name: 'Films',
       source: { format: 'list', rawText, document: ['Alien', 'Arrival'], arrayPath: [] },
       roles: {},
       createdAt: '2026-08-16T00:00:00.000Z',
@@ -47,7 +46,7 @@ describe('createWorkspaceStorage', () => {
     const storage = createWorkspaceStorage(backend);
     storage.save(snapshot());
 
-    expect(storage.load()?.workspace.name).toBe('Films');
+    expect(storage.load()?.workspace.source.document).toEqual(['Alien', 'Arrival']);
   });
 
   it('reports that it saved', () => {
@@ -74,7 +73,7 @@ describe('createWorkspaceStorage', () => {
     storage.save(snapshot());
     storage.save(snapshot('x'.repeat(MAX_SNAPSHOT_BYTES)));
 
-    expect(storage.load()?.workspace.name).toBe('Films');
+    expect(storage.load()?.workspace.source.document).toEqual(['Alien', 'Arrival']);
   });
 
   it('reports itself unavailable when the backend rejects every write', () => {
