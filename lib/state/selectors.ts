@@ -1,14 +1,12 @@
-import { documentFromWorkspace } from '@/lib/formats/documentMapping';
-import { serializeDocument } from '@/lib/formats';
+import { buildExport } from '@/lib/export/buildExport';
+import { formatPath } from '@/lib/import/arrayCandidates';
 import { selectNextPair } from '@/lib/ranking/pairSelection';
 import { rankItems, replayComparisons } from '@/lib/ranking/rebuildRanking';
 import type { RankingStates } from '@/lib/ranking/rebuildRanking';
-import { collectLabelFieldCandidates, describeObjectSchema } from '@/lib/import/labelField';
-import type { ObjectSchemaHint, LabelFieldCandidate } from '@/lib/import/labelField';
 import { isComplexItemValue } from '@/types/list';
-import type { ListItem, TextFormat, WorkspaceList } from '@/types/list';
+import type { ListItem } from '@/types/list';
 import type { ComparisonEvent, RankedItem } from '@/types/ranking';
-import type { ListDocument } from '@/types/workspace';
+import type { PreviewTab, SourceFormat, Workspace } from '@/types/source';
 
 export interface ActivePair {
   left: ListItem;
@@ -65,65 +63,52 @@ export function selectCurrentPair(items: ListItem[], events: ComparisonEvent[]):
   return selectWorkspaceView(items, events).pair;
 }
 
-/** The exportable document, ordered best-first so exports carry the ranking. */
-export function selectDocument(
-  list: WorkspaceList,
+/** The exportable text for one tab, built from the user's own document. */
+export function selectExportText(
+  workspace: Workspace | null,
   items: ListItem[],
   events: ComparisonEvent[],
-): ListDocument {
-  const ranked = selectRanking(items, events).map((entry) => entry.item);
-  return documentFromWorkspace(list, ranked);
-}
-
-export function selectPreviewText(
-  list: WorkspaceList | null,
-  items: ListItem[],
-  events: ComparisonEvent[],
-  format: TextFormat,
+  format: SourceFormat,
 ): string {
-  if (list === null || items.length === 0) return '';
-  return serializeDocument(selectDocument(list, items, events), format);
+  if (workspace === null) return '';
+  const ranked = selectRanking(items, events).map((entry) => entry.item);
+  return buildExport(workspace.source, workspace.roles, ranked, format);
 }
 
-/** The object values of the active items, for the sort-field rules. */
-export function selectObjectValues(items: ListItem[]) {
-  return items
-    .filter((item) => item.active)
-    .map((item) => item.value)
-    .filter(isComplexItemValue);
+/** Items deleted during comparison, which the export leaves out. */
+export function selectRemovedCount(items: ListItem[]): number {
+  return items.filter((item) => !item.active).length;
 }
 
-/** Every scalar field the user could pick as the label, with coverage details. */
-export function selectSortFieldOptions(items: ListItem[]): LabelFieldCandidate[] {
-  return collectLabelFieldCandidates(selectObjectValues(items));
+/** e.g. `movies · shown by title · order written back` */
+export function selectContextLine(workspace: Workspace | null): string {
+  if (workspace === null) return '';
+
+  const parts = [formatPath(workspace.source.arrayPath)];
+  if (workspace.roles.labelField !== undefined) {
+    parts.push(`shown by ${workspace.roles.labelField}`);
+  }
+  if (workspace.roles.positionField !== undefined) {
+    parts.push(`${workspace.roles.positionField} written back`);
+  }
+
+  return parts.join(' · ');
 }
 
-/**
- * The shape of the imported objects, derived from the live items rather than
- * stored, so it can never go stale after an edit or import.
- */
-export function selectObjectSchema(items: ListItem[]): ObjectSchemaHint {
-  return describeObjectSchema(selectObjectValues(items));
-}
-
-/** Scalar fields shared by every object item — the safest sort-field choices. */
-export function selectLabelFieldCandidates(items: ListItem[]): string[] {
-  return selectSortFieldOptions(items)
-    .filter((candidate) => candidate.coverage === 1)
-    .map((candidate) => candidate.field);
-}
-
-/** Object lists cannot be ranked until the user picks the label field. */
-export function selectNeedsSortField(list: WorkspaceList | null): boolean {
-  return list !== null && list.kind === 'object' && list.sortField === undefined;
+/** Only the tabs this source can honestly produce. */
+export function selectAvailableTabs(workspace: Workspace | null): PreviewTab[] {
+  if (workspace === null) return ['ranked'];
+  return workspace.source.format === 'list'
+    ? ['ranked', 'list', 'yaml', 'json']
+    : ['ranked', 'yaml', 'json'];
 }
 
 /** The label shown on a comparison card or a ranked row. */
-export function selectItemLabel(item: ListItem, sortField: string | undefined): string {
+export function selectItemLabel(item: ListItem, labelField: string | undefined): string {
   const value = item.value;
   if (!isComplexItemValue(value)) return String(value);
 
-  const preferred = sortField === undefined ? undefined : value[sortField];
+  const preferred = labelField === undefined ? undefined : value[labelField];
   if (typeof preferred === 'string' || typeof preferred === 'number') return String(preferred);
 
   const firstString = Object.values(value).find((entry) => typeof entry === 'string');

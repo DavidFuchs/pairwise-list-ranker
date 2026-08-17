@@ -2,17 +2,18 @@ import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
 
-import { parseDocument } from '@/lib/formats';
-import { workspaceFromDocument } from '@/lib/formats/documentMapping';
-import { createWorkspaceStorage } from '@/lib/persistence/browserStorage';
-import type { WorkspaceStorage } from '@/lib/persistence/browserStorage';
+import { entriesAtPath } from '@/lib/import/arrayCandidates';
+import { diffImport } from '@/lib/import/diff';
+import { WORKSPACE_VERSION } from '@/lib/persistence/workspaceSnapshot';
+import type { WorkspaceSnapshot } from '@/lib/persistence/workspaceSnapshot';
+import { createWorkspaceStorage } from '@/lib/persistence/workspaceStorage';
+import type { SaveOutcome, WorkspaceStorage } from '@/lib/persistence/workspaceStorage';
 import type { ActivePair } from '@/lib/state/selectors';
 import { selectCurrentPair, selectRanking } from '@/lib/state/selectors';
-import type { ParseResult } from '@/lib/validation/listSchemas';
-import type { ExportFormat, ItemValue, ListItem, TextFormat, WorkspaceList } from '@/types/list';
+import type { ListItem } from '@/types/list';
 import type { ComparisonEvent, ComparisonOutcome, RankedItem } from '@/types/ranking';
-import type { ListDocument, WorkspaceSnapshot } from '@/types/workspace';
-import { WORKSPACE_VERSION } from '@/types/workspace';
+import type { DataSource, FieldRoles, PreviewTab, Workspace } from '@/types/source';
+import { DEFAULT_WORKSPACE_NAME } from '@/types/source';
 
 export interface ListStoreOptions {
   storage?: WorkspaceStorage;
@@ -20,32 +21,37 @@ export interface ListStoreOptions {
   createId?: () => string;
 }
 
+/** What the data screen hands over when the user commits their choices. */
+export interface StartInput {
+  source: DataSource;
+  roles: FieldRoles;
+  name?: string;
+}
+
 export interface ListState {
-  list: WorkspaceList | null;
+  workspace: Workspace | null;
   items: ListItem[];
   comparisonEvents: ComparisonEvent[];
-  previewMode: ExportFormat;
-  editorDrafts: Partial<Record<TextFormat, string>>;
+  previewTab: PreviewTab;
   persistenceAvailable: boolean;
-  /** When the browser copy was last written, if it was written at all. */
+  /** Why the last save did or did not happen, for the status line. */
+  saveOutcome: SaveOutcome | null;
   lastSavedAt?: string;
   hydrated: boolean;
+  /** True once the app has bounced a restored workspace to /rank. */
+  resumed: boolean;
 
   ranking(): RankedItem<ListItem>[];
   currentPair(): ActivePair | null;
 
   hydrate(): void;
-  importDocument(doc: ListDocument): void;
-  importText(text: string, format: TextFormat): ParseResult<ListDocument>;
-  addItem(value: ItemValue): void;
-  removeItem(itemId: string): void;
+  startRanking(input: StartInput): void;
+  applyEdits(input: StartInput): void;
+  setName(name: string): void;
+  setPreviewTab(tab: PreviewTab): void;
   recordComparison(leftItemId: string, rightItemId: string, outcome: ComparisonOutcome): void;
-  setSortField(field: string | undefined): void;
-  setListMeta(patch: { title?: string; description?: string }): void;
-  setPreviewMode(mode: ExportFormat): void;
-  setEditorDraft(format: TextFormat, text: string): void;
-  clearEditorDraft(format: TextFormat): void;
-  applyEditorDraft(format: TextFormat): ParseResult<ListDocument>;
+  removeItem(itemId: string): void;
+  markResumed(): void;
   reset(): void;
 }
 
@@ -65,37 +71,45 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
   return createStore<ListState>()((set, get) => {
     /** Browser persistence is a convenience, never the system of record. */
     function persist(): void {
-      const { list, items, comparisonEvents, previewMode, editorDrafts } = get();
-      if (list === null) {
+      const { workspace, items, comparisonEvents, previewTab } = get();
+      if (workspace === null) {
         storage.clear();
         return;
       }
+
       const snapshot: WorkspaceSnapshot = {
         version: WORKSPACE_VERSION,
-        list,
+        workspace,
         items,
         comparisonEvents,
-        ui: { previewMode, editorDrafts },
+        ui: { previewTab },
       };
-      storage.save(snapshot);
-      if (storage.available) set({ lastSavedAt: now() });
+
+      const outcome = storage.save(snapshot);
+      set({ saveOutcome: outcome, ...(outcome === 'saved' ? { lastSavedAt: now() } : {}) });
     }
 
-    function touchList(patch: Partial<WorkspaceList>): void {
-      const list = get().list;
-      if (list === null) return;
-      set({ list: { ...list, ...patch, updatedAt: now() } });
-      persist();
+    function makeItem(listId: string, value: unknown): ListItem {
+      const timestamp = now();
+      return {
+        id: createId(),
+        listId,
+        value: value as ListItem['value'],
+        active: true,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
     }
 
     return {
-      list: null,
+      workspace: null,
       items: [],
       comparisonEvents: [],
-      previewMode: 'gui',
-      editorDrafts: {},
+      previewTab: 'ranked',
       persistenceAvailable: storage.available,
+      saveOutcome: null,
       hydrated: false,
+      resumed: false,
 
       ranking() {
         const { items, comparisonEvents } = get();
@@ -114,42 +128,98 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           return;
         }
         set({
-          list: snapshot.list,
+          workspace: snapshot.workspace,
           items: snapshot.items,
           comparisonEvents: snapshot.comparisonEvents,
-          previewMode: snapshot.ui.previewMode,
-          editorDrafts: snapshot.ui.editorDrafts,
+          previewTab: snapshot.ui.previewTab,
           hydrated: true,
         });
       },
 
-      importDocument(doc: ListDocument) {
-        const { list, items } = workspaceFromDocument(doc, { now, createId });
-        // A new list means a new ranking: history from the old list no longer
-        // refers to anything, and stale drafts would misrepresent the import.
-        set({ list, items, comparisonEvents: [], editorDrafts: {} });
-        persist();
-      },
-
-      importText(text: string, format: TextFormat) {
-        const result = parseDocument(text, format, { title: get().list?.title });
-        if (result.ok) get().importDocument(result.data);
-        return result;
-      },
-
-      addItem(value: ItemValue) {
-        const list = get().list;
-        if (list === null) return;
+      /** A fresh list: new workspace, new items, no history to carry over. */
+      startRanking({ source, roles, name }: StartInput) {
         const timestamp = now();
-        const item: ListItem = {
+        const workspace: Workspace = {
           id: createId(),
-          listId: list.id,
-          value,
-          active: true,
+          name: name ?? DEFAULT_WORKSPACE_NAME,
+          source,
+          roles,
           createdAt: timestamp,
           updatedAt: timestamp,
         };
-        set({ items: [...get().items, item] });
+
+        const entries = entriesAtPath(source.document, source.arrayPath);
+
+        set({
+          workspace,
+          items: entries.map((entry) => makeItem(workspace.id, entry)),
+          comparisonEvents: [],
+          previewTab: 'ranked',
+        });
+        persist();
+      },
+
+      /**
+       * Edited data on the same workspace. Entries the user did not touch keep
+       * their item id, and therefore their rating and their history.
+       */
+      applyEdits({ source, roles, name }: StartInput) {
+        const workspace = get().workspace;
+        if (workspace === null) return;
+
+        const entries = entriesAtPath(source.document, source.arrayPath);
+        const diff = diffImport(get().items, entries, get().comparisonEvents);
+        const removedIds = new Set(diff.removed.map((item) => item.id));
+        const timestamp = now();
+
+        const items: ListItem[] = [
+          ...get().items.map((item) =>
+            removedIds.has(item.id) ? { ...item, active: false, updatedAt: timestamp } : item,
+          ),
+          ...diff.added.map((entry) => makeItem(workspace.id, entry)),
+        ];
+
+        set({
+          workspace: {
+            ...workspace,
+            ...(name === undefined ? {} : { name }),
+            source,
+            roles,
+            updatedAt: timestamp,
+          },
+          items,
+        });
+        persist();
+      },
+
+      setName(name: string) {
+        const workspace = get().workspace;
+        if (workspace === null) return;
+        set({ workspace: { ...workspace, name, updatedAt: now() } });
+        persist();
+      },
+
+      setPreviewTab(tab: PreviewTab) {
+        set({ previewTab: tab });
+        persist();
+      },
+
+      recordComparison(leftItemId: string, rightItemId: string, outcome: ComparisonOutcome) {
+        const { workspace, items, comparisonEvents } = get();
+        if (workspace === null || leftItemId === rightItemId) return;
+
+        const isRankable = (id: string) => items.some((item) => item.id === id && item.active);
+        if (!isRankable(leftItemId) || !isRankable(rightItemId)) return;
+
+        const event: ComparisonEvent = {
+          id: createId(),
+          listId: workspace.id,
+          leftItemId,
+          rightItemId,
+          outcome,
+          createdAt: now(),
+        };
+        set({ comparisonEvents: [...comparisonEvents, event] });
         persist();
       },
 
@@ -164,65 +234,19 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         persist();
       },
 
-      recordComparison(leftItemId: string, rightItemId: string, outcome: ComparisonOutcome) {
-        const { list, items, comparisonEvents } = get();
-        if (list === null || leftItemId === rightItemId) return;
-
-        const isRankable = (id: string) =>
-          items.some((item) => item.id === id && item.active);
-        if (!isRankable(leftItemId) || !isRankable(rightItemId)) return;
-
-        const event: ComparisonEvent = {
-          id: createId(),
-          listId: list.id,
-          leftItemId,
-          rightItemId,
-          outcome,
-          createdAt: now(),
-        };
-        set({ comparisonEvents: [...comparisonEvents, event] });
-        persist();
-      },
-
-      setSortField(field: string | undefined) {
-        touchList({ sortField: field });
-      },
-
-      setListMeta(patch: { title?: string; description?: string }) {
-        touchList(patch);
-      },
-
-      setPreviewMode(mode: ExportFormat) {
-        set({ previewMode: mode });
-        persist();
-      },
-
-      setEditorDraft(format: TextFormat, text: string) {
-        set({ editorDrafts: { ...get().editorDrafts, [format]: text } });
-        persist();
-      },
-
-      clearEditorDraft(format: TextFormat) {
-        const drafts = { ...get().editorDrafts };
-        delete drafts[format];
-        set({ editorDrafts: drafts });
-        persist();
-      },
-
-      /** Typing never mutates the list; only applying a valid draft does. */
-      applyEditorDraft(format: TextFormat) {
-        const draft = get().editorDrafts[format] ?? '';
-        return get().importText(draft, format);
+      markResumed() {
+        set({ resumed: true });
       },
 
       reset() {
         set({
-          list: null,
+          workspace: null,
           items: [],
           comparisonEvents: [],
-          previewMode: 'gui',
-          editorDrafts: {},
+          previewTab: 'ranked',
+          saveOutcome: null,
           lastSavedAt: undefined,
+          resumed: true,
         });
         storage.clear();
       },

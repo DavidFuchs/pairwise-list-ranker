@@ -1,23 +1,30 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  selectAvailableTabs,
+  selectContextLine,
   selectCurrentPair,
-  selectDocument,
-  selectNeedsSortField,
-  selectPreviewText,
+  selectExportText,
   selectRanking,
-  selectLabelFieldCandidates,
+  selectRemovedCount,
   selectWorkspaceView,
 } from '@/lib/state/selectors';
-import type { ListItem, WorkspaceList } from '@/types/list';
+import type { ListItem } from '@/types/list';
 import type { ComparisonEvent } from '@/types/ranking';
+import type { Workspace } from '@/types/source';
 
 const NOW = '2026-08-15T12:00:00.000Z';
 
-const list: WorkspaceList = {
+const workspace: Workspace = {
   id: 'list-1',
-  title: 'Weeknight dinners',
-  kind: 'primitive',
+  name: 'Weeknight dinners',
+  source: {
+    format: 'yaml',
+    rawText: '',
+    document: { owner: 'david', movies: [{ title: 'Alien' }, { title: 'Arrival' }] },
+    arrayPath: ['movies'],
+  },
+  roles: { labelField: 'title' },
   createdAt: NOW,
   updatedAt: NOW,
 };
@@ -89,68 +96,68 @@ describe('selectCurrentPair', () => {
   });
 });
 
-describe('selectDocument', () => {
-  it('exports items in ranked order, best first', () => {
-    const doc = selectDocument(list, items, bWins);
+describe('selectExportText', () => {
+  it('serializes the user document with the ranking applied', () => {
+    const objects = [item('item-1', { title: 'Alien' }), item('item-2', { title: 'Arrival' })];
 
-    expect(doc.items.map((entry) => entry.id)).toEqual(['item-2', 'item-3', 'item-1']);
+    expect(selectExportText(workspace, objects, [], 'yaml')).toContain('owner: david');
   });
 
-  it('carries the list title and kind', () => {
-    expect(selectDocument(list, items, [])).toMatchObject({ title: list.title, kind: 'primitive' });
-  });
-});
-
-describe('selectPreviewText', () => {
-  it('renders the ranked list in each exportable format', () => {
-    expect(selectPreviewText(list, items, bWins, 'markdown')).toContain('- Ramen\n- Curry\n- Tacos');
-    expect(selectPreviewText(list, items, bWins, 'yaml')).toContain('value: Ramen');
-    expect(selectPreviewText(list, items, bWins, 'json')).toContain('"value": "Ramen"');
-  });
-
-  it('renders an empty workspace as empty text rather than failing', () => {
-    expect(selectPreviewText(null, [], [], 'yaml')).toBe('');
+  it('is empty with no workspace', () => {
+    expect(selectExportText(null, [], [], 'yaml')).toBe('');
   });
 });
 
-describe('selectLabelFieldCandidates', () => {
-  it('lists scalar fields that every object shares', () => {
-    const objects = [
-      item('item-1', { title: 'Arrival', year: 2016, cast: ['Amy Adams'] }),
-      item('item-2', { title: 'Alien', year: 1979, cast: ['Sigourney Weaver'] }),
-    ];
-
-    expect(selectLabelFieldCandidates(objects)).toEqual(['title', 'year']);
-  });
-
-  it('skips fields that are missing from some items', () => {
-    const objects = [
-      item('item-1', { title: 'Arrival', year: 2016 }),
-      item('item-2', { title: 'Alien' }),
-    ];
-
-    expect(selectLabelFieldCandidates(objects)).toEqual(['title']);
-  });
-
-  it('has nothing to offer for a simple list', () => {
-    expect(selectLabelFieldCandidates(items)).toEqual([]);
+describe('selectRemovedCount', () => {
+  it('counts only the deactivated items', () => {
+    expect(selectRemovedCount([item('a', 'x'), item('b', 'y', false)])).toBe(1);
   });
 });
 
-describe('selectNeedsSortField', () => {
-  it('blocks ranking for an object list with no sort field chosen', () => {
-    const objectList: WorkspaceList = { ...list, kind: 'object', sortField: undefined };
-
-    expect(selectNeedsSortField(objectList)).toBe(true);
+describe('selectContextLine', () => {
+  it('names the array and the label field', () => {
+    expect(selectContextLine(workspace)).toBe('movies · shown by title');
   });
 
-  it('allows ranking once a sort field is chosen', () => {
-    const objectList: WorkspaceList = { ...list, kind: 'object', sortField: 'title' };
+  it('mentions the position field when there is one', () => {
+    const withOrder = {
+      ...workspace,
+      roles: { labelField: 'title', positionField: 'order' },
+    };
 
-    expect(selectNeedsSortField(objectList)).toBe(false);
+    expect(selectContextLine(withOrder)).toBe('movies · shown by title · order written back');
   });
 
-  it('never blocks a simple list', () => {
-    expect(selectNeedsSortField(list)).toBe(false);
+  it('names a bare list plainly', () => {
+    const bare = {
+      ...workspace,
+      source: { ...workspace.source, format: 'list' as const, document: ['a'], arrayPath: [] },
+      roles: {},
+    };
+
+    expect(selectContextLine(bare)).toBe('the list');
+  });
+
+  it('is empty with no workspace', () => {
+    expect(selectContextLine(null)).toBe('');
+  });
+});
+
+describe('selectAvailableTabs', () => {
+  it('offers ranked plus the text formats for a structured source', () => {
+    expect(selectAvailableTabs(workspace)).toEqual(['ranked', 'yaml', 'json']);
+  });
+
+  it('offers the plain list tab for a plain list source', () => {
+    const bare = {
+      ...workspace,
+      source: { ...workspace.source, format: 'list' as const, document: ['a'], arrayPath: [] },
+    };
+
+    expect(selectAvailableTabs(bare)).toEqual(['ranked', 'list', 'yaml', 'json']);
+  });
+
+  it('offers only the ranked tab with no workspace', () => {
+    expect(selectAvailableTabs(null)).toEqual(['ranked']);
   });
 });
