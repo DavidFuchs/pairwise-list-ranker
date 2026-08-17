@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  collectSortFieldCandidates,
+  collectLabelFieldCandidates,
   describeObjectSchema,
-  isUsableSortField,
-  preferredSortField,
-} from '@/lib/validation/sortFieldRules';
+  isUsableLabelField,
+  preferredLabelField,
+} from '@/lib/import/labelField';
 
 const films = [
   { title: 'Arrival', year: 2016, director: 'Denis Villeneuve', cast: ['Amy Adams'] },
   { title: 'Alien', year: 1979, director: 'Ridley Scott', cast: ['Sigourney Weaver'] },
 ];
 
-describe('collectSortFieldCandidates', () => {
+describe('collectLabelFieldCandidates', () => {
   it('offers the scalar fields as label candidates', () => {
-    expect(collectSortFieldCandidates(films).map((entry) => entry.field)).toEqual([
+    expect(collectLabelFieldCandidates(films).map((entry) => entry.field)).toEqual([
       'title',
       'year',
       'director',
@@ -24,24 +24,24 @@ describe('collectSortFieldCandidates', () => {
   it('leaves out arrays and nested objects, which make poor labels', () => {
     const withNested = [{ title: 'Arrival', crew: { director: 'Villeneuve' } }];
 
-    expect(collectSortFieldCandidates(withNested).map((entry) => entry.field)).toEqual(['title']);
+    expect(collectLabelFieldCandidates(withNested).map((entry) => entry.field)).toEqual(['title']);
   });
 
   it('reports full coverage when every item has the field', () => {
-    const title = collectSortFieldCandidates(films).find((entry) => entry.field === 'title');
+    const title = collectLabelFieldCandidates(films).find((entry) => entry.field === 'title');
 
     expect(title?.coverage).toBe(1);
   });
 
   it('reports partial coverage when some items lack the field', () => {
     const patchy = [{ title: 'Arrival', year: 2016 }, { title: 'Alien' }];
-    const year = collectSortFieldCandidates(patchy).find((entry) => entry.field === 'year');
+    const year = collectLabelFieldCandidates(patchy).find((entry) => entry.field === 'year');
 
     expect(year?.coverage).toBe(0.5);
   });
 
   it('shows example values so the user can see the resulting labels', () => {
-    const title = collectSortFieldCandidates(films).find((entry) => entry.field === 'title');
+    const title = collectLabelFieldCandidates(films).find((entry) => entry.field === 'title');
 
     expect(title?.samples).toEqual(['Arrival', 'Alien']);
   });
@@ -51,79 +51,79 @@ describe('collectSortFieldCandidates', () => {
       { title: 'Arrival', genre: 'Sci-fi' },
       { title: 'Alien', genre: 'Sci-fi' },
     ];
-    const candidates = collectSortFieldCandidates(repeated);
+    const candidates = collectLabelFieldCandidates(repeated);
 
     expect(candidates.find((entry) => entry.field === 'title')?.uniqueness).toBe(1);
     expect(candidates.find((entry) => entry.field === 'genre')?.uniqueness).toBe(0.5);
   });
 
   it('has nothing to offer for an empty list', () => {
-    expect(collectSortFieldCandidates([])).toEqual([]);
+    expect(collectLabelFieldCandidates([])).toEqual([]);
   });
 
   it('includes fields that only later items introduce', () => {
     const uneven = [{ title: 'Arrival' }, { title: 'Alien', tagline: 'In space...' }];
 
-    expect(collectSortFieldCandidates(uneven).map((entry) => entry.field)).toEqual([
+    expect(collectLabelFieldCandidates(uneven).map((entry) => entry.field)).toEqual([
       'title',
       'tagline',
     ]);
   });
 });
 
-describe('preferredSortField', () => {
+describe('preferredLabelField', () => {
   it('preselects a well-known label field', () => {
-    expect(preferredSortField(collectSortFieldCandidates(films))).toBe('title');
+    expect(preferredLabelField(collectLabelFieldCandidates(films))).toBe('title');
   });
 
   it('prefers title over name when both exist', () => {
     const both = [{ name: 'a', title: 'b' }, { name: 'c', title: 'd' }];
 
-    expect(preferredSortField(collectSortFieldCandidates(both))).toBe('title');
+    expect(preferredLabelField(collectLabelFieldCandidates(both))).toBe('title');
   });
 
   it('ignores a well-known field that only some items have', () => {
     const patchy = [{ title: 'Arrival', ref: 'a' }, { ref: 'b' }];
 
-    expect(preferredSortField(collectSortFieldCandidates(patchy))).toBe('ref');
+    expect(preferredLabelField(collectLabelFieldCandidates(patchy))).toBe('ref');
   });
 
   it('ignores a well-known field that is not text', () => {
     const numeric = [{ name: 1, code: 'a' }, { name: 2, code: 'b' }];
 
-    expect(preferredSortField(collectSortFieldCandidates(numeric))).toBe('code');
+    expect(preferredLabelField(collectLabelFieldCandidates(numeric))).toBe('code');
   });
 
   it('falls back to the only text field that every item has', () => {
     const single = [{ code: 'a', year: 2016 }, { code: 'b', year: 1979 }];
 
-    expect(preferredSortField(collectSortFieldCandidates(single))).toBe('code');
+    expect(preferredLabelField(collectLabelFieldCandidates(single))).toBe('code');
   });
 
   it('asks the user to choose when several text fields compete', () => {
     const ambiguous = [{ alpha: 'a', beta: 'b' }, { alpha: 'c', beta: 'd' }];
 
-    expect(preferredSortField(collectSortFieldCandidates(ambiguous))).toBeUndefined();
+    expect(preferredLabelField(collectLabelFieldCandidates(ambiguous))).toBeUndefined();
   });
 
   it('asks the user to choose when only numbers are available', () => {
     const numeric = [{ year: 2016, rank: 1 }, { year: 1979, rank: 2 }];
 
-    expect(preferredSortField(collectSortFieldCandidates(numeric))).toBeUndefined();
+    expect(preferredLabelField(collectLabelFieldCandidates(numeric))).toBeUndefined();
   });
 });
 
-describe('isUsableSortField', () => {
+describe('isUsableLabelField', () => {
   it('accepts a field that at least one item has', () => {
-    expect(isUsableSortField('year', collectSortFieldCandidates(films))).toBe(true);
+    expect(isUsableLabelField('year', collectLabelFieldCandidates(films))).toBe(true);
   });
 
   it('rejects a field no item has', () => {
-    expect(isUsableSortField('runtime', collectSortFieldCandidates(films))).toBe(false);
+    expect(isUsableLabelField('runtime', collectLabelFieldCandidates(films))).toBe(false);
   });
 
   it('rejects an undefined choice', () => {
-    expect(isUsableSortField(undefined, collectSortFieldCandidates(films))).toBe(false);
+    expect(isUsableLabelField(undefined, collectLabelFieldCandidates(films))).toBe(false);
   });
 });
 

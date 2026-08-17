@@ -6,13 +6,13 @@ import type { ComplexItemValue } from '@/types/list';
  */
 
 /** Field names that are safe to preselect, best first. */
-export const PREFERRED_SORT_FIELDS = ['title', 'name', 'label'] as const;
+export const PREFERRED_LABEL_FIELDS = ['title', 'name', 'label'] as const;
 
 const MAX_SAMPLES = 3;
 
 export type ScalarType = 'string' | 'number' | 'boolean';
 
-export interface SortFieldCandidate {
+export interface LabelFieldCandidate {
   field: string;
   /** Share of items carrying a scalar value for this field, 0..1. */
   coverage: number;
@@ -54,10 +54,10 @@ function fieldOrder(values: ComplexItemValue[]): string[] {
   return fields;
 }
 
-export function collectSortFieldCandidates(values: ComplexItemValue[]): SortFieldCandidate[] {
+export function collectLabelFieldCandidates(values: ComplexItemValue[]): LabelFieldCandidate[] {
   if (values.length === 0) return [];
 
-  const candidates: SortFieldCandidate[] = [];
+  const candidates: LabelFieldCandidate[] = [];
 
   for (const field of fieldOrder(values)) {
     const present = values
@@ -85,12 +85,12 @@ export function collectSortFieldCandidates(values: ComplexItemValue[]): SortFiel
  * The safe default, or undefined when the user must decide. Only text fields
  * that every item carries are ever chosen automatically.
  */
-export function preferredSortField(candidates: SortFieldCandidate[]): string | undefined {
+export function preferredLabelField(candidates: LabelFieldCandidate[]): string | undefined {
   const fullTextFields = candidates.filter(
     (candidate) => candidate.coverage === 1 && candidate.types.every((type) => type === 'string'),
   );
 
-  for (const preferred of PREFERRED_SORT_FIELDS) {
+  for (const preferred of PREFERRED_LABEL_FIELDS) {
     if (fullTextFields.some((candidate) => candidate.field === preferred)) return preferred;
   }
 
@@ -98,9 +98,9 @@ export function preferredSortField(candidates: SortFieldCandidate[]): string | u
 }
 
 /** Whether a chosen field still labels at least one item. */
-export function isUsableSortField(
+export function isUsableLabelField(
   field: string | undefined,
-  candidates: SortFieldCandidate[],
+  candidates: LabelFieldCandidate[],
 ): boolean {
   if (field === undefined) return false;
   return candidates.some((candidate) => candidate.field === field && candidate.coverage > 0);

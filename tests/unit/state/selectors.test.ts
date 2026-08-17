@@ -6,7 +6,7 @@ import {
   selectNeedsSortField,
   selectPreviewText,
   selectRanking,
-  selectSortFieldCandidates,
+  selectLabelFieldCandidates,
   selectWorkspaceView,
 } from '@/lib/state/selectors';
 import type { ListItem, WorkspaceList } from '@/types/list';
@@ -113,14 +113,14 @@ describe('selectPreviewText', () => {
   });
 });
 
-describe('selectSortFieldCandidates', () => {
+describe('selectLabelFieldCandidates', () => {
   it('lists scalar fields that every object shares', () => {
     const objects = [
       item('item-1', { title: 'Arrival', year: 2016, cast: ['Amy Adams'] }),
       item('item-2', { title: 'Alien', year: 1979, cast: ['Sigourney Weaver'] }),
     ];
 
-    expect(selectSortFieldCandidates(objects)).toEqual(['title', 'year']);
+    expect(selectLabelFieldCandidates(objects)).toEqual(['title', 'year']);
   });
 
   it('skips fields that are missing from some items', () => {
@@ -129,11 +129,11 @@ describe('selectSortFieldCandidates', () => {
       item('item-2', { title: 'Alien' }),
     ];
 
-    expect(selectSortFieldCandidates(objects)).toEqual(['title']);
+    expect(selectLabelFieldCandidates(objects)).toEqual(['title']);
   });
 
   it('has nothing to offer for a simple list', () => {
-    expect(selectSortFieldCandidates(items)).toEqual([]);
+    expect(selectLabelFieldCandidates(items)).toEqual([]);
   });
 });
 

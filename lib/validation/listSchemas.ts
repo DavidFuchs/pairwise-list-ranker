@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { collectSortFieldCandidates, preferredSortField } from '@/lib/validation/sortFieldRules';
+import { collectLabelFieldCandidates, preferredLabelField } from '@/lib/import/labelField';
 import type { ListDocument } from '@/types/workspace';
 import { LIST_DOCUMENT_VERSION } from '@/types/workspace';
 
@@ -145,7 +145,7 @@ export function coerceToListDocument(
 
 /**
  * Pick a display field for object lists, or undefined when the choice is
- * ambiguous so the UI can ask. See lib/validation/sortFieldRules.ts.
+ * ambiguous so the UI can ask. See lib/import/labelField.ts.
  */
 export function detectSortField(items: unknown[]): string | undefined {
   const objects = items.filter(
@@ -153,5 +153,5 @@ export function detectSortField(items: unknown[]): string | undefined {
       typeof item === 'object' && item !== null && !Array.isArray(item),
   );
 
-  return preferredSortField(collectSortFieldCandidates(objects));
+  return preferredLabelField(collectLabelFieldCandidates(objects));
 }

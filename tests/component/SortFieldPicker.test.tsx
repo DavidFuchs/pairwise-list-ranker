@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { SortFieldPicker } from '@/components/lists/SortFieldPicker';
-import { collectSortFieldCandidates } from '@/lib/validation/sortFieldRules';
+import { collectLabelFieldCandidates } from '@/lib/import/labelField';
 
 const films = [
   { title: 'Arrival', year: 2016, director: 'Denis Villeneuve', cast: ['Amy Adams'] },
@@ -13,7 +13,7 @@ const films = [
 
 function setup(overrides: Partial<React.ComponentProps<typeof SortFieldPicker>> = {}) {
   const props = {
-    candidates: collectSortFieldCandidates(films),
+    candidates: collectLabelFieldCandidates(films),
     schema: { itemCount: 2, fields: [] },
     onChange: vi.fn(),
     ...overrides,
@@ -73,7 +73,7 @@ describe('SortFieldPicker', () => {
 
   it('warns when a field is missing from some items', () => {
     const patchy = [{ title: 'Arrival', year: 2016 }, { title: 'Alien' }];
-    setup({ candidates: collectSortFieldCandidates(patchy) });
+    setup({ candidates: collectLabelFieldCandidates(patchy) });
 
     expect(screen.getByText(/1 of 2 items/i)).toBeDefined();
   });

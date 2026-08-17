@@ -1,10 +1,10 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fonts, radius, space } from '@/lib/theme';
-import type { ObjectSchemaHint, SortFieldCandidate } from '@/lib/validation/sortFieldRules';
+import type { ObjectSchemaHint, LabelFieldCandidate } from '@/lib/import/labelField';
 
 export interface SortFieldPickerProps {
-  candidates: SortFieldCandidate[];
+  candidates: LabelFieldCandidate[];
   schema: ObjectSchemaHint;
   value?: string;
   onChange: (field: string) => void;

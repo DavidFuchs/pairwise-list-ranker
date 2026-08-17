@@ -3,8 +3,8 @@ import { serializeDocument } from '@/lib/formats';
 import { selectNextPair } from '@/lib/ranking/pairSelection';
 import { rankItems, replayComparisons } from '@/lib/ranking/rebuildRanking';
 import type { RankingStates } from '@/lib/ranking/rebuildRanking';
-import { collectSortFieldCandidates, describeObjectSchema } from '@/lib/validation/sortFieldRules';
-import type { ObjectSchemaHint, SortFieldCandidate } from '@/lib/validation/sortFieldRules';
+import { collectLabelFieldCandidates, describeObjectSchema } from '@/lib/import/labelField';
+import type { ObjectSchemaHint, LabelFieldCandidate } from '@/lib/import/labelField';
 import { isComplexItemValue } from '@/types/list';
 import type { ListItem, TextFormat, WorkspaceList } from '@/types/list';
 import type { ComparisonEvent, RankedItem } from '@/types/ranking';
@@ -94,8 +94,8 @@ export function selectObjectValues(items: ListItem[]) {
 }
 
 /** Every scalar field the user could pick as the label, with coverage details. */
-export function selectSortFieldOptions(items: ListItem[]): SortFieldCandidate[] {
-  return collectSortFieldCandidates(selectObjectValues(items));
+export function selectSortFieldOptions(items: ListItem[]): LabelFieldCandidate[] {
+  return collectLabelFieldCandidates(selectObjectValues(items));
 }
 
 /**
@@ -107,7 +107,7 @@ export function selectObjectSchema(items: ListItem[]): ObjectSchemaHint {
 }
 
 /** Scalar fields shared by every object item — the safest sort-field choices. */
-export function selectSortFieldCandidates(items: ListItem[]): string[] {
+export function selectLabelFieldCandidates(items: ListItem[]): string[] {
   return selectSortFieldOptions(items)
     .filter((candidate) => candidate.coverage === 1)
     .map((candidate) => candidate.field);
