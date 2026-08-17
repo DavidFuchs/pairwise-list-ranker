@@ -44,8 +44,8 @@ describe('ComparisonDeck layout', () => {
   it('keeps each item’s actions inside its own card', () => {
     setup();
 
-    const leftCard = screen.getByLabelText(/left option: tacos/i);
-    expect(within(leftCard).getByRole('button', { name: 'Choose Tacos' })).toBeDefined();
+    // The card itself is the choice, so it carries that accessible name.
+    const leftCard = screen.getByRole('button', { name: 'Choose Tacos' });
     expect(within(leftCard).getByRole('button', { name: 'Tacos is much better' })).toBeDefined();
     expect(within(leftCard).getByRole('button', { name: 'Delete Tacos' })).toBeDefined();
     expect(within(leftCard).queryByRole('button', { name: 'Choose Ramen' })).toBeNull();

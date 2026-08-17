@@ -144,6 +144,14 @@ html, body { background-color: var(--canvas); }
 [data-hint='choose'] { transition: opacity 160ms ease; }
 [data-surface='card']:hover [data-hint='choose'] { opacity: 1; }
 
+/* The emphasis action warms up as you approach it. */
+[data-strong] { transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease; }
+[data-strong]:hover {
+  transform: scale(1.08);
+  background-color: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+}
+
 /* Keyboard focus stays obvious in both themes. */
 :focus-visible {
   outline: 2px solid var(--accent);

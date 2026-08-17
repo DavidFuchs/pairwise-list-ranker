@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ObjectDrilldown } from '@/components/comparison/ObjectDrilldown';
+import { StrongChoiceButton } from '@/components/comparison/StrongChoiceButton';
 import { useReducedMotion } from '@/lib/hooks/useReducedMotion';
 import { selectItemLabel } from '@/lib/state/selectors';
 import { colors, fonts, motion, radius, space, typeScale } from '@/lib/theme';
@@ -67,20 +68,31 @@ export function ItemCard({
   const detailFields = fields.filter(([key]) => key !== sortField);
   const chips = detailFields.filter(([, value]) => isChipValue(value)).slice(0, MAX_CHIPS);
   const interactive = onChoose !== undefined;
+  const canChoose = interactive && !pendingDelete;
 
   return (
-    <Animated.View
-      style={[styles.card, { opacity }]}
-      dataSet={{ surface: 'card' }}
-      accessibilityLabel={`${side === 'left' ? 'Left' : 'Right'} option: ${label}`}
-    >
+    <Animated.View style={[styles.card, { opacity }]} dataSet={{ surface: 'card' }}>
+      <Pressable
+        accessibilityRole={canChoose ? 'button' : undefined}
+        accessibilityLabel={
+          canChoose
+            ? `Choose ${label}`
+            : `${side === 'left' ? 'Left' : 'Right'} option: ${label}`
+        }
+        disabled={!canChoose}
+        onPress={canChoose ? onChoose : undefined}
+        style={({ pressed }) => [styles.pressArea, canChoose && pressed && styles.pressed]}
+      >
       <View style={styles.topRow}>
         <Text style={styles.side}>{side === 'left' ? 'LEFT' : 'RIGHT'}</Text>
         {interactive && !pendingDelete && (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Delete ${label}`}
-            onPress={onRequestDelete}
+            onPress={(event) => {
+              event.stopPropagation();
+              onRequestDelete?.();
+            }}
             style={styles.removeButton}
           >
             <Text style={styles.removeGlyph}>×</Text>
@@ -108,7 +120,10 @@ export function ItemCard({
             accessibilityRole="button"
             accessibilityLabel={`${expanded ? 'Hide' : 'Show'} details for ${label}`}
             accessibilityState={{ expanded }}
-            onPress={() => setExpanded((open) => !open)}
+            onPress={(event) => {
+              event.stopPropagation();
+              setExpanded((open) => !open);
+            }}
             style={styles.detailsToggle}
           >
             <Text style={styles.detailsToggleText}>
@@ -132,7 +147,10 @@ export function ItemCard({
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Keep ${label}`}
-                  onPress={onCancelDelete}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    onCancelDelete?.();
+                  }}
                   style={styles.confirmCancel}
                 >
                   <Text style={styles.confirmCancelText}>Keep</Text>
@@ -140,7 +158,10 @@ export function ItemCard({
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Confirm deleting ${label}`}
-                  onPress={onConfirmDelete}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    onConfirmDelete?.();
+                  }}
                   style={styles.confirmDelete}
                 >
                   <Text style={styles.confirmDeleteText}>Remove</Text>
@@ -148,32 +169,24 @@ export function ItemCard({
               </View>
             </View>
           ) : (
-            <>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Choose ${label}`}
-                onPress={onChoose}
-                style={styles.choose}
-                dataSet={{ fill: 'accent' }}
-              >
-                <Text style={styles.chooseText} numberOfLines={1}>
-                  Choose
+            <View style={styles.actions}>
+              <View style={styles.hintGroup}>
+                <View style={styles.keycap}>
+                  <Text style={styles.keycapText}>{side === 'left' ? '←' : '→'}</Text>
+                </View>
+                <Text style={styles.hint} dataSet={{ hint: 'choose' }}>
+                  Click to choose
                 </Text>
-                <Text style={styles.chooseArrow}>→</Text>
-              </Pressable>
+              </View>
 
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${label} is much better`}
-                onPress={onChooseStrong}
-                style={styles.strong}
-              >
-                <Text style={styles.strongText}>Much better</Text>
-              </Pressable>
-            </>
+              {onChooseStrong !== undefined && (
+                <StrongChoiceButton label={label} onPress={onChooseStrong} />
+              )}
+            </View>
           )}
         </View>
       )}
+      </Pressable>
     </Animated.View>
   );
 }
@@ -189,13 +202,22 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     flexBasis: 280,
     minWidth: 250,
-    gap: space.md,
-    padding: space.lg,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
+  /**
+   * The whole card is the choice, so the press target fills it. Padding lives
+   * here rather than on the card so there is no dead border to click.
+   */
+  pressArea: {
+    flex: 1,
+    gap: space.md,
+    padding: space.lg,
+    borderRadius: radius.lg,
+  },
+  pressed: { backgroundColor: colors.accentSoft },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   side: {
     fontFamily: fonts.mono,
@@ -249,39 +271,26 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     gap: space.sm,
   },
-  choose: {
+  actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.sm,
-    minHeight: 46,
-    paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
+    justifyContent: 'space-between',
+    minHeight: 40,
   },
-  chooseText: {
-    fontFamily: fonts.body,
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.accentContrast,
-  },
-  chooseArrow: { fontFamily: fonts.body, fontSize: 14, color: colors.accentContrast },
-  strong: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 34,
-    borderRadius: radius.md,
+  hintGroup: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  keycap: {
+    minWidth: 24,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: colors.accentSoftBorder,
-    backgroundColor: colors.accentSoft,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
   },
-  strongText: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-    color: colors.accentStrong,
-  },
+  keycapText: { fontFamily: fonts.mono, fontSize: 12, color: colors.textSecondary },
+  /** Revealed on hover by themeCss; kept visible under reduced motion. */
+  hint: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint, opacity: 0 },
   confirm: {
     gap: space.sm,
     padding: space.sm,
