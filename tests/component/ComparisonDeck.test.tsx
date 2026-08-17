@@ -240,10 +240,8 @@ describe('keyboard shortcuts', () => {
   it('tells the user the shortcuts exist', () => {
     setup();
 
-    // The plain arrow keys are shown as keycaps on the cards themselves; the
-    // tray carries only the shortcuts that have nowhere else to live.
+    expect(screen.getByText(/arrow keys choose/i)).toBeDefined();
     expect(screen.getByText(/s skips/i)).toBeDefined();
-    expect(screen.getAllByText('←')).toHaveLength(1);
   });
 
   it('stays quiet when there is no pair to act on', async () => {
@@ -283,10 +281,75 @@ describe('the gutter', () => {
     expect(screen.getByRole('button', { name: /skip this pair/i })).toBeDefined();
   });
 
-  it('leaves the plain arrow keys to the cards, which show their own keycaps', () => {
+  it('keeps the cards free of keycaps', () => {
     setup();
 
-    expect(screen.queryByText(/arrow keys choose/i)).toBeNull();
-    expect(screen.getByText(/shift \+ arrow for much better/i)).toBeDefined();
+    expect(screen.queryByText('←')).toBeNull();
+    expect(screen.queryByText('→')).toBeNull();
+  });
+});
+
+describe('details, shared by the pair', () => {
+  const films = [
+    { title: 'Arrival', synopsis: 'Linguist meets heptapods.' },
+    { title: 'Alien', synopsis: 'Crew meets xenomorph.' },
+  ];
+
+  function withDetails() {
+    return setup({
+      pair: {
+        left: {
+          id: 'item-1',
+          listId: 'list-1',
+          value: films[0]!,
+          active: true,
+          createdAt: NOW,
+          updatedAt: NOW,
+        },
+        right: {
+          id: 'item-2',
+          listId: 'list-1',
+          value: films[1]!,
+          active: true,
+          createdAt: NOW,
+          updatedAt: NOW,
+        },
+      },
+      sortField: 'title',
+    });
+  }
+
+  it('offers one toggle for the pair', () => {
+    withDetails();
+
+    expect(screen.getAllByRole('switch', { name: /show details on both cards/i })).toHaveLength(1);
+  });
+
+  it('opens both cards at once', async () => {
+    const user = userEvent.setup();
+    withDetails();
+
+    await user.click(screen.getByRole('switch', { name: /show details on both cards/i }));
+
+    expect(screen.getByText(/Linguist meets heptapods/)).toBeDefined();
+    expect(screen.getByText(/Crew meets xenomorph/)).toBeDefined();
+  });
+
+  it('closes both cards at once', async () => {
+    const user = userEvent.setup();
+    withDetails();
+    const toggle = screen.getByRole('switch', { name: /show details on both cards/i });
+
+    await user.click(toggle);
+    await user.click(toggle);
+
+    expect(screen.queryByText(/Linguist meets heptapods/)).toBeNull();
+    expect(screen.queryByText(/Crew meets xenomorph/)).toBeNull();
+  });
+
+  it('stays hidden when the items are bare strings', () => {
+    setup();
+
+    expect(screen.queryByRole('switch', { name: /show details/i })).toBeNull();
   });
 });

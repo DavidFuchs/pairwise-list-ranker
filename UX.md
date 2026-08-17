@@ -95,13 +95,19 @@ Each card contains, top to bottom:
 - summary chips for short scalar fields
 - an expandable details region for the rest of the object
 - a footer, aligned across both cards, holding:
-  - the keycap for its arrow key, and a `Click to choose` hint that fades in on
-    hover
-  - a circular 🔥 for "much better", always visible so it survives touch
+  - a `Click to choose` hint that fades in on hover
+  - **Much better**, a compact pill that says in words what it does. An icon
+    alone reads as decoration to anyone who has not been told what it means,
+    and this button changes how far the ranking moves.
 
 Nested controls stop the press from reaching the card, and the card is not
 pressable at all while a delete confirmation is showing. A hairline divider
 with a small `or` sits in the gutter between the two cards.
+
+Details belong to the pair, not to a card: one **Show details** switch beside
+*Skip this pair* opens both at once, because reading one item's fields against
+the other's summary is not a comparison. While details are open the summary
+chips step aside, since they say the same thing in shorter form.
 
 Removing an item swaps that card's footer for an inline confirmation, so the
 question is asked on the card being removed rather than in a separate bar.
@@ -169,10 +175,10 @@ For object entries, on the data screen:
 
 Each comparison card includes:
 - primary label from the chosen label field
-- optional subtitle from a secondary summary rule
-- expand details action
+- summary chips for short scalar fields, while details are closed
 
-Expanded details should show:
+Details are opened for the pair, from one switch beside *Skip this pair*, never
+for a single card. Expanded details show:
 - remaining fields in grouped key/value layout
 - collapsible nested structures
 - code-style blocks for large text or arrays where needed
@@ -317,9 +323,8 @@ Type scale:
 Hierarchy:
 - primary: the comparison card itself — the largest target on the screen, so it
   needs no button inside it. It lifts on hover and dips on press.
-- emphasis: **much better**, a circular 🔥 in the card's bottom-right corner.
-  The emoji carries the warmth, so the interface keeps exactly one saturated
-  colour.
+- emphasis: **Much better**, a labelled pill in the card's bottom-right corner,
+  on the soft accent surface reserved for it.
 - secondary: skip, drill-in, downloads, reorder grips
 - tertiary/destructive: remove item, a faint glyph until it is armed
 

@@ -112,12 +112,35 @@ test('pressing a control inside a card does not cast a vote', async ({ page }) =
   await page.getByRole('button', { name: 'Start ranking' }).click();
 
   await expect(page.getByText('0 comparisons', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: /^Show details for / }).first().click();
+  // The delete control is the remaining control nested inside the press area.
+  await page.getByRole('button', { name: /^Delete / }).first().click();
 
+  await expect(page.getByRole('button', { name: /^Confirm deleting / })).toBeVisible();
   await expect(page.getByText('0 comparisons', { exact: true })).toBeVisible();
 });
 
-test('the flame records a much-better win without a second click', async ({ page }) => {
+test('details open on both cards from one toggle', async ({ page }) => {
+  await enterData(page, FILMS);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  // Scoped to the cards: the ranked list shows the same fields in its own rows.
+  const alien = page.getByRole('button', { name: 'Choose Alien' });
+  const arrival = page.getByRole('button', { name: 'Choose Arrival' });
+
+  // Collapsed, each card summarises its fields as chips.
+  await expect(alien.getByText('year: 1979')).toBeVisible();
+  await expect(arrival.getByText('year: 2016')).toBeVisible();
+
+  await page.getByRole('switch', { name: 'Show details on both cards' }).click();
+
+  // Expanded, both cards show the fields in full and the chips step aside.
+  await expect(alien.getByText('year: 1979')).toBeHidden();
+  await expect(arrival.getByText('year: 2016')).toBeHidden();
+  await expect(alien.getByText('1979', { exact: true })).toBeVisible();
+  await expect(arrival.getByText('2016', { exact: true })).toBeVisible();
+});
+
+test('much better records a strong win in one click', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
 

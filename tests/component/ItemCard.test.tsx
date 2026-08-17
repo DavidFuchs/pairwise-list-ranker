@@ -50,32 +50,40 @@ describe('ItemCard', () => {
     expect(screen.queryByText(/Linguist meets heptapods/)).toBeNull();
   });
 
-  it('reveals the remaining fields when details are opened', async () => {
-    const user = userEvent.setup();
+  it('reveals the remaining fields when the pair opens details', () => {
     render(
       <ItemCard
         item={item({ title: 'Arrival', year: 2016, synopsis: 'Linguist meets heptapods.' })}
         side="left"
         sortField="title"
+        expanded
       />,
     );
-
-    await user.click(screen.getByRole('button', { name: /details for arrival/i }));
 
     expect(screen.getByText(/Linguist meets heptapods/)).toBeDefined();
   });
 
-  it('renders nested structures as readable text', async () => {
-    const user = userEvent.setup();
+  it('carries no details control of its own, since the pair owns it', () => {
     render(
       <ItemCard
-        item={item({ title: 'Arrival', crew: { director: 'Villeneuve' } })}
+        item={item({ title: 'Arrival', synopsis: 'Linguist meets heptapods.' })}
         side="left"
         sortField="title"
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: /details for arrival/i }));
+    expect(screen.queryByRole('button', { name: /details/i })).toBeNull();
+  });
+
+  it('renders nested structures as readable text', () => {
+    render(
+      <ItemCard
+        item={item({ title: 'Arrival', crew: { director: 'Villeneuve' } })}
+        side="left"
+        sortField="title"
+        expanded
+      />,
+    );
 
     expect(screen.getByText(/director: Villeneuve/)).toBeDefined();
   });
@@ -124,10 +132,11 @@ describe('choosing by pressing the card', () => {
     expect(screen.queryByText('Choose')).toBeNull();
   });
 
-  it('no longer shows a Much better strip', () => {
+  it('says in words what the stronger verdict does', () => {
     setup();
 
-    expect(screen.queryByText(/much better/i)).toBeNull();
+    // An icon alone would leave a first-time user guessing.
+    expect(screen.getByText('Much better')).toBeDefined();
   });
 
   it('sends the strong outcome from the flame', async () => {
@@ -136,14 +145,6 @@ describe('choosing by pressing the card', () => {
     await user.click(screen.getByRole('button', { name: /arrival is much better/i }));
 
     expect(onChooseStrong).toHaveBeenCalled();
-    expect(onChoose).not.toHaveBeenCalled();
-  });
-
-  it('does not choose when the details toggle is pressed', async () => {
-    const { onChoose, user } = setup();
-
-    await user.click(screen.getByRole('button', { name: /show details for arrival/i }));
-
     expect(onChoose).not.toHaveBeenCalled();
   });
 
@@ -173,16 +174,11 @@ describe('choosing by pressing the card', () => {
     expect(onChoose).not.toHaveBeenCalled();
   });
 
-  it('shows the keyboard shortcut on the card it belongs to', () => {
+  it('leads with the title rather than a side marker', () => {
     setup();
 
-    expect(screen.getByText('←')).toBeDefined();
-  });
-
-  it('shows the right arrow on the right card', () => {
-    setup({ side: 'right' });
-
-    expect(screen.getByText('→')).toBeDefined();
+    expect(screen.queryByText('LEFT')).toBeNull();
+    expect(screen.queryByText('←')).toBeNull();
   });
 
   it('says how to choose', () => {
@@ -195,5 +191,22 @@ describe('choosing by pressing the card', () => {
     render(<ItemCard item={item('Tacos')} side="left" />);
 
     expect(screen.queryByRole('button', { name: /choose tacos/i })).toBeNull();
+  });
+});
+
+describe('summary chips and details', () => {
+  const film = { title: 'Arrival', year: 2016, director: 'Denis Villeneuve' };
+
+  it('summarises fields as chips while details are closed', () => {
+    render(<ItemCard item={item(film)} side="left" sortField="title" />);
+
+    expect(screen.getByText('year: 2016')).toBeDefined();
+  });
+
+  it('drops the chips once details show the same fields in full', () => {
+    render(<ItemCard item={item(film)} side="left" sortField="title" expanded />);
+
+    expect(screen.queryByText('year: 2016')).toBeNull();
+    expect(screen.getByText('2016')).toBeDefined();
   });
 });

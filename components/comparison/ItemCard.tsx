@@ -19,6 +19,12 @@ export interface ItemCardProps {
   side: 'left' | 'right';
   sortField?: string;
   /**
+   * Details are shown or hidden for the pair, not per card: comparing one
+   * item's details against the other's summary is not a comparison anyone
+   * wants. The deck owns the state.
+   */
+  expanded?: boolean;
+  /**
    * Each card carries its own actions, so a decision is made on the thing being
    * decided about rather than in a detached row of buttons.
    */
@@ -35,6 +41,7 @@ export function ItemCard({
   item,
   side,
   sortField,
+  expanded = false,
   onChoose,
   onChooseStrong,
   onRequestDelete,
@@ -42,7 +49,6 @@ export function ItemCard({
   onCancelDelete,
   pendingDelete = false,
 }: ItemCardProps) {
-  const [expanded, setExpanded] = useState(false);
   const reducedMotion = useReducedMotion();
   const [opacity] = useState(() => new Animated.Value(1));
 
@@ -83,8 +89,15 @@ export function ItemCard({
         onPress={canChoose ? onChoose : undefined}
         style={({ pressed }) => [styles.pressArea, canChoose && pressed && styles.pressed]}
       >
-      {/* Which side a card is on is self-evident from where it sits. */}
+      {/*
+        The title leads the card. Which side it is on is self-evident from
+        where it sits, so nothing precedes it.
+      */}
       <View style={styles.topRow}>
+        <Text style={styles.title} numberOfLines={4}>
+          {label}
+        </Text>
+
         {interactive && !pendingDelete && (
           <Pressable
             accessibilityRole="button"
@@ -100,11 +113,8 @@ export function ItemCard({
         )}
       </View>
 
-      <Text style={styles.title} numberOfLines={4}>
-        {label}
-      </Text>
-
-      {chips.length > 0 && (
+      {/* The chips are a summary of the details, so they step aside for them. */}
+      {!expanded && chips.length > 0 && (
         <View style={styles.chipRow}>
           {chips.map(([key, value]) => (
             <View key={key} style={styles.chip}>
@@ -114,27 +124,9 @@ export function ItemCard({
         </View>
       )}
 
-      {detailFields.length > 0 && (
+      {expanded && detailFields.length > 0 && isComplexItemValue(item.value) && (
         <View style={styles.detailsBlock}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${expanded ? 'Hide' : 'Show'} details for ${label}`}
-            accessibilityState={{ expanded }}
-            onPress={(event) => {
-              event.stopPropagation();
-              setExpanded((open) => !open);
-            }}
-            style={styles.detailsToggle}
-          >
-            <Text style={styles.detailsToggleText}>
-              {expanded ? 'Hide details' : 'Show details'}
-            </Text>
-            <Text style={styles.detailsChevron}>{expanded ? '–' : '+'}</Text>
-          </Pressable>
-
-          {expanded && isComplexItemValue(item.value) && (
-            <ObjectDrilldown value={item.value} omitField={sortField} />
-          )}
+          <ObjectDrilldown value={item.value} omitField={sortField} />
         </View>
       )}
 
@@ -170,14 +162,9 @@ export function ItemCard({
             </View>
           ) : (
             <View style={styles.actions}>
-              <View style={styles.hintGroup}>
-                <View style={styles.keycap}>
-                  <Text style={styles.keycapText}>{side === 'left' ? '←' : '→'}</Text>
-                </View>
-                <Text style={styles.hint} dataSet={{ hint: 'choose' }}>
-                  Click to choose
-                </Text>
-              </View>
+              <Text style={styles.hint} dataSet={{ hint: 'choose' }}>
+                Click to choose
+              </Text>
 
               {onChooseStrong !== undefined && (
                 <StrongChoiceButton label={label} onPress={onChooseStrong} />
@@ -222,7 +209,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
   },
   pressed: { backgroundColor: colors.accentSoft },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', minHeight: 24 },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: space.sm,
+  },
   removeButton: {
     width: 24,
     height: 24,
@@ -232,6 +224,7 @@ const styles = StyleSheet.create({
   },
   removeGlyph: { fontFamily: fonts.body, fontSize: 15, lineHeight: 18, color: colors.textFaint },
   title: {
+    flex: 1,
     ...typeScale.cardTitle,
     fontFamily: fonts.heading,
     fontWeight: '600',
@@ -252,14 +245,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   detailsBlock: { gap: space.sm },
-  detailsToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  detailsToggleText: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.accentStrong,
-  },
-  detailsChevron: { fontFamily: fonts.mono, fontSize: 13, color: colors.accentStrong },
   // Pinned to the bottom so both cards line their actions up, whatever height
   // their content takes.
   footer: {
@@ -275,18 +260,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: 40,
   },
-  hintGroup: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  keycap: {
-    minWidth: 24,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-  },
-  keycapText: { fontFamily: fonts.mono, fontSize: 12, color: colors.textSecondary },
   /** Revealed on hover by themeCss; kept visible under reduced motion. */
   hint: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint, opacity: 0 },
   confirm: {

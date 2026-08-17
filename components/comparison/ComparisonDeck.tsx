@@ -6,6 +6,8 @@ import { useComparisonShortcuts } from '@/lib/hooks/useComparisonShortcuts';
 import { selectItemLabel } from '@/lib/state/selectors';
 import type { ActivePair } from '@/lib/state/selectors';
 import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
+import { isComplexItemValue } from '@/types/list';
+import type { ListItem } from '@/types/list';
 import type { ComparisonOutcome } from '@/types/ranking';
 
 export interface DeckProgress {
@@ -37,6 +39,9 @@ export function ComparisonDeck({
   onDelete,
 }: ComparisonDeckProps) {
   const [armed, setArmed] = useState<'left' | 'right' | null>(null);
+  // Details belong to the pair: seeing one item's fields against the other's
+  // summary is not a comparison. One switch shows or hides both.
+  const [showDetails, setShowDetails] = useState(false);
 
   const emit = useCallback(
     (outcome: ComparisonOutcome) => {
@@ -78,6 +83,8 @@ export function ComparisonDeck({
   }
 
   const percent = Math.round(progress.coverage * 100);
+  // Nothing to toggle when the items are bare strings.
+  const hasDetails = [pair.left, pair.right].some((item) => hasDetailFields(item, sortField));
 
   return (
     <View style={styles.stage}>
@@ -109,6 +116,7 @@ export function ComparisonDeck({
           item={pair.left}
           side="left"
           sortField={sortField}
+          expanded={showDetails}
           pendingDelete={armed === 'left'}
           onChoose={() => emit('left')}
           onChooseStrong={() => emit('left_strong')}
@@ -126,6 +134,7 @@ export function ComparisonDeck({
           item={pair.right}
           side="right"
           sortField={sortField}
+          expanded={showDetails}
           pendingDelete={armed === 'right'}
           onChoose={() => emit('right')}
           onChooseStrong={() => emit('right_strong')}
@@ -136,20 +145,42 @@ export function ComparisonDeck({
       </View>
 
       <View style={styles.tray}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Skip this pair"
-          onPress={() => emit('skip')}
-          style={styles.skip}
-        >
-          <Text style={styles.skipText}>Skip this pair</Text>
-        </Pressable>
+        <View style={styles.trayActions}>
+          {hasDetails && (
+            <Pressable
+              accessibilityRole="switch"
+              accessibilityLabel="Show details on both cards"
+              aria-checked={showDetails}
+              onPress={() => setShowDetails((open) => !open)}
+              style={styles.detailsToggle}
+            >
+              <Text style={styles.detailsToggleText}>
+                {showDetails ? 'Hide details' : 'Show details'}
+              </Text>
+            </Pressable>
+          )}
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Skip this pair"
+            onPress={() => emit('skip')}
+            style={styles.skip}
+          >
+            <Text style={styles.skipText}>Skip this pair</Text>
+          </Pressable>
+        </View>
         <Text style={styles.shortcuts}>
-          Shift + arrow for much better · S skips · D then L or R removes
+          Arrow keys choose · shift + arrow for much better · S skips · D then L or R removes
         </Text>
       </View>
     </View>
   );
+}
+
+/** Whether an item carries anything beyond the field that titles its card. */
+function hasDetailFields(item: ListItem, sortField: string | undefined): boolean {
+  if (!isComplexItemValue(item.value)) return false;
+  return Object.keys(item.value).some((key) => key !== sortField);
 }
 
 function Notice({ title, body }: { title: string; body: string }) {
@@ -163,6 +194,16 @@ function Notice({ title, body }: { title: string; body: string }) {
 
 const styles = StyleSheet.create({
   stage: { gap: space.lg },
+  trayActions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  detailsToggle: {
+    paddingVertical: space.xs,
+    paddingHorizontal: space.md,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  detailsToggleText: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
   gutter: {
     alignItems: 'center',
     justifyContent: 'center',

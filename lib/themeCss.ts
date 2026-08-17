@@ -144,12 +144,12 @@ html, body { background-color: var(--canvas); }
 [data-hint='choose'] { transition: opacity 160ms ease; }
 [data-surface='card']:hover [data-hint='choose'] { opacity: 1; }
 
-/* The emphasis action warms up as you approach it. */
-[data-strong] { transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease; }
+/* The emphasis action firms up as you approach it. */
+[data-strong] { transition: transform 160ms ease, filter 160ms ease, border-color 160ms ease; }
 [data-strong]:hover {
-  transform: scale(1.08);
-  background-color: var(--accent-soft);
-  border-color: var(--accent-soft-border);
+  transform: translateY(-1px);
+  filter: saturate(1.15) brightness(0.99);
+  border-color: var(--accent) !important;
 }
 
 /* Keyboard focus stays obvious in both themes. */
