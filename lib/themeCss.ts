@@ -132,6 +132,18 @@ html, body { background-color: var(--canvas); }
   background-image: linear-gradient(180deg, var(--surface-sunken) 0%, var(--surface) 140%);
 }
 
+/* Dragging a ranked row: the grip is the only draggable part. */
+[data-grip] { cursor: grab; }
+[data-grip]:active { cursor: grabbing; }
+
+/*
+ * The card is the choice, so it says so on hover rather than carrying a
+ * permanent button. Touch devices never hover, which is why the flame stays
+ * visible and this is only ever a hint.
+ */
+[data-hint='choose'] { transition: opacity 160ms ease; }
+[data-surface='card']:hover [data-hint='choose'] { opacity: 1; }
+
 /* Keyboard focus stays obvious in both themes. */
 :focus-visible {
   outline: 2px solid var(--accent);
@@ -142,6 +154,7 @@ html, body { background-color: var(--canvas); }
 @media (prefers-reduced-motion: reduce) {
   [data-surface='card'] { transition: none; }
   [data-surface='card']:hover { transform: none; }
+  [data-hint='choose'] { opacity: 1; transition: none; }
 }
 `;
 

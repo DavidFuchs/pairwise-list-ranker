@@ -74,6 +74,8 @@ describe('preview pane', () => {
         exportText=""
         filename="list.yaml"
         format="yaml"
+        comparisonCount={0}
+        onReorder={vi.fn()}
         onTabChange={vi.fn()}
       />,
     );
@@ -90,6 +92,8 @@ describe('preview pane', () => {
         exportText="movies: []"
         filename="list.yaml"
         format="yaml"
+        comparisonCount={0}
+        onReorder={vi.fn()}
         onTabChange={vi.fn()}
       />,
     );

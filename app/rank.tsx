@@ -98,6 +98,8 @@ export default function RankScreen() {
           exportText={exportText}
           filename={exportFilename(workspace.name, format)}
           format={format}
+          comparisonCount={progress.comparisons}
+          onReorder={(itemIds) => listStore.getState().reorderAndRestart(itemIds)}
         />
       }
     />

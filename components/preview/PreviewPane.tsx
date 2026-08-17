@@ -19,6 +19,9 @@ export interface PreviewPaneProps {
   exportText: string;
   filename: string;
   format: SourceFormat;
+  /** Rated comparisons a manual reorder would discard. */
+  comparisonCount: number;
+  onReorder: (itemIds: string[]) => void;
 }
 
 /**
@@ -35,6 +38,8 @@ export function PreviewPane({
   exportText,
   filename,
   format,
+  comparisonCount,
+  onReorder,
 }: PreviewPaneProps) {
   return (
     <View style={styles.pane} dataSet={{ surface: 'panel' }}>
@@ -49,7 +54,12 @@ export function PreviewPane({
 
       {tab === 'ranked' ? (
         <View style={styles.body} accessibilityLabel="Current ranking" role="region">
-          <RankedListPreview ranking={ranking} sortField={labelField} />
+          <RankedListPreview
+            ranking={ranking}
+            sortField={labelField}
+            comparisonCount={comparisonCount}
+            onReorder={onReorder}
+          />
         </View>
       ) : (
         <View style={styles.body}>

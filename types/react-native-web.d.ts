@@ -15,6 +15,16 @@ declare module 'react-native' {
   }
   interface PressableProps {
     dataSet?: Record<string, string | number | boolean | undefined>;
+    /**
+     * react-native-web forwards these to the DOM node. Dragging the ranked list
+     * and moving a row from the keyboard both need them, and React Native's own
+     * types stop at touch gestures.
+     */
+    onKeyDown?: (event: import('react').KeyboardEvent<HTMLElement>) => void;
+    onPointerDown?: (event: {
+      preventDefault: () => void;
+      nativeEvent: { clientY: number; pointerId: number };
+    }) => void;
   }
   interface TextInputProps {
     dataSet?: Record<string, string | number | boolean | undefined>;
