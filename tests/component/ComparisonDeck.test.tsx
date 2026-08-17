@@ -45,10 +45,10 @@ describe('ComparisonDeck layout', () => {
     setup();
 
     // The card itself is the choice, so it carries that accessible name.
-    const leftCard = screen.getByRole('button', { name: 'Choose Tacos' });
+    const leftCard = screen.getByLabelText('Choose Tacos');
     expect(within(leftCard).getByRole('button', { name: 'Tacos is much better' })).toBeDefined();
     expect(within(leftCard).getByRole('button', { name: 'Delete Tacos' })).toBeDefined();
-    expect(within(leftCard).queryByRole('button', { name: 'Choose Ramen' })).toBeNull();
+    expect(within(leftCard).queryByLabelText('Choose Ramen')).toBeNull();
   });
 
   it('offers one shared skip rather than one per card', () => {
@@ -62,7 +62,7 @@ describe('choosing a winner', () => {
   it('reports a win for the left item', async () => {
     const { onOutcome, user } = setup();
 
-    await user.click(screen.getByRole('button', { name: 'Choose Tacos' }));
+    await user.click(screen.getByLabelText('Choose Tacos'));
 
     expect(onOutcome).toHaveBeenCalledWith('left');
   });
@@ -70,7 +70,7 @@ describe('choosing a winner', () => {
   it('reports a win for the right item', async () => {
     const { onOutcome, user } = setup();
 
-    await user.click(screen.getByRole('button', { name: 'Choose Ramen' }));
+    await user.click(screen.getByLabelText('Choose Ramen'));
 
     expect(onOutcome).toHaveBeenCalledWith('right');
   });
@@ -143,15 +143,15 @@ describe('deleting from a card', () => {
 
     await user.click(screen.getByRole('button', { name: 'Delete Tacos' }));
 
-    expect(screen.queryByRole('button', { name: 'Choose Tacos' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Choose Ramen' })).toBeDefined();
+    expect(screen.queryByLabelText('Choose Tacos')).toBeNull();
+    expect(screen.getByLabelText('Choose Ramen')).toBeDefined();
   });
 
   it('drops a pending delete when the user picks a winner instead', async () => {
     const { onDelete, onOutcome, user } = setup();
 
     await user.click(screen.getByRole('button', { name: 'Delete Tacos' }));
-    await user.click(screen.getByRole('button', { name: 'Choose Ramen' }));
+    await user.click(screen.getByLabelText('Choose Ramen'));
 
     expect(onOutcome).toHaveBeenCalledWith('right');
     expect(onDelete).not.toHaveBeenCalled();
@@ -261,7 +261,7 @@ describe('states with nothing to compare', () => {
     setup({ pair: null, progress: { activeItems: 1, comparisons: 0, skips: 0, coverage: 0 } });
 
     expect(screen.getByText(/at least two items/i)).toBeDefined();
-    expect(screen.queryByRole('button', { name: /^Choose / })).toBeNull();
+    expect(screen.queryByLabelText(/^Choose /)).toBeNull();
   });
 
   // Ranking can no longer start without a label field — the data screen blocks

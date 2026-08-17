@@ -121,7 +121,7 @@ describe('choosing by pressing the card', () => {
   it('chooses when the card is pressed', async () => {
     const { onChoose, user } = setup();
 
-    await user.click(screen.getByRole('button', { name: /choose arrival/i }));
+    await user.click(screen.getByLabelText(/choose arrival/i));
 
     expect(onChoose).toHaveBeenCalled();
   });
