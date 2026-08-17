@@ -19,7 +19,6 @@ export interface ComparisonDeckProps {
   pair: ActivePair | null;
   progress: DeckProgress;
   sortField?: string;
-  needsSortField?: boolean;
   onOutcome: (outcome: ComparisonOutcome) => void;
   onDelete: (itemId: string) => void;
 }
@@ -34,7 +33,6 @@ export function ComparisonDeck({
   pair,
   progress,
   sortField,
-  needsSortField = false,
   onOutcome,
   onDelete,
 }: ComparisonDeckProps) {
@@ -58,7 +56,7 @@ export function ComparisonDeck({
   }, [onDelete, pair]);
 
   useComparisonShortcuts({
-    enabled: pair !== null && !needsSortField,
+    enabled: pair !== null,
     armed: armed !== null,
     onChoose: useCallback(
       (side, strong) => emit(strong ? (`${side}_strong` as ComparisonOutcome) : side),
@@ -69,15 +67,6 @@ export function ComparisonDeck({
     onConfirmDelete: confirmDelete,
     onCancelDelete: useCallback(() => setArmed(null), []),
   });
-
-  if (needsSortField) {
-    return (
-      <Notice
-        title="Pick a label field first"
-        body="Choose which field of your objects should title each card, and ranking can begin."
-      />
-    );
-  }
 
   if (pair === null) {
     return (
@@ -127,6 +116,12 @@ export function ComparisonDeck({
           onConfirmDelete={confirmDelete}
           onCancelDelete={() => setArmed(null)}
         />
+        <View style={styles.gutter} aria-hidden>
+          <View style={styles.gutterLine} />
+          <Text style={styles.gutterText}>or</Text>
+          <View style={styles.gutterLine} />
+        </View>
+
         <ItemCard
           item={pair.right}
           side="right"
@@ -150,7 +145,7 @@ export function ComparisonDeck({
           <Text style={styles.skipText}>Skip this pair</Text>
         </Pressable>
         <Text style={styles.shortcuts}>
-          Arrow keys choose · shift + arrow for much better · S skips · D then L or R removes
+          Shift + arrow for much better · S skips · D then L or R removes
         </Text>
       </View>
     </View>
@@ -168,6 +163,19 @@ function Notice({ title, body }: { title: string; body: string }) {
 
 const styles = StyleSheet.create({
   stage: { gap: space.lg },
+  gutter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.xs,
+  },
+  gutterLine: { flex: 1, width: 1, minHeight: space.lg, backgroundColor: colors.border },
+  gutterText: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    letterSpacing: 0.4,
+    color: colors.textFaint,
+  },
   statusStrip: { gap: space.sm },
   statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   status: {

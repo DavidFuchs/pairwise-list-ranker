@@ -240,7 +240,10 @@ describe('keyboard shortcuts', () => {
   it('tells the user the shortcuts exist', () => {
     setup();
 
-    expect(screen.getByText(/arrow keys/i)).toBeDefined();
+    // The plain arrow keys are shown as keycaps on the cards themselves; the
+    // tray carries only the shortcuts that have nowhere else to live.
+    expect(screen.getByText(/s skips/i)).toBeDefined();
+    expect(screen.getAllByText('←')).toHaveLength(1);
   });
 
   it('stays quiet when there is no pair to act on', async () => {
@@ -263,10 +266,27 @@ describe('states with nothing to compare', () => {
     expect(screen.queryByRole('button', { name: /^Choose / })).toBeNull();
   });
 
-  it('blocks ranking until an object list has a sort field', () => {
-    setup({ needsSortField: true });
+  // Ranking can no longer start without a label field — the data screen blocks
+  // it — so the deck has no such state left to render.
+});
 
-    expect(screen.getByText(/choose which field/i)).toBeDefined();
-    expect(screen.queryByRole('button', { name: 'Choose Tacos' })).toBeNull();
+describe('the gutter', () => {
+  it('separates the two cards with an "or"', () => {
+    setup();
+
+    expect(screen.getByText('or')).toBeDefined();
+  });
+
+  it('keeps the skip action for the pair', () => {
+    setup();
+
+    expect(screen.getByRole('button', { name: /skip this pair/i })).toBeDefined();
+  });
+
+  it('leaves the plain arrow keys to the cards, which show their own keycaps', () => {
+    setup();
+
+    expect(screen.queryByText(/arrow keys choose/i)).toBeNull();
+    expect(screen.getByText(/shift \+ arrow for much better/i)).toBeDefined();
   });
 });
