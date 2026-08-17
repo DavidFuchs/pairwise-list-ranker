@@ -1,5 +1,5 @@
 import { createElement, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fonts, radius, space } from '@/lib/theme';
 
@@ -10,10 +10,13 @@ export interface FileDropProps {
 /**
  * Web-only: React Native has no file input, and this app ships as a static web
  * bundle. The hidden input is the picker; the surrounding View is the drop
- * target.
+ * target. Rendering `createElement('input', ...)` on native crashes (React
+ * Native has no host component named "input"), so this is skipped there.
  */
 export function FileDrop({ onFile }: FileDropProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  if (Platform.OS !== 'web') return null;
 
   async function readFirst(files: FileList | null): Promise<void> {
     const file = files?.[0];
