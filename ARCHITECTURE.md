@@ -6,7 +6,7 @@ Build a static web application that:
 - stores working state entirely in the browser
 - reranks items deterministically from pairwise decisions
 - supports both primitive and object-shaped items
-- supports round-trip import/export through JSON, YAML, and app-defined Markdown
+- gives the user their own document back, with the ranked array reordered in place
 - can be hosted as static files with no backend dependency
 
 ## 2. Non-goals for v1
@@ -15,7 +15,7 @@ Build a static web application that:
 - shared lists or personal reranking copies
 - collaborative real-time editing
 - server-side persistence
-- arbitrary third-party Markdown import compatibility
+- an app-defined document format of any kind
 - configurable ranking algorithms in the UI
 
 ## 3. Stack choice
@@ -58,25 +58,33 @@ Why this is a strong fit:
 
 ## 5. Data model
 
-### 5.1 Canonical client types
+### 5.1 Client types
+
+The user's own parsed document is the model. The app stores it verbatim and
+annotates it: which array inside it is being ranked, and which fields play a
+role. Nothing is normalised, renamed, or dropped on the way in.
 
 ```ts
-type PrimitiveItemValue = string;
+type SourceFormat = 'list' | 'yaml' | 'json';
+type PreviewTab = 'ranked' | SourceFormat;
 
-type ComplexItemValue = Record<string, unknown>;
+interface DataSource {
+  format: SourceFormat;   // how it parsed; also the default export format
+  rawText: string;        // exactly what the user gave us
+  document: unknown;      // the parsed value, verbatim; string[] for 'list'
+  arrayPath: string[];    // path to the ranked array; [] when the document is it
+}
 
-type ItemValue = PrimitiveItemValue | ComplexItemValue;
+interface FieldRoles {
+  labelField?: string;    // object entries only: what titles each card
+  positionField?: string; // optional: rewritten with 1..N on export
+}
 
-type ListKind = 'primitive' | 'object';
-type ExportFormat = 'gui' | 'yaml' | 'json' | 'markdown';
-type ComparisonOutcome = 'left' | 'right' | 'left_strong' | 'right_strong' | 'skip';
-
-interface WorkspaceList {
+interface Workspace {
   id: string;
-  title: string;
-  description?: string;
-  kind: ListKind;
-  sortField?: string;
+  name: string;           // app-local only; never written into the document
+  source: DataSource;
+  roles: FieldRoles;
   createdAt: string;
   updatedAt: string;
 }
@@ -84,8 +92,8 @@ interface WorkspaceList {
 interface ListItem {
   id: string;
   listId: string;
-  value: ItemValue;
-  active: boolean;
+  value: ItemValue;       // one entry of the ranked array, as imported
+  active: boolean;        // deleted items leave the pool but stay in history
   createdAt: string;
   updatedAt: string;
 }
@@ -110,16 +118,17 @@ interface ComparisonEvent {
 }
 
 interface WorkspaceSnapshot {
-  version: number;
-  list: WorkspaceList;
+  version: 2;
+  workspace: Workspace;
   items: ListItem[];
   comparisonEvents: ComparisonEvent[];
-  ui: {
-    previewMode: ExportFormat;
-    editorDrafts: Partial<Record<'yaml' | 'json' | 'markdown', string>>;
-  };
+  ui: { previewTab: PreviewTab };
 }
 ```
+
+There is deliberately no app-defined document schema. A `kind` discriminator,
+a required title, and a canonical item wrapper were all removed: they forced
+the user's data into a shape the app had invented.
 
 ### 5.2 Persistence model
 
@@ -130,7 +139,7 @@ Persistent state is optional and browser-local only.
 Recommended persistence layers:
 - in-memory Zustand store for live interaction
 - localStorage or IndexedDB for optional draft persistence and reload recovery
-- exported YAML/JSON/Markdown as the durable user-controlled backup path
+- exported YAML/JSON/plain text as the durable user-controlled backup path
 
 Important rule:
 - browser persistence is a convenience, not the system of record
@@ -193,92 +202,73 @@ Recommended tie order:
 
 ## 7. Import/export design
 
-### 7.1 Canonical interchange shape
+### 7.1 Reading what the user gives us
 
-JSON is the canonical interchange model. YAML and Markdown import/export map to and from this shape.
+There is no interchange format. The app reads three shapes and keeps whichever
+it was handed:
 
-```json
-{
-  "version": 1,
-  "title": "Favorite sci-fi films",
-  "description": "Personal ranking list",
-  "kind": "object",
-  "sortField": "title",
-  "items": [
-    { "id": "item-1", "value": { "title": "Arrival", "year": 2016, "director": "Denis Villeneuve" } },
-    { "id": "item-2", "value": { "title": "Alien", "year": 1979, "director": "Ridley Scott" } }
-  ]
-}
-```
+- a **plain list** — one item per line, with a leading bullet or number
+  stripped only when whitespace follows it, so `-40 below zero` survives intact
+- **YAML** — parsed to its value, verbatim
+- **JSON** — parsed to its value, verbatim
 
-### 7.2 Simple list handling
+Detection is a default, not a verdict. `sniffFormat` tries JSON, then YAML, and
+falls back to a plain list; the data screen exposes a `Read as` override,
+because valid YAML and an intended plain list genuinely overlap (`Alien: 1979`
+on consecutive lines is both).
 
-Simple list import accepts:
-- JSON array of strings
-- YAML sequence of strings
-- Markdown bullet list
+### 7.2 Finding the list to rank
 
-Internal representation normalizes to item objects with IDs.
+`findArrayCandidates` walks **object properties only**, never descending into
+array elements, to a depth of five. An array qualifies when its entries are
+uniformly objects or uniformly scalars. Not descending into elements is what
+keeps per-item fields like `movies[].tags` out of the candidate list.
 
-### 7.3 Complex object handling
+Exactly one candidate is auto-selected. Mixed-type arrays are excluded with a
+named reason. A one-entry array is still offered — it is the list the user
+meant — and `describeReadiness` is the single place that blocks ranking, so
+the user is told "a ranking needs at least two items" rather than "no list
+found".
 
-Complex object import accepts:
-- JSON object using canonical app schema
-- YAML object using canonical app schema
-- app-defined Markdown dialect
+### 7.3 Field roles
 
-Sort field rules:
-- if there is a single obvious scalar string field such as `name` or `title`, preselect it
-- otherwise require the user to choose before ranking begins
-- preserve all object fields during exports, not just the chosen display field
+Two roles, both derived from the selected array:
 
-### 7.4 Markdown dialect
+- **label field** — required for object entries, chosen automatically only when
+  a full-coverage text field named `title`, `name`, or `label` exists, or when
+  exactly one full-coverage text field exists at all
+- **position field** — optional and opt-in, offered for any field numeric
+  wherever it appears, preselected only when its name plainly means an ordering
 
-Use a strict app-defined dialect for round-trippable complex-object exports.
+No id or key field is ever requested: array position carries the rank.
 
-Example:
+### 7.4 Export
 
-```md
-# Favorite sci-fi films
+`buildExport` deep-clones the source document, writes the reordered entries
+back at `arrayPath`, and serializes. Every sibling key, at every depth, and
+every field the app never understood, survives exactly as it arrived. An
+existing position field is rewritten in place, keeping its position among the
+object's keys; a new one is appended. Items deleted during comparison are
+excluded, and the rail says how many.
 
-Kind: object
-Sort field: title
-
-## Arrival
-
-```yaml
-title: Arrival
-year: 2016
-director: Denis Villeneuve
-```
-
-## Alien
-
-```yaml
-title: Alien
-year: 1979
-director: Ridley Scott
-```
-```
-
-For primitive lists, export as a clean bullet list under the document title.
-
-Important product rule:
-- GUI preview is not exportable
-- only YAML, JSON, and Markdown generate copy/download output
+Export offers only formats the source can honestly produce: YAML and JSON
+always, plus a plain-list rendering when the source was a plain list.
 
 ## 8. Client architecture
 
 ### 8.1 Main modules
 
-- `lib/validation/`: import schemas and data guards
-- `lib/formats/`: JSON/YAML/Markdown parse + serialize
+- `lib/import/`: format sniffing, plain-list parsing, array discovery, field
+  roles, readiness, and the re-import diff
+- `lib/export/`: clone-splice-serialize, and download filenames
 - `lib/ranking/`: Elo updates, pair scoring, ranking rebuild
 - `lib/state/`: Zustand store and selectors
-- `lib/persistence/`: localStorage or IndexedDB adapters
+- `lib/persistence/`: the v2 snapshot schema and the localStorage adapter
+- `lib/hooks/useSourceDraft`: the data screen's form state
+- `components/data/`: the source input and the found panel's pickers
 - `components/comparison/`: pairwise UI
-- `components/preview/`: GUI preview and text preview modes
-- `components/editor/`: editable text modes and import actions
+- `components/rank/`: the rank screen's rail
+- `components/preview/`: ranked view and read-only export tabs
 
 ### 8.2 State boundaries
 
@@ -299,7 +289,7 @@ Ephemeral UI state:
 Recommended approach:
 - authoritative live state in a local Zustand store
 - optional snapshot persistence in localStorage or IndexedDB
-- explicit export to YAML/JSON/Markdown for portability and backup
+- explicit export to YAML/JSON/plain text for portability and backup
 
 Persistence safety rules:
 - never overwrite the current live workspace just because a text editor draft is invalid
@@ -340,21 +330,24 @@ The preview pane should subscribe to derived ranking selectors so it updates imm
 - delete
 - add item
 - import apply
-- sort-field change
+- label or position field change
 
-### 10.2 Editable text modes
+### 10.2 Editing data
 
-YAML/JSON/Markdown modes need a decoupled text buffer.
+The preview rail is read-only. Editing goes back to the data screen, where the
+current text is prefilled and re-importing is an explicit act.
 
 Rules:
-- typing in the editor does not mutate the live list until the user clicks import/apply
-- parse errors remain local to the editor buffer
-- successful import replaces the live working list state
+- typing never mutates the live list; parse errors stay local to the text
+- applying edits shows a summary first: how many entries are unchanged, added,
+  and removed, and how many comparisons survive
+- entries matched by deep value equality keep their item id, and therefore
+  their rating and history; absent entries are deactivated, not deleted
 
 ### 10.3 Object drill-in
 
 Comparison cards display:
-- primary label from `sortField`
+- primary label from `roles.labelField`
 - optional summary chips for 1-3 secondary fields
 - expandable detail region rendering remaining fields recursively
 
@@ -366,23 +359,27 @@ Unit tests:
 - skip behavior
 - delete-without-rerank behavior
 - pair selection heuristics
-- JSON/YAML/Markdown round-trip
-- sort-field detection
-- snapshot persistence serialization
+- format sniffing, including the YAML-vs-plain-list overlap
+- plain-list marker stripping, including the `-40 below zero` non-strip
+- array discovery: nesting, depth cap, mixed-type rejection, no descent into
+  array elements
+- label and position field detection
+- source-preserving export: wrapper keys survive, position rewritten in place,
+  inactive items excluded
+- the re-import diff, including duplicates matched by position
+- snapshot persistence, including dropping version 1
 
 Integration tests:
-- import object list -> choose sort field -> compare -> export
-- editor buffer parse errors do not destroy live list state
-- reload restores persisted workspace when enabled
-- reset clears local workspace cleanly
+- data screen -> choose array, label, position -> start ranking
+- edit data -> apply -> ratings preserved for unchanged entries
+- reload restores the workspace, source document included
+- corrupt or newer-version snapshots start clean
 
 End-to-end tests:
-- create list from YAML
-- perform several comparisons
-- switch preview formats
-- copy/download export
-- reload and recover local state
-- clear workspace and start fresh
+- rank a plain list and export it
+- rank one array inside a larger document; the rest survives export
+- reload and resume, then start over
+- edit data mid-run and keep the rankings
 
 ## 12. Future extension paths
 
@@ -395,8 +392,8 @@ Potential later additions:
 
 ## 13. Implementation guardrails
 
-- preserve canonical data shape across all formats
+- preserve the user's document exactly; never normalise it into a shape of ours
 - keep ranking derivable from event history
-- treat Markdown import as strict dialect support, not free-form Markdown fantasy
-- keep GUI preview gorgeous and useful, but never export it
+- let the user say how their text should be read when detection is ambiguous
+- keep the ranked view gorgeous and useful, but export the source document
 - keep the app fully useful without any server dependency

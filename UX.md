@@ -26,10 +26,24 @@ UI language:
 
 ## Core layout
 
-Desktop default:
-- left rail: list metadata, sort-field control, add-item controls, and workspace actions
+The app is two screens, in the order the work actually happens.
+
+**`/` — the data screen.** One job: get their data in and confirm what we
+understood.
+- center stage: a large text area for pasting, typing, or dropping a file, with
+  a `Read as` override beneath it
+- right: **What we found** — which array to rank, which field titles each card,
+  which field receives the new order, and the one primary action
+
+A pasted plain list resolves every question on its own, so the right column
+collapses to a count and a button. Questions appear only when the data is
+genuinely ambiguous.
+
+**`/rank` — the comparison screen.**
+- left rail: list name, what is being ranked, progress, `Edit data`, `Start over`
 - center stage: pairwise comparison workspace with two large item cards
-- right rail: persistent preview pane with mode tabs for GUI, YAML, JSON, Markdown
+- right rail: read-only preview with tabs for the ranked view and the formats
+  the source can produce
 
 Tablet:
 - comparison workspace remains primary
@@ -37,6 +51,7 @@ Tablet:
 
 Mobile:
 - stacked layout
+- data screen puts the text area above what we found
 - pairwise cards full width
 - preview tabs become a bottom sheet or segmented section beneath the cards
 
@@ -53,13 +68,15 @@ Contains:
 
 ### 2. Control rail
 
-Contains:
-- list title and description
-- list type badge: Simple list / Object list
-- sort-field picker for object lists
-- add item button
-- remove/edit list actions
-- local persistence controls if enabled
+On the rank screen. Contains:
+- the list name, editable inline
+- a context line: what is being ranked, what titles it, where the order is
+  written back
+- progress: comparisons made and items remaining
+- a note when removed items are excluded from the export
+- `Edit data`, and `Start over` behind an inline confirmation
+
+Field choices live on the data screen, where the decision is actually made.
 
 ### 3. Comparison stage
 
@@ -70,7 +87,7 @@ one thing this screen asks them to do hundreds of times.
 
 Each card contains, top to bottom:
 - a side marker (LEFT / RIGHT) and a quiet remove control in the corner
-- the item label, from the sort field for object lists
+- the item label, from the label field for object entries
 - summary chips for short scalar fields
 - an expandable details region for the rest of the object
 - a footer, aligned across both cards, holding:
@@ -88,13 +105,19 @@ Between and below the pair:
 
 ### 4. Persistent preview pane
 
+Read-only. It shows the user their data, ranked; it never edits it.
+
 Contains:
-- mode tabs: GUI / YAML / JSON / Markdown
+- tabs: Ranked, plus the formats the source can produce
 - copy button
 - download button
-- editable text area in YAML/JSON/Markdown modes
-- import/apply button for pasted text
-- parse diagnostics area
+- a monospace, selectable view of the exported document
+- a note when removed items are being excluded from the export
+
+Editing goes back to the data screen via `Edit data`, where re-importing is an
+explicit act with a summary. The old editable buffer — a text area that may or
+may not have been applied to the live list — is gone, because "is what I see
+what I have?" is not a question a preview should raise.
 
 ## Interaction model
 
@@ -111,28 +134,26 @@ Deletion from comparison:
 - deleting either item skips ranking for that pair
 - confirmation is inline for desktop and sheet/modal on mobile
 
-### Adding items
+### Changing the data
 
-Simple list:
-- inline single-text input
-- quick-add with Enter
+There is one way, and it is the same way the data arrived: the data screen.
+`Edit data` returns there with the current text prefilled, and applying shows a
+summary — how many entries are unchanged, added, removed, and how many
+comparisons survive — before anything changes. Entries the user did not touch
+keep their ranking.
 
-Object list:
-- add object button opens structured editor
-- allow paste of JSON/YAML object into the object editor
-- validate before commit
+### Field roles
 
-### Sort field selection
-
-For object lists:
-- detect likely scalar fields
-- ask the user to choose one when multiple valid candidates exist
-- show a live example of how the selected field changes card titles and ranked preview labels
+For object entries, on the data screen:
+- detect likely scalar fields; preselect only when the choice is safe
+- ask the user to choose when several fields are equally plausible
+- show a live example of the labels a field would produce
+- offer, but never assume, a numeric field to write the new order into
 
 ### Drill-in details
 
 Each comparison card includes:
-- primary label from the chosen sort field
+- primary label from the chosen label field
 - optional subtitle from a secondary summary rule
 - expand details action
 
@@ -287,13 +308,13 @@ Hierarchy:
 
 ### Preview modes
 
-GUI preview:
+Ranked view:
 - ranked list with position chips
 - compact metadata rows for objects
 - subtle transitions on order updates
 
-Text modes:
-- editor-like surface
+Format tabs:
+- editor-like surface, but read-only and selectable
 - monospaced font
 - syntax-aware coloring if feasible
 - copy/download/import actions pinned near the top
@@ -315,7 +336,7 @@ Motion should communicate state, not audition for a startup reel.
 Use:
 - 120-180ms tap/hover transitions
 - 180-240ms card swap/fade after comparison
-- subtle position shift when rankings change in GUI preview
+- subtle position shift when rankings change in the ranked view
 - reduced-motion fallback for all animated transitions
 
 ## Accessibility
@@ -337,19 +358,19 @@ Keyboard suggestions:
 
 ## Empty, error, and edge states
 
-Empty list:
-- elegant onboarding panel
-- sample import snippets for YAML, JSON, Markdown
-- clear explanation that everything starts from pasted/imported data
+No data yet:
+- the data screen is the empty state; there is nowhere else to land
+- a placeholder showing one item per line, and a hint that YAML and JSON work too
 
 Import parse error:
 - keep user text intact
-- show exact line/field diagnostics
-- explain expected structure without wiping edits
+- show the line number when the format can pinpoint one
+- announce it as an alert, and never wipe what they typed
 
-Object list without selected sort field:
-- block ranking until chosen
-- show candidate fields and examples
+Blocked from ranking:
+- one message, from describeReadiness, phrased as the next thing to do
+- nothing rankable found; only one item; no label field chosen
+- the label picker asks for itself, so the message never says it twice
 
 Local persistence unavailable:
 - app should still function fully in memory
@@ -361,8 +382,11 @@ Reset workspace:
 
 ## Export presentation rules
 
-- GUI preview is default and non-exportable
-- YAML/JSON/Markdown are the only exportable modes
+- the ranked view is default and non-exportable
+- the offered formats follow the source: YAML and JSON always, plain text when
+  the source was a plain list
+- export returns the user's own document, with the ranked array reordered in
+  place and every other key untouched
 - download filenames should include list slug, format, and date
 - copy success should be subtle and immediate
 - export controls should feel primary enough that users understand how to keep their work

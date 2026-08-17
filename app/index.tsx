@@ -54,7 +54,7 @@ export default function DataScreen() {
 
     if (!editing) {
       listStore.getState().startRanking({ source, roles: draft.roles });
-      router.push('/rank');
+      router.replace('/rank');
       return;
     }
 
@@ -67,7 +67,7 @@ export default function DataScreen() {
     if (source === null) return;
     listStore.getState().applyEdits({ source, roles: draft.roles });
     setPending(null);
-    router.push('/rank');
+    router.replace('/rank');
   }
 
   return (
@@ -81,7 +81,7 @@ export default function DataScreen() {
             accessibilityLabel="Back to ranking"
             variant="ghost"
             size="sm"
-            onPress={() => router.push('/rank')}
+            onPress={() => router.replace('/rank')}
           />
         ) : undefined
       }

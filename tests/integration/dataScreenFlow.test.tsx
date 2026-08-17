@@ -37,7 +37,7 @@ describe('the data screen', () => {
 
     expect(listStore.getState().items).toHaveLength(3);
     expect(listStore.getState().workspace?.source.format).toBe('list');
-    expect(push).toHaveBeenCalledWith('/rank');
+    expect(replace).toHaveBeenCalledWith('/rank');
   });
 
   it('asks which array to rank, then which field labels it', async () => {

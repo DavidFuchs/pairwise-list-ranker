@@ -72,7 +72,7 @@ export default function RankScreen() {
           progress={progress}
           removedCount={selectRemovedCount(items)}
           onRename={(name) => listStore.getState().setName(name)}
-          onEditData={() => router.push('/')}
+          onEditData={() => router.replace('/')}
           onStartOver={startOver}
         />
       }

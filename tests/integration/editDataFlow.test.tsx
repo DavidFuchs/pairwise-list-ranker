@@ -87,7 +87,7 @@ describe('editing data mid-run', () => {
 
     expect(listStore.getState().items.slice(0, 2).map((entry) => entry.id)).toEqual(keptIds);
     expect(listStore.getState().comparisonEvents).toHaveLength(1);
-    expect(push).toHaveBeenCalledWith('/rank');
+    expect(replace).toHaveBeenCalledWith('/rank');
   });
 
   it('deactivates the entries the user deleted', async () => {
