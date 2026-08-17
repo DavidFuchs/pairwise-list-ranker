@@ -160,7 +160,12 @@ describe('rankItems tiebreaks', () => {
     expect(ids(ranked)).toEqual(['b', 'a']);
   });
 
-  it('falls back to creation order for identical records', () => {
+  /**
+   * Every item of one import is created in the same millisecond, so `createdAt`
+   * cannot break these ties and the old id fallback amounted to sorting by
+   * random UUID. The order the items arrived in is the user's own order.
+   */
+  it('falls back to the order the items arrived in', () => {
     const items = [item('b'), item('a')];
     const states = new Map([
       ['a', stateWith('a')],
@@ -169,6 +174,53 @@ describe('rankItems tiebreaks', () => {
 
     const ranked = rankItems(items, states, []);
 
-    expect(ids(ranked)).toEqual(['a', 'b']);
+    expect(ids(ranked)).toEqual(['b', 'a']);
+  });
+});
+
+describe('the order items arrived in', () => {
+  function unranked(labels: string[]): ListItem[] {
+    // Ids deliberately descend so a sort by id would reverse the list.
+    return labels.map((label, index) => ({
+      id: `zz-${labels.length - index}`,
+      listId: 'list-1',
+      value: label,
+      active: true,
+      createdAt: '2026-08-16T00:00:00.000Z',
+      updatedAt: '2026-08-16T00:00:00.000Z',
+    }));
+  }
+
+  it('shows an unranked list in the order it was imported', () => {
+    const items = unranked(['Tacos', 'Ramen', 'Curry']);
+
+    expect(rebuildRanking(items, []).map((entry) => entry.item.value)).toEqual([
+      'Tacos',
+      'Ramen',
+      'Curry',
+    ]);
+  });
+
+  it('does not fall back to sorting by id', () => {
+    const items = unranked(['Tacos', 'Ramen', 'Curry']);
+    const byId = [...items].sort((a, b) => (a.id < b.id ? -1 : 1)).map((item) => item.value);
+
+    expect(rebuildRanking(items, []).map((entry) => entry.item.value)).not.toEqual(byId);
+  });
+
+  it('still lets a won comparison beat arrival order', () => {
+    const items = unranked(['Tacos', 'Ramen']);
+    const events = [
+      {
+        id: 'event-1',
+        listId: 'list-1',
+        leftItemId: items[0]!.id,
+        rightItemId: items[1]!.id,
+        outcome: 'right' as const,
+        createdAt: '2026-08-16T00:00:01.000Z',
+      },
+    ];
+
+    expect(rebuildRanking(items, events)[0]?.item.value).toBe('Ramen');
   });
 });

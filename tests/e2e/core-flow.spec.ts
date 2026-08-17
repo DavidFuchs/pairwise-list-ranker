@@ -91,3 +91,64 @@ test('edits the data mid-run and keeps the rankings', async ({ page }) => {
   await expect(page.getByText(/4 items unchanged/)).toBeVisible();
   await expect(page.getByText(/1 item added/)).toBeVisible();
 });
+
+test('chooses by clicking anywhere on a card', async ({ page }) => {
+  await enterData(page, DINNERS);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  await expect(page.getByText('0 comparisons', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /^Choose / }).first().click();
+
+  await expect(page.getByText('1 comparisons', { exact: true })).toBeVisible();
+});
+
+/**
+ * jsdom cannot prove this: React Native's responder system may already stop the
+ * press, but only a real browser has the DOM click bubbling that the guard is
+ * there to defeat.
+ */
+test('pressing a control inside a card does not cast a vote', async ({ page }) => {
+  await enterData(page, FILMS);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  await expect(page.getByText('0 comparisons', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /^Show details for / }).first().click();
+
+  await expect(page.getByText('0 comparisons', { exact: true })).toBeVisible();
+});
+
+test('the flame records a much-better win without a second click', async ({ page }) => {
+  await enterData(page, DINNERS);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  await page.getByRole('button', { name: /is much better$/ }).first().click();
+
+  await expect(page.getByText('1 comparisons', { exact: true })).toBeVisible();
+});
+
+test('reordering by hand restarts the ranking', async ({ page }) => {
+  await enterData(page, DINNERS);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+  await page.getByRole('button', { name: /^Choose / }).first().click();
+  await expect(page.getByText('1 comparisons', { exact: true })).toBeVisible();
+
+  // Keyboard reordering is the same commit path as a drop, and is stable to drive.
+  await page.getByRole('button', { name: /^Reorder / }).first().focus();
+  await page.keyboard.press('Alt+ArrowDown');
+
+  await expect(page.getByText(/starts a new ranking session/)).toBeVisible();
+  await page.getByRole('button', { name: 'Reorder and restart' }).click();
+
+  await expect(page.getByText('0 comparisons', { exact: true })).toBeVisible();
+});
+
+test('reordering applies silently when there is nothing to lose', async ({ page }) => {
+  await enterData(page, DINNERS);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  await page.getByRole('button', { name: /^Reorder Tacos/ }).focus();
+  await page.keyboard.press('Alt+ArrowDown');
+
+  await expect(page.getByText(/starts a new ranking session/)).toBeHidden();
+  await expect(page.getByRole('button', { name: /^Reorder Tacos, position 2/ })).toBeVisible();
+});

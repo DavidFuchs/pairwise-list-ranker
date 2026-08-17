@@ -47,6 +47,11 @@ export function rankItems(
 ): RankedItem<ListItem>[] {
   const headToHead = buildHeadToHead(events);
 
+  // The order the items arrived in is the user's own order, so it is the last
+  // word on ties. Falling back to the item id would sort an unranked list by
+  // random UUID, which is not an order anyone chose.
+  const arrivalIndex = new Map(items.map((item, index) => [item.id, index]));
+
   const active = items
     .filter((item) => item.active)
     .map((item) => ({ item, state: states.get(item.id) ?? createRankingState(item.id) }));
@@ -60,10 +65,7 @@ export function rankItems(
 
     if (b.state.wins !== a.state.wins) return b.state.wins - a.state.wins;
 
-    if (a.item.createdAt !== b.item.createdAt) {
-      return a.item.createdAt < b.item.createdAt ? -1 : 1;
-    }
-    return a.item.id < b.item.id ? -1 : 1;
+    return (arrivalIndex.get(a.item.id) ?? 0) - (arrivalIndex.get(b.item.id) ?? 0);
   });
 
   return sorted.map((entry, index) => ({ rank: index + 1, item: entry.item, state: entry.state }));
