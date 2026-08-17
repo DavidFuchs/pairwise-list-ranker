@@ -6,31 +6,32 @@
  * and opt into gradient treatments with `dataSet={{ surface: 'card' }}`, which
  * react-native-web renders as a `data-surface` attribute.
  *
- * The palette is deliberately mostly neutral: one indigo accent, warmed towards
- * violet in gradients, over a near-neutral ground in both modes.
+ * The palette is grayscale everywhere except one neon poison-green/yellow
+ * accent family: panels, canvas, borders, and text are true neutrals, and
+ * the accent (plus its gradient partner) is the only saturated colour.
  */
 
 const LIGHT_TOKENS = `
-  --canvas: #F6F7FB;
-  --canvas-tint-a: rgba(76, 99, 245, 0.10);
-  --canvas-tint-b: rgba(124, 92, 255, 0.07);
+  --canvas: #F6F6F7;
+  --canvas-tint-a: rgba(57, 219, 31, 0.08);
+  --canvas-tint-b: rgba(182, 240, 30, 0.06);
   --surface: #FFFFFF;
-  --surface-muted: #EEF1F8;
-  --surface-sunken: #F3F5FA;
+  --surface-muted: #EEEEF0;
+  --surface-sunken: #F2F2F4;
   --surface-card-top: #FFFFFF;
-  --surface-card-bottom: #FAFBFE;
-  --border: #DEE3EC;
-  --border-strong: #C7D0DF;
-  --text-primary: #131722;
-  --text-secondary: #58627A;
-  --text-faint: #838DA3;
-  --accent: #4C63F5;
-  --accent-strong: #3244D4;
-  --accent-contrast: #FFFFFF;
-  --accent-soft: #EEF1FE;
-  --accent-soft-border: #CBD4FD;
-  --violet: #7C5CFF;
-  --accent-gradient-end: #6A5AF0;
+  --surface-card-bottom: #FAFAFB;
+  --border: #DFE0E3;
+  --border-strong: #C8CACE;
+  --text-primary: #16171A;
+  --text-secondary: #595B61;
+  --text-faint: #86888E;
+  --accent: #45D124;
+  --accent-strong: #2FA318;
+  --accent-contrast: #06170A;
+  --accent-soft: #E7FBDA;
+  --accent-soft-border: #B3EE8E;
+  --violet: #A6D608;
+  --accent-gradient-end: #7BDE1A;
   --success: #0F9F6E;
   --success-text: #0A7350;
   --warning: #D28A12;
@@ -40,33 +41,33 @@ const LIGHT_TOKENS = `
   --danger-on-fill: #FFFFFF;
   --danger-soft: #FEF5F5;
   --danger-soft-border: #F2D6D6;
-  --shadow-card: 0 1px 2px rgba(19, 23, 34, 0.04), 0 12px 24px -12px rgba(19, 23, 34, 0.14);
-  --shadow-lift: 0 2px 4px rgba(19, 23, 34, 0.06), 0 22px 40px -18px rgba(50, 68, 212, 0.35);
+  --shadow-card: 0 1px 2px rgba(16, 17, 20, 0.05), 0 12px 24px -12px rgba(16, 17, 20, 0.16);
+  --shadow-lift: 0 2px 4px rgba(16, 17, 20, 0.06), 0 22px 40px -18px rgba(47, 163, 24, 0.4);
   --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --ring: rgba(76, 99, 245, 0.35);
+  --ring: rgba(69, 209, 36, 0.4);
 `;
 
 const DARK_TOKENS = `
-  --canvas: #0D1016;
-  --canvas-tint-a: rgba(108, 128, 255, 0.16);
-  --canvas-tint-b: rgba(124, 92, 255, 0.12);
-  --surface: #161A23;
-  --surface-muted: #1E2430;
-  --surface-sunken: #11151D;
-  --surface-card-top: #1A1F2A;
-  --surface-card-bottom: #151922;
-  --border: #262D3B;
-  --border-strong: #38425600;
-  --text-primary: #E9EDF6;
-  --text-secondary: #9AA5BC;
-  --text-faint: #74809A;
-  --accent: #7C8CFF;
-  --accent-strong: #A0ABFF;
-  --accent-contrast: #0D1016;
-  --accent-soft: #1A2036;
-  --accent-soft-border: #2E3866;
-  --violet: #9E7BFF;
-  --accent-gradient-end: #8E85FF;
+  --canvas: #0A0A0B;
+  --canvas-tint-a: rgba(57, 255, 20, 0.12);
+  --canvas-tint-b: rgba(182, 240, 30, 0.08);
+  --surface: #17181A;
+  --surface-muted: #1F2023;
+  --surface-sunken: #121315;
+  --surface-card-top: #1B1C1F;
+  --surface-card-bottom: #16171A;
+  --border: #2B2C30;
+  --border-strong: #3B3D4200;
+  --text-primary: #EDEDEF;
+  --text-secondary: #A2A4AA;
+  --text-faint: #77797F;
+  --accent: #39FF14;
+  --accent-strong: #7CFF5C;
+  --accent-contrast: #051A08;
+  --accent-soft: #16280F;
+  --accent-soft-border: #2C5A1B;
+  --violet: #C6FF00;
+  --accent-gradient-end: #8CFF3E;
   --success: #35C08D;
   --success-text: #5FD3A9;
   --warning: #E0A64A;
@@ -77,9 +78,9 @@ const DARK_TOKENS = `
   --danger-soft: #241619;
   --danger-soft-border: #4A2A2C;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 28px -14px rgba(0, 0, 0, 0.7);
-  --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.55), 0 26px 48px -20px rgba(124, 140, 255, 0.4);
+  --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.55), 0 26px 48px -20px rgba(57, 255, 20, 0.45);
   --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --ring: rgba(124, 140, 255, 0.45);
+  --ring: rgba(57, 255, 20, 0.5);
 `;
 
 export const themeCss = `
