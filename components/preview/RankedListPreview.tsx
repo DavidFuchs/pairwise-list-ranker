@@ -220,7 +220,7 @@ function isScalar(value: unknown): boolean {
 const styles = StyleSheet.create({
   container: { flex: 1, gap: space.sm },
   scroll: { flex: 1 },
-  list: { gap: space.xs, paddingBottom: space.md },
+  list: { gap: space.xs, paddingTop: space.xs, paddingBottom: space.md },
   empty: {
     fontFamily: fonts.body,
     fontSize: 14,
