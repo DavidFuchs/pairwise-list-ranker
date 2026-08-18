@@ -303,10 +303,20 @@ Gradients are atmosphere, never decoration. Four, and no more:
    the full accent range appears. Past 100% a gold second coat grows over the
    full bar, complete at 200%: the target is an estimate, so the meter must
    keep moving rather than sit frozen at full while the user is still working.
-   The percentage keeps counting up with no ceiling.
+   The number stops where the plating does, reading `200%+` beyond it - past
+   that it describes nothing visible, and a figure climbing to 500% reads as a
+   malfunction rather than as credit.
 
 Elevation is a two-layer shadow: a tight contact shadow plus a wide, soft cast
 shadow. On hover, cards lift 2px and the cast shadow picks up accent tint.
+
+The rule above says atmosphere, never decoration. There is one knowing
+exception: the flame on **Much better**, three stacked accent glows that
+flicker while hovered. It is decoration, it is meant to be, and it is confined
+to one control - the strongest verdict in the app, on a screen the user will
+visit hundreds of times. It stays affordable because it costs nothing until a
+pointer asks for it. If a second control ever wants a flame, the answer is no;
+what makes this one work is that it is the only one.
 
 ### Typography
 
@@ -401,6 +411,29 @@ Use:
 - 180-240ms card swap/fade after comparison
 - subtle position shift when rankings change in the ranked view
 - reduced-motion fallback for all animated transitions
+
+Two exceptions to "motion communicates state", and they are the only looping
+animations in the app:
+
+- **The meter sheen.** The gold surplus coat carries a slow sweep, ~2.6s on a
+  loop. It is ambient - it marks no change and answers no action, it says the
+  bar is still live once the percentage has stopped being interesting. That is
+  why it is an order of magnitude slower than every transition above.
+- **The much-better flame.** Poison-green light that drifts on ~3.4s of uneven,
+  unaccelerated keyframes while the pointer is on the button. This one is pure
+  decoration and is allowed to be, because it burns only under a pointer and
+  only on the single most emphatic control in the app. It never runs
+  unattended, which is what keeps a flicker from becoming noise.
+
+  Both of these want to be slower than feels right while writing them. A glow
+  on a second-long cycle reads as a blinking indicator demanding attention;
+  the same keyframes stretched over three or four seconds read as something
+  burning. Neither should be eased, either - easing lands a swell on every
+  keyframe, which is precisely the throb these are trying not to be.
+
+Under reduced motion both hold still rather than vanish: the meter stays gold,
+the button keeps a steady bloom. In each case the colour, not the movement,
+carries the meaning - so losing the motion costs nothing.
 
 ## Accessibility
 

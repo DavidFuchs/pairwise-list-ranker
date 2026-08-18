@@ -2,8 +2,9 @@ import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ItemCard } from '@/components/comparison/ItemCard';
+import { ProgressMeter } from '@/components/ui/ProgressMeter';
 import { useComparisonShortcuts } from '@/lib/hooks/useComparisonShortcuts';
-import { selectItemLabel } from '@/lib/state/selectors';
+import { describeCoverage, selectItemLabel } from '@/lib/state/selectors';
 import type { ActivePair } from '@/lib/state/selectors';
 import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
 import { isComplexItemValue } from '@/types/list';
@@ -82,12 +83,7 @@ export function ComparisonDeck({
     );
   }
 
-  const percent = Math.round(progress.coverage * 100);
-  // Past the estimate the green bar is already full, so the surplus is laid
-  // over it as a second coat: a sliver at 101%, fully plated at 200% and
-  // beyond, while the number keeps climbing.
-  const filled = Math.min(100, percent);
-  const surplus = Math.min(100, Math.max(0, percent - 100));
+  const { label: percentLabel } = describeCoverage(progress.coverage);
   // Nothing to toggle when the items are bare strings.
   const hasDetails = [pair.left, pair.right].some((item) => hasDetailFields(item, sortField));
 
@@ -98,30 +94,12 @@ export function ComparisonDeck({
           <Text style={styles.status}>
             {`${progress.comparisons} comparisons · ${progress.activeItems} items`}
           </Text>
-          <Text style={styles.statusPercent}>{`${percent}%`}</Text>
+          <Text style={styles.statusPercent}>{percentLabel}</Text>
         </View>
         <Text style={styles.announcement}>
           {`Comparing ${selectItemLabel(pair.left, sortField)} and ${selectItemLabel(pair.right, sortField)}`}
         </Text>
-        <View
-          style={styles.meter}
-          role="progressbar"
-          // Clamped: a valuenow above valuemax is not a valid progressbar, so
-          // the surplus is spoken through valuetext instead of breaking it.
-          aria-valuenow={filled}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuetext={surplus > 0 ? `${percent}%, past the estimate` : `${percent}%`}
-          aria-label="Ranking progress"
-        >
-          <View style={[styles.meterFill, { width: `${filled}%` }]} dataSet={{ fill: 'meter' }} />
-          {surplus > 0 && (
-            <View
-              style={[styles.meterSurplus, { width: `${surplus}%` }]}
-              dataSet={{ fill: 'surplus' }}
-            />
-          )}
-        </View>
+        <ProgressMeter coverage={progress.coverage} accessibilityLabel="Ranking progress" />
       </View>
 
       {/* Wraps to stacked cards on narrow screens without measuring anything. */}
@@ -247,22 +225,6 @@ const styles = StyleSheet.create({
     height: 1,
     overflow: 'hidden',
     opacity: 0,
-  },
-  meter: {
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceMuted,
-    overflow: 'hidden',
-  },
-  meterFill: { height: 4, borderRadius: 999, backgroundColor: colors.accent },
-  // Sits on top of the full green bar rather than beside it.
-  meterSurplus: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: colors.surplus,
   },
   cards: {
     flexDirection: 'row',

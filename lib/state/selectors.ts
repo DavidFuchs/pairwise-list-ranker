@@ -156,3 +156,34 @@ export function selectProgress(
 
   return { activeItems, comparisons: rated, skips, coverage };
 }
+
+/**
+ * The plating is complete at twice the estimate, so the number stops there
+ * too: past that point it no longer describes anything the user can see, and
+ * a figure climbing to 500% reads as a malfunction rather than as credit.
+ */
+const SURPLUS_CAP = 200;
+
+/**
+ * Everything the meter needs to draw itself and say what it means: the green
+ * run, the gold coat over it, and one number that agrees with both.
+ */
+export function describeCoverage(coverage: number): {
+  label: string;
+  valueText: string;
+  filled: number;
+  surplus: number;
+} {
+  const percent = Math.round(coverage * 100);
+  const capped = percent > SURPLUS_CAP;
+  const label = capped ? `${SURPLUS_CAP}%+` : `${percent}%`;
+  // "200%+" is a glyph, not a sentence; spoken aloud it wants words.
+  const spoken = capped ? `over ${SURPLUS_CAP}%` : label;
+
+  return {
+    label,
+    valueText: percent > 100 ? `${spoken}, past the estimate` : spoken,
+    filled: Math.min(100, percent),
+    surplus: Math.min(100, Math.max(0, percent - 100)),
+  };
+}

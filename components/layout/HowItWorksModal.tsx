@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ItemCard } from '@/components/comparison/ItemCard';
 import { Modal } from '@/components/ui/Modal';
+import { ProgressMeter } from '@/components/ui/ProgressMeter';
+import { describeCoverage } from '@/lib/state/selectors';
 import { colors, fonts, space, typeScale } from '@/lib/theme';
 import type { ListItem } from '@/types/list';
 
@@ -103,35 +105,24 @@ function ChooseSideDiagram() {
   );
 }
 
-/** The status strip as it reads above the cards, before and after the estimate. */
+/** The real status strip and meter, before and after the estimate. */
 function ProgressDiagram() {
   return (
     <View style={styles.progressBlock} aria-hidden>
-      <ProgressRow caption="8 comparisons · 6 items" percent={52} />
-      <ProgressRow caption="21 comparisons · 6 items" percent={138} />
+      <ProgressRow caption="8 comparisons · 6 items" coverage={0.52} />
+      <ProgressRow caption="21 comparisons · 6 items" coverage={1.38} />
     </View>
   );
 }
 
-function ProgressRow({ caption, percent }: { caption: string; percent: number }) {
-  const filled = Math.min(100, percent);
-  const surplus = Math.min(100, Math.max(0, percent - 100));
-
+function ProgressRow({ caption, coverage }: { caption: string; coverage: number }) {
   return (
     <View style={styles.progressRowBlock}>
       <View style={styles.progressRow}>
         <Text style={styles.progressStatus}>{caption}</Text>
-        <Text style={styles.progressPercent}>{`${percent}%`}</Text>
+        <Text style={styles.progressPercent}>{describeCoverage(coverage).label}</Text>
       </View>
-      <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${filled}%` }]} dataSet={{ fill: 'meter' }} />
-        {surplus > 0 && (
-          <View
-            style={[styles.progressSurplus, { width: `${surplus}%` }]}
-            dataSet={{ fill: 'surplus' }}
-          />
-        )}
-      </View>
+      <ProgressMeter coverage={coverage} />
     </View>
   );
 }
@@ -234,21 +225,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   progressPercent: { fontFamily: fonts.mono, fontSize: 11, color: colors.textFaint },
-  progressTrack: {
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceMuted,
-    overflow: 'hidden',
-  },
-  progressFill: { height: 4, borderRadius: 999, backgroundColor: colors.accent },
-  progressSurplus: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: colors.surplus,
-  },
 
   // Rating-shift diagram
   ratingBlock: { gap: space.xs, paddingTop: space.sm },

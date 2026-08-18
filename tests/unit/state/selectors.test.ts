@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  describeCoverage,
   selectAvailableTabs,
   selectContextLine,
   selectCurrentPair,
@@ -105,6 +106,41 @@ describe('selectProgress', () => {
 
   it('is zero when there is nothing to rank', () => {
     expect(selectProgress([items[0]!], []).coverage).toBe(0);
+  });
+});
+
+describe('describeCoverage', () => {
+  it('reads as a plain percentage below the estimate', () => {
+    const shown = describeCoverage(0.52);
+
+    expect(shown.label).toBe('52%');
+    expect(shown.filled).toBe(52);
+    expect(shown.surplus).toBe(0);
+  });
+
+  it('splits the bar into a full green run and a gold surplus past the estimate', () => {
+    const shown = describeCoverage(1.38);
+
+    expect(shown.label).toBe('138%');
+    expect(shown.filled).toBe(100);
+    expect(shown.surplus).toBe(38);
+  });
+
+  it('caps the number once the plating is complete, rather than climbing forever', () => {
+    expect(describeCoverage(2).label).toBe('200%');
+    expect(describeCoverage(2.4).label).toBe('200%+');
+    expect(describeCoverage(37).label).toBe('200%+');
+  });
+
+  it('keeps the plating full once capped', () => {
+    expect(describeCoverage(2.4).surplus).toBe(100);
+    expect(describeCoverage(37).surplus).toBe(100);
+  });
+
+  it('says the surplus out loud for screen readers', () => {
+    expect(describeCoverage(0.52).valueText).toBe('52%');
+    expect(describeCoverage(1.38).valueText).toMatch(/138%.*past the estimate/i);
+    expect(describeCoverage(37).valueText).toMatch(/over 200%.*past the estimate/i);
   });
 });
 

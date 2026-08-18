@@ -97,7 +97,13 @@ describe('the progress meter', () => {
     const surplus = meter().querySelector('[data-fill="surplus"]');
 
     expect((surplus as HTMLElement).style.width).toBe('100%');
-    expect(screen.getByText('340%')).toBeDefined();
+  });
+
+  it('caps the number where the plating stops, rather than climbing forever', () => {
+    setup({ progress: { activeItems: 3, comparisons: 30, skips: 0, coverage: 3.4 } });
+
+    expect(screen.getByText('200%+')).toBeDefined();
+    expect(meter().getAttribute('aria-valuetext')).toMatch(/over 200%.*past the estimate/i);
   });
 
   it('keeps the progressbar contract valid while saying it went past', () => {
