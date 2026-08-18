@@ -1,27 +1,54 @@
 # Pairwise List Ranker
 
-A polished Expo web app for importing, editing, comparing, and exporting ranked
-lists entirely in the browser.
+Rank any list by comparing two items at a time. Paste a list of movies, books,
+candidates, features, whatever needs ordering, then just pick the better one
+of each pair. The full ranking falls out of a handful of quick comparisons.
 
-Core idea:
+**[Try the live demo →](https://pairwise.apps.davidfuchs.ca/)**
+
+No accounts, no backend, no database, no sharing. Everything runs in your
+browser, and your data never leaves it.
+
+![Add your list](docs/screenshots/01-data-screen.png)
+
+## How it works
+
+**1. Add your list.** Paste plain text (one item per line) or drop in YAML or
+JSON for richer data. The app figures out the format and shows you what it
+found before anything happens.
+
+**2. Compare, pair by pair.** Two items, one click. Pick the better one, mark
+it as much better, skip the pair, or delete an item outright. A progress meter
+tracks how close the ranking is to settled.
+
+![Comparing two items](docs/screenshots/02-rank-screen.png)
+
+**3. Export the result.** The ranked list is always one click away, as plain
+text, YAML, or JSON, matching whatever format you imported. Copy it or
+download it.
+
+![Exporting the ranked list](docs/screenshots/03-export-preview.png)
+
+## Why pairwise comparison
+
+Sorting a list of 30 things by dragging them into order is tedious and
+error-prone. Judging two things against each other is easy. This app uses
+that: every choice you make feeds a weighted Elo ranking, so the order
+converges quickly and keeps refining itself the longer you compare.
+
 - import a simple list or a list of complex objects
 - compare two items at a time
 - pick the better item, mark one as much better, skip, or delete
 - converge on a ranked list over repeated pairwise comparisons
-- preview and export the current list as YAML, JSON, or Markdown
-- optionally keep the working state locally in the browser
-
-The product is static and browser-only:
-- no accounts
-- no backend API
-- no database
-- no sharing
+- preview and export the current list as plain text, YAML, or JSON
+- optionally keep the working state locally in the browser, so a reload
+  doesn't lose your progress
 
 ## Getting started
 
 ```bash
 npm install
-npm run web      # dev server
+npm run web        # dev server
 npm run build:web  # static bundle in dist/
 ```
 
@@ -42,23 +69,23 @@ Docker, for self-hosting the static build:
 docker compose up --build   # http://localhost:8080
 ```
 
-## How it works
+## Under the hood
 
-- **Ranking** is weighted Elo (`lib/ranking/`). Comparison history is
-  append-only, and the displayed order is rebuilt from that history, so the
-  ranking is reproducible rather than incrementally patched.
-- **Interchange** is a single canonical JSON document (`lib/formats/`). YAML and
-  a strict app-defined Markdown dialect map to and from that same shape.
-- **State** lives in a Zustand store (`lib/state/`) with an optional
-  `localStorage` snapshot. Exported files are the durable artifact; browser
-  storage is a convenience.
+- **Ranking** is weighted Elo ([lib/ranking/](lib/ranking/)). Comparison
+  history is append-only, and the displayed order is rebuilt from that
+  history, so the ranking is reproducible rather than incrementally patched.
+- **Import and export** share one pipeline ([lib/import/](lib/import/),
+  [lib/export/](lib/export/)). A plain list, YAML, or JSON document all
+  resolve to the same shape internally, and export returns the user's own
+  document with the ranked array reordered in place, every other key
+  untouched.
+- **State** lives in a Zustand store ([lib/state/](lib/state/)) with an
+  optional `localStorage` snapshot. Exported files are the durable artifact;
+  browser storage is a convenience.
 
-Two behaviours worth knowing:
-
-- Deleting an item during a comparison records no result for that pair, but
-  ratings already earned against a deleted item are kept.
-- Markdown carries list metadata and item values, not item ids; importing
-  Markdown assigns fresh ids. JSON and YAML preserve ids.
+A behavior worth knowing: deleting an item during a comparison records no
+result for that pair, but ratings already earned against a deleted item are
+kept.
 
 ## Documentation
 
@@ -67,3 +94,7 @@ Two behaviours worth knowing:
 - [UX.md](UX.md) - layout, visual system, interaction model
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - building, hosting, and where user data lives
 - [docs/QA.md](docs/QA.md) - manual QA pass before a release
+
+## License
+
+[MIT](LICENSE)
