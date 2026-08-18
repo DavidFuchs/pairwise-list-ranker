@@ -14,14 +14,27 @@ import 'react-native';
  * styles cannot express - gradients, hover, and focus rings live in
  * `lib/themeCss.ts` and hook onto these attributes.
  */
+/**
+ * react-native-web renders a View/Pressable as an `<a>` when given `href`,
+ * with `hrefAttrs` covering the web-only anchor attributes.
+ */
+interface RNWHrefAttrs {
+  href?: string;
+  hrefAttrs?: {
+    download?: boolean;
+    rel?: string;
+    target?: string;
+  };
+}
+
 declare module 'react-native' {
-  interface ViewProps {
+  interface ViewProps extends RNWHrefAttrs {
     dataSet?: Record<string, string | number | boolean | undefined>;
   }
   interface TextProps {
     dataSet?: Record<string, string | number | boolean | undefined>;
   }
-  interface PressableProps {
+  interface PressableProps extends RNWHrefAttrs {
     dataSet?: Record<string, string | number | boolean | undefined>;
     /**
      * react-native-web forwards these to the DOM node. Dragging the ranked list

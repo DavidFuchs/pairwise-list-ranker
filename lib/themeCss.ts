@@ -220,6 +220,20 @@ html, body { background-color: var(--canvas); }
 [data-grip]:active { cursor: grabbing; }
 
 /*
+ * The header's GitHub link stays as quiet as the rest of the toolbar until
+ * it is aimed at, same convention as the remove/sample icons above.
+ */
+[data-github] {
+  --github-ink: var(--text-faint);
+  transition: background-color 140ms ease;
+}
+[data-github]:hover,
+[data-github]:focus-visible {
+  --github-ink: var(--accent-strong);
+  background-color: var(--accent-soft);
+}
+
+/*
  * The emphasis action comes up to temperature.
  *
  * An earlier version drew literal flames here - tongues of gradient licking

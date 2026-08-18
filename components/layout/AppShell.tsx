@@ -1,11 +1,14 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { HowItWorksModal } from '@/components/layout/HowItWorksModal';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { Button } from '@/components/ui/Button';
-import { colors, fonts, space } from '@/lib/theme';
+import { GitHubIcon } from '@/components/ui/GitHubIcon';
+import { colors, fonts, radius, space } from '@/lib/theme';
+
+const REPO_URL = 'https://github.com/DavidFuchs/pairwise-list-ranker';
 
 export interface AppShellProps {
   listName: string;
@@ -87,6 +90,16 @@ export function AppShell({
               onPress={() => setConfirmingReset(true)}
             />
           )}
+          <Pressable
+            href={REPO_URL}
+            hrefAttrs={{ target: '_blank', rel: 'noopener noreferrer' }}
+            accessibilityRole="link"
+            accessibilityLabel="View source on GitHub"
+            dataSet={{ github: 'true' }}
+            style={styles.githubLink}
+          >
+            <GitHubIcon />
+          </Pressable>
         </View>
       </View>
 
@@ -144,6 +157,13 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  githubLink: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+  },
   status: { fontFamily: fonts.mono, fontSize: 11, color: colors.textSecondary },
   resetWarning: {
     paddingHorizontal: space.lg,
@@ -156,7 +176,9 @@ const styles = StyleSheet.create({
   scrollBody: { padding: space.lg },
   body: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg, alignItems: 'flex-start' },
   rail: { flexGrow: 1, flexShrink: 1, flexBasis: 260, minWidth: 240, maxWidth: 340, gap: space.md },
-  // Grows far harder than its neighbours, so spare width goes to the cards.
-  stage: { flexGrow: 999, flexShrink: 1, flexBasis: 420, minWidth: 320, gap: space.lg },
-  preview: { flexGrow: 1, flexShrink: 1, flexBasis: 360, minWidth: 300, minHeight: 520 },
+  // The editor benefits from extra width up to a point, but past that the
+  // spare space is better spent widening the preview card so its controls
+  // (e.g. the order-picker buttons) have room to sit on one line.
+  stage: { flexGrow: 1, flexShrink: 1, flexBasis: 420, minWidth: 320, maxWidth: 640, gap: space.lg },
+  preview: { flexGrow: 2, flexShrink: 1, flexBasis: 400, minWidth: 360, minHeight: 520 },
 });
