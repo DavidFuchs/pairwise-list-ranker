@@ -37,7 +37,7 @@ export default function RankScreen() {
   }, [hydrated, workspace, router]);
 
   const view = selectWorkspaceView(items, comparisonEvents, workspace?.alreadyRanked ?? false);
-  const progress = selectProgress(items, comparisonEvents);
+  const progress = selectProgress(items, comparisonEvents, workspace?.alreadyRanked ?? false);
   const format: SourceFormat =
     previewTab === 'ranked' ? (workspace?.source.format ?? 'list') : previewTab;
   const exportText =

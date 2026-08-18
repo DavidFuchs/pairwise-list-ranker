@@ -53,19 +53,12 @@ export function RankedListPreview({
     return dragging.gap;
   }, [dragging, orderedIds]);
 
-  /** Apply straight away when nothing is at stake; otherwise ask first. */
-  const commit = useCallback(
-    (nextIds: string[]) => {
-      if (comparisonCount === 0) {
-        setPendingIds(null);
-        onReorder(nextIds);
-        return;
-      }
-      setPendingIds(nextIds);
-      setConfirming(true);
-    },
-    [comparisonCount, onReorder],
-  );
+  /** Every hand reorder asks first: it always treats the new order as a
+   *  best-to-worst ranking and restarts from it, comparisons or not. */
+  const commit = useCallback((nextIds: string[]) => {
+    setPendingIds(nextIds);
+    setConfirming(true);
+  }, []);
 
   const handleKeyMove = useCallback(
     (id: string, direction: -1 | 1) => {
@@ -175,7 +168,9 @@ export function RankedListPreview({
       {confirming && (
         <View style={styles.confirm} role="alert">
           <Text style={styles.confirmText}>
-            {`Reordering by hand starts a new ranking session. Your ${comparisonCount} comparisons are cleared, and this order becomes the starting point.`}
+            {comparisonCount === 0
+              ? 'Reordering by hand treats this order as best to worst, and starts your ranking from it.'
+              : `Reordering by hand starts a new ranking session. Your ${comparisonCount} comparisons are cleared, and this order becomes the starting point.`}
           </Text>
           <View style={styles.confirmActions}>
             <Button

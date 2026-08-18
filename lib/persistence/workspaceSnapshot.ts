@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent } from '@/types/ranking';
-import type { PreviewTab, Workspace } from '@/types/source';
+import type { PreviewTab, SavedList, Workspace } from '@/types/source';
 
 /** Bump when the persisted shape changes so stale snapshots are dropped. */
-export const WORKSPACE_VERSION = 2;
+export const WORKSPACE_VERSION = 3;
 
 export interface WorkspaceUiState {
   previewTab: PreviewTab;
@@ -16,6 +16,7 @@ export interface WorkspaceSnapshot {
   workspace: Workspace;
   items: ListItem[];
   comparisonEvents: ComparisonEvent[];
+  savedLists: SavedList[];
   ui: WorkspaceUiState;
 }
 
@@ -67,11 +68,26 @@ const comparisonEventSchema = z.object({
   createdAt: z.string(),
 });
 
+const savedListSchema = z.object({
+  workspaceId: z.string().min(1),
+  arrayPath: z.array(z.string()),
+  roles: z.object({
+    labelField: z.string().optional(),
+    positionField: z.string().optional(),
+  }),
+  alreadyRanked: z.boolean(),
+  items: z.array(listItemSchema),
+  comparisonEvents: z.array(comparisonEventSchema),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
 export const workspaceSnapshotSchema = z.object({
   version: z.number().int().positive(),
   workspace: workspaceSchema,
   items: z.array(listItemSchema),
   comparisonEvents: z.array(comparisonEventSchema),
+  savedLists: z.array(savedListSchema),
   ui: z.object({ previewTab: z.enum(['ranked', 'list', 'yaml', 'json']) }),
 });
 

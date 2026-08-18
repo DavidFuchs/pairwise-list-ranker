@@ -63,18 +63,24 @@ describe('RankedListPreview', () => {
     expect(screen.getByLabelText(/reorder curry/i)).toBeDefined();
   });
 
-  it('moves a row down with alt and arrow down', () => {
-    const { onReorder } = setup();
+  it('asks before applying a row moved down with alt and arrow down', async () => {
+    const { onReorder, user } = setup();
 
     fireEvent.keyDown(screen.getByLabelText(/reorder tacos/i), { key: 'ArrowDown', altKey: true });
+    expect(onReorder).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: /reorder and restart/i }));
 
     expect(onReorder).toHaveBeenCalledWith(['item-1', 'item-0', 'item-2']);
   });
 
-  it('moves a row up with alt and arrow up', () => {
-    const { onReorder } = setup();
+  it('asks before applying a row moved up with alt and arrow up', async () => {
+    const { onReorder, user } = setup();
 
     fireEvent.keyDown(screen.getByLabelText(/reorder curry/i), { key: 'ArrowUp', altKey: true });
+    expect(onReorder).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: /reorder and restart/i }));
 
     expect(onReorder).toHaveBeenCalledWith(['item-0', 'item-2', 'item-1']);
   });
@@ -111,6 +117,23 @@ describe('RankedListPreview', () => {
     expect(onReorder).not.toHaveBeenCalled();
     expect(screen.getByText(/47 comparisons/i)).toBeDefined();
     expect(screen.getByText(/starts a new ranking session/i)).toBeDefined();
+  });
+
+  /**
+   * Reordering by hand always asserts a best-to-worst order, whether or not
+   * there is any comparison history to discard - so it always asks, and with
+   * wording that does not claim comparisons are being cleared when there are
+   * none.
+   */
+  it('asks even with no comparisons yet, without claiming any are cleared', () => {
+    const { onReorder } = setup({ comparisonCount: 0 });
+
+    fireEvent.keyDown(screen.getByLabelText(/reorder tacos/i), { key: 'ArrowDown', altKey: true });
+
+    expect(onReorder).not.toHaveBeenCalled();
+    expect(screen.getByText(/treats this order as best to worst/i)).toBeDefined();
+    expect(screen.queryByText(/comparisons are cleared/i)).toBeNull();
+    expect(screen.queryByText(/starts a new ranking session/i)).toBeNull();
   });
 
   it('applies the reorder once confirmed', async () => {

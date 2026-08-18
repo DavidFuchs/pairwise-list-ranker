@@ -1,5 +1,8 @@
 /** The user's own document is the model. See the guided-import spec, section 3. */
 
+import type { ListItem } from '@/types/list';
+import type { ComparisonEvent } from '@/types/ranking';
+
 export type SourceFormat = 'list' | 'yaml' | 'json';
 
 /** The preview rail's tabs: the ranked view, or the data in a text format. */
@@ -30,6 +33,23 @@ export interface Workspace {
   /** True when the imported order is a trusted best-to-worst ranking, not an
    * arbitrary sequence - seeds initial ratings from it instead of flat 1500. */
   alreadyRanked: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * A list's ranking progress while a different list from the same document is
+ * active. One document can hold several rankable lists, and moving between
+ * them must not discard any of them - so each one that has been ranked stays
+ * here until the user comes back to it.
+ */
+export interface SavedList {
+  workspaceId: string;
+  arrayPath: string[];
+  roles: FieldRoles;
+  alreadyRanked: boolean;
+  items: ListItem[];
+  comparisonEvents: ComparisonEvent[];
   createdAt: string;
   updatedAt: string;
 }

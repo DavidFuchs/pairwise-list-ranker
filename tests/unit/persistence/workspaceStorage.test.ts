@@ -21,7 +21,7 @@ function memoryBackend(): StorageLike & { data: Map<string, string> } {
 
 function snapshot(rawText = 'Alien\nArrival\n'): WorkspaceSnapshot {
   return {
-    version: 2,
+    version: 3,
     workspace: {
       id: 'ws-1',
       source: { format: 'list', rawText, document: ['Alien', 'Arrival'], arrayPath: [] },
@@ -32,6 +32,7 @@ function snapshot(rawText = 'Alien\nArrival\n'): WorkspaceSnapshot {
     },
     items: [],
     comparisonEvents: [],
+    savedLists: [],
     ui: { previewTab: 'ranked' },
   };
 }

@@ -67,4 +67,26 @@ describe('ArrayPicker', () => {
 
     expect(screen.getByRole('radio', { name: /rank the list at the list/i })).toBeDefined();
   });
+
+  it('shows a progress meter for every candidate that already has ranking behind it', () => {
+    render(
+      <ArrayPicker
+        candidates={[movies, actors]}
+        value={['movies']}
+        onChange={vi.fn()}
+        rankedCoverages={{ movies: 0.42, actors: 0.1 }}
+      />,
+    );
+
+    expect(screen.getByRole('progressbar', { name: /ranking progress for movies/i })).toBeDefined();
+    expect(screen.getByRole('progressbar', { name: /ranking progress for actors/i })).toBeDefined();
+    expect(screen.getByText('42%')).toBeDefined();
+    expect(screen.getByText('10%')).toBeDefined();
+  });
+
+  it('shows no progress meter for a candidate with nothing ranked yet', () => {
+    render(<ArrayPicker candidates={[movies, actors]} value={['movies']} onChange={vi.fn()} />);
+
+    expect(screen.queryByRole('progressbar')).toBeNull();
+  });
 });

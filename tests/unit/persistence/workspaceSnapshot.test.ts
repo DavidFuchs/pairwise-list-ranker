@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { parseWorkspaceSnapshot } from '@/lib/persistence/workspaceSnapshot';
 
 const valid = {
-  version: 2,
+  version: 3,
   workspace: {
     id: 'ws-1',
     source: {
@@ -27,12 +27,34 @@ const valid = {
     },
   ],
   comparisonEvents: [],
+  savedLists: [],
   ui: { previewTab: 'ranked' },
 };
 
 describe('parseWorkspaceSnapshot', () => {
-  it('accepts a well-formed v2 snapshot', () => {
+  it('accepts a well-formed v3 snapshot', () => {
     expect(parseWorkspaceSnapshot(valid)?.workspace.id).toBe('ws-1');
+  });
+
+  it('round-trips saved lists from other candidates in the same document', () => {
+    const withSaved = {
+      ...valid,
+      savedLists: [
+        {
+          workspaceId: 'ws-0',
+          arrayPath: ['actors'],
+          roles: {},
+          alreadyRanked: false,
+          items: [],
+          comparisonEvents: [],
+          createdAt: '2026-08-16T00:00:00.000Z',
+          updatedAt: '2026-08-16T00:00:00.000Z',
+        },
+      ],
+    };
+
+    expect(parseWorkspaceSnapshot(withSaved)?.savedLists).toHaveLength(1);
+    expect(parseWorkspaceSnapshot(withSaved)?.savedLists[0]?.arrayPath).toEqual(['actors']);
   });
 
   it('defaults alreadyRanked to false for a snapshot saved before the field existed', () => {

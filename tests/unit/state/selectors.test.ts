@@ -107,6 +107,24 @@ describe('selectProgress', () => {
   it('is zero when there is nothing to rank', () => {
     expect(selectProgress([items[0]!], []).coverage).toBe(0);
   });
+
+  it('starts an already-ranked list at full coverage with no comparisons yet', () => {
+    const progress = selectProgress(items, [], true);
+
+    expect(progress.coverage).toBe(1);
+  });
+
+  it('climbs past full coverage as an already-ranked list gets compared further', () => {
+    const at0 = selectProgress(items, [], true).coverage;
+    const at2 = selectProgress(items, comparisons(2), true).coverage;
+
+    expect(at2).toBeGreaterThan(at0);
+    expect(at0).toBe(1);
+  });
+
+  it('does not credit coverage for being already ranked when there is nothing to rank', () => {
+    expect(selectProgress([items[0]!], [], true).coverage).toBe(0);
+  });
 });
 
 describe('describeCoverage', () => {

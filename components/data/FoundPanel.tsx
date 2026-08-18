@@ -23,6 +23,9 @@ export interface FoundPanelProps {
   /** True while the source box is untouched, which is not a failed import. */
   isBlank: boolean;
   ctaLabel: string;
+  /** Path key to ranking coverage for every candidate that already has
+   *  progress behind it - see ArrayPicker. */
+  rankedCoverages?: Record<string, number>;
   onSelectPath: (path: string[]) => void;
   onRolesChange: (roles: FieldRoles) => void;
   onAlreadyRankedChange: (alreadyRanked: boolean) => void;
@@ -49,6 +52,7 @@ export function FoundPanel({
   entries,
   isBlank,
   ctaLabel,
+  rankedCoverages,
   onSelectPath,
   onRolesChange,
   onAlreadyRankedChange,
@@ -81,7 +85,12 @@ export function FoundPanel({
         </Text>
       </View>
 
-      <ArrayPicker candidates={analysis.candidates} value={selectedPath} onChange={onSelectPath} />
+      <ArrayPicker
+        candidates={analysis.candidates}
+        value={selectedPath}
+        onChange={onSelectPath}
+        rankedCoverages={rankedCoverages}
+      />
 
       <OrderPicker
         value={alreadyRanked}

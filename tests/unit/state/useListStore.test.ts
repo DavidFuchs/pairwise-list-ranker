@@ -216,6 +216,84 @@ describe('applyEdits', () => {
   });
 });
 
+describe('switchList', () => {
+  let store: ReturnType<typeof makeStore>;
+  const actors: DataSource = {
+    format: 'yaml',
+    rawText: 'movies:\n  - title: Alien\n  - title: Arrival\nactors:\n  - Weaver\n  - Adams\n',
+    document: {
+      owner: 'david',
+      movies: [{ title: 'Alien' }, { title: 'Arrival' }],
+      actors: ['Weaver', 'Adams'],
+    },
+    arrayPath: ['actors'],
+  };
+
+  beforeEach(() => {
+    store = makeStore();
+    store.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
+    const [left, right] = store.getState().items;
+    store.getState().recordComparison(left?.id ?? '', right?.id ?? '', 'left');
+  });
+
+  it('builds fresh items for a list never visited before', () => {
+    store.getState().switchList({ source: actors, roles: {} });
+
+    expect(store.getState().items.map((item) => item.value)).toEqual(['Weaver', 'Adams']);
+    expect(store.getState().comparisonEvents).toEqual([]);
+    expect(store.getState().workspace?.source.arrayPath).toEqual(['actors']);
+  });
+
+  it('archives the list being left instead of discarding it', () => {
+    const movieItems = store.getState().items;
+    const movieComparisons = store.getState().comparisonEvents;
+
+    store.getState().switchList({ source: actors, roles: {} });
+
+    const saved = store.getState().savedLists.find((list) => list.arrayPath.join('.') === 'movies');
+    expect(saved?.items).toEqual(movieItems);
+    expect(saved?.comparisonEvents).toEqual(movieComparisons);
+  });
+
+  it('restores a previously visited list exactly as it was left', () => {
+    const movieItems = store.getState().items;
+    const movieComparisons = store.getState().comparisonEvents;
+    const movieRoles = store.getState().workspace?.roles;
+
+    store.getState().switchList({ source: actors, roles: {} });
+    // Bring a fresh set of roles for actors - restoring movies must ignore
+    // these and use what movies actually had, not what is on screen now.
+    store.getState().switchList({ source: nested, roles: { labelField: 'unused' } });
+
+    expect(store.getState().items).toEqual(movieItems);
+    expect(store.getState().comparisonEvents).toEqual(movieComparisons);
+    expect(store.getState().workspace?.roles).toEqual(movieRoles);
+  });
+
+  it('leaves the list being switched to out of savedLists once it is active', () => {
+    store.getState().switchList({ source: actors, roles: {} });
+
+    expect(
+      store.getState().savedLists.some((list) => list.arrayPath.join('.') === 'actors'),
+    ).toBe(false);
+  });
+
+  it('round-trips saved lists through storage', () => {
+    const backend = memoryBackend();
+    const first = makeStore(backend);
+    first.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
+    const [left, right] = first.getState().items;
+    first.getState().recordComparison(left?.id ?? '', right?.id ?? '', 'left');
+    first.getState().switchList({ source: actors, roles: {} });
+
+    const second = makeStore(backend);
+    second.getState().hydrate();
+
+    expect(second.getState().savedLists).toHaveLength(1);
+    expect(second.getState().savedLists[0]?.comparisonEvents).toHaveLength(1);
+  });
+});
+
 describe('persistence', () => {
   it('round-trips through storage', () => {
     const backend = memoryBackend();

@@ -19,6 +19,11 @@ export interface SourceDraftSeed {
   arrayPath: string[];
   roles: FieldRoles;
   alreadyRanked: boolean;
+  /** Path key ("a.b") to alreadyRanked, for every list already known this
+   *  session (the active one and anything parked in savedLists) - so
+   *  revisiting one of them defaults to its own real answer, not "no
+   *  particular order" just because it isn't the list this screen opened on. */
+  knownLists?: Record<string, boolean>;
 }
 
 export interface SourceDraft {
@@ -29,6 +34,10 @@ export interface SourceDraft {
   roles: FieldRoles;
   /** True when the imported order is a trusted best-to-worst ranking. */
   alreadyRanked: boolean;
+  /** True once the user has explicitly chosen an order for the selected list
+   *  this session - lets the screen show a coverage-derived default without
+   *  that cosmetic guess ever leaking into what gets submitted. */
+  alreadyRankedIsExplicit: boolean;
   entries: unknown[];
   /** The format tabs the current data can honestly be shown as. Plain list
    * drops out once an entry is more than a bare scalar, the same rule the
@@ -45,11 +54,27 @@ export interface SourceDraft {
   toSource: () => DataSource | null;
 }
 
-interface RolesOverride {
+interface RolesChoice {
   labelField?: string;
   positionField?: string;
   /** Distinguishes "not chosen yet" from "deliberately set to none". */
   positionCleared: boolean;
+}
+
+/**
+ * Keyed by candidate path, so a field choice made for one list is never
+ * offered to another - including one that coincidentally has a field of the
+ * same name, which would otherwise slip past resolveRoles' compatibility
+ * check undetected. A map, not a single slot: choosing a field for list2
+ * must not make the app forget what was chosen for list1.
+ */
+type RolesOverride = Record<string, RolesChoice>;
+
+interface AlreadyRankedOverride {
+  /** The candidate path this choice was made for, so switching lists does not
+   *  carry one list's answer onto another. */
+  pathKey: string;
+  value: boolean;
 }
 
 /**
@@ -61,12 +86,9 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
   const [rawText, setRawText] = useState(seed?.rawText ?? '');
   const [override, setOverrideState] = useState<FormatOverride>('auto');
   const [chosenPath, setChosenPath] = useState<string[] | null>(seed?.arrayPath ?? null);
-  const [alreadyRanked, setAlreadyRanked] = useState(seed?.alreadyRanked ?? false);
-  const [rolesOverride, setRolesOverride] = useState<RolesOverride>({
-    labelField: seed?.roles.labelField,
-    positionField: seed?.roles.positionField,
-    positionCleared: false,
-  });
+  const [alreadyRankedOverride, setAlreadyRankedOverride] =
+    useState<AlreadyRankedOverride | null>(null);
+  const [rolesOverride, setRolesOverride] = useState<RolesOverride>({});
 
   const analysis = useMemo(() => analyzeSource(rawText, override), [rawText, override]);
 
@@ -83,14 +105,56 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     [analysis, selectedPath],
   );
 
+  // Per-path, not a single flag: switching to a list the user has not
+  // answered this for must not inherit another list's "already ranked"
+  // choice. A list already known this session (knownLists, or the list this
+  // screen opened on) falls back to its own real answer; a candidate never
+  // visited before starts at "no particular order" until told otherwise.
+  const alreadyRanked = useMemo(() => {
+    const pathKey = selectedPath === null ? '' : selectedPath.join('.');
+    if (alreadyRankedOverride?.pathKey === pathKey) {
+      return alreadyRankedOverride.value;
+    }
+    if (selectedPath === null || seed === undefined) return false;
+
+    const known = seed.knownLists?.[pathKey];
+    if (known !== undefined) return known;
+    if (pathKey === seed.arrayPath.join('.')) return seed.alreadyRanked;
+    return false;
+  }, [selectedPath, alreadyRankedOverride, seed]);
+
+  const alreadyRankedIsExplicit = useMemo(() => {
+    const pathKey = selectedPath === null ? '' : selectedPath.join('.');
+    return alreadyRankedOverride?.pathKey === pathKey;
+  }, [selectedPath, alreadyRankedOverride]);
+
+  const setAlreadyRanked = useCallback(
+    (value: boolean) => {
+      const pathKey = selectedPath === null ? '' : selectedPath.join('.');
+      setAlreadyRankedOverride({ pathKey, value });
+    },
+    [selectedPath],
+  );
+
+  // Per-path, like alreadyRanked above: a field choice made for one list must
+  // never be offered to a different one, even when that list happens to have
+  // a field of the same name - only the list the choice was actually made
+  // for gets to keep it.
   const roles = useMemo(() => {
-    const resolved = resolveRoles(entries, {
-      labelField: rolesOverride.labelField,
-      positionField: rolesOverride.positionField,
-    });
-    if (!rolesOverride.positionCleared) return resolved;
+    const pathKey = selectedPath === null ? '' : selectedPath.join('.');
+    const choice = rolesOverride[pathKey];
+
+    const previous =
+      choice !== undefined
+        ? { labelField: choice.labelField, positionField: choice.positionField }
+        : selectedPath !== null && seed !== undefined && pathKey === seed.arrayPath.join('.')
+          ? { labelField: seed.roles.labelField, positionField: seed.roles.positionField }
+          : {};
+
+    const resolved = resolveRoles(entries, previous);
+    if (choice === undefined || !choice.positionCleared) return resolved;
     return { ...resolved, positionField: undefined };
-  }, [entries, rolesOverride]);
+  }, [entries, rolesOverride, selectedPath, seed]);
 
   const availableOverrides = useMemo(() => {
     const complex = entries.some(isComplexEntry);
@@ -114,13 +178,20 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     [analysis, entries, override],
   );
 
-  const setRoles = useCallback((next: FieldRoles) => {
-    setRolesOverride({
-      labelField: next.labelField,
-      positionField: next.positionField,
-      positionCleared: next.positionField === undefined,
-    });
-  }, []);
+  const setRoles = useCallback(
+    (next: FieldRoles) => {
+      const pathKey = selectedPath === null ? '' : selectedPath.join('.');
+      setRolesOverride((current) => ({
+        ...current,
+        [pathKey]: {
+          labelField: next.labelField,
+          positionField: next.positionField,
+          positionCleared: next.positionField === undefined,
+        },
+      }));
+    },
+    [selectedPath],
+  );
 
   const toSource = useCallback((): DataSource | null => {
     if (selectedPath === null || analysis.issues.length > 0) return null;
@@ -139,6 +210,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     selectedPath,
     roles,
     alreadyRanked,
+    alreadyRankedIsExplicit,
     entries,
     availableOverrides,
     setRawText,

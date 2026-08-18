@@ -13,7 +13,11 @@ import type { ActivePair } from '@/lib/state/selectors';
 import { selectCurrentPair, selectRanking } from '@/lib/state/selectors';
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent, ComparisonOutcome, RankedItem } from '@/types/ranking';
-import type { DataSource, FieldRoles, PreviewTab, Workspace } from '@/types/source';
+import type { DataSource, FieldRoles, PreviewTab, SavedList, Workspace } from '@/types/source';
+
+function pathKey(path: string[]): string {
+  return path.join('.');
+}
 
 export interface ListStoreOptions {
   storage?: WorkspaceStorage;
@@ -33,6 +37,9 @@ export interface ListState {
   workspace: Workspace | null;
   items: ListItem[];
   comparisonEvents: ComparisonEvent[];
+  /** Other lists from the same document, kept while a different one is
+   *  active - see SavedList. */
+  savedLists: SavedList[];
   previewTab: PreviewTab;
   persistenceAvailable: boolean;
   /** Why the last save did or did not happen, for the status line. */
@@ -48,6 +55,13 @@ export interface ListState {
   hydrate(): void;
   startRanking(input: StartInput): void;
   applyEdits(input: StartInput): void;
+  /**
+   * Moves to a different list in the same document. The list being left is
+   * archived rather than discarded, and a list visited before is restored
+   * exactly as it was, so moving back and forth between lists never loses
+   * anything.
+   */
+  switchList(input: StartInput): void;
   /** Manual ordering restarts ranking from that order. See the spec, section 3. */
   reorderAndRestart(itemIds: string[]): void;
   setPreviewTab(tab: PreviewTab): void;
@@ -73,7 +87,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
   return createStore<ListState>()((set, get) => {
     /** Browser persistence is a convenience, never the system of record. */
     function persist(): void {
-      const { workspace, items, comparisonEvents, previewTab } = get();
+      const { workspace, items, comparisonEvents, savedLists, previewTab } = get();
       if (workspace === null) {
         storage.clear();
         return;
@@ -84,6 +98,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         workspace,
         items,
         comparisonEvents,
+        savedLists,
         ui: { previewTab },
       };
 
@@ -107,6 +122,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       workspace: null,
       items: [],
       comparisonEvents: [],
+      savedLists: [],
       previewTab: 'ranked',
       persistenceAvailable: storage.available,
       saveOutcome: null,
@@ -133,6 +149,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           workspace: snapshot.workspace,
           items: snapshot.items,
           comparisonEvents: snapshot.comparisonEvents,
+          savedLists: snapshot.savedLists,
           previewTab: snapshot.ui.previewTab,
           hydrated: true,
         });
@@ -203,6 +220,74 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
             updatedAt: timestamp,
           },
           items,
+        });
+        persist();
+      },
+
+      /**
+       * Moves to a different list in the same document. The list being left
+       * is archived into savedLists instead of discarded; a list visited
+       * before in this session is restored byte-for-byte, ratings and all.
+       */
+      switchList({ source, roles, alreadyRanked = false }: StartInput) {
+        const { workspace, items, comparisonEvents, savedLists } = get();
+        if (workspace === null) {
+          get().startRanking({ source, roles, alreadyRanked });
+          return;
+        }
+
+        const timestamp = now();
+        const leftKey = pathKey(workspace.source.arrayPath);
+        const targetKey = pathKey(source.arrayPath);
+
+        const archived: SavedList = {
+          workspaceId: workspace.id,
+          arrayPath: workspace.source.arrayPath,
+          roles: workspace.roles,
+          alreadyRanked: workspace.alreadyRanked,
+          items,
+          comparisonEvents,
+          createdAt: workspace.createdAt,
+          updatedAt: timestamp,
+        };
+        const otherSaved = savedLists.filter((list) => pathKey(list.arrayPath) !== leftKey);
+        const restored = otherSaved.find((list) => pathKey(list.arrayPath) === targetKey);
+
+        if (restored !== undefined) {
+          set({
+            workspace: {
+              id: restored.workspaceId,
+              source,
+              roles: restored.roles,
+              alreadyRanked: restored.alreadyRanked,
+              createdAt: restored.createdAt,
+              updatedAt: timestamp,
+            },
+            items: restored.items,
+            comparisonEvents: restored.comparisonEvents,
+            savedLists: [...otherSaved.filter((list) => list !== restored), archived],
+            previewTab: 'ranked',
+          });
+          persist();
+          return;
+        }
+
+        const newWorkspace: Workspace = {
+          id: createId(),
+          source,
+          roles,
+          alreadyRanked,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        };
+        const entries = entriesAtPath(source.document, source.arrayPath);
+
+        set({
+          workspace: newWorkspace,
+          items: entries.map((entry) => makeItem(newWorkspace.id, entry)),
+          comparisonEvents: [],
+          savedLists: [...otherSaved, archived],
+          previewTab: 'ranked',
         });
         persist();
       },
@@ -285,6 +370,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           workspace: null,
           items: [],
           comparisonEvents: [],
+          savedLists: [],
           previewTab: 'ranked',
           saveOutcome: null,
           lastSavedAt: undefined,

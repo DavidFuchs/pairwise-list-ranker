@@ -140,6 +140,7 @@ export function selectItemLabel(item: ListItem, labelField: string | undefined):
 export function selectProgress(
   items: ListItem[],
   events: ComparisonEvent[],
+  alreadyRanked = false,
 ): { activeItems: number; comparisons: number; skips: number; coverage: number } {
   const activeItems = items.filter((item) => item.active).length;
   const rated = events.filter((event) => event.outcome !== 'skip').length;
@@ -152,7 +153,11 @@ export function selectProgress(
   // line, and comparisons past it still sharpen the order - so capping here
   // would freeze the meter and tell the user their work had stopped counting.
   const target = activeItems < 2 ? 0 : Math.ceil(activeItems * Math.log2(activeItems));
-  const coverage = target === 0 ? 0 : rated / target;
+  const fromComparisons = target === 0 ? 0 : rated / target;
+  // A list declared already ranked starts fully credited - the order is
+  // trusted from the outset - and further comparisons still sharpen it past
+  // that point, the same as surplus work on any other list.
+  const coverage = target === 0 ? 0 : alreadyRanked ? 1 + fromComparisons : fromComparisons;
 
   return { activeItems, comparisons: rated, skips, coverage };
 }
