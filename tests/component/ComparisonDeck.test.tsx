@@ -58,6 +58,58 @@ describe('ComparisonDeck layout', () => {
   });
 });
 
+describe('the progress meter', () => {
+  function meter() {
+    return screen.getByRole('progressbar', { name: /ranking progress/i });
+  }
+
+  it('reports the percentage reached', () => {
+    setup();
+
+    expect(meter().getAttribute('aria-valuenow')).toBe('40');
+    expect(screen.getByText('40%')).toBeDefined();
+  });
+
+  it('shows no plating before the estimate is met', () => {
+    setup();
+
+    expect(meter().querySelector('[data-fill="surplus"]')).toBeNull();
+  });
+
+  it('counts past 100% once the estimate is beaten', () => {
+    setup({ progress: { activeItems: 3, comparisons: 9, skips: 0, coverage: 1.32 } });
+
+    expect(screen.getByText('132%')).toBeDefined();
+  });
+
+  it('plates the full bar in gold past the estimate', () => {
+    setup({ progress: { activeItems: 3, comparisons: 9, skips: 0, coverage: 1.32 } });
+
+    const surplus = meter().querySelector('[data-fill="surplus"]');
+
+    expect(surplus).not.toBeNull();
+    expect((surplus as HTMLElement).style.width).toBe('32%');
+  });
+
+  it('stops widening the plating once it is fully gold', () => {
+    setup({ progress: { activeItems: 3, comparisons: 30, skips: 0, coverage: 3.4 } });
+
+    const surplus = meter().querySelector('[data-fill="surplus"]');
+
+    expect((surplus as HTMLElement).style.width).toBe('100%');
+    expect(screen.getByText('340%')).toBeDefined();
+  });
+
+  it('keeps the progressbar contract valid while saying it went past', () => {
+    setup({ progress: { activeItems: 3, comparisons: 9, skips: 0, coverage: 1.32 } });
+
+    // aria-valuenow must stay within min/max, so the surplus is spoken instead.
+    expect(meter().getAttribute('aria-valuenow')).toBe('100');
+    expect(meter().getAttribute('aria-valuemax')).toBe('100');
+    expect(meter().getAttribute('aria-valuetext')).toMatch(/132%.*past the estimate/i);
+  });
+});
+
 describe('choosing a winner', () => {
   it('reports a win for the left item', async () => {
     const { onOutcome, user } = setup();

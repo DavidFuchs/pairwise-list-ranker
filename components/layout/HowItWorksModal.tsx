@@ -32,6 +32,19 @@ export function HowItWorksModal({ visible, onClose }: HowItWorksModalProps) {
         <ChooseSideDiagram />
       </Section>
 
+      <Section title="What the progress bar means">
+        <Text style={styles.body}>
+          It is an estimate, not a finish line. The bar weighs the choices you have made against
+          how many a list this size usually takes to settle - so it tracks how sure the order is
+          getting, not how much work is left. The ranking is worth reading long before the bar
+          fills, and carrying on past it is not wasted effort: the meter plates itself gold and
+          keeps counting, because every further comparison still sharpens the order. Skipped pairs
+          do not count toward it, since a skip tells the app nothing, and removing an item changes
+          the estimate, so the number can shift.
+        </Text>
+        <ProgressDiagram />
+      </Section>
+
       <Section title="How the ranking is built">
         <Text style={styles.body}>
           Every item starts even - unless you told it the list was already ranked best to worst,
@@ -86,6 +99,39 @@ function ChooseSideDiagram() {
       <Pressable accessibilityRole="button" accessibilityLabel="Example: skip this pair" style={styles.skip}>
         <Text style={styles.skipText}>Skip this pair</Text>
       </Pressable>
+    </View>
+  );
+}
+
+/** The status strip as it reads above the cards, before and after the estimate. */
+function ProgressDiagram() {
+  return (
+    <View style={styles.progressBlock} aria-hidden>
+      <ProgressRow caption="8 comparisons · 6 items" percent={52} />
+      <ProgressRow caption="21 comparisons · 6 items" percent={138} />
+    </View>
+  );
+}
+
+function ProgressRow({ caption, percent }: { caption: string; percent: number }) {
+  const filled = Math.min(100, percent);
+  const surplus = Math.min(100, Math.max(0, percent - 100));
+
+  return (
+    <View style={styles.progressRowBlock}>
+      <View style={styles.progressRow}>
+        <Text style={styles.progressStatus}>{caption}</Text>
+        <Text style={styles.progressPercent}>{`${percent}%`}</Text>
+      </View>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${filled}%` }]} dataSet={{ fill: 'meter' }} />
+        {surplus > 0 && (
+          <View
+            style={[styles.progressSurplus, { width: `${surplus}%` }]}
+            dataSet={{ fill: 'surplus' }}
+          />
+        )}
+      </View>
     </View>
   );
 }
@@ -175,6 +221,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: colors.textSecondary,
+  },
+
+  // Progress diagram: mirrors ComparisonDeck's status strip and meter.
+  progressBlock: { gap: space.md, paddingTop: space.sm },
+  progressRowBlock: { gap: space.sm },
+  progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  progressStatus: {
+    fontFamily: fonts.mono,
+    fontSize: 12,
+    letterSpacing: 0.4,
+    color: colors.textSecondary,
+  },
+  progressPercent: { fontFamily: fonts.mono, fontSize: 11, color: colors.textFaint },
+  progressTrack: {
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceMuted,
+    overflow: 'hidden',
+  },
+  progressFill: { height: 4, borderRadius: 999, backgroundColor: colors.accent },
+  progressSurplus: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: colors.surplus,
   },
 
   // Rating-shift diagram

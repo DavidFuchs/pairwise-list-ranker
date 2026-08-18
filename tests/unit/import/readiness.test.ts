@@ -30,6 +30,26 @@ describe('describeReadiness', () => {
     expect(result.reason).toMatch(/fix the/i);
   });
 
+  it('asks for a list rather than reporting a failure when nothing is typed yet', () => {
+    const result = describeReadiness({
+      ...base,
+      isBlank: true,
+      candidates: [],
+      selectedPath: null,
+      entries: [],
+    });
+
+    expect(result.ready).toBe(false);
+    expect(result.reason).toMatch(/to get started/i);
+    expect(result.reason).not.toMatch(/no list to rank/i);
+  });
+
+  it('keeps the empty box ahead of every other complaint', () => {
+    const result = describeReadiness({ ...base, isBlank: true, hasIssues: true, entries: [] });
+
+    expect(result.reason).toMatch(/to get started/i);
+  });
+
   it('blocks when nothing rankable was found', () => {
     const result = describeReadiness({ ...base, candidates: [], selectedPath: null, entries: [] });
 

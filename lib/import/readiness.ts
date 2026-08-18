@@ -8,6 +8,8 @@ export interface ReadinessInput {
   entries: unknown[];
   roles: FieldRoles;
   hasIssues: boolean;
+  /** An untouched box is not a failed import, and must not be described as one. */
+  isBlank?: boolean;
 }
 
 export interface Readiness {
@@ -21,7 +23,13 @@ export interface Readiness {
  * and its explanation can never disagree.
  */
 export function describeReadiness(input: ReadinessInput): Readiness {
-  const { candidates, selectedPath, entries, roles, hasIssues } = input;
+  const { candidates, selectedPath, entries, roles, hasIssues, isBlank = false } = input;
+
+  // First, because every other message would be a complaint about text the
+  // user has not written yet.
+  if (isBlank) {
+    return { ready: false, reason: 'Paste, type, or drop your list to get started.' };
+  }
 
   if (hasIssues) {
     return { ready: false, reason: 'Fix the errors above to continue.' };

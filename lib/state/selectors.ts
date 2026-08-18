@@ -147,8 +147,12 @@ export function selectProgress(
 
   // A rough "how far along am I" signal: comparisons made against the number
   // needed for a stable ordering, roughly n*log2(n).
+  //
+  // Deliberately not clamped at 1. The target is an estimate, not a finish
+  // line, and comparisons past it still sharpen the order - so capping here
+  // would freeze the meter and tell the user their work had stopped counting.
   const target = activeItems < 2 ? 0 : Math.ceil(activeItems * Math.log2(activeItems));
-  const coverage = target === 0 ? 0 : Math.min(1, rated / target);
+  const coverage = target === 0 ? 0 : rated / target;
 
   return { activeItems, comparisons: rated, skips, coverage };
 }

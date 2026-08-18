@@ -83,6 +83,11 @@ export function ComparisonDeck({
   }
 
   const percent = Math.round(progress.coverage * 100);
+  // Past the estimate the green bar is already full, so the surplus is laid
+  // over it as a second coat: a sliver at 101%, fully plated at 200% and
+  // beyond, while the number keeps climbing.
+  const filled = Math.min(100, percent);
+  const surplus = Math.min(100, Math.max(0, percent - 100));
   // Nothing to toggle when the items are bare strings.
   const hasDetails = [pair.left, pair.right].some((item) => hasDetailFields(item, sortField));
 
@@ -101,12 +106,21 @@ export function ComparisonDeck({
         <View
           style={styles.meter}
           role="progressbar"
-          aria-valuenow={percent}
+          // Clamped: a valuenow above valuemax is not a valid progressbar, so
+          // the surplus is spoken through valuetext instead of breaking it.
+          aria-valuenow={filled}
           aria-valuemin={0}
           aria-valuemax={100}
+          aria-valuetext={surplus > 0 ? `${percent}%, past the estimate` : `${percent}%`}
           aria-label="Ranking progress"
         >
-          <View style={[styles.meterFill, { width: `${percent}%` }]} dataSet={{ fill: 'meter' }} />
+          <View style={[styles.meterFill, { width: `${filled}%` }]} dataSet={{ fill: 'meter' }} />
+          {surplus > 0 && (
+            <View
+              style={[styles.meterSurplus, { width: `${surplus}%` }]}
+              dataSet={{ fill: 'surplus' }}
+            />
+          )}
         </View>
       </View>
 
@@ -241,6 +255,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   meterFill: { height: 4, borderRadius: 999, backgroundColor: colors.accent },
+  // Sits on top of the full green bar rather than beside it.
+  meterSurplus: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: colors.surplus,
+  },
   cards: {
     flexDirection: 'row',
     flexWrap: 'wrap',

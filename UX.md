@@ -32,8 +32,9 @@ The app is two screens, in the order the work actually happens.
 understood.
 - center stage: a large text area for pasting, typing, or dropping a file, with
   a `Read as` override beneath it
-- right: **What we found** - which array to rank, which field titles each card,
-  which field receives the new order, and the one primary action
+- right: **What we found** - which array to rank, what its current order means,
+  which field titles each card, which field receives the new order, and the one
+  primary action
 
 A pasted plain list resolves every question on its own, so the right column
 collapses to a count and a button. Questions appear only when the data is
@@ -226,6 +227,16 @@ The interface is mostly neutral. One indigo accent, warmed slightly towards
 violet in gradients, is the only saturated colour, and it is reserved for the
 primary action, the progress meter, and focus rings.
 
+There is exactly one exception, and it stays one: `--surplus`, a gold reserved
+solely for the progress meter past 100%. It earns a second saturated hue
+because it has to mean something the accent cannot - "you are beyond the
+estimate" - and because a state the user reaches only by doing extra work
+should look different from the state they were already in. Do not reach for it
+anywhere else; if a second thing ever needs gold, that is the signal to
+question the rule rather than quietly widen it. It is deliberately not
+`--warning`: nothing is wrong, and amber that means "careful" elsewhere must
+not mean "well done" here.
+
 Both themes are defined as CSS custom properties in `lib/themeCss.ts`. Dark mode
 follows the OS setting and can be overridden per visitor; because the palette is
 resolved by the stylesheet rather than by React state, both themes render the
@@ -289,7 +300,10 @@ Gradients are atmosphere, never decoration. Four, and no more:
    `--accent-gradient-end`. Deliberately a single hue family rather than a
    two-tone sweep, so it stays calm next to its twin on the other card.
 4. **Progress meter** - indigo to violet across the filled width, the one place
-   the full accent range appears.
+   the full accent range appears. Past 100% a gold second coat grows over the
+   full bar, complete at 200%: the target is an estimate, so the meter must
+   keep moving rather than sit frozen at full while the user is still working.
+   The percentage keeps counting up with no ceiling.
 
 Elevation is a two-layer shadow: a tight contact shadow plus a wide, soft cast
 shadow. On hover, cards lift 2px and the cast shadow picks up accent tint.
@@ -335,15 +349,25 @@ Hierarchy:
 - secondary: skip, drill-in, downloads, reorder grips
 - tertiary/destructive: remove item, a faint glyph until it is armed
 
-### Switches
+### Choices
 
-For a plain yes/no setting - not a choice between named options - use a true
-binary switch (`components/ui/Switch.tsx`): a pill track that fills with the
-accent colour and a thumb that slides to the far side when on. Label the
-setting in text beside it; the switch communicates state by position and
-colour alone, so it never needs words like "On"/"Off" inside it. Reserve the
-segmented `radiogroup` pattern (as in the theme control or field-role pickers)
-for choosing among several named options instead.
+Every setting on the data screen is a segmented `radiogroup` of named options,
+as in the theme control, the `Read as` tabs, and the field-role pickers: each
+option is a pill on the sunken surface, and the selected one takes the soft
+accent fill with accent text.
+
+This holds even for settings that are internally a boolean. A switch states
+its off position by omission, so an unlabelled control beside the words
+"already ranked" reads as a claim about the list rather than a question about
+it - and a switch whose track and thumb both sit within a few percent of the
+panel's own luminance states nothing at all. Naming both sides ("No particular
+order" / "Best to worst") makes the unchosen option visible and the question
+unmistakable. Where a boolean genuinely has no natural name for its off state,
+say so in words beside the control rather than reaching for an unlabelled one.
+
+The compact in-place toggles on the rank screen (`Show details`) are the
+exception: they carry their own verb, so they say what they will do next
+rather than what state they are in.
 
 ### Preview modes
 
@@ -400,6 +424,9 @@ Keyboard suggestions:
 No data yet:
 - the data screen is the empty state; there is nowhere else to land
 - a placeholder showing one item per line, and a hint that YAML and JSON work too
+- **What we found** reads `Nothing yet` rather than counting to zero, and asks
+  none of its questions. A control offering to configure a list that does not
+  exist is noise, so every picker withholds itself until its question is real
 
 Import parse error:
 - keep user text intact
@@ -408,8 +435,15 @@ Import parse error:
 
 Blocked from ranking:
 - one message, from describeReadiness, phrased as the next thing to do
+- an empty box comes first and asks for a list; it is not an import that failed,
+  and must never be reported as one
 - nothing rankable found; only one item; no label field chosen
 - the label picker asks for itself, so the message never says it twice
+- the message is plain secondary text above the disabled action. It is the next
+  step, not an alarm and not the primary action, so it takes neither the danger
+  colour nor the accent - and no container: a sunken fill inside a hairline
+  border is this app's word for a control, so read-only copy wearing it reads as
+  a field waiting to be typed into
 
 Local persistence unavailable:
 - app should still function fully in memory

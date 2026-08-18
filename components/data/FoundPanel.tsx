@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { AlreadyRankedToggle } from '@/components/data/AlreadyRankedToggle';
 import { ArrayPicker } from '@/components/data/ArrayPicker';
 import { LabelPicker } from '@/components/data/LabelPicker';
+import { OrderPicker } from '@/components/data/OrderPicker';
 import { PositionPicker } from '@/components/data/PositionPicker';
 import { Button } from '@/components/ui/Button';
 import type { SourceAnalysis } from '@/lib/import/analyze';
@@ -20,6 +20,8 @@ export interface FoundPanelProps {
   alreadyRanked: boolean;
   /** The entries of the selected array, resolved by the screen. */
   entries: unknown[];
+  /** True while the source box is untouched, which is not a failed import. */
+  isBlank: boolean;
   ctaLabel: string;
   onSelectPath: (path: string[]) => void;
   onRolesChange: (roles: FieldRoles) => void;
@@ -29,6 +31,10 @@ export interface FoundPanelProps {
 
 function isPlainObject(value: unknown): value is ComplexItemValue {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function countOf(amount: number, noun: string): string {
+  return `${amount} ${amount === 1 ? noun : `${noun}s`}`;
 }
 
 /**
@@ -41,6 +47,7 @@ export function FoundPanel({
   roles,
   alreadyRanked,
   entries,
+  isBlank,
   ctaLabel,
   onSelectPath,
   onRolesChange,
@@ -54,6 +61,7 @@ export function FoundPanel({
     entries,
     roles,
     hasIssues: analysis.issues.length > 0,
+    isBlank,
   });
 
   // The label picker asks for itself, right beside the options. Repeating that
@@ -65,15 +73,21 @@ export function FoundPanel({
       <View style={styles.header}>
         <Text style={styles.title}>What we found</Text>
         <Text style={styles.subtitle}>
-          {entries.length > 0 || analysis.candidates.length <= 1
-            ? `${entries.length} items`
-            : `${analysis.candidates.length} lists`}
+          {isBlank
+            ? 'Nothing yet'
+            : entries.length > 0 || analysis.candidates.length <= 1
+              ? countOf(entries.length, 'item')
+              : countOf(analysis.candidates.length, 'list')}
         </Text>
       </View>
 
       <ArrayPicker candidates={analysis.candidates} value={selectedPath} onChange={onSelectPath} />
 
-      <AlreadyRankedToggle value={alreadyRanked} onChange={onAlreadyRankedChange} />
+      <OrderPicker
+        value={alreadyRanked}
+        itemCount={entries.length}
+        onChange={onAlreadyRankedChange}
+      />
 
       {objects.length > 0 && (
         <LabelPicker
@@ -136,6 +150,10 @@ const styles = StyleSheet.create({
   },
   subtitle: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
   warning: { fontFamily: fonts.body, fontSize: 12, color: colors.warningText },
-  reason: { fontFamily: fonts.body, fontSize: 13, color: colors.accentStrong },
+  // Plain text, like every other hint here. A sunken fill inside a hairline
+  // border is this app's word for "you can interact with this" - it is the
+  // editor, the format tabs, and every picker option - so a read-only message
+  // wearing it reads as a field to type in, especially above a submit button.
+  reason: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.textSecondary },
   cta: { alignSelf: 'stretch' },
 });

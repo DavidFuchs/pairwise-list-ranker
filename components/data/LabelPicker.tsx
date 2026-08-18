@@ -91,7 +91,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
   },
-  prompt: { fontFamily: fonts.body, fontSize: 13, color: colors.accentStrong },
+  // A question, not the primary action, so it stays off the accent colour.
+  prompt: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
   options: { gap: space.xs },
   option: {
     gap: 2,

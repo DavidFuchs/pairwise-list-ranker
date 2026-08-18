@@ -15,6 +15,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof FoundPanel>> = {})
     selectedPath: ['movies'],
     roles: { labelField: 'title' },
     alreadyRanked: false,
+    isBlank: false,
     entries: [
       { title: 'Alien', order: 2 },
       { title: 'Arrival', order: 1 },
@@ -126,18 +127,22 @@ describe('FoundPanel', () => {
     expect(screen.getByRole('button', { name: /apply edits/i })).toBeDefined();
   });
 
-  it('defaults the already-ranked switch to off', () => {
+  it('defaults the order choice to no particular order', () => {
     setup();
 
     expect(
-      screen.getByRole('switch', { name: /already ranked, best to worst/i }).getAttribute('aria-checked'),
-    ).toBe('false');
+      screen
+        .getByRole('radio', { name: /the list is in no particular order/i })
+        .getAttribute('aria-checked'),
+    ).toBe('true');
   });
 
-  it('reports switching the already-ranked toggle', async () => {
+  it('reports choosing an already-ranked order', async () => {
     const { onAlreadyRankedChange, user } = setup();
 
-    await user.click(screen.getByRole('switch', { name: /already ranked, best to worst/i }));
+    await user.click(
+      screen.getByRole('radio', { name: /the list is already ranked, best to worst/i }),
+    );
 
     expect(onAlreadyRankedChange).toHaveBeenCalledWith(true);
   });
@@ -146,7 +151,32 @@ describe('FoundPanel', () => {
     setup({ alreadyRanked: true });
 
     expect(
-      screen.getByRole('switch', { name: /already ranked, best to worst/i }).getAttribute('aria-checked'),
+      screen
+        .getByRole('radio', { name: /the list is already ranked, best to worst/i })
+        .getAttribute('aria-checked'),
     ).toBe('true');
+  });
+
+  it('does not ask about order when there is no list to order', () => {
+    setup({ isBlank: true, analysis: analyzeSource('', 'auto'), selectedPath: null, entries: [] });
+
+    expect(screen.queryByRole('radio', { name: /the list is in no particular order/i })).toBeNull();
+  });
+
+  it('asks for a list instead of counting nothing when the box is empty', () => {
+    setup({ isBlank: true, analysis: analyzeSource('', 'auto'), selectedPath: null, entries: [] });
+
+    expect(screen.getByText(/nothing yet/i)).toBeDefined();
+    expect(screen.getByText(/to get started/i)).toBeDefined();
+    expect(screen.queryByText(/0 items/i)).toBeNull();
+    expect(
+      screen.getByRole('button', { name: /start ranking/i }).getAttribute('aria-disabled'),
+    ).toBe('true');
+  });
+
+  it('counts a single item without saying "1 items"', () => {
+    setup({ entries: [{ title: 'Alien' }] });
+
+    expect(screen.getByText('1 item')).toBeDefined();
   });
 });

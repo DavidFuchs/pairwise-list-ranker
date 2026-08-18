@@ -5,6 +5,7 @@ import {
   selectContextLine,
   selectCurrentPair,
   selectExportText,
+  selectProgress,
   selectRanking,
   selectRemovedCount,
   selectWorkspaceView,
@@ -59,6 +60,51 @@ describe('selectWorkspaceView', () => {
     const second = selectWorkspaceView(items, bWins);
 
     expect(second).not.toBe(first);
+  });
+});
+
+describe('selectProgress', () => {
+  /** n * log2(n) for three items is ~4.75, so five rated comparisons pass it. */
+  function comparisons(count: number, outcome: ComparisonEvent['outcome'] = 'left') {
+    return Array.from({ length: count }, (_, index) => ({
+      id: `event-${index}`,
+      listId: 'list-1',
+      leftItemId: 'item-1',
+      rightItemId: 'item-2',
+      outcome,
+      createdAt: NOW,
+    })) satisfies ComparisonEvent[];
+  }
+
+  it('counts active items and rated comparisons', () => {
+    const progress = selectProgress(items, comparisons(2));
+
+    expect(progress.activeItems).toBe(3);
+    expect(progress.comparisons).toBe(2);
+  });
+
+  it('leaves skips out of the count, because they say nothing about the order', () => {
+    const progress = selectProgress(items, [...comparisons(2), ...comparisons(1, 'skip')]);
+
+    expect(progress.comparisons).toBe(2);
+    expect(progress.skips).toBe(1);
+  });
+
+  it('passes 1 once the estimate is beaten, so surplus work still registers', () => {
+    const progress = selectProgress(items, comparisons(10));
+
+    expect(progress.coverage).toBeGreaterThan(1);
+  });
+
+  it('keeps climbing with every comparison past the estimate', () => {
+    const at10 = selectProgress(items, comparisons(10)).coverage;
+    const at12 = selectProgress(items, comparisons(12)).coverage;
+
+    expect(at12).toBeGreaterThan(at10);
+  });
+
+  it('is zero when there is nothing to rank', () => {
+    expect(selectProgress([items[0]!], []).coverage).toBe(0);
   });
 });
 

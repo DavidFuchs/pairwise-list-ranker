@@ -116,6 +116,7 @@ export default function DataScreen() {
             roles={draft.roles}
             alreadyRanked={draft.alreadyRanked}
             entries={draft.entries}
+            isBlank={rawTextIsBlank}
             ctaLabel={editing ? 'Apply edits' : 'Start ranking'}
             onSelectPath={draft.selectPath}
             onRolesChange={draft.setRoles}

@@ -25,6 +25,8 @@ export const colors = {
   accentSoft: 'var(--accent-soft)',
   accentSoftBorder: 'var(--accent-soft-border)',
   violet: 'var(--violet)',
+  surplus: 'var(--surplus)',
+  surplusStrong: 'var(--surplus-strong)',
   success: 'var(--success)',
   successText: 'var(--success-text)',
   warning: 'var(--warning)',

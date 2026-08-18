@@ -32,6 +32,8 @@ const LIGHT_TOKENS = `
   --accent-soft-border: #B3EE8E;
   --violet: #A6D608;
   --accent-gradient-end: #7BDE1A;
+  --surplus: #C98A0B;
+  --surplus-strong: #E0A93A;
   --success: #0F9F6E;
   --success-text: #0A7350;
   --warning: #D28A12;
@@ -58,7 +60,7 @@ const DARK_TOKENS = `
   --surface-card-top: #1B1C1F;
   --surface-card-bottom: #16171A;
   --border: #2B2C30;
-  --border-strong: #3B3D4200;
+  --border-strong: #3B3D42;
   --text-primary: #EDEDEF;
   --text-secondary: #A2A4AA;
   --text-faint: #77797F;
@@ -69,6 +71,8 @@ const DARK_TOKENS = `
   --accent-soft-border: #2C5A1B;
   --violet: #C6FF00;
   --accent-gradient-end: #8CFF3E;
+  --surplus: #FFC53D;
+  --surplus-strong: #FFA71A;
   --success: #35C08D;
   --success-text: #5FD3A9;
   --warning: #E0A64A;
@@ -129,6 +133,15 @@ html, body { background-color: var(--canvas); }
 
 [data-fill='meter'] {
   background-image: linear-gradient(90deg, var(--accent) 0%, var(--violet) 100%);
+}
+
+/*
+ * The one deliberate exception to the single-accent rule, and only here: past
+ * the estimate the meter plates itself in gold, so surplus comparisons read as
+ * earned rather than as a bar stuck at full.
+ */
+[data-fill='surplus'] {
+  background-image: linear-gradient(90deg, var(--surplus-strong) 0%, var(--surplus) 100%);
 }
 
 [data-surface='sunken'] {
