@@ -5,6 +5,7 @@ import { ApplySummary } from '@/components/data/ApplySummary';
 import { FoundPanel } from '@/components/data/FoundPanel';
 import { SourceInput } from '@/components/data/SourceInput';
 import { AppShell } from '@/components/layout/AppShell';
+import { PageNav } from '@/components/layout/PageNav';
 import { Button } from '@/components/ui/Button';
 import { buildExport, buildExportDocument } from '@/lib/export/buildExport';
 import { useSourceDraft } from '@/lib/hooks/useSourceDraft';
@@ -174,30 +175,32 @@ export default function DataScreen() {
     <AppShell
       listName={editing ? 'Editing your data' : 'New list'}
       statusText={editing ? 'Editing your data' : 'Nothing saved yet'}
-      headerAction={
-        editing ? (
-          <Button
-            label="Back to ranking"
-            accessibilityLabel="Back to ranking"
-            variant="ghost"
-            size="sm"
-            onPress={() => router.replace('/rank')}
-          />
-        ) : undefined
-      }
       stage={
-        <SourceInput
-          value={draft.rawText}
-          onChange={(text) => {
-            setPending(null);
-            draft.setRawText(text);
-          }}
-          override={draft.override}
-          onOverrideChange={draft.setOverride}
-          format={draft.analysis.format}
-          issues={rawTextIsBlank ? [] : draft.analysis.issues}
-          availableOverrides={draft.availableOverrides}
-        />
+        <>
+          {editing && (
+            <PageNav>
+              <Button
+                label="Back to ranking ›"
+                accessibilityLabel="Back to ranking"
+                variant="secondary"
+                size="sm"
+                onPress={() => router.replace('/rank')}
+              />
+            </PageNav>
+          )}
+          <SourceInput
+            value={draft.rawText}
+            onChange={(text) => {
+              setPending(null);
+              draft.setRawText(text);
+            }}
+            override={draft.override}
+            onOverrideChange={draft.setOverride}
+            format={draft.analysis.format}
+            issues={rawTextIsBlank ? [] : draft.analysis.issues}
+            availableOverrides={draft.availableOverrides}
+          />
+        </>
       }
       preview={
         pending === null ? (

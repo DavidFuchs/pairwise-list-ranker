@@ -15,8 +15,12 @@ export interface AppShellProps {
   statusText: string;
   /** Omitted on the data screen, where there is nothing to reset yet. */
   onReset?: () => void;
-  /** e.g. a "Back to ranking" link. */
-  headerAction?: ReactNode;
+  /**
+   * Replaces the plain list-name text with an interactive control, e.g.
+   * ListSwitcher on the rank screen. Falls back to plain text when omitted,
+   * since not every screen has other lists to jump between.
+   */
+  listSwitcher?: ReactNode;
   rail?: ReactNode;
   stage: ReactNode;
   preview: ReactNode;
@@ -32,7 +36,7 @@ export function AppShell({
   listName,
   statusText,
   onReset,
-  headerAction,
+  listSwitcher,
   rail,
   stage,
   preview,
@@ -45,14 +49,15 @@ export function AppShell({
       <View style={styles.header} role="banner">
         <View style={styles.brand}>
           <Text style={styles.wordmark}>Pairwise</Text>
-          <Text style={styles.listName} numberOfLines={1}>
-            {listName}
-          </Text>
+          {listSwitcher ?? (
+            <Text style={styles.listName} numberOfLines={1}>
+              {listName}
+            </Text>
+          )}
         </View>
 
         <View style={styles.headerActions}>
           <Text style={styles.status}>{statusText}</Text>
-          {headerAction}
           <Button
             label="How it works"
             accessibilityLabel="How this app works"

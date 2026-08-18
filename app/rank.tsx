@@ -3,9 +3,14 @@ import { useEffect } from 'react';
 
 import { ComparisonDeck } from '@/components/comparison/ComparisonDeck';
 import { AppShell } from '@/components/layout/AppShell';
+import { ListSwitcher } from '@/components/layout/ListSwitcher';
+import type { ListSwitcherOption } from '@/components/layout/ListSwitcher';
+import { PageNav } from '@/components/layout/PageNav';
 import { PreviewPane } from '@/components/preview/PreviewPane';
 import { Button } from '@/components/ui/Button';
 import { downloadName, exportFilename } from '@/lib/export/filenames';
+import { entriesAtPath, findArrayCandidates } from '@/lib/import/arrayCandidates';
+import { resolveRoles } from '@/lib/import/roles';
 import {
   selectAvailableTabs,
   selectContextLine,
@@ -15,13 +20,14 @@ import {
   selectWorkspaceView,
 } from '@/lib/state/selectors';
 import { listStore, useListStore } from '@/lib/state/useListStore';
-import type { SourceFormat } from '@/types/source';
+import type { DataSource, SourceFormat } from '@/types/source';
 
 export default function RankScreen() {
   const router = useRouter();
   const workspace = useListStore((state) => state.workspace);
   const items = useListStore((state) => state.items);
   const comparisonEvents = useListStore((state) => state.comparisonEvents);
+  const savedLists = useListStore((state) => state.savedLists);
   const previewTab = useListStore((state) => state.previewTab);
   const hydrated = useListStore((state) => state.hydrated);
   const persistenceAvailable = useListStore((state) => state.persistenceAvailable);
@@ -55,17 +61,47 @@ export default function RankScreen() {
 
   if (workspace === null) return null;
 
+  const { candidates } = findArrayCandidates(workspace.source.document);
+  const listOptions: ListSwitcherOption[] = candidates.map((candidate) => {
+    const key = candidate.path.join('.');
+    const option = { path: candidate.path, count: candidate.count, entryKind: candidate.entryKind };
+
+    if (key === workspace.source.arrayPath.join('.')) {
+      const activeProgress = selectProgress(items, comparisonEvents, workspace.alreadyRanked);
+      return { ...option, coverage: activeProgress.coverage > 0 ? activeProgress.coverage : undefined };
+    }
+
+    const saved = savedLists.find((list) => list.arrayPath.join('.') === key);
+    if (saved === undefined) return option;
+    const savedProgress = selectProgress(saved.items, saved.comparisonEvents, saved.alreadyRanked);
+    return { ...option, coverage: savedProgress.coverage > 0 ? savedProgress.coverage : undefined };
+  });
+
+  function switchToList(path: string[]) {
+    if (workspace === null) return;
+    const key = path.join('.');
+    const source: DataSource = { ...workspace.source, arrayPath: path };
+
+    const saved = savedLists.find((list) => list.arrayPath.join('.') === key);
+    if (saved !== undefined) {
+      listStore.getState().switchList({ source, roles: saved.roles, alreadyRanked: saved.alreadyRanked });
+      return;
+    }
+
+    const roles = resolveRoles(entriesAtPath(workspace.source.document, path), {});
+    listStore.getState().switchList({ source, roles, alreadyRanked: false });
+  }
+
   return (
     <AppShell
       listName={selectContextLine(workspace)}
       statusText={statusText}
-      headerAction={
-        <Button
-          label="Edit data"
-          accessibilityLabel="Edit data"
-          variant="ghost"
-          size="sm"
-          onPress={() => router.replace('/')}
+      listSwitcher={
+        <ListSwitcher
+          currentPath={workspace.source.arrayPath}
+          caption={selectContextLine(workspace)}
+          options={listOptions}
+          onSelect={switchToList}
         />
       }
       onReset={() => {
@@ -73,16 +109,27 @@ export default function RankScreen() {
         router.replace('/');
       }}
       stage={
-        <ComparisonDeck
-          pair={view.pair}
-          progress={progress}
-          sortField={workspace.roles.labelField}
-          onOutcome={(outcome) => {
-            if (view.pair === null) return;
-            listStore.getState().recordComparison(view.pair.left.id, view.pair.right.id, outcome);
-          }}
-          onDelete={(itemId) => listStore.getState().removeItem(itemId)}
-        />
+        <>
+          <PageNav>
+            <Button
+              label="‹ Edit data"
+              accessibilityLabel="Edit data"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.replace('/')}
+            />
+          </PageNav>
+          <ComparisonDeck
+            pair={view.pair}
+            progress={progress}
+            sortField={workspace.roles.labelField}
+            onOutcome={(outcome) => {
+              if (view.pair === null) return;
+              listStore.getState().recordComparison(view.pair.left.id, view.pair.right.id, outcome);
+            }}
+            onDelete={(itemId) => listStore.getState().removeItem(itemId)}
+          />
+        </>
       }
       preview={
         <PreviewPane

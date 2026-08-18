@@ -75,8 +75,8 @@ export function ArrayPicker({
       })}
 
       <Text style={styles.hint}>
-        You can rank each list separately and switch between them anytime — click “Edit data” on the
-        ranking screen and pick again here. Nothing is lost when you switch.
+        You can rank each list separately and switch between them anytime — on the ranking screen,
+        click the list name in the top-left corner. Nothing is lost when you switch.
       </Text>
     </View>
   );
