@@ -3,6 +3,7 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ObjectDrilldown } from '@/components/comparison/ObjectDrilldown';
 import { StrongChoiceButton } from '@/components/comparison/StrongChoiceButton';
+import { TrashIcon } from '@/components/ui/TrashIcon';
 import { useReducedMotion } from '@/lib/hooks/useReducedMotion';
 import { selectItemLabel } from '@/lib/state/selectors';
 import { colors, fonts, motion, radius, space, typeScale } from '@/lib/theme';
@@ -110,7 +111,7 @@ export function ItemCard({
             }}
             style={styles.removeButton}
           >
-            <Text style={styles.removeGlyph}>×</Text>
+            <TrashIcon />
           </Pressable>
         )}
       </View>
@@ -224,7 +225,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.sm,
   },
-  removeGlyph: { fontFamily: fonts.body, fontSize: 15, lineHeight: 18, color: colors.textFaint },
   title: {
     flex: 1,
     ...typeScale.cardTitle,
