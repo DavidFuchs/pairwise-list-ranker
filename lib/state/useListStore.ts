@@ -48,6 +48,13 @@ export interface ListState {
   hydrated: boolean;
   /** True once the app has bounced a restored workspace to /rank. */
   resumed: boolean;
+  /**
+   * A list picked from the toolbar's list switcher that has never been
+   * configured before - the data screen preselects it so the user can choose
+   * its fields and order before switching, rather than that being guessed.
+   * Cleared once the data screen has read it.
+   */
+  pendingSwitchPath: string[] | null;
 
   ranking(): RankedItem<ListItem>[];
   currentPair(): ActivePair | null;
@@ -69,6 +76,8 @@ export interface ListState {
   removeItem(itemId: string): void;
   markResumed(): void;
   reset(): void;
+  requestListSwitch(path: string[]): void;
+  clearPendingSwitch(): void;
 }
 
 export type ListStore = StoreApi<ListState>;
@@ -128,6 +137,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       saveOutcome: null,
       hydrated: false,
       resumed: false,
+      pendingSwitchPath: null,
 
       ranking() {
         const { items, comparisonEvents, workspace } = get();
@@ -363,6 +373,14 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
 
       markResumed() {
         set({ resumed: true });
+      },
+
+      requestListSwitch(path: string[]) {
+        set({ pendingSwitchPath: path });
+      },
+
+      clearPendingSwitch() {
+        set({ pendingSwitchPath: null });
       },
 
       reset() {

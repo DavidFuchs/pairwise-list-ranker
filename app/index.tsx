@@ -57,6 +57,7 @@ function buildDraftSeed(): SourceDraftSeed | undefined {
     roles: state.workspace.roles,
     alreadyRanked: state.workspace.alreadyRanked,
     knownLists,
+    initialSelectedPath: state.pendingSwitchPath ?? undefined,
   };
 }
 
@@ -78,6 +79,13 @@ export default function DataScreen() {
 
   useEffect(() => {
     listStore.getState().hydrate();
+  }, []);
+
+  // The list switcher's preselection is only meant for the render that reads
+  // it into the seed above - clearing it here keeps a later, ordinary visit
+  // to this screen from preselecting a stale list.
+  useEffect(() => {
+    listStore.getState().clearPendingSwitch();
   }, []);
 
   // A saved workspace resumes straight into ranking, but only once, so that

@@ -24,6 +24,15 @@ export interface SourceDraftSeed {
    *  revisiting one of them defaults to its own real answer, not "no
    *  particular order" just because it isn't the list this screen opened on. */
   knownLists?: Record<string, boolean>;
+  /**
+   * Preselects a different candidate than arrayPath - used when the screen is
+   * opened specifically to choose this list (e.g. the toolbar's list switcher,
+   * for a list never configured before). Deliberately separate from arrayPath:
+   * that field still names the list actually being edited, so roles and
+   * alreadyRanked keep defaulting fresh for a list that has no answer yet,
+   * rather than inheriting the edited list's.
+   */
+  initialSelectedPath?: string[];
 }
 
 export interface SourceDraft {
@@ -85,7 +94,9 @@ interface AlreadyRankedOverride {
 export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
   const [rawText, setRawText] = useState(seed?.rawText ?? '');
   const [override, setOverrideState] = useState<FormatOverride>('auto');
-  const [chosenPath, setChosenPath] = useState<string[] | null>(seed?.arrayPath ?? null);
+  const [chosenPath, setChosenPath] = useState<string[] | null>(
+    seed?.initialSelectedPath ?? seed?.arrayPath ?? null,
+  );
   const [alreadyRankedOverride, setAlreadyRankedOverride] =
     useState<AlreadyRankedOverride | null>(null);
   const [rolesOverride, setRolesOverride] = useState<RolesOverride>({});

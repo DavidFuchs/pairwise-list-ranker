@@ -13,6 +13,12 @@ export interface ListSwitcherOption {
   entryKind: 'object' | 'scalar';
   /** Ranking progress for this list, if it has any yet. */
   coverage?: number;
+  /**
+   * False for a list never chosen before - its label field and ranked-order
+   * answer aren't known, so selecting it opens the data screen to ask
+   * instead of switching straight to a guess.
+   */
+  configured: boolean;
 }
 
 export interface ListSwitcherProps {
@@ -57,8 +63,8 @@ export function ListSwitcher({ currentPath, caption, options, onSelect }: ListSw
 
       <Modal visible={open} onClose={() => setOpen(false)} title="Switch list">
         <Text style={styles.hint}>
-          This data has {options.length} lists you can rank. Choose one to switch to it — nothing
-          is lost, each list keeps its own progress.
+          This data has {options.length} lists you can rank. An already set-up list switches to it
+          right away; a new one opens the editor first so you can choose its fields and order.
         </Text>
 
         <View style={styles.options} role="radiogroup" aria-label="Which list to rank">
@@ -70,7 +76,11 @@ export function ListSwitcher({ currentPath, caption, options, onSelect }: ListSw
               <Pressable
                 key={key}
                 role="radio"
-                accessibilityLabel={`Rank the list at ${formatPath(option.path)}`}
+                accessibilityLabel={
+                  option.configured || selected
+                    ? `Rank the list at ${formatPath(option.path)}`
+                    : `Rank the list at ${formatPath(option.path)} - opens the data screen to set it up first`
+                }
                 aria-checked={selected}
                 onPress={() => {
                   setOpen(false);
@@ -89,7 +99,9 @@ export function ListSwitcher({ currentPath, caption, options, onSelect }: ListSw
                   <Text style={styles.optionMeta}>
                     {selected
                       ? 'Ranking now'
-                      : `${option.count} ${option.entryKind === 'object' ? 'objects' : 'texts'}`}
+                      : option.configured
+                        ? `${option.count} ${option.entryKind === 'object' ? 'objects' : 'texts'}`
+                        : 'Not set up yet'}
                   </Text>
                 </View>
                 {option.coverage !== undefined && (

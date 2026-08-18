@@ -9,8 +9,7 @@ import { PageNav } from '@/components/layout/PageNav';
 import { PreviewPane } from '@/components/preview/PreviewPane';
 import { Button } from '@/components/ui/Button';
 import { downloadName, exportFilename } from '@/lib/export/filenames';
-import { entriesAtPath, findArrayCandidates } from '@/lib/import/arrayCandidates';
-import { resolveRoles } from '@/lib/import/roles';
+import { findArrayCandidates } from '@/lib/import/arrayCandidates';
 import {
   selectAvailableTabs,
   selectContextLine,
@@ -68,28 +67,40 @@ export default function RankScreen() {
 
     if (key === workspace.source.arrayPath.join('.')) {
       const activeProgress = selectProgress(items, comparisonEvents, workspace.alreadyRanked);
-      return { ...option, coverage: activeProgress.coverage > 0 ? activeProgress.coverage : undefined };
+      return {
+        ...option,
+        coverage: activeProgress.coverage > 0 ? activeProgress.coverage : undefined,
+        configured: true,
+      };
     }
 
     const saved = savedLists.find((list) => list.arrayPath.join('.') === key);
-    if (saved === undefined) return option;
+    if (saved === undefined) return { ...option, configured: false };
     const savedProgress = selectProgress(saved.items, saved.comparisonEvents, saved.alreadyRanked);
-    return { ...option, coverage: savedProgress.coverage > 0 ? savedProgress.coverage : undefined };
+    return {
+      ...option,
+      coverage: savedProgress.coverage > 0 ? savedProgress.coverage : undefined,
+      configured: true,
+    };
   });
 
+  // A list already configured (the active one, or one parked in savedLists)
+  // switches to instantly - its fields and ranked-order answer are already
+  // known. A list never chosen before has neither, so rather than guess them
+  // silently, this hands off to the data screen with that list preselected.
   function switchToList(path: string[]) {
     if (workspace === null) return;
     const key = path.join('.');
-    const source: DataSource = { ...workspace.source, arrayPath: path };
 
     const saved = savedLists.find((list) => list.arrayPath.join('.') === key);
     if (saved !== undefined) {
+      const source: DataSource = { ...workspace.source, arrayPath: path };
       listStore.getState().switchList({ source, roles: saved.roles, alreadyRanked: saved.alreadyRanked });
       return;
     }
 
-    const roles = resolveRoles(entriesAtPath(workspace.source.document, path), {});
-    listStore.getState().switchList({ source, roles, alreadyRanked: false });
+    listStore.getState().requestListSwitch(path);
+    router.replace('/');
   }
 
   return (
