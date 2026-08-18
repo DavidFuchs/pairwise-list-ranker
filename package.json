@@ -7,6 +7,7 @@
     "start": "expo start",
     "web": "expo start --web",
     "build:web": "expo export --platform web",
+    "icons": "node scripts/generate-icons.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "NODE_OPTIONS=--no-experimental-webstorage vitest run",

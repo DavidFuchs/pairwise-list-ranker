@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Pairwise List Ranker">
+  <defs>
+    <linearGradient id="winner" x1="0.05" y1="0" x2="0.78" y2="1">
+      <stop offset="0" stop-color="#45D124"/>
+      <stop offset="1" stop-color="#7BDE1A"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="12" fill="#F6F6F7"/>
+  <rect x="10" y="27" width="18" height="22" rx="4" fill="#8E9096"/>
+  <rect x="36" y="15" width="18" height="30" rx="4" fill="url(#winner)"/>
+</svg>
