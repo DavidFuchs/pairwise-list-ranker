@@ -176,9 +176,10 @@ const styles = StyleSheet.create({
   scrollBody: { padding: space.lg },
   body: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg, alignItems: 'flex-start' },
   rail: { flexGrow: 1, flexShrink: 1, flexBasis: 260, minWidth: 240, maxWidth: 340, gap: space.md },
-  // The editor benefits from extra width up to a point, but past that the
-  // spare space is better spent widening the preview card so its controls
-  // (e.g. the order-picker buttons) have room to sit on one line.
-  stage: { flexGrow: 1, flexShrink: 1, flexBasis: 420, minWidth: 320, maxWidth: 640, gap: space.lg },
-  preview: { flexGrow: 2, flexShrink: 1, flexBasis: 400, minWidth: 360, minHeight: 520 },
+  // Stage claims spare width first so the rank screen's two comparison cards
+  // stay side by side (they need ~620px to avoid wrapping); past its cap the
+  // spare space goes to the preview card so its controls (e.g. the
+  // order-picker buttons) have room to sit on one line.
+  stage: { flexGrow: 2, flexShrink: 1, flexBasis: 420, minWidth: 320, maxWidth: 640, gap: space.lg },
+  preview: { flexGrow: 1, flexShrink: 1, flexBasis: 400, minWidth: 360, minHeight: 520 },
 });
