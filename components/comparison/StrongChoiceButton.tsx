@@ -28,7 +28,10 @@ export function StrongChoiceButton({ label, onPress }: StrongChoiceButtonProps) 
       dataSet={{ strong: 'true' }}
       style={styles.button}
     >
-      <Text style={styles.label}>Much better</Text>
+      {/* Hook for the hot-state colour, which the stylesheet owns. */}
+      <Text style={styles.label} dataSet={{ strongLabel: 'true' }}>
+        Much better
+      </Text>
     </Pressable>
   );
 }

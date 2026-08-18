@@ -36,6 +36,16 @@ const LIGHT_TOKENS = `
   --accent-gradient-end: #7BDE1A;
   --surplus: #C98A0B;
   --surplus-strong: #E0A93A;
+  /*
+   * Metal at temperature, for the much-better button on hover. The body goes
+   * dark and the rim runs bright, which is both how hot metal actually reads
+   * and the only way the pale label clears WCAG AA on it: white on the lighter
+   * greens tried first came in at 2.3:1, and 12px bold is not large text.
+   */
+  --heat-core: #237F0F;
+  --heat-edge: #17610A;
+  --heat-rim: #45D124;
+  --heat-label: #FFFFFF;
   --success: #0F9F6E;
   --success-text: #0A7350;
   --warning: #D28A12;
@@ -76,6 +86,11 @@ const DARK_TOKENS = `
   --accent-gradient-end: #8CFF3E;
   --surplus: #FFC53D;
   --surplus-strong: #FFA71A;
+  /* On black the rim can go white-hot, which is where most of the heat reads. */
+  --heat-core: #297912;
+  --heat-edge: #143009;
+  --heat-rim: #BFFFA6;
+  --heat-label: #F2FFEA;
   --success: #35C08D;
   --success-text: #5FD3A9;
   --warning: #E0A64A;
@@ -179,154 +194,69 @@ html, body { background-color: var(--canvas); }
 [data-surface='card']:hover [data-hint='choose'] { opacity: 1; }
 
 /*
- * The emphasis action firms up as you approach it, and catches fire. Pure
- * decoration, spent deliberately on the most emphatic verdict the app offers -
- * and only while the pointer is on it, so nothing burns unattended.
+ * The emphasis action comes up to temperature.
  *
- * Two parts, because a fire is two things: the light it throws, and the fire
- * itself.
+ * An earlier version drew literal flames here - tongues of gradient licking
+ * off the top edge - and it looked cheap, for a reason worth keeping: fire is
+ * high-detail imagery, and at 110x34px there is no room for detail, so any
+ * flame collapses into a few blurred blobs. Every other surface in this app is
+ * flat and precise; a small illustrated fire on the most important control
+ * fights that.
  *
- * 1. strong-flame is the heat bloom - stacked shadows on uneven beats (13,
- *    27, 41, 58, 69, 84) so the flicker never resolves into a countable pulse.
- *    Linear, not eased: easing swells and settles at every keyframe, which is
- *    what turns a drifting glow into a throb. Slow, too - a light breathing
- *    over seconds reads as burning, where a second-long cycle reads as a
- *    blinking indicator demanding attention.
+ * So this draws the light rather than the object. The button behaves like
+ * metal being heated: the fill glows from within, the rim runs hot, the label
+ * goes pale, and the whole thing throws a tight bloom. Nothing is illustrated,
+ * which is what keeps it from looking drawn.
  *
- * 2. strong-flame-licks is the fire, and it is what makes this a flame
- *    rather than a neon sign. Three tongues rise off the top edge, each a
- *    gradient anchored at its own base: a near-white core where it is hottest,
- *    cooling through accent green, transparent at the tip. They grow and
- *    collapse out of phase with each other and wander sideways, because
- *    tongues that rise in unison read as a bar chart. Direction is the whole
- *    trick - a symmetric halo has no up, and fire always has an up.
+ * Three moments:
+ *
+ * 1. strong-ignite - a single overshoot on hover-in, ~260ms. One-shot effects
+ *    read as expensive and looping ones read as cheap, so the drama lives here
+ *    rather than in a cycle that repeats forever.
+ * 2. The steady hot state, held by the rule itself.
+ * 3. strong-heat - a breath so slow and so shallow it should never be caught
+ *    in the act: ~5.2s, and about a tenth the swing of the flicker it
+ *    replaced. Anything livelier reads as a pulsing indicator.
  */
 [data-strong] {
   transition: transform 160ms ease, filter 160ms ease, border-color 160ms ease,
-    box-shadow 160ms ease;
+    background-color 160ms ease, box-shadow 160ms ease;
 }
+
+[data-strong] [data-strong-label] { transition: color 160ms ease; }
+
 [data-strong]:hover {
   transform: translateY(-1px);
-  filter: saturate(1.3) brightness(1.04);
-  border-color: var(--accent) !important;
-  animation: strong-flame 3400ms linear infinite;
+  border-color: var(--heat-rim) !important;
+  background-image: radial-gradient(130% 165% at 50% 135%, var(--heat-core) 0%,
+    var(--heat-edge) 72%);
+  box-shadow: 0 0 10px rgb(var(--accent-rgb) / 0.5), 0 0 22px rgb(var(--accent-rgb) / 0.22);
+  animation: strong-ignite 260ms ease-out, strong-heat 5200ms linear 260ms infinite;
 }
 
-/*
- * The fire sits above the button rather than over it, overlapping the top edge
- * by a few pixels so the tongues emerge from the surface instead of hovering
- * over it. It never reaches the label, and it never takes a click.
- */
-[data-strong]::after {
-  content: '';
-  position: absolute;
-  left: 2%;
-  right: 2%;
-  bottom: calc(100% - 6px);
-  height: 42px;
-  pointer-events: none;
-  opacity: 0;
-  filter: blur(1.8px);
-  transition: opacity 220ms ease;
-  background-repeat: no-repeat;
-  /*
-   * Narrow and tall. A tongue is roughly twice as high as it is wide; at the
-   * squat proportions of a wide gradient it reads as a dome sitting on the
-   * edge, which is a lamp, not a flame.
-   */
-  /*
-   * The last layer is the ember bed: a wide, low band of heat along the edge
-   * that the tongues rise out of. Without it four separate gradients read as
-   * four separate lights rather than as one fire.
-   */
-  background-size: 17% 92%, 14% 68%, 20% 100%, 11% 56%, 100% 26%;
-  background-position: 14% 100%, 37% 100%, 61% 100%, 85% 100%, 50% 100%;
-  /*
-   * The long tail from 55% to transparent is the taper. Stopping the colour
-   * abruptly gives a rounded cap; letting it thin out over most of the tongue
-   * is what draws a point.
-   */
-  background-image:
-    radial-gradient(50% 100% at 50% 100%, rgb(240 255 228 / 0.95) 0%,
-      rgb(var(--accent-rgb) / 0.9) 26%, rgb(var(--accent-rgb) / 0.34) 55%,
-      rgb(var(--accent-rgb) / 0) 90%),
-    radial-gradient(50% 100% at 50% 100%, rgb(232 255 214 / 0.9) 0%,
-      rgb(var(--accent-rgb) / 0.84) 28%, rgb(var(--accent-rgb) / 0.3) 57%,
-      rgb(var(--accent-rgb) / 0) 92%),
-    radial-gradient(50% 100% at 50% 100%, rgb(240 255 228 / 0.95) 0%,
-      rgb(var(--accent-rgb) / 0.88) 25%, rgb(var(--accent-rgb) / 0.32) 54%,
-      rgb(var(--accent-rgb) / 0) 90%),
-    radial-gradient(50% 100% at 50% 100%, rgb(226 255 206 / 0.85) 0%,
-      rgb(var(--accent-rgb) / 0.78) 30%, rgb(var(--accent-rgb) / 0.26) 60%,
-      rgb(var(--accent-rgb) / 0) 94%),
-    radial-gradient(62% 100% at 50% 100%, rgb(240 255 228 / 0.7) 0%,
-      rgb(var(--accent-rgb) / 0.6) 40%, rgb(var(--accent-rgb) / 0) 100%);
-}
+[data-strong]:hover [data-strong-label] { color: var(--heat-label); }
 
-[data-strong]:hover::after {
-  opacity: 1;
-  animation: strong-flame-licks 1900ms linear infinite;
-}
-
-@keyframes strong-flame-licks {
+@keyframes strong-ignite {
   0% {
-    background-size: 17% 92%, 14% 68%, 20% 100%, 11% 56%, 100% 26%;
-    background-position: 14% 100%, 37% 100%, 61% 100%, 85% 100%, 50% 100%;
+    box-shadow: 0 0 0 rgb(var(--accent-rgb) / 0), 0 0 0 rgb(var(--accent-rgb) / 0);
+    filter: brightness(1);
   }
-  22% {
-    background-size: 15% 62%, 16% 96%, 17% 72%, 12% 84%, 100% 23%;
-    background-position: 17% 100%, 34% 100%, 64% 100%, 82% 100%, 50% 100%;
-  }
-  47% {
-    background-size: 19% 100%, 13% 58%, 15% 90%, 10% 50%, 100% 28%;
-    background-position: 11% 100%, 40% 100%, 58% 100%, 88% 100%, 50% 100%;
-  }
-  71% {
-    background-size: 14% 70%, 17% 86%, 21% 60%, 13% 92%, 100% 24%;
-    background-position: 16% 100%, 35% 100%, 63% 100%, 83% 100%, 50% 100%;
-  }
-  88% {
-    background-size: 18% 84%, 12% 74%, 16% 96%, 11% 64%, 100% 26%;
-    background-position: 13% 100%, 39% 100%, 60% 100%, 86% 100%, 50% 100%;
+  38% {
+    box-shadow: 0 0 16px rgb(var(--accent-rgb) / 0.85), 0 0 34px rgb(var(--accent-rgb) / 0.4);
+    filter: brightness(1.3);
   }
   100% {
-    background-size: 17% 92%, 14% 68%, 20% 100%, 11% 56%, 100% 26%;
-    background-position: 14% 100%, 37% 100%, 61% 100%, 85% 100%, 50% 100%;
+    box-shadow: 0 0 10px rgb(var(--accent-rgb) / 0.5), 0 0 22px rgb(var(--accent-rgb) / 0.22);
+    filter: brightness(1);
   }
 }
 
-@keyframes strong-flame {
-  0% {
-    box-shadow: 0 0 6px rgb(var(--accent-rgb) / 0.55), 0 0 14px rgb(var(--accent-rgb) / 0.28),
-      0 0 20px rgb(var(--accent-rgb) / 0.10);
+@keyframes strong-heat {
+  0%, 100% {
+    box-shadow: 0 0 10px rgb(var(--accent-rgb) / 0.5), 0 0 22px rgb(var(--accent-rgb) / 0.22);
   }
-  13% {
-    box-shadow: 0 0 9px rgb(var(--accent-rgb) / 0.75), 0 0 20px rgb(var(--accent-rgb) / 0.4),
-      0 0 26px rgb(var(--accent-rgb) / 0.15);
-  }
-  27% {
-    box-shadow: 0 0 5px rgb(var(--accent-rgb) / 0.5), 0 0 12px rgb(var(--accent-rgb) / 0.24),
-      0 0 18px rgb(var(--accent-rgb) / 0.08);
-  }
-  41% {
-    box-shadow: 0 0 12px rgb(var(--accent-rgb) / 0.88), 0 0 25px rgb(var(--accent-rgb) / 0.48),
-      0 0 30px rgb(var(--accent-rgb) / 0.18);
-  }
-  58% {
-    box-shadow: 0 0 7px rgb(var(--accent-rgb) / 0.6), 0 0 15px rgb(var(--accent-rgb) / 0.3),
-      0 0 21px rgb(var(--accent-rgb) / 0.11);
-  }
-  69% {
-    box-shadow: 0 0 10px rgb(var(--accent-rgb) / 0.8), 0 0 22px rgb(var(--accent-rgb) / 0.44),
-      0 0 28px rgb(var(--accent-rgb) / 0.16);
-  }
-  84% {
-    box-shadow: 0 0 6px rgb(var(--accent-rgb) / 0.52), 0 0 13px rgb(var(--accent-rgb) / 0.26),
-      0 0 19px rgb(var(--accent-rgb) / 0.09);
-  }
-  100% {
-    box-shadow: 0 0 6px rgb(var(--accent-rgb) / 0.55), 0 0 14px rgb(var(--accent-rgb) / 0.28),
-      0 0 20px rgb(var(--accent-rgb) / 0.10);
+  50% {
+    box-shadow: 0 0 13px rgb(var(--accent-rgb) / 0.6), 0 0 27px rgb(var(--accent-rgb) / 0.28);
   }
 }
 
@@ -349,13 +279,11 @@ html, body { background-color: var(--canvas); }
   [data-hint='choose'] { opacity: 1; transition: none; }
   /* The gold still reads as gold standing still. */
   [data-fill='surplus'] { animation: none; background-position: 200% 0, 0 0; }
-  /* Still alight, just not moving: the tongues hold their opening shape. */
+  /* Still hot, it just arrives there rather than igniting. */
   [data-strong]:hover {
     animation: none;
-    box-shadow: 0 0 8px rgb(var(--accent-rgb) / 0.65), 0 0 18px rgb(var(--accent-rgb) / 0.32),
-      0 0 30px rgb(var(--accent-rgb) / 0.14);
+    box-shadow: 0 0 11px rgb(var(--accent-rgb) / 0.55), 0 0 24px rgb(var(--accent-rgb) / 0.25);
   }
-  [data-strong]:hover::after { animation: none; }
 }
 `;
 

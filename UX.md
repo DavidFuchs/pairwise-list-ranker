@@ -311,12 +311,20 @@ Elevation is a two-layer shadow: a tight contact shadow plus a wide, soft cast
 shadow. On hover, cards lift 2px and the cast shadow picks up accent tint.
 
 The rule above says atmosphere, never decoration. There is one knowing
-exception: the flame on **Much better**, three stacked accent glows that
-flicker while hovered. It is decoration, it is meant to be, and it is confined
-to one control - the strongest verdict in the app, on a screen the user will
-visit hundreds of times. It stays affordable because it costs nothing until a
-pointer asks for it. If a second control ever wants a flame, the answer is no;
-what makes this one work is that it is the only one.
+exception: **Much better** comes up to temperature on hover - the body darkens
+to a hot core, the rim runs bright, the label goes pale, and it throws a tight
+bloom. It is confined to one control, the strongest verdict in the app, on a
+screen the user visits hundreds of times, and it costs nothing until a pointer
+asks for it.
+
+This started as literal flames, gradient tongues licking off the top edge, and
+it looked cheap. The lesson is worth more than the effect: **draw the light,
+not the object.** Fire is high-detail imagery and the button is 110x34px, so
+any flame collapses into a few blurred blobs - and an illustrated object on a
+surface that is otherwise flat and precise reads as clip art no matter how well
+it is drawn. Rendering what heat *does* - colour, luminance, bloom - costs a
+handful of tokens and looks expensive. Reach for illustration here and the
+answer is the same next time.
 
 ### Typography
 
@@ -419,16 +427,17 @@ animations in the app:
   loop. It is ambient - it marks no change and answers no action, it says the
   bar is still live once the percentage has stopped being interesting. That is
   why it is an order of magnitude slower than every transition above.
-- **The much-better flame.** Poison-green light that drifts on ~3.4s of uneven,
-  unaccelerated keyframes while the pointer is on the button. This one is pure
-  decoration and is allowed to be, because it burns only under a pointer and
-  only on the single most emphatic control in the app. It never runs
-  unattended, which is what keeps a flicker from becoming noise.
+- **The much-better heat.** Hovering ignites the button in a single 260ms
+  overshoot, then hands off to a ~5.2s breath while the pointer stays. The
+  drama belongs in the one-shot: a flare that happens once reads as expensive,
+  and the same energy spent on a loop reads as cheap. The breath that follows
+  swings about a tenth of what a flicker does - if you can catch it moving, it
+  is too strong.
 
-  Both of these want to be slower than feels right while writing them. A glow
-  on a second-long cycle reads as a blinking indicator demanding attention;
-  the same keyframes stretched over three or four seconds read as something
-  burning. Neither should be eased, either - easing lands a swell on every
+  Both of these want to be slower and shallower than feels right while writing
+  them. A glow on a second-long cycle reads as a blinking indicator demanding
+  attention; stretched over several seconds it reads as something at
+  temperature. Neither should be eased, either - easing lands a swell on every
   keyframe, which is precisely the throb these are trying not to be.
 
 Under reduced motion both hold still rather than vanish: the meter stays gold,
