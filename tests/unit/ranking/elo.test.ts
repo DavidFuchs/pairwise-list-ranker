@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  ALREADY_RANKED_MAX_STEP,
   ALREADY_RANKED_SPREAD,
   BASE_K_FACTOR,
   INITIAL_RATING,
@@ -58,18 +59,24 @@ describe('seedRating', () => {
     expect(seedRating(0, 0, true)).toBe(INITIAL_RATING);
   });
 
-  it('puts the first item at the top of the spread and the last at the bottom', () => {
-    expect(seedRating(0, 5, true)).toBe(INITIAL_RATING + ALREADY_RANKED_SPREAD);
-    expect(seedRating(4, 5, true)).toBe(INITIAL_RATING - ALREADY_RANKED_SPREAD);
+  it('puts the first item at the top of the spread and the last at the bottom once the list is long enough to use the full spread', () => {
+    expect(seedRating(0, 7, true)).toBe(INITIAL_RATING + ALREADY_RANKED_SPREAD);
+    expect(seedRating(6, 7, true)).toBe(INITIAL_RATING - ALREADY_RANKED_SPREAD);
   });
 
   it('centers the middle item of an odd-length list on the initial rating', () => {
     expect(seedRating(2, 5, true)).toBe(INITIAL_RATING);
   });
 
-  it('spaces items evenly between the two items of a pair', () => {
-    expect(seedRating(0, 2, true)).toBe(INITIAL_RATING + ALREADY_RANKED_SPREAD);
-    expect(seedRating(1, 2, true)).toBe(INITIAL_RATING - ALREADY_RANKED_SPREAD);
+  it('caps the adjacent-item gap for short lists instead of squeezing the full spread into them', () => {
+    expect(seedRating(0, 3, true)).toBe(INITIAL_RATING + ALREADY_RANKED_MAX_STEP);
+    expect(seedRating(1, 3, true)).toBe(INITIAL_RATING);
+    expect(seedRating(2, 3, true)).toBe(INITIAL_RATING - ALREADY_RANKED_MAX_STEP);
+  });
+
+  it('spaces the two items of a pair one capped step apart', () => {
+    expect(seedRating(0, 2, true)).toBe(INITIAL_RATING + ALREADY_RANKED_MAX_STEP / 2);
+    expect(seedRating(1, 2, true)).toBe(INITIAL_RATING - ALREADY_RANKED_MAX_STEP / 2);
   });
 });
 

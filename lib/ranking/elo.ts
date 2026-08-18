@@ -6,9 +6,16 @@ export const INITIAL_RATING = 1500;
 /**
  * Total rating spread, best item to worst, used to seed an import the user
  * has marked as already ranked. A fixed total (not a per-step gap) keeps the
- * top-to-bottom range bounded no matter how long the list is.
+ * top-to-bottom range bounded no matter how long the list is, but on its own
+ * it would squeeze short lists into huge adjacent-item gaps (a 3-item list
+ * would space its items 300 points apart). ALREADY_RANKED_MAX_STEP caps the
+ * per-adjacent gap so short lists still start close enough together to
+ * reorder in a handful of comparisons.
  */
 export const ALREADY_RANKED_SPREAD = 300;
+
+/** Largest rating gap seedRating will put between adjacent items. */
+export const ALREADY_RANKED_MAX_STEP = 100;
 
 /** Standard rating movement for a settled item. */
 export const BASE_K_FACTOR = 24;
@@ -34,8 +41,9 @@ export function createRankingState(itemId: string, rating: number = INITIAL_RATI
  */
 export function seedRating(index: number, total: number, alreadyRanked: boolean): number {
   if (!alreadyRanked || total < 2) return INITIAL_RATING;
-  const step = (2 * ALREADY_RANKED_SPREAD) / (total - 1);
-  return INITIAL_RATING + ALREADY_RANKED_SPREAD - step * index;
+  const step = Math.min((2 * ALREADY_RANKED_SPREAD) / (total - 1), ALREADY_RANKED_MAX_STEP);
+  const halfRange = (step * (total - 1)) / 2;
+  return INITIAL_RATING + halfRange - step * index;
 }
 
 /** Probability that `rating` beats `opponentRating` under the logistic Elo curve. */

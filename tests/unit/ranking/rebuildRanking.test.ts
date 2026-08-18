@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ALREADY_RANKED_SPREAD, INITIAL_RATING, createRankingState } from '@/lib/ranking/elo';
+import { ALREADY_RANKED_MAX_STEP, INITIAL_RATING, createRankingState } from '@/lib/ranking/elo';
 import { rankItems, rebuildRanking, replayComparisons } from '@/lib/ranking/rebuildRanking';
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent, ComparisonOutcome, RankingState } from '@/types/ranking';
@@ -151,9 +151,9 @@ describe('replayComparisons', () => {
   it('seeds ratings from item order when the list is already ranked', () => {
     const states = replayComparisons([item('a'), item('b'), item('c')], [], true);
 
-    expect(states.get('a')?.rating).toBe(INITIAL_RATING + ALREADY_RANKED_SPREAD);
+    expect(states.get('a')?.rating).toBe(INITIAL_RATING + ALREADY_RANKED_MAX_STEP);
     expect(states.get('b')?.rating).toBe(INITIAL_RATING);
-    expect(states.get('c')?.rating).toBe(INITIAL_RATING - ALREADY_RANKED_SPREAD);
+    expect(states.get('c')?.rating).toBe(INITIAL_RATING - ALREADY_RANKED_MAX_STEP);
   });
 });
 
