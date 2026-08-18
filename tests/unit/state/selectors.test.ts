@@ -137,6 +137,20 @@ describe('describeCoverage', () => {
     expect(describeCoverage(37).surplus).toBe(100);
   });
 
+  it('says nothing extra while the estimate is still ahead', () => {
+    expect(describeCoverage(0.52).note).toBeNull();
+    expect(describeCoverage(0.99).note).toBeNull();
+  });
+
+  it('tells the user the order is usable, and that carrying on still helps', () => {
+    const note = describeCoverage(1).note;
+
+    expect(note).toMatch(/sorted/i);
+    expect(note).toMatch(/keep going/i);
+    expect(describeCoverage(1.38).note).toBe(note);
+    expect(describeCoverage(37).note).toBe(note);
+  });
+
   it('says the surplus out loud for screen readers', () => {
     expect(describeCoverage(0.52).valueText).toBe('52%');
     expect(describeCoverage(1.38).valueText).toMatch(/138%.*past the estimate/i);

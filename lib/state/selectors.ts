@@ -165,14 +165,27 @@ export function selectProgress(
 const SURPLUS_CAP = 200;
 
 /**
+ * Said once the estimate is met. The target is n*log2(n), the comparisons a
+ * list this size usually takes to settle, so reaching it means the broad order
+ * is trustworthy - not that every pair has been resolved. The items still
+ * unsettled are the near-neighbours, which is exactly what further rounds go
+ * after, so the line has to invite more work without implying the ranking is
+ * unusable until then.
+ */
+const ESTIMATE_MET_NOTE =
+  'The list is sorted well enough to use. Keep going and each comparison sharpens the pairs that are still close.';
+
+/**
  * Everything the meter needs to draw itself and say what it means: the green
- * run, the gold coat over it, and one number that agrees with both.
+ * run, the gold coat over it, one number that agrees with both, and the note
+ * that appears once the estimate is behind the user.
  */
 export function describeCoverage(coverage: number): {
   label: string;
   valueText: string;
   filled: number;
   surplus: number;
+  note: string | null;
 } {
   const percent = Math.round(coverage * 100);
   const capped = percent > SURPLUS_CAP;
@@ -185,5 +198,8 @@ export function describeCoverage(coverage: number): {
     valueText: percent > 100 ? `${spoken}, past the estimate` : spoken,
     filled: Math.min(100, percent),
     surplus: Math.min(100, Math.max(0, percent - 100)),
+    // Tied to the number on screen rather than to raw coverage, so the note
+    // arrives with the 100% the user can actually read.
+    note: percent >= 100 ? ESTIMATE_MET_NOTE : null,
   };
 }

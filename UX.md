@@ -23,6 +23,9 @@ UI language:
 - explicit consequences on destructive actions
 - clear success/failure feedback for imports and exports
 - honest guidance about what is stored locally in the browser
+- no em-dashes, anywhere in this project: not in interface copy, not in
+  documentation, not in code comments. Where one would fall, use a spaced
+  hyphen, a colon, or two sentences.
 
 ## Core layout
 
@@ -120,6 +123,13 @@ question is asked on the card being removed rather than in a separate bar.
 
 Between and below the pair:
 - a compact status strip: comparisons made, item count, and a progress meter
+- once the meter reaches 100%, a line under it saying the list is sorted well
+  enough to use and that further comparisons sharpen the pairs that are still
+  close. The estimate is the point where the broad order can be trusted while
+  the near-neighbours are still unsettled, so the line has to say both halves:
+  stopping here is fine, carrying on is not busywork. It is neutral text, not
+  gold; the surplus colour stays the meter's alone. The strip is a polite live
+  region, so the note announces itself when it first appears.
 - a single **Skip this pair** pill, centred - it belongs to the pair, not to
   either item
 - a one-line keyboard hint

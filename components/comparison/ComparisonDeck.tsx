@@ -93,7 +93,7 @@ export function ComparisonDeck({
     );
   }
 
-  const { label: percentLabel } = describeCoverage(progress.coverage);
+  const { label: percentLabel, note: coverageNote } = describeCoverage(progress.coverage);
   // Nothing to toggle when the items are bare strings.
   const hasDetails = [pair.left, pair.right].some((item) => hasDetailFields(item, sortField));
 
@@ -110,6 +110,8 @@ export function ComparisonDeck({
           {`Comparing ${selectItemLabel(pair.left, sortField)} and ${selectItemLabel(pair.right, sortField)}`}
         </Text>
         <ProgressMeter coverage={progress.coverage} accessibilityLabel="Ranking progress" />
+        {/* Neutral, not gold: the surplus colour belongs to the meter alone. */}
+        {coverageNote !== null && <Text style={styles.coverageNote}>{coverageNote}</Text>}
       </View>
 
       {/* Wraps to stacked cards on narrow screens without measuring anything. */}
@@ -239,6 +241,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   statusPercent: { fontFamily: fonts.mono, fontSize: 11, color: colors.textFaint },
+  coverageNote: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textSecondary,
+  },
   // Present for screen readers and announcements, but not visually.
   announcement: {
     position: 'absolute',

@@ -51,6 +51,19 @@ describe('ComparisonDeck layout', () => {
     expect(within(leftCard).queryByLabelText('Choose Ramen')).toBeNull();
   });
 
+  it('stays quiet about the estimate while it is still ahead', () => {
+    setup();
+
+    expect(screen.queryByText(/sorted well enough/i)).toBeNull();
+  });
+
+  it('says the list is sorted, and that carrying on still helps, once the estimate is met', () => {
+    setup({ progress: { activeItems: 3, comparisons: 5, skips: 0, coverage: 1 } });
+
+    const note = screen.getByText(/sorted well enough/i);
+    expect(note.textContent).toMatch(/keep going/i);
+  });
+
   it('offers one shared skip rather than one per card', () => {
     setup();
 
