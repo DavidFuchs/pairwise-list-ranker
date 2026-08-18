@@ -89,4 +89,18 @@ describe('ArrayPicker', () => {
 
     expect(screen.queryByRole('progressbar')).toBeNull();
   });
+
+  it('greys out and disables a list with fewer than two items', async () => {
+    const tooShort: ArrayCandidate = { path: ['director'], count: 1, entryKind: 'scalar', samples: ['Cameron'] };
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<ArrayPicker candidates={[movies, tooShort]} value={null} onChange={onChange} />);
+
+    const option = screen.getByRole('radio', { name: /director.*too few items/i });
+    expect(option.getAttribute('aria-disabled')).toBe('true');
+
+    // pointer-events: none on a disabled option is itself the proof it can't be selected.
+    await expect(user.click(option)).rejects.toThrow(/pointer-events: none/);
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });

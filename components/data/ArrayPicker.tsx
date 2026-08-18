@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ProgressMeter } from '@/components/ui/ProgressMeter';
-import { formatPath } from '@/lib/import/arrayCandidates';
+import { formatPath, MIN_RANKABLE } from '@/lib/import/arrayCandidates';
 import type { ArrayCandidate } from '@/lib/import/arrayCandidates';
 import { describeCoverage } from '@/lib/state/selectors';
 import { colors, fonts, radius, space } from '@/lib/theme';
@@ -38,22 +38,31 @@ export function ArrayPicker({
         const key = candidate.path.join('.');
         const selected = key === selectedKey;
         const coverage = rankedCoverages[key];
+        const rankable = candidate.count >= MIN_RANKABLE;
 
         return (
           <Pressable
             key={key}
             role="radio"
-            accessibilityLabel={`Rank the list at ${formatPath(candidate.path)}`}
+            accessibilityLabel={
+              rankable
+                ? `Rank the list at ${formatPath(candidate.path)}`
+                : `${formatPath(candidate.path)} has too few items to rank`
+            }
+            accessibilityState={{ disabled: !rankable }}
             aria-checked={selected}
+            disabled={!rankable}
             onPress={() => onChange(candidate.path)}
-            style={[styles.option, selected && styles.optionSelected]}
+            style={[styles.option, selected && styles.optionSelected, !rankable && styles.optionDisabled]}
           >
             <View style={styles.header}>
               <Text style={[styles.path, selected && styles.pathSelected]}>
                 {formatPath(candidate.path)}
               </Text>
               <Text style={styles.count}>
-                {`${candidate.count} ${candidate.entryKind === 'object' ? 'objects' : 'texts'}`}
+                {rankable
+                  ? `${candidate.count} ${candidate.entryKind === 'object' ? 'objects' : 'texts'}`
+                  : 'Too few items to rank'}
               </Text>
             </View>
             <Text style={styles.samples} numberOfLines={1}>
@@ -100,6 +109,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSunken,
   },
   optionSelected: { borderColor: colors.accentSoftBorder, backgroundColor: colors.accentSoft },
+  optionDisabled: { opacity: 0.45 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   path: { fontFamily: fonts.mono, fontSize: 13, fontWeight: '600', color: colors.textPrimary },
   pathSelected: { color: colors.accentStrong },

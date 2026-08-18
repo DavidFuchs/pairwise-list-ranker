@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ProgressMeter } from '@/components/ui/ProgressMeter';
-import { formatPath } from '@/lib/import/arrayCandidates';
+import { formatPath, MIN_RANKABLE } from '@/lib/import/arrayCandidates';
 import { describeCoverage } from '@/lib/state/selectors';
 import { colors, fonts, radius, space } from '@/lib/theme';
 
@@ -63,25 +64,56 @@ export function ListSwitcher({ currentPath, caption, options, onSelect }: ListSw
 
       <Modal visible={open} onClose={() => setOpen(false)} title="Switch list">
         <Text style={styles.hint}>
-          This data has {options.length} lists you can rank. An already set-up list switches to it
-          right away; a new one opens the editor first so you can choose its fields and order.
+          This data has {options.length} lists you can rank. Pick an already set-up one to switch
+          to it right away, or configure a new one first to choose its fields and order.
         </Text>
 
-        <View style={styles.options} role="radiogroup" aria-label="Which list to rank">
+        <View style={styles.options}>
           {options.map((option) => {
             const key = option.path.join('.');
             const selected = key === currentKey;
+            const rankable = option.count >= MIN_RANKABLE;
+
+            if (!option.configured) {
+              return (
+                <View key={key} style={[styles.option, !rankable && styles.optionDisabled]}>
+                  <View style={styles.optionHeader}>
+                    <Text style={styles.optionPath}>{formatPath(option.path)}</Text>
+                    <View style={styles.optionActions}>
+                      <Text style={styles.optionMeta}>
+                        {rankable
+                          ? `${option.count} ${option.entryKind === 'object' ? 'objects' : 'texts'}`
+                          : 'Too few items to rank'}
+                      </Text>
+                      <Button
+                        label="Configure"
+                        accessibilityLabel={`Configure the list at ${formatPath(option.path)}`}
+                        variant="secondary"
+                        size="sm"
+                        disabled={!rankable}
+                        onPress={() => {
+                          setOpen(false);
+                          onSelect(option.path);
+                        }}
+                      />
+                    </View>
+                  </View>
+                </View>
+              );
+            }
 
             return (
               <Pressable
                 key={key}
                 role="radio"
                 accessibilityLabel={
-                  option.configured || selected
+                  rankable
                     ? `Rank the list at ${formatPath(option.path)}`
-                    : `Rank the list at ${formatPath(option.path)} - opens the data screen to set it up first`
+                    : `${formatPath(option.path)} has too few items to rank`
                 }
+                accessibilityState={{ disabled: !rankable }}
                 aria-checked={selected}
+                disabled={!rankable}
                 onPress={() => {
                   setOpen(false);
                   if (!selected) onSelect(option.path);
@@ -90,6 +122,7 @@ export function ListSwitcher({ currentPath, caption, options, onSelect }: ListSw
                   styles.option,
                   selected && styles.optionSelected,
                   pressed && !selected && styles.optionPressed,
+                  !rankable && styles.optionDisabled,
                 ]}
               >
                 <View style={styles.optionHeader}>
@@ -99,9 +132,9 @@ export function ListSwitcher({ currentPath, caption, options, onSelect }: ListSw
                   <Text style={styles.optionMeta}>
                     {selected
                       ? 'Ranking now'
-                      : option.configured
+                      : rankable
                         ? `${option.count} ${option.entryKind === 'object' ? 'objects' : 'texts'}`
-                        : 'Not set up yet'}
+                        : 'Too few items to rank'}
                   </Text>
                 </View>
                 {option.coverage !== undefined && (
@@ -162,10 +195,12 @@ const styles = StyleSheet.create({
   },
   optionSelected: { borderColor: colors.accentSoftBorder, backgroundColor: colors.accentSoft },
   optionPressed: { borderColor: colors.borderStrong },
+  optionDisabled: { opacity: 0.45 },
   optionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   optionPath: { fontFamily: fonts.mono, fontSize: 13, fontWeight: '600', color: colors.textPrimary },
   optionPathSelected: { color: colors.accentStrong },
   optionMeta: { fontFamily: fonts.body, fontSize: 11, color: colors.textSecondary },
+  optionActions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, marginTop: 2 },
   progressBar: { flex: 1 },
   progressLabel: { fontFamily: fonts.mono, fontSize: 11, color: colors.textFaint },
