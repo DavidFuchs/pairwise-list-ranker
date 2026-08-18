@@ -2,10 +2,9 @@ import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RankedRow } from '@/components/preview/RankedRow';
-import { Button } from '@/components/ui/Button';
 import { gapMovesRow, insertIndexFor, moveItem, targetIndexForGap } from '@/lib/ranking/reorder';
 import { selectItemLabel } from '@/lib/state/selectors';
-import { colors, fonts, radius, space } from '@/lib/theme';
+import { colors, fonts, space } from '@/lib/theme';
 import { isComplexItemValue } from '@/types/list';
 import type { ListItem } from '@/types/list';
 import type { RankedItem } from '@/types/ranking';
@@ -13,37 +12,27 @@ import type { RankedItem } from '@/types/ranking';
 export interface RankedListPreviewProps {
   ranking: RankedItem<ListItem>[];
   sortField?: string;
-  /** Rated comparisons that a reorder would discard. */
-  comparisonCount: number;
-  onReorder: (itemIds: string[]) => void;
+  onReorder: (itemId: string, nextOrder: string[]) => void;
 }
 
 const MAX_META_FIELDS = 2;
 
 
 /**
- * The ranking, and the one place it can be arranged by hand. A manual order
- * restarts ranking from that order, so anything that would discard real work
- * asks first.
+ * The ranking, and the one place it can be arranged by hand. A manual move
+ * compares the item against its new neighbours, the same as picking it in a
+ * side-by-side round, so it applies immediately - nothing is discarded.
  */
-export function RankedListPreview({
-  ranking,
-  sortField,
-  comparisonCount,
-  onReorder,
-}: RankedListPreviewProps) {
-  const derivedIds = useMemo(() => ranking.map((entry) => entry.item.id), [ranking]);
-  const [pendingIds, setPendingIds] = useState<string[] | null>(null);
+export function RankedListPreview({ ranking, sortField, onReorder }: RankedListPreviewProps) {
+  const orderedIds = useMemo(() => ranking.map((entry) => entry.item.id), [ranking]);
   /**
    * Nothing moves until the drop. The rows hold still and a line shows where
    * the row will land, so the list never shifts under the pointer that is
    * aiming at it. `rows` is the geometry snapshot taken at grab.
    */
   const [dragging, setDragging] = useState<{ id: string; gap: number } | null>(null);
-  const [confirming, setConfirming] = useState(false);
 
   const byId = useMemo(() => new Map(ranking.map((entry) => [entry.item.id, entry])), [ranking]);
-  const orderedIds = pendingIds ?? derivedIds;
 
   /** Which gap to mark, or null when dropping here would change nothing. */
   const insertionGap = useMemo(() => {
@@ -53,21 +42,14 @@ export function RankedListPreview({
     return dragging.gap;
   }, [dragging, orderedIds]);
 
-  /** Every hand reorder asks first: it always treats the new order as a
-   *  best-to-worst ranking and restarts from it, comparisons or not. */
-  const commit = useCallback((nextIds: string[]) => {
-    setPendingIds(nextIds);
-    setConfirming(true);
-  }, []);
-
   const handleKeyMove = useCallback(
     (id: string, direction: -1 | 1) => {
       const from = orderedIds.indexOf(id);
       const to = from + direction;
       if (from < 0 || to < 0 || to >= orderedIds.length) return;
-      commit(moveItem(orderedIds, from, to));
+      onReorder(id, moveItem(orderedIds, from, to));
     },
-    [commit, orderedIds],
+    [onReorder, orderedIds],
   );
 
   const handleGrab = useCallback(
@@ -117,7 +99,9 @@ export function RankedListPreview({
         stop();
         const gap = gapFor(event.clientY);
         setDragging(null);
-        if (gapMovesRow(from, gap)) commit(moveItem(orderedIds, from, targetIndexForGap(from, gap)));
+        if (gapMovesRow(from, gap)) {
+          onReorder(id, moveItem(orderedIds, from, targetIndexForGap(from, gap)));
+        }
       };
 
       const onCancel = () => {
@@ -129,7 +113,7 @@ export function RankedListPreview({
       window.addEventListener('pointerup', onUp);
       window.addEventListener('pointercancel', onCancel);
     },
-    [commit, orderedIds],
+    [onReorder, orderedIds],
   );
 
   if (ranking.length === 0) {
@@ -164,40 +148,6 @@ export function RankedListPreview({
           );
         })}
       </ScrollView>
-
-      {confirming && (
-        <View style={styles.confirm} role="alert">
-          <Text style={styles.confirmText}>
-            {comparisonCount === 0
-              ? 'Reordering by hand treats this order as best to worst, and starts your ranking from it.'
-              : `Reordering by hand starts a new ranking session. Your ${comparisonCount} comparisons are cleared, and this order becomes the starting point.`}
-          </Text>
-          <View style={styles.confirmActions}>
-            <Button
-              label="Cancel"
-              accessibilityLabel="Cancel reordering"
-              variant="ghost"
-              size="sm"
-              onPress={() => {
-                setConfirming(false);
-                setPendingIds(null);
-              }}
-            />
-            <Button
-              label="Reorder and restart"
-              accessibilityLabel="Reorder and restart"
-              variant="primary"
-              size="sm"
-              onPress={() => {
-                const next = pendingIds;
-                setConfirming(false);
-                setPendingIds(null);
-                if (next !== null) onReorder(next);
-              }}
-            />
-          </View>
-        </View>
-      )}
     </View>
   );
 }
@@ -227,14 +177,4 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     padding: space.md,
   },
-  confirm: {
-    gap: space.sm,
-    padding: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.accentSoftBorder,
-    backgroundColor: colors.accentSoft,
-  },
-  confirmText: { fontFamily: fonts.body, fontSize: 13, color: colors.textPrimary },
-  confirmActions: { flexDirection: 'row', gap: space.sm, justifyContent: 'flex-end' },
 });

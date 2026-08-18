@@ -1,6 +1,5 @@
 /** @vitest-environment jsdom */
 import { fireEvent, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { RankedListPreview } from '@/components/preview/RankedListPreview';
@@ -34,12 +33,11 @@ function ranked(labels: string[]): RankedItem<ListItem>[] {
 function setup(overrides: Partial<React.ComponentProps<typeof RankedListPreview>> = {}) {
   const props = {
     ranking: ranked(['Tacos', 'Ramen', 'Curry']),
-    comparisonCount: 0,
     onReorder: vi.fn(),
     ...overrides,
   };
   render(<RankedListPreview {...props} />);
-  return { ...props, user: userEvent.setup() };
+  return props;
 }
 
 describe('RankedListPreview', () => {
@@ -63,26 +61,20 @@ describe('RankedListPreview', () => {
     expect(screen.getByLabelText(/reorder curry/i)).toBeDefined();
   });
 
-  it('asks before applying a row moved down with alt and arrow down', async () => {
-    const { onReorder, user } = setup();
+  it('applies a row moved down with alt and arrow down immediately', () => {
+    const { onReorder } = setup();
 
     fireEvent.keyDown(screen.getByLabelText(/reorder tacos/i), { key: 'ArrowDown', altKey: true });
-    expect(onReorder).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: /reorder and restart/i }));
-
-    expect(onReorder).toHaveBeenCalledWith(['item-1', 'item-0', 'item-2']);
+    expect(onReorder).toHaveBeenCalledWith('item-0', ['item-1', 'item-0', 'item-2']);
   });
 
-  it('asks before applying a row moved up with alt and arrow up', async () => {
-    const { onReorder, user } = setup();
+  it('applies a row moved up with alt and arrow up immediately', () => {
+    const { onReorder } = setup();
 
     fireEvent.keyDown(screen.getByLabelText(/reorder curry/i), { key: 'ArrowUp', altKey: true });
-    expect(onReorder).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: /reorder and restart/i }));
-
-    expect(onReorder).toHaveBeenCalledWith(['item-0', 'item-2', 'item-1']);
+    expect(onReorder).toHaveBeenCalledWith('item-2', ['item-0', 'item-2', 'item-1']);
   });
 
   it('ignores arrow keys without alt, so scrolling still works', () => {
@@ -107,67 +99,5 @@ describe('RankedListPreview', () => {
     fireEvent.keyDown(screen.getByLabelText(/reorder curry/i), { key: 'ArrowDown', altKey: true });
 
     expect(onReorder).not.toHaveBeenCalled();
-  });
-
-  it('asks before discarding comparisons', () => {
-    const { onReorder } = setup({ comparisonCount: 47 });
-
-    fireEvent.keyDown(screen.getByLabelText(/reorder tacos/i), { key: 'ArrowDown', altKey: true });
-
-    expect(onReorder).not.toHaveBeenCalled();
-    expect(screen.getByText(/47 comparisons/i)).toBeDefined();
-    expect(screen.getByText(/starts a new ranking session/i)).toBeDefined();
-  });
-
-  /**
-   * Reordering by hand always asserts a best-to-worst order, whether or not
-   * there is any comparison history to discard - so it always asks, and with
-   * wording that does not claim comparisons are being cleared when there are
-   * none.
-   */
-  it('asks even with no comparisons yet, without claiming any are cleared', () => {
-    const { onReorder } = setup({ comparisonCount: 0 });
-
-    fireEvent.keyDown(screen.getByLabelText(/reorder tacos/i), { key: 'ArrowDown', altKey: true });
-
-    expect(onReorder).not.toHaveBeenCalled();
-    expect(screen.getByText(/treats this order as best to worst/i)).toBeDefined();
-    expect(screen.queryByText(/comparisons are cleared/i)).toBeNull();
-    expect(screen.queryByText(/starts a new ranking session/i)).toBeNull();
-  });
-
-  it('applies the reorder once confirmed', async () => {
-    const { onReorder, user } = setup({ comparisonCount: 47 });
-    fireEvent.keyDown(screen.getByLabelText(/reorder tacos/i), { key: 'ArrowDown', altKey: true });
-
-    await user.click(screen.getByRole('button', { name: /reorder and restart/i }));
-
-    expect(onReorder).toHaveBeenCalledWith(['item-1', 'item-0', 'item-2']);
-  });
-
-  it('restores the previous order on cancel', async () => {
-    const { onReorder, user } = setup({ comparisonCount: 47 });
-    fireEvent.keyDown(screen.getByLabelText(/reorder tacos/i), { key: 'ArrowDown', altKey: true });
-
-    await user.click(screen.getByRole('button', { name: /cancel reordering/i }));
-
-    expect(onReorder).not.toHaveBeenCalled();
-    expect(screen.queryByText(/starts a new ranking session/i)).toBeNull();
-  });
-
-  it('shows the pending order while the confirmation is open', () => {
-    setup({ comparisonCount: 47 });
-
-    fireEvent.keyDown(screen.getByLabelText(/reorder tacos/i), { key: 'ArrowDown', altKey: true });
-
-    expect(screen.getAllByRole('listitem')[0]?.textContent).toContain('Ramen');
-  });
-
-  it('renumbers the rows in the pending order', () => {
-    setup({ comparisonCount: 47 });
-
-    fireEvent.keyDown(screen.getByLabelText(/reorder tacos/i), { key: 'ArrowDown', altKey: true });
-
-    expect(screen.getByLabelText(/reorder tacos, position 2/i)).toBeDefined();
   });
 });

@@ -353,96 +353,118 @@ describe('resume', () => {
 });
 
 
-describe('reorderAndRestart', () => {
+const triple: DataSource = {
+  format: 'yaml',
+  rawText: 'movies:\n  - title: Alien\n  - title: Arrival\n  - title: Aliens\n',
+  document: {
+    owner: 'david',
+    movies: [{ title: 'Alien' }, { title: 'Arrival' }, { title: 'Aliens' }],
+  },
+  arrayPath: ['movies'],
+};
+
+describe('reorderItem', () => {
   let store: ReturnType<typeof makeStore>;
 
   beforeEach(() => {
     store = makeStore();
-    store.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
-    const [left, right] = store.getState().items;
-    store.getState().recordComparison(left?.id ?? '', right?.id ?? '', 'left');
+    store.getState().startRanking({ source: triple, roles: { labelField: 'title' } });
   });
 
-  it('applies the new order', () => {
-    const ids = store.getState().items.map((item) => item.id);
+  function idFor(title: string): string {
+    return (
+      store
+        .getState()
+        .items.find((item) => (item.value as { title: string }).title === title)?.id ?? ''
+    );
+  }
 
-    store.getState().reorderAndRestart([...ids].reverse());
+  it('adds a comparison against each new neighbour', () => {
+    const [alien, arrival, aliens] = [idFor('Alien'), idFor('Arrival'), idFor('Aliens')];
 
-    expect(store.getState().items.map((item) => item.value)).toEqual([
-      { title: 'Arrival' },
-      { title: 'Alien' },
+    store.getState().reorderItem(aliens, [alien, aliens, arrival]);
+
+    expect(store.getState().comparisonEvents).toEqual([
+      expect.objectContaining({ leftItemId: aliens, rightItemId: alien, outcome: 'right' }),
+      expect.objectContaining({ leftItemId: aliens, rightItemId: arrival, outcome: 'left' }),
     ]);
   });
 
-  it('clears the comparison history', () => {
-    const ids = store.getState().items.map((item) => item.id);
+  it('adds only one comparison when dropped at an edge', () => {
+    const [alien, arrival, aliens] = [idFor('Alien'), idFor('Arrival'), idFor('Aliens')];
 
-    store.getState().reorderAndRestart([...ids].reverse());
+    store.getState().reorderItem(alien, [arrival, aliens, alien]);
+
+    expect(store.getState().comparisonEvents).toEqual([
+      expect.objectContaining({ leftItemId: alien, rightItemId: aliens, outcome: 'right' }),
+    ]);
+  });
+
+  it('keeps existing comparison history rather than clearing it', () => {
+    const [alien, arrival, aliens] = [idFor('Alien'), idFor('Arrival'), idFor('Aliens')];
+    store.getState().recordComparison(alien, arrival, 'left');
+
+    store.getState().reorderItem(aliens, [alien, aliens, arrival]);
+
+    expect(store.getState().comparisonEvents).toHaveLength(3);
+    expect(store.getState().comparisonEvents[0]).toEqual(
+      expect.objectContaining({ leftItemId: alien, rightItemId: arrival, outcome: 'left' }),
+    );
+  });
+
+  it('leaves the item array and source document untouched', () => {
+    const [alien, arrival, aliens] = [idFor('Alien'), idFor('Arrival'), idFor('Aliens')];
+
+    store.getState().reorderItem(aliens, [alien, aliens, arrival]);
+
+    expect(store.getState().items.map((item) => item.value)).toEqual([
+      { title: 'Alien' },
+      { title: 'Arrival' },
+      { title: 'Aliens' },
+    ]);
+    expect(store.getState().workspace?.source.document).toEqual(triple.document);
+  });
+
+  it('nudges the derived ranking toward the dropped position', () => {
+    const [alien, arrival, aliens] = [idFor('Alien'), idFor('Arrival'), idFor('Aliens')];
+
+    store.getState().reorderItem(aliens, [alien, aliens, arrival]);
+
+    expect(store.getState().ranking().map((entry) => (entry.item.value as { title: string }).title)).toEqual([
+      'Alien',
+      'Aliens',
+      'Arrival',
+    ]);
+  });
+
+  it('does not set alreadyRanked', () => {
+    const [alien, arrival, aliens] = [idFor('Alien'), idFor('Arrival'), idFor('Aliens')];
+
+    store.getState().reorderItem(aliens, [alien, aliens, arrival]);
+
+    expect(store.getState().workspace?.alreadyRanked).toBe(false);
+  });
+
+  it('ignores an id that is not in the new order', () => {
+    store.getState().reorderItem('nonsense', [idFor('Alien'), idFor('Arrival'), idFor('Aliens')]);
 
     expect(store.getState().comparisonEvents).toEqual([]);
   });
 
-  it('writes the new order into the source document', () => {
-    const ids = store.getState().items.map((item) => item.id);
+  it('ignores an item that has been removed', () => {
+    const [alien, arrival, aliens] = [idFor('Alien'), idFor('Arrival'), idFor('Aliens')];
+    store.getState().removeItem(aliens);
 
-    store.getState().reorderAndRestart([...ids].reverse());
-    const document = store.getState().workspace?.source.document as {
-      movies: { title: string }[];
-    };
+    store.getState().reorderItem(aliens, [alien, aliens, arrival]);
 
-    expect(document.movies.map((entry) => entry.title)).toEqual(['Arrival', 'Alien']);
-  });
-
-  it('keeps the wrapper keys of the source document', () => {
-    const ids = store.getState().items.map((item) => item.id);
-
-    store.getState().reorderAndRestart([...ids].reverse());
-
-    expect(store.getState().workspace?.source.document).toMatchObject({ owner: 'david' });
-  });
-
-  it('regenerates the raw text, so editing shows the new order', () => {
-    const ids = store.getState().items.map((item) => item.id);
-
-    store.getState().reorderAndRestart([...ids].reverse());
-    const rawText = store.getState().workspace?.source.rawText ?? '';
-
-    expect(rawText.indexOf('Arrival')).toBeLessThan(rawText.indexOf('Alien'));
-  });
-
-  it('drops items that were removed during comparison', () => {
-    const ids = store.getState().items.map((item) => item.id);
-    store.getState().removeItem(ids[0] ?? '');
-
-    store.getState().reorderAndRestart([ids[1] ?? '']);
-
-    expect(store.getState().items).toHaveLength(1);
-    expect(store.getState().items[0]?.value).toEqual({ title: 'Arrival' });
-  });
-
-  it('ignores ids that are not in the list', () => {
-    const ids = store.getState().items.map((item) => item.id);
-
-    store.getState().reorderAndRestart([...ids, 'nonsense']);
-
-    expect(store.getState().items).toHaveLength(2);
+    expect(store.getState().comparisonEvents).toEqual([]);
   });
 
   it('does nothing without a workspace', () => {
     const empty = makeStore();
 
-    empty.getState().reorderAndRestart(['a']);
+    empty.getState().reorderItem('a', ['a', 'b']);
 
     expect(empty.getState().workspace).toBeNull();
-  });
-
-  it('seeds ratings from the hand-arranged order instead of resetting flat', () => {
-    const ids = store.getState().items.map((item) => item.id);
-
-    store.getState().reorderAndRestart([...ids].reverse());
-
-    expect(store.getState().workspace?.alreadyRanked).toBe(true);
-    expect(store.getState().ranking()[0]?.item.value).toEqual({ title: 'Arrival' });
-    expect(store.getState().ranking()[0]?.state.rating).toBeGreaterThan(1500);
   });
 });

@@ -152,9 +152,8 @@ export default function RankScreen() {
           exportText={exportText}
           filename={exportFilename(downloadName(workspace.source), format)}
           format={format}
-          comparisonCount={progress.comparisons}
           removedCount={selectRemovedCount(items)}
-          onReorder={(itemIds) => listStore.getState().reorderAndRestart(itemIds)}
+          onReorder={(itemId, nextOrder) => listStore.getState().reorderItem(itemId, nextOrder)}
         />
       }
     />

@@ -2,7 +2,6 @@ import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
 
-import { buildExport, buildExportDocument } from '@/lib/export/buildExport';
 import { entriesAtPath } from '@/lib/import/arrayCandidates';
 import { diffImport } from '@/lib/import/diff';
 import { WORKSPACE_VERSION } from '@/lib/persistence/workspaceSnapshot';
@@ -69,8 +68,8 @@ export interface ListState {
    * anything.
    */
   switchList(input: StartInput): void;
-  /** Manual ordering restarts ranking from that order. See the spec, section 3. */
-  reorderAndRestart(itemIds: string[]): void;
+  /** Manual ordering adds comparisons against the item's new neighbours. */
+  reorderItem(itemId: string, nextOrder: string[]): void;
   setPreviewTab(tab: PreviewTab): void;
   recordComparison(leftItemId: string, rightItemId: string, outcome: ComparisonOutcome): void;
   removeItem(itemId: string): void;
@@ -113,6 +112,15 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
 
       const outcome = storage.save(snapshot);
       set({ saveOutcome: outcome, ...(outcome === 'saved' ? { lastSavedAt: now() } : {}) });
+    }
+
+    function makeComparisonEvent(
+      listId: string,
+      leftItemId: string,
+      rightItemId: string,
+      outcome: ComparisonOutcome,
+    ): ComparisonEvent {
+      return { id: createId(), listId, leftItemId, rightItemId, outcome, createdAt: now() };
     }
 
     function makeItem(listId: string, value: unknown): ListItem {
@@ -303,37 +311,37 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       },
 
       /**
-       * A hand-arranged order becomes the new starting point. Rather than
-       * layering manual positions over the derived ranking, the reordered array
-       * is written back into the user's document and re-imported, so the
-       * ranking stays a pure derivation of comparison history.
+       * A hand-arranged position becomes two ordinary comparisons against the
+       * item's new neighbours - the same rating nudge and progress credit one
+       * side-by-side pick would give, rather than discarding every comparison
+       * and re-seeding the whole list. The ranking stays a pure derivation of
+       * comparison history; a drag just adds to that history instead of
+       * replacing it.
        */
-      reorderAndRestart(itemIds: string[]) {
-        const { workspace, items } = get();
+      reorderItem(itemId: string, nextOrder: string[]) {
+        const { workspace, items, comparisonEvents } = get();
         if (workspace === null) return;
 
-        const byId = new Map(items.map((item) => [item.id, item]));
-        const ordered = itemIds
-          .map((id) => byId.get(id))
-          .filter((item): item is ListItem => item !== undefined && item.active);
-        if (ordered.length === 0) return;
+        const isActive = (id: string) => items.some((item) => item.id === id && item.active);
+        const index = nextOrder.indexOf(itemId);
+        if (index < 0 || !isActive(itemId)) return;
 
-        const entries = ordered.map((item) => item.value);
-        const document = buildExportDocument(workspace.source, workspace.roles, entries);
-        const rawText = buildExport(
-          workspace.source,
-          workspace.roles,
-          ordered,
-          workspace.source.format,
-        );
+        const aboveId = index > 0 ? nextOrder[index - 1] : undefined;
+        const belowId = index < nextOrder.length - 1 ? nextOrder[index + 1] : undefined;
 
-        get().startRanking({
-          source: { ...workspace.source, document, rawText },
-          roles: workspace.roles,
-          // A hand-arranged order is the user asserting a correct ranking,
-          // so it seeds ratings from that order rather than resetting flat.
-          alreadyRanked: true,
-        });
+        const events: ComparisonEvent[] = [];
+        // The neighbour now above ranks better, so it wins; the one now below
+        // ranks worse, so the moved item wins that pair.
+        if (aboveId !== undefined && isActive(aboveId)) {
+          events.push(makeComparisonEvent(workspace.id, itemId, aboveId, 'right'));
+        }
+        if (belowId !== undefined && isActive(belowId)) {
+          events.push(makeComparisonEvent(workspace.id, itemId, belowId, 'left'));
+        }
+        if (events.length === 0) return;
+
+        set({ comparisonEvents: [...comparisonEvents, ...events] });
+        persist();
       },
 
       setPreviewTab(tab: PreviewTab) {
@@ -348,14 +356,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         const isRankable = (id: string) => items.some((item) => item.id === id && item.active);
         if (!isRankable(leftItemId) || !isRankable(rightItemId)) return;
 
-        const event: ComparisonEvent = {
-          id: createId(),
-          listId: workspace.id,
-          leftItemId,
-          rightItemId,
-          outcome,
-          createdAt: now(),
-        };
+        const event = makeComparisonEvent(workspace.id, leftItemId, rightItemId, outcome);
         set({ comparisonEvents: [...comparisonEvents, event] });
         persist();
       },

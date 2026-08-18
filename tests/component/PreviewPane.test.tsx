@@ -41,7 +41,6 @@ function setup(overrides: Partial<React.ComponentProps<typeof PreviewPane>> = {}
     exportText: 'movies:\n  - title: Arrival\n',
     filename: 'films-2026-08-16.yaml',
     format: 'yaml',
-    comparisonCount: 0,
     removedCount: 0,
     onReorder: vi.fn(),
     ...overrides,
