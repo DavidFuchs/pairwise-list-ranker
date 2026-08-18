@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { FileDrop } from '@/components/data/FileDrop';
+import { SampleIcon } from '@/components/ui/SampleIcon';
 import { SAMPLE_JSON, SAMPLE_LIST, SAMPLE_YAML } from '@/lib/import/sampleData';
 import type { ParseIssue } from '@/lib/import/types';
 import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
@@ -71,44 +72,46 @@ export function SourceInput({
       />
 
       <View style={styles.controls}>
-        <View style={styles.sources}>
-          <FileDrop onFile={onChange} />
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Load sample data"
-            onPress={() => {
-              // Load data that matches the active tab: the plain titles on
-              // Auto/Plain list, or the richer year/genre data on YAML/JSON.
-              // Some titles (e.g. "2001: A Space Odyssey") read as YAML keys
-              // to the auto-sniffer, so Auto still pins to Plain list.
-              const target = override === 'yaml' || override === 'json' ? override : 'list';
-              onOverrideChange(target);
-              onChange(SAMPLE_TEXT[target]);
-            }}
-            style={styles.sampleButton}
-          >
-            <Text style={styles.sampleButtonLabel}>Load sample data</Text>
-          </Pressable>
-        </View>
+        <FileDrop onFile={onChange} />
 
         <View style={styles.overrides} role="radiogroup" aria-label="How to read the text">
           {visibleOverrides.map((option) => {
             const selected = option.key === override;
+            // Auto has no sample of its own — loading a sample always pins to
+            // a concrete format, so only the Plain list/YAML/JSON tabs get
+            // the trigger that reveals what their sample data looks like.
+            const sample = option.key === 'auto' ? undefined : SAMPLE_TEXT[option.key];
 
             return (
-              <Pressable
-                key={option.key}
-                role="radio"
-                accessibilityLabel={option.accessibilityLabel}
-                aria-checked={selected}
-                onPress={() => onOverrideChange(option.key)}
-                style={[styles.override, selected && styles.overrideSelected]}
-              >
-                <Text style={[styles.overrideLabel, selected && styles.overrideLabelSelected]}>
-                  {option.label}
-                </Text>
-              </Pressable>
+              <View key={option.key} style={[styles.override, selected && styles.overrideSelected]}>
+                <Pressable
+                  role="radio"
+                  accessibilityLabel={option.accessibilityLabel}
+                  aria-checked={selected}
+                  onPress={() => onOverrideChange(option.key)}
+                  style={styles.overrideLabelPress}
+                >
+                  <Text style={[styles.overrideLabel, selected && styles.overrideLabelSelected]}>
+                    {option.label}
+                  </Text>
+                </Pressable>
+
+                {sample !== undefined && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Load the ${option.label} sample`}
+                    onPress={() => {
+                      onOverrideChange(option.key);
+                      onChange(sample);
+                    }}
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                    dataSet={{ sample: 'tab' }}
+                    style={styles.sampleTrigger}
+                  >
+                    <SampleIcon />
+                  </Pressable>
+                )}
+              </View>
             );
           })}
         </View>
@@ -164,28 +167,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: space.sm,
   },
-  sources: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  sampleButton: {
-    paddingVertical: space.xs,
-    paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceSunken,
-  },
-  sampleButtonLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.textPrimary },
   overrides: { flexDirection: 'row', gap: space.xs },
   override: {
-    paddingVertical: space.xs,
-    paddingHorizontal: space.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surfaceSunken,
+    overflow: 'hidden',
   },
   overrideSelected: { borderColor: colors.accentSoftBorder, backgroundColor: colors.accentSoft },
+  overrideLabelPress: { paddingVertical: space.xs, paddingHorizontal: space.sm },
   overrideLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
   overrideLabelSelected: { color: colors.accentStrong, fontWeight: '600' },
+  sampleTrigger: {
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    paddingHorizontal: space.xs,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
+  },
   detected: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint },
   issue: { fontFamily: fonts.body, fontSize: 13, color: colors.dangerText },
 });

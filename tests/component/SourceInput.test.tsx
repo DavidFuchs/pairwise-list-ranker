@@ -90,28 +90,37 @@ describe('SourceInput', () => {
     expect(screen.getByLabelText(/choose a file to import/i)).toBeDefined();
   });
 
-  it('loads the plain-list sample by default', async () => {
-    const { onChange, onOverrideChange, user } = setup();
+  it('offers a sample trigger on each concrete format tab, but not Auto', () => {
+    setup();
 
-    await user.click(screen.getByRole('button', { name: /load sample data/i }));
+    expect(screen.getByRole('button', { name: /load the plain list sample/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /load the yaml sample/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /load the json sample/i })).toBeDefined();
+    expect(screen.queryByRole('button', { name: /load the auto sample/i })).toBeNull();
+  });
+
+  it('loads the plain-list sample from its own tab, regardless of which tab is active', async () => {
+    const { onChange, onOverrideChange, user } = setup({ override: 'yaml' });
+
+    await user.click(screen.getByRole('button', { name: /load the plain list sample/i }));
 
     expect(onOverrideChange).toHaveBeenCalledWith('list');
     expect(onChange).toHaveBeenCalledWith(expect.not.stringContaining('genre'));
   });
 
-  it('loads the complex sample while on the YAML tab', async () => {
-    const { onChange, onOverrideChange, user } = setup({ override: 'yaml' });
+  it('loads the complex sample from the YAML tab', async () => {
+    const { onChange, onOverrideChange, user } = setup();
 
-    await user.click(screen.getByRole('button', { name: /load sample data/i }));
+    await user.click(screen.getByRole('button', { name: /load the yaml sample/i }));
 
     expect(onOverrideChange).toHaveBeenCalledWith('yaml');
     expect(onChange).toHaveBeenCalledWith(expect.stringContaining('genre'));
   });
 
-  it('loads the complex sample while on the JSON tab', async () => {
-    const { onChange, onOverrideChange, user } = setup({ override: 'json' });
+  it('loads the complex sample from the JSON tab', async () => {
+    const { onChange, onOverrideChange, user } = setup();
 
-    await user.click(screen.getByRole('button', { name: /load sample data/i }));
+    await user.click(screen.getByRole('button', { name: /load the json sample/i }));
 
     expect(onOverrideChange).toHaveBeenCalledWith('json');
     expect(onChange).toHaveBeenCalledWith(expect.stringContaining('"genre"'));

@@ -196,8 +196,27 @@ html, body { background-color: var(--canvas); }
   background-color: var(--danger-soft);
 }
 
-/* Dragging a ranked row: the grip is the only draggable part. */
-[data-grip] { cursor: grab; }
+/*
+ * The per-tab sample trigger stays just as quiet, then turns the accent
+ * colour the tab itself would wear once selected.
+ */
+[data-sample] {
+  --sample-ink: var(--text-faint);
+  transition: background-color 140ms ease;
+}
+[data-sample]:hover,
+[data-sample]:focus-visible {
+  --sample-ink: var(--accent-strong);
+  background-color: var(--accent-soft);
+}
+
+/*
+ * Dragging a ranked row: the grip is the only draggable part.
+ * touch-action: none stops the browser from treating the drag as a page
+ * scroll, which on touch devices otherwise cancels the pointer sequence
+ * (a pointercancel) the instant the finger moves.
+ */
+[data-grip] { cursor: grab; touch-action: none; }
 [data-grip]:active { cursor: grabbing; }
 
 /*
