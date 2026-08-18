@@ -302,6 +302,60 @@ describe('keyboard shortcuts', () => {
     expect(screen.getByText(/s skips/i)).toBeDefined();
   });
 
+  it('says which key finishes the delete it is halfway through', async () => {
+    const { user } = setup();
+
+    await user.keyboard('d');
+
+    expect(screen.getByText(/press L or R/i)).toBeDefined();
+  });
+
+  it('drops a half-typed delete when the pair is answered by pointer', async () => {
+    const { user } = setup();
+
+    await user.keyboard('d');
+    await user.click(screen.getByLabelText('Choose Tacos'));
+
+    expect(screen.queryByText(/press L or R/i)).toBeNull();
+  });
+
+  it('names the keys that answer the confirmation', async () => {
+    const { user } = setup();
+
+    await user.keyboard('dl');
+
+    const confirm = screen.getByRole('alert');
+    expect(within(confirm).getByText('Enter')).toBeDefined();
+    expect(within(confirm).getByText('Esc')).toBeDefined();
+    expect(screen.getByText(/enter removes/i)).toBeDefined();
+  });
+
+  it('moves focus to the confirmation, and back to the trash can on a keep', async () => {
+    const { user } = setup();
+
+    await user.keyboard('dl');
+    expect(window.document.activeElement).toBe(screen.getByRole('alert'));
+
+    await user.keyboard('{Escape}');
+    expect(window.document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Delete Tacos' }),
+    );
+  });
+
+  it('lets a focused confirmation button answer for itself', async () => {
+    const { onDelete, user } = setup();
+
+    await user.keyboard('dl');
+    const keep = screen.getByRole('button', { name: 'Keep Tacos' });
+    keep.focus();
+    await user.keyboard('{Enter}');
+
+    // The global Enter binding must not fire the destructive action out from
+    // under a button whose own label says "Keep".
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Delete Tacos' })).toBeDefined();
+  });
+
   it('stays quiet when there is no pair to act on', async () => {
     const { onOutcome, user } = setup({
       pair: null,

@@ -44,8 +44,8 @@ test('ranks a plain list and exports it', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
 
-  await expect(page.getByRole('button', { name: /^Choose / }).first()).toBeVisible();
-  await page.getByRole('button', { name: /^Choose / }).first().click();
+  await expect(page.getByLabel(/^Choose /).first()).toBeVisible();
+  await page.getByLabel(/^Choose /).first().click();
 
   await page.getByRole('tab', { name: 'Plain list' }).click();
   await expect(page.getByLabel('list export')).toContainText('Tacos');
@@ -82,7 +82,7 @@ test('resumes after a reload, then can start over', async ({ page }) => {
 test('edits the data mid-run and keeps the rankings', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
-  await page.getByRole('button', { name: /^Choose / }).first().click();
+  await page.getByLabel(/^Choose /).first().click();
 
   await page.getByRole('button', { name: 'Edit data' }).click();
   await enterData(page, `${DINNERS}\nUdon`);
@@ -97,7 +97,7 @@ test('chooses by clicking anywhere on a card', async ({ page }) => {
   await page.getByRole('button', { name: 'Start ranking' }).click();
 
   await expect(page.getByText(/^0 comparisons ·/)).toBeVisible();
-  await page.getByRole('button', { name: /^Choose / }).first().click();
+  await page.getByLabel(/^Choose /).first().click();
 
   await expect(page.getByText(/^1 comparisons ·/)).toBeVisible();
 });
@@ -124,8 +124,8 @@ test('details open on both cards from one toggle', async ({ page }) => {
   await page.getByRole('button', { name: 'Start ranking' }).click();
 
   // Scoped to the cards: the ranked list shows the same fields in its own rows.
-  const alien = page.getByRole('button', { name: 'Choose Alien' });
-  const arrival = page.getByRole('button', { name: 'Choose Arrival' });
+  const alien = page.getByLabel('Choose Alien');
+  const arrival = page.getByLabel('Choose Arrival');
 
   // Collapsed, each card summarises its fields as chips.
   await expect(alien.getByText('year: 1979')).toBeVisible();
@@ -152,7 +152,7 @@ test('much better records a strong win in one click', async ({ page }) => {
 test('reordering by hand restarts the ranking', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
-  await page.getByRole('button', { name: /^Choose / }).first().click();
+  await page.getByLabel(/^Choose /).first().click();
   await expect(page.getByText(/^1 comparisons ·/)).toBeVisible();
 
   // Keyboard reordering is the same commit path as a drop, and is stable to drive.

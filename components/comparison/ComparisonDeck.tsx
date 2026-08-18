@@ -61,7 +61,7 @@ export function ComparisonDeck({
     });
   }, [onDelete, pair]);
 
-  useComparisonShortcuts({
+  const { awaitingSide, clearAwaitingSide } = useComparisonShortcuts({
     enabled: pair !== null,
     armed: armed !== null,
     onChoose: useCallback(
@@ -73,6 +73,16 @@ export function ComparisonDeck({
     onConfirmDelete: confirmDelete,
     onCancelDelete: useCallback(() => setArmed(null), []),
   });
+
+  // A pointer answering the pair abandons a D that is still waiting for its
+  // side, so the prompt never outlives the pair it was typed against.
+  const choose = useCallback(
+    (outcome: ComparisonOutcome) => {
+      clearAwaitingSide();
+      emit(outcome);
+    },
+    [clearAwaitingSide, emit],
+  );
 
   if (pair === null) {
     return (
@@ -110,8 +120,8 @@ export function ComparisonDeck({
           sortField={sortField}
           expanded={showDetails}
           pendingDelete={armed === 'left'}
-          onChoose={() => emit('left')}
-          onChooseStrong={() => emit('left_strong')}
+          onChoose={() => choose('left')}
+          onChooseStrong={() => choose('left_strong')}
           onRequestDelete={() => setArmed('left')}
           onConfirmDelete={confirmDelete}
           onCancelDelete={() => setArmed(null)}
@@ -128,8 +138,8 @@ export function ComparisonDeck({
           sortField={sortField}
           expanded={showDetails}
           pendingDelete={armed === 'right'}
-          onChoose={() => emit('right')}
-          onChooseStrong={() => emit('right_strong')}
+          onChoose={() => choose('right')}
+          onChooseStrong={() => choose('right_strong')}
           onRequestDelete={() => setArmed('right')}
           onConfirmDelete={confirmDelete}
           onCancelDelete={() => setArmed(null)}
@@ -155,18 +165,29 @@ export function ComparisonDeck({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Skip this pair"
-            onPress={() => emit('skip')}
+            onPress={() => choose('skip')}
             style={styles.skip}
           >
             <Text style={styles.skipText}>Skip this pair</Text>
           </Pressable>
         </View>
-        <Text style={styles.shortcuts}>
-          Arrow keys choose · shift + arrow for much better · S skips · D then L or R removes
+        <Text style={styles.shortcuts} accessibilityLiveRegion="polite">
+          {shortcutLine(awaitingSide, armed !== null)}
         </Text>
       </View>
     </View>
   );
+}
+
+/**
+ * The line under the tray reports the shortcut the user is halfway through
+ * rather than the whole set: a two-step shortcut with an invisible first step
+ * is a dead end, and a confirmation whose keys are unstated is another.
+ */
+function shortcutLine(awaitingSide: boolean, armed: boolean): string {
+  if (armed) return 'Enter removes · Esc keeps';
+  if (awaitingSide) return 'Removing: press L or R for a side · any other key cancels';
+  return 'Arrow keys choose · shift + arrow for much better · S skips · D then L or R removes';
 }
 
 /** Whether an item carries anything beyond the field that titles its card. */

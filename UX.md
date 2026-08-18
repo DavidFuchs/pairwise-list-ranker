@@ -92,13 +92,16 @@ Each card is itself the choice: pressing anywhere on it picks that item. That
 removes four buttons from a screen whose whole job is picking one of two things.
 
 Each card contains, top to bottom:
-- a quiet remove control in the corner. There is no LEFT/RIGHT marker: which
-  side a card is on is self-evident from where it sits.
+- a quiet remove control in the corner: a trash can, drawn in the faint text
+  tone until it is hovered or focused, where it turns the red of what it does.
+  There is no LEFT/RIGHT marker: which side a card is on is self-evident from
+  where it sits.
 - the item label, from the label field for object entries
 - summary chips for short scalar fields
 - an expandable details region for the rest of the object
 - a footer, aligned across both cards, holding:
-  - a `Click to choose` hint that fades in on hover
+  - a `Click to choose` hint, always visible: touch devices never hover, and
+    the instruction is worth nothing to anyone who has to discover it
   - **Much better**, a compact pill that says in words what it does. An icon
     alone reads as decoration to anyone who has not been told what it means,
     and this button changes how far the ranking moves.
@@ -460,6 +463,18 @@ Keyboard suggestions:
 - shift + left/right: much better variants
 - S: skip
 - D then L or R: delete left/right with confirmation
+- Enter confirms that delete, Escape keeps the item
+
+A shortcut the user cannot see halfway through is a dead end, so the line
+under the tray reports the step they are on: after D it asks for a side,
+and while a delete waits it names the two keys that answer it. The
+confirmation writes those keys on its own buttons as well, because the
+delete is the one action reachable both by pointer and by shortcut.
+
+Focus follows the confirmation: it opens with focus, since the control that
+opened it is gone by then, and hands focus back to the trash can if the item
+is kept. Enter is bound globally there, but stands aside for a focused
+button, which says on its face what it does.
 
 ## Empty, error, and edge states
 

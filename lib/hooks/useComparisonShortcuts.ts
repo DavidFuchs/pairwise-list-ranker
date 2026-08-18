@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export type ShortcutSide = 'left' | 'right';
 
@@ -14,6 +14,16 @@ export interface ComparisonShortcutHandlers {
   enabled: boolean;
 }
 
+export interface ComparisonShortcutState {
+  /**
+   * True between D and the L or R that picks a side. The deck says so on
+   * screen: a half-finished shortcut the user cannot see is a dead end.
+   */
+  awaitingSide: boolean;
+  /** Abandons a half-pressed D when the user acts by pointer instead. */
+  clearAwaitingSide: () => void;
+}
+
 /**
  * Keyboard shortcuts for the comparison stage (UX.md): arrows choose, shift +
  * arrow marks a much-better win, S skips, and D followed by L or R arms a
@@ -27,18 +37,25 @@ export function useComparisonShortcuts({
   onCancelDelete,
   armed,
   enabled,
-}: ComparisonShortcutHandlers): void {
+}: ComparisonShortcutHandlers): ComparisonShortcutState {
+  /** Set by pressing D; the next L or R picks the side. */
+  const [sideRequested, setSideRequested] = useState(false);
+  // A prompt for the second half of a shortcut has no business outliving
+  // the stage it was typed on, or a delete that already found its side, so
+  // those two cases are read off the props rather than remembered.
+  const awaitingSide = sideRequested && !armed && enabled;
+
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return;
-
-    /** Set by pressing D; the next L or R picks the side. */
-    let deletePending = false;
 
     const handler = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target) || event.metaKey || event.ctrlKey || event.altKey) return;
 
       if (armed) {
-        if (event.key === 'Enter') {
+        // Enter is bound globally so the confirmation answers the hand already
+        // on the keyboard - but a focused button says on its face what it
+        // does, so there Enter belongs to the button rather than to us.
+        if (event.key === 'Enter' && !isActivatableTarget(event.target)) {
           event.preventDefault();
           onConfirmDelete();
         } else if (event.key === 'Escape') {
@@ -50,8 +67,8 @@ export function useComparisonShortcuts({
 
       const key = event.key.toLowerCase();
 
-      if (deletePending) {
-        deletePending = false;
+      if (sideRequested) {
+        setSideRequested(false);
         if (key === 'l' || key === 'r') {
           event.preventDefault();
           onArmDelete(key === 'l' ? 'left' : 'right');
@@ -74,7 +91,7 @@ export function useComparisonShortcuts({
           break;
         case 'd':
           event.preventDefault();
-          deletePending = true;
+          setSideRequested(true);
           break;
         default:
           break;
@@ -83,11 +100,29 @@ export function useComparisonShortcuts({
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onChoose, onSkip, onArmDelete, onConfirmDelete, onCancelDelete, armed, enabled]);
+  }, [
+    onChoose,
+    onSkip,
+    onArmDelete,
+    onConfirmDelete,
+    onCancelDelete,
+    armed,
+    sideRequested,
+    enabled,
+  ]);
+
+  return { awaitingSide, clearAwaitingSide: useCallback(() => setSideRequested(false), []) };
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (target === null || !(target instanceof Element)) return false;
   const tag = target.tagName;
   return tag === 'INPUT' || tag === 'TEXTAREA' || target.hasAttribute('contenteditable');
+}
+
+/** Whether the key would already activate whatever the user has focused. */
+function isActivatableTarget(target: EventTarget | null): boolean {
+  if (target === null || !(target instanceof Element)) return false;
+  const role = target.getAttribute('role');
+  return target.tagName === 'BUTTON' || target.tagName === 'A' || role === 'button' || role === 'link';
 }

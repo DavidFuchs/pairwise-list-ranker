@@ -181,17 +181,24 @@ html, body { background-color: var(--canvas); }
   background-image: linear-gradient(180deg, var(--surface-sunken) 0%, var(--surface) 140%);
 }
 
+/*
+ * The remove control keeps out of the way until it is aimed at, then it turns
+ * the colour of what it does. The --trash-ink variable is read by the icon
+ * inside it, which is drawn from borders rather than a glyph.
+ */
+[data-remove] {
+  --trash-ink: var(--text-faint);
+  transition: background-color 140ms ease;
+}
+[data-remove]:hover,
+[data-remove]:focus-visible {
+  --trash-ink: var(--danger);
+  background-color: var(--danger-soft);
+}
+
 /* Dragging a ranked row: the grip is the only draggable part. */
 [data-grip] { cursor: grab; }
 [data-grip]:active { cursor: grabbing; }
-
-/*
- * The card is the choice, so it says so on hover rather than carrying a
- * permanent button. Touch devices never hover, which is why Much better stays
- * visible and this is only ever a hint.
- */
-[data-hint='choose'] { transition: opacity 160ms ease; }
-[data-surface='card']:hover [data-hint='choose'] { opacity: 1; }
 
 /*
  * The emphasis action comes up to temperature.
@@ -276,7 +283,6 @@ html, body { background-color: var(--canvas); }
 @media (prefers-reduced-motion: reduce) {
   [data-surface='card'] { transition: none; }
   [data-surface='card']:hover { transform: none; }
-  [data-hint='choose'] { opacity: 1; transition: none; }
   /* The gold still reads as gold standing still. */
   [data-fill='surplus'] { animation: none; background-position: 200% 0, 0 0; }
   /* Still hot, it just arrives there rather than igniting. */

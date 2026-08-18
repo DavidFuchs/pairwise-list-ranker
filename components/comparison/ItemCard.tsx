@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ObjectDrilldown } from '@/components/comparison/ObjectDrilldown';
@@ -52,6 +52,10 @@ export function ItemCard({
 }: ItemCardProps) {
   const reducedMotion = useReducedMotion();
   const [opacity] = useState(() => new Animated.Value(1));
+  const confirmRef = useRef<View | null>(null);
+  const removeRef = useRef<View | null>(null);
+  /** True while the confirmation below holds the focus this card took. */
+  const tookFocus = useRef(false);
 
   // Fade the replacement card in after each decision, so the swap reads as a
   // new pair rather than text mutating in place.
@@ -69,6 +73,20 @@ export function ItemCard({
     animation.start();
     return () => animation.stop();
   }, [item.id, opacity, reducedMotion]);
+
+  // The confirmation replaces the button that opened it, which would drop
+  // focus onto the document body and restart tabbing from the top of the
+  // page. Focus follows the prompt in, and comes back to the trash can when
+  // the prompt goes away without taking the card with it.
+  useEffect(() => {
+    if (pendingDelete) {
+      focusNode(confirmRef.current);
+      tookFocus.current = true;
+    } else if (tookFocus.current) {
+      tookFocus.current = false;
+      focusNode(removeRef.current);
+    }
+  }, [pendingDelete]);
 
   const label = selectItemLabel(item, sortField);
   const fields = isComplexItemValue(item.value) ? Object.entries(item.value) : [];
@@ -109,6 +127,8 @@ export function ItemCard({
               event.stopPropagation();
               onRequestDelete?.();
             }}
+            ref={removeRef}
+            dataSet={{ remove: 'card' }}
             style={styles.removeButton}
           >
             <TrashIcon />
@@ -136,7 +156,14 @@ export function ItemCard({
       {interactive && (
         <View style={styles.footer}>
           {pendingDelete ? (
-            <View style={styles.confirm}>
+            <View
+              ref={confirmRef}
+              accessibilityRole="alert"
+              // Focusable only to receive focus from the code above: it is
+              // a prompt, not a stop on the tab route.
+              tabIndex={-1}
+              style={styles.confirm}
+            >
               <Text style={styles.confirmText}>{`Remove "${label}" from the list?`}</Text>
               <View style={styles.confirmActions}>
                 <Pressable
@@ -149,6 +176,7 @@ export function ItemCard({
                   style={styles.confirmCancel}
                 >
                   <Text style={styles.confirmCancelText}>Keep</Text>
+                  <Text style={styles.confirmKey}>Esc</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -160,12 +188,13 @@ export function ItemCard({
                   style={styles.confirmDelete}
                 >
                   <Text style={styles.confirmDeleteText}>Remove</Text>
+                  <Text style={[styles.confirmKey, styles.confirmDeleteKey]}>Enter</Text>
                 </Pressable>
               </View>
             </View>
           ) : (
             <View style={styles.actions}>
-              <Text style={styles.hint} dataSet={{ hint: 'choose' }}>
+              <Text style={styles.hint}>
                 Click to choose
               </Text>
 
@@ -179,6 +208,14 @@ export function ItemCard({
       </Pressable>
     </Animated.View>
   );
+}
+
+/**
+ * Focus is a web notion, and these refs are DOM nodes there. On native the
+ * calls are no-ops, which is the right answer: there is no tab route to keep.
+ */
+function focusNode(node: View | null): void {
+  (node as unknown as HTMLElement | null)?.focus?.();
 }
 
 function isChipValue(value: unknown): boolean {
@@ -262,8 +299,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: 40,
   },
-  /** Revealed on hover by themeCss; kept visible under reduced motion. */
-  hint: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint, opacity: 0 },
+  hint: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint },
   confirm: {
     gap: space.sm,
     padding: space.sm,
@@ -276,8 +312,10 @@ const styles = StyleSheet.create({
   confirmActions: { flexDirection: 'row', gap: space.xs },
   confirmCancel: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
     minHeight: 34,
     borderRadius: radius.sm,
     borderWidth: 1,
@@ -286,11 +324,20 @@ const styles = StyleSheet.create({
   confirmCancelText: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
   confirmDelete: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
     minHeight: 34,
     borderRadius: radius.sm,
     backgroundColor: colors.danger,
   },
   confirmDeleteText: { fontFamily: fonts.body, fontSize: 12, fontWeight: '600', color: 'var(--danger-on-fill)' },
+  /**
+   * The delete is the one action here that can be reached two ways - the
+   * trash can and D then L or R - so the keys that answer it are written on
+   * the buttons rather than left to be guessed.
+   */
+  confirmKey: { fontFamily: fonts.mono, fontSize: 10, color: colors.textFaint },
+  confirmDeleteKey: { color: 'var(--danger-on-fill)', opacity: 0.7 },
 });
