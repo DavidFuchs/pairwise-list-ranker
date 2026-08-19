@@ -21,9 +21,11 @@ function setup(overrides: Partial<React.ComponentProps<typeof FoundPanel>> = {})
       { title: 'Arrival', order: 1 },
     ] as unknown[],
     ctaLabel: 'Start ranking',
+    isDefault: false,
     onSelectPath: vi.fn(),
     onRolesChange: vi.fn(),
     onAlreadyRankedChange: vi.fn(),
+    onSetAsDefault: vi.fn(),
     onSubmit: vi.fn(),
     ...overrides,
   };
@@ -178,5 +180,43 @@ describe('FoundPanel', () => {
     setup({ entries: [{ title: 'Alien' }] });
 
     expect(screen.getByText('1 item')).toBeDefined();
+  });
+});
+
+describe('FoundPanel default-for-every-list control', () => {
+  it('offers to make these the default when the document holds more than one list', () => {
+    setup();
+
+    expect(screen.getByRole('button', { name: /set as default/i })).toBeDefined();
+  });
+
+  it('says which lists the default reaches', () => {
+    setup();
+
+    expect(screen.getByText(/lists you have not set up yourself/i)).toBeDefined();
+  });
+
+  it('sets the default the moment it is pressed', async () => {
+    const { onSetAsDefault, user } = setup();
+
+    await user.click(screen.getByRole('button', { name: /set as default/i }));
+
+    expect(onSetAsDefault).toHaveBeenCalled();
+  });
+
+  it('says so, and asks nothing more, once these settings are the default', () => {
+    setup({ isDefault: true });
+
+    expect(screen.getByText(/these are the default/i)).toBeDefined();
+    expect(
+      screen.getByRole('button', { name: /set as default/i }).getAttribute('aria-disabled'),
+    ).toBe('true');
+  });
+
+  it('asks nothing when the document holds a single list', () => {
+    const plain = ['Alien', 'Arrival', 'Solaris'].join('\n');
+    setup({ analysis: analyzeSource(plain, 'auto'), selectedPath: [] });
+
+    expect(screen.queryByRole('button', { name: /set as default/i })).toBeNull();
   });
 });

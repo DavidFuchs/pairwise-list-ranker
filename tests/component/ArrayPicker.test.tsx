@@ -90,6 +90,19 @@ describe('ArrayPicker', () => {
     expect(screen.queryByRole('progressbar')).toBeNull();
   });
 
+  it('shows the setup each list would be ranked with', () => {
+    render(
+      <ArrayPicker
+        candidates={[movies, actors]}
+        value={['movies']}
+        onChange={vi.fn()}
+        configLines={{ movies: 'shown by title · already ranked' }}
+      />,
+    );
+
+    expect(screen.getByText('shown by title · already ranked')).toBeDefined();
+  });
+
   it('greys out and disables a list with fewer than two items', async () => {
     const tooShort: ArrayCandidate = { path: ['director'], count: 1, entryKind: 'scalar', samples: ['Cameron'] };
     const onChange = vi.fn();

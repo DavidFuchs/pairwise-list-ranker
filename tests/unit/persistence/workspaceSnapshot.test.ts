@@ -67,6 +67,57 @@ describe('parseWorkspaceSnapshot', () => {
     expect(parseWorkspaceSnapshot(ranked)?.workspace.alreadyRanked).toBe(true);
   });
 
+  it('round-trips the document defaults', () => {
+    const withDefaults = {
+      ...valid,
+      workspace: {
+        ...valid.workspace,
+        listDefaults: { roles: { labelField: 'name' }, alreadyRanked: true },
+      },
+    };
+
+    expect(parseWorkspaceSnapshot(withDefaults)?.workspace.listDefaults).toEqual({
+      roles: { labelField: 'name' },
+      alreadyRanked: true,
+    });
+  });
+
+  it('reads a pre-defaults snapshot as its own list being the default', () => {
+    const ranked = { ...valid, workspace: { ...valid.workspace, alreadyRanked: true } };
+
+    expect(parseWorkspaceSnapshot(ranked)?.workspace.listDefaults).toEqual({
+      roles: { labelField: 'title' },
+      alreadyRanked: true,
+    });
+  });
+
+  it('treats lists saved before the mark existed as set up by hand', () => {
+    const withSaved = {
+      ...valid,
+      savedLists: [
+        {
+          workspaceId: 'ws-0',
+          arrayPath: ['actors'],
+          roles: {},
+          alreadyRanked: false,
+          items: [],
+          comparisonEvents: [],
+          createdAt: '2026-08-16T00:00:00.000Z',
+          updatedAt: '2026-08-16T00:00:00.000Z',
+        },
+      ],
+    };
+
+    expect(parseWorkspaceSnapshot(withSaved)?.workspace.configuredExplicitly).toBe(true);
+    expect(parseWorkspaceSnapshot(withSaved)?.savedLists[0]?.configuredExplicitly).toBe(true);
+  });
+
+  it('round-trips a list left to the defaults', () => {
+    const derived = { ...valid, workspace: { ...valid.workspace, configuredExplicitly: false } };
+
+    expect(parseWorkspaceSnapshot(derived)?.workspace.configuredExplicitly).toBe(false);
+  });
+
   it('keeps an arbitrary source document untouched', () => {
     const wild = {
       ...valid,

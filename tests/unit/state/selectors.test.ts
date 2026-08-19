@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import {
   describeCoverage,
+  describeRoles,
   selectAvailableTabs,
   selectContextLine,
   selectCurrentPair,
   selectExportText,
+  selectListConfig,
   selectProgress,
   selectRanking,
   selectRemovedCount,
@@ -13,7 +15,7 @@ import {
 } from '@/lib/state/selectors';
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent } from '@/types/ranking';
-import type { Workspace } from '@/types/source';
+import type { SavedList, Workspace } from '@/types/source';
 
 const NOW = '2026-08-15T12:00:00.000Z';
 
@@ -27,6 +29,8 @@ const workspace: Workspace = {
   },
   roles: { labelField: 'title' },
   alreadyRanked: false,
+  listDefaults: { roles: { labelField: 'title' }, alreadyRanked: false },
+  configuredExplicitly: true,
   createdAt: NOW,
   updatedAt: NOW,
 };
@@ -286,5 +290,146 @@ describe('selectAvailableTabs', () => {
 
   it('offers only the ranked tab with no workspace', () => {
     expect(selectAvailableTabs(null)).toEqual(['ranked']);
+  });
+});
+
+describe('describeRoles', () => {
+  it('names the label field', () => {
+    expect(describeRoles({ labelField: 'title' }, false)).toBe('shown by title');
+  });
+
+  it('mentions the position field when there is one', () => {
+    expect(describeRoles({ labelField: 'title', positionField: 'order' }, false)).toBe(
+      'shown by title · order written back',
+    );
+  });
+
+  it('mentions already-ranked status when set', () => {
+    expect(describeRoles({ labelField: 'title' }, true)).toBe('shown by title · already ranked');
+  });
+
+  it('says nothing about a plain list that is in no particular order', () => {
+    expect(describeRoles({}, false)).toBe('');
+  });
+});
+
+describe('selectListConfig', () => {
+  const multiList: Workspace = {
+    ...workspace,
+    source: {
+      ...workspace.source,
+      document: {
+        movies: [{ title: 'Alien' }, { title: 'Arrival' }],
+        actors: [{ name: 'Weaver' }, { name: 'Adams' }],
+      },
+    },
+    alreadyRanked: true,
+    configuredExplicitly: true,
+    listDefaults: { roles: { labelField: 'title' }, alreadyRanked: true },
+  };
+
+  const savedActors: SavedList = {
+    workspaceId: 'list-2',
+    arrayPath: ['actors'],
+    roles: { labelField: 'name' },
+    alreadyRanked: false,
+    configuredExplicitly: true,
+    items: [],
+    comparisonEvents: [],
+    createdAt: NOW,
+    updatedAt: NOW,
+  };
+
+  it('reports the active list its own configuration', () => {
+    expect(selectListConfig(multiList, [], ['movies'])).toEqual({
+      roles: { labelField: 'title' },
+      alreadyRanked: true,
+    });
+  });
+
+  it('reports a parked list the configuration it was set up with', () => {
+    expect(selectListConfig(multiList, [savedActors], ['actors'])).toEqual({
+      roles: { labelField: 'name' },
+      alreadyRanked: false,
+    });
+  });
+
+  it('takes the order answer for an unconfigured list from the document defaults', () => {
+    const defaultNotRanked = {
+      ...multiList,
+      listDefaults: { roles: { labelField: 'title' }, alreadyRanked: false },
+    };
+
+    expect(selectListConfig(defaultNotRanked, [], ['actors']).alreadyRanked).toBe(false);
+  });
+
+  it('falls back to the target list own label field when the default one is absent', () => {
+    expect(selectListConfig(multiList, [], ['actors']).roles).toEqual({ labelField: 'name' });
+  });
+
+  it('keeps the default label field when the target list carries it too', () => {
+    const shared: Workspace = {
+      ...multiList,
+      source: {
+        ...multiList.source,
+        document: {
+          movies: [{ title: 'Alien' }, { title: 'Arrival' }],
+          books: [{ title: 'Dune' }, { title: 'Ubik' }],
+        },
+      },
+    };
+
+    expect(selectListConfig(shared, [], ['books']).roles).toEqual({ labelField: 'title' });
+  });
+
+  it('takes an unconfigured list from the defaults, not from whatever list is open', () => {
+    const onYear: Workspace = {
+      ...multiList,
+      source: {
+        ...multiList.source,
+        arrayPath: ['movies'],
+        document: {
+          movies: [{ title: 'Alien', year: 1979 }],
+          books: [{ title: 'Dune', year: 1965 }],
+        },
+      },
+      roles: { labelField: 'year' },
+      alreadyRanked: false,
+      listDefaults: { roles: { labelField: 'title' }, alreadyRanked: true },
+    };
+
+    expect(selectListConfig(onYear, [], ['books'])).toEqual({
+      roles: { labelField: 'title' },
+      alreadyRanked: true,
+    });
+  });
+
+  it('re-derives a parked list that was never set up by hand', () => {
+    const inherited: SavedList = {
+      ...savedActors,
+      roles: { labelField: 'name' },
+      alreadyRanked: false,
+      configuredExplicitly: false,
+    };
+    const defaults = {
+      ...multiList,
+      listDefaults: { roles: { labelField: 'nickname' }, alreadyRanked: true },
+      source: {
+        ...multiList.source,
+        document: {
+          movies: [{ title: 'Alien' }],
+          actors: [{ name: 'Weaver', nickname: 'Ripley' }],
+        },
+      },
+    };
+
+    expect(selectListConfig(defaults, [inherited], ['actors'])).toEqual({
+      roles: { labelField: 'nickname' },
+      alreadyRanked: true,
+    });
+  });
+
+  it('has nothing to inherit with no workspace', () => {
+    expect(selectListConfig(null, [], ['movies'])).toEqual({ roles: {}, alreadyRanked: false });
   });
 });

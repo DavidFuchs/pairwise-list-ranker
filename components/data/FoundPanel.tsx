@@ -18,6 +18,9 @@ export interface FoundPanelProps {
   selectedPath: string[] | null;
   roles: FieldRoles;
   alreadyRanked: boolean;
+  /** True when these settings already are the document's defaults - see
+   *  Workspace.listDefaults. */
+  isDefault?: boolean;
   /** The entries of the selected array, resolved by the screen. */
   entries: unknown[];
   /** True while the source box is untouched, which is not a failed import. */
@@ -26,9 +29,12 @@ export interface FoundPanelProps {
   /** Path key to ranking coverage for every candidate that already has
    *  progress behind it - see ArrayPicker. */
   rankedCoverages?: Record<string, number>;
+  /** Path key to the setup each list would be ranked with - see ArrayPicker. */
+  configLines?: Record<string, string>;
   onSelectPath: (path: string[]) => void;
   onRolesChange: (roles: FieldRoles) => void;
   onAlreadyRankedChange: (alreadyRanked: boolean) => void;
+  onSetAsDefault?: () => void;
   onSubmit: () => void;
 }
 
@@ -49,13 +55,16 @@ export function FoundPanel({
   selectedPath,
   roles,
   alreadyRanked,
+  isDefault = false,
   entries,
   isBlank,
   ctaLabel,
   rankedCoverages,
+  configLines,
   onSelectPath,
   onRolesChange,
   onAlreadyRankedChange,
+  onSetAsDefault,
   onSubmit,
 }: FoundPanelProps) {
   const objects = entries.filter(isPlainObject);
@@ -90,6 +99,7 @@ export function FoundPanel({
         value={selectedPath}
         onChange={onSelectPath}
         rankedCoverages={rankedCoverages}
+        configLines={configLines}
       />
 
       <OrderPicker
@@ -125,6 +135,24 @@ export function FoundPanel({
         </Text>
       ))}
 
+      {analysis.candidates.length > 1 && onSetAsDefault !== undefined && (
+        <View style={styles.defaults}>
+          <Button
+            label="Set as default"
+            accessibilityLabel="Set as default"
+            variant="secondary"
+            size="sm"
+            disabled={isDefault}
+            onPress={onSetAsDefault}
+          />
+          <Text style={styles.defaultsHint}>
+            {isDefault
+              ? 'These are the default. Lists you have not set up yourself follow them, here and in the list switcher.'
+              : 'Lists you have not set up yourself follow these settings, here and in the list switcher.'}
+          </Text>
+        </View>
+      )}
+
       {readiness.reason !== undefined && !askedByPicker && (
         <Text style={styles.reason}>{readiness.reason}</Text>
       )}
@@ -141,6 +169,14 @@ export function FoundPanel({
 }
 
 const styles = StyleSheet.create({
+  defaults: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  defaultsHint: {
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 11,
+    lineHeight: 15,
+    color: colors.textSecondary,
+  },
   panel: {
     flex: 1,
     gap: space.md,

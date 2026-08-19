@@ -12,7 +12,12 @@ import { useSourceDraft } from '@/lib/hooks/useSourceDraft';
 import type { SourceDraftSeed } from '@/lib/hooks/useSourceDraft';
 import { diffImport } from '@/lib/import/diff';
 import type { ImportDiff } from '@/lib/import/diff';
-import { selectProgress, selectRanking } from '@/lib/state/selectors';
+import {
+  describeRoles,
+  selectListConfig,
+  selectProgress,
+  selectRanking,
+} from '@/lib/state/selectors';
 import { listStore, useListStore } from '@/lib/state/useListStore';
 import type { DataSource } from '@/types/source';
 
@@ -138,6 +143,46 @@ export default function DataScreen() {
   const selectedCoverage = selectedPathKey === null ? 0 : (rankedCoverages[selectedPathKey] ?? 0);
   const orderPickerValue = draft.alreadyRankedIsExplicit ? draft.alreadyRanked : selectedCoverage > 0;
 
+  // Whether the controls on screen already say what every list not set up by
+  // hand follows, which decides both halves of the Set as default control.
+  const settingsAreDefault =
+    workspace !== null &&
+    workspace.listDefaults.alreadyRanked === orderPickerValue &&
+    workspace.listDefaults.roles.labelField === draft.roles.labelField &&
+    workspace.listDefaults.roles.positionField === draft.roles.positionField;
+
+  // What each list would be ranked with, shown on its row the same way the
+  // toolbar's switcher shows it. The list being edited follows the controls
+  // below instead of what is saved, so its row never contradicts the answers
+  // visible on the same screen.
+  const configLines = useMemo(() => {
+    const lines: Record<string, string> = {};
+    const scope =
+      workspace === null
+        ? null
+        : { ...workspace, source: { ...workspace.source, document: draft.analysis.document } };
+
+    for (const candidate of draft.analysis.candidates) {
+      const key = candidate.path.join('.');
+      const config = selectListConfig(scope, savedLists, candidate.path);
+      lines[key] = describeRoles(config.roles, config.alreadyRanked);
+    }
+
+    if (selectedPathKey !== null) {
+      lines[selectedPathKey] = describeRoles(draft.roles, orderPickerValue);
+    }
+
+    return lines;
+  }, [
+    workspace,
+    savedLists,
+    draft.analysis.document,
+    draft.analysis.candidates,
+    draft.roles,
+    selectedPathKey,
+    orderPickerValue,
+  ]);
+
   function handleSubmit() {
     const source = draft.toSource();
     if (source === null) return;
@@ -217,13 +262,25 @@ export default function DataScreen() {
             selectedPath={draft.selectedPath}
             roles={draft.roles}
             alreadyRanked={orderPickerValue}
+            isDefault={settingsAreDefault}
             entries={draft.entries}
             isBlank={rawTextIsBlank}
             ctaLabel={isSwitchingList ? 'Switch list' : editing ? 'Apply edits' : 'Start ranking'}
             rankedCoverages={rankedCoverages}
+            configLines={configLines}
             onSelectPath={draft.selectPath}
             onRolesChange={draft.setRoles}
             onAlreadyRankedChange={draft.setAlreadyRanked}
+            // The first list a document gets defines the defaults on its own,
+            // so there is nothing to set until there is one to change.
+            onSetAsDefault={
+              editing
+                ? () =>
+                    listStore
+                      .getState()
+                      .setListDefaults({ roles: draft.roles, alreadyRanked: orderPickerValue })
+                : undefined
+            }
             onSubmit={handleSubmit}
           />
         ) : (

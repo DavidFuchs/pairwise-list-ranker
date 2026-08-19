@@ -26,6 +26,12 @@ export interface FieldRoles {
   positionField?: string;
 }
 
+/** How one list is ranked: which fields carry which role, and its order. */
+export interface ListConfig {
+  roles: FieldRoles;
+  alreadyRanked: boolean;
+}
+
 export interface Workspace {
   id: string;
   source: DataSource;
@@ -33,6 +39,19 @@ export interface Workspace {
   /** True when the imported order is a trusted best-to-worst ranking, not an
    * arbitrary sequence - seeds initial ratings from it instead of flat 1500. */
   alreadyRanked: boolean;
+  /**
+   * The answer every list in this document gets until it is set up on its
+   * own. Held per document rather than read off whichever list is open, so
+   * that hand-configuring one list cannot quietly redefine what the next
+   * untouched list inherits.
+   */
+  listDefaults: ListConfig;
+  /**
+   * True when this list's own setup came from the data screen. False when it
+   * was derived from listDefaults, which is what lets a later change to the
+   * defaults still reach it.
+   */
+  configuredExplicitly: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,6 +67,9 @@ export interface SavedList {
   arrayPath: string[];
   roles: FieldRoles;
   alreadyRanked: boolean;
+  /** See Workspace.configuredExplicitly - a list keeps its answer across a
+   *  switch, including whether that answer was ever the user's own. */
+  configuredExplicitly: boolean;
   items: ListItem[];
   comparisonEvents: ComparisonEvent[];
   createdAt: string;

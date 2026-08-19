@@ -1,10 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { ProgressMeter } from '@/components/ui/ProgressMeter';
-import { formatPath, MIN_RANKABLE } from '@/lib/import/arrayCandidates';
+import { ListOptionRow } from '@/components/data/ListOptionRow';
 import type { ArrayCandidate } from '@/lib/import/arrayCandidates';
-import { describeCoverage } from '@/lib/state/selectors';
-import { colors, fonts, radius, space } from '@/lib/theme';
+import { colors, fonts, space } from '@/lib/theme';
 
 export interface ArrayPickerProps {
   candidates: ArrayCandidate[];
@@ -14,6 +12,9 @@ export interface ArrayPickerProps {
    *  candidate that already has progress behind it - each list in the
    *  document keeps its own, so more than one can show a meter. */
   rankedCoverages?: Record<string, number>;
+  /** Path key to the setup that list would be ranked with, e.g.
+   *  "shown by title · already ranked". See selectListConfig. */
+  configLines?: Record<string, string>;
 }
 
 /**
@@ -25,6 +26,7 @@ export function ArrayPicker({
   value,
   onChange,
   rankedCoverages = {},
+  configLines = {},
 }: ArrayPickerProps) {
   if (candidates.length < 2) return null;
 
@@ -36,55 +38,21 @@ export function ArrayPicker({
 
       {candidates.map((candidate) => {
         const key = candidate.path.join('.');
-        const selected = key === selectedKey;
-        const coverage = rankedCoverages[key];
-        const rankable = candidate.count >= MIN_RANKABLE;
 
         return (
-          <Pressable
+          <ListOptionRow
             key={key}
-            role="radio"
-            accessibilityLabel={
-              rankable
-                ? `Rank the list at ${formatPath(candidate.path)}`
-                : `${formatPath(candidate.path)} has too few items to rank`
-            }
-            accessibilityState={{ disabled: !rankable }}
-            aria-checked={selected}
-            disabled={!rankable}
+            candidate={candidate}
+            selected={key === selectedKey}
+            coverage={rankedCoverages[key]}
+            configLine={configLines[key]}
             onPress={() => onChange(candidate.path)}
-            style={[styles.option, selected && styles.optionSelected, !rankable && styles.optionDisabled]}
-          >
-            <View style={styles.header}>
-              <Text style={[styles.path, selected && styles.pathSelected]}>
-                {formatPath(candidate.path)}
-              </Text>
-              <Text style={styles.count}>
-                {rankable
-                  ? `${candidate.count} ${candidate.entryKind === 'object' ? 'objects' : 'texts'}`
-                  : 'Too few items to rank'}
-              </Text>
-            </View>
-            <Text style={styles.samples} numberOfLines={1}>
-              {candidate.samples.join(' · ')}
-            </Text>
-            {coverage !== undefined && (
-              <View style={styles.progressRow}>
-                <View style={styles.progressBar}>
-                  <ProgressMeter
-                    coverage={coverage}
-                    accessibilityLabel={`Ranking progress for ${formatPath(candidate.path)}`}
-                  />
-                </View>
-                <Text style={styles.progressLabel}>{describeCoverage(coverage).label}</Text>
-              </View>
-            )}
-          </Pressable>
+          />
         );
       })}
 
       <Text style={styles.hint}>
-        You can rank each list separately and switch between them anytime — on the ranking screen,
+        You can rank each list separately and switch between them anytime - on the ranking screen,
         click the list name in the top-left corner. Nothing is lost when you switch.
       </Text>
     </View>
@@ -99,24 +67,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
   },
-  option: {
-    gap: 2,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceSunken,
-  },
-  optionSelected: { borderColor: colors.accentSoftBorder, backgroundColor: colors.accentSoft },
-  optionDisabled: { opacity: 0.45 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  path: { fontFamily: fonts.mono, fontSize: 13, fontWeight: '600', color: colors.textPrimary },
-  pathSelected: { color: colors.accentStrong },
-  count: { fontFamily: fonts.body, fontSize: 11, color: colors.textSecondary },
-  samples: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
-  progressRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, marginTop: 2 },
-  progressBar: { flex: 1 },
-  progressLabel: { fontFamily: fonts.mono, fontSize: 11, color: colors.textFaint },
   hint: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.textSecondary },
 });

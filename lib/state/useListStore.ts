@@ -12,7 +12,14 @@ import type { ActivePair } from '@/lib/state/selectors';
 import { selectCurrentPair, selectRanking } from '@/lib/state/selectors';
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent, ComparisonOutcome, RankedItem } from '@/types/ranking';
-import type { DataSource, FieldRoles, PreviewTab, SavedList, Workspace } from '@/types/source';
+import type {
+  DataSource,
+  FieldRoles,
+  ListConfig,
+  PreviewTab,
+  SavedList,
+  Workspace,
+} from '@/types/source';
 
 function pathKey(path: string[]): string {
   return path.join('.');
@@ -30,6 +37,12 @@ export interface StartInput {
   roles: FieldRoles;
   /** True when the imported order is a trusted best-to-worst ranking. */
   alreadyRanked?: boolean;
+  /**
+   * False when this setup was derived from the document defaults rather than
+   * chosen - the switcher's one-press path. Anything arriving from the data
+   * screen is the user's own answer, so it defaults to true.
+   */
+  configuredExplicitly?: boolean;
 }
 
 export interface ListState {
@@ -68,6 +81,13 @@ export interface ListState {
    * anything.
    */
   switchList(input: StartInput): void;
+  /**
+   * Rewrites the answer every list not set up by hand follows. It takes effect
+   * at once and on its own: those lists read their setup from here rather than
+   * storing a copy, so nothing has to be rewritten list by list. The list being
+   * edited is untouched - setting a default is not applying it.
+   */
+  setListDefaults(config: ListConfig): void;
   /** Manual ordering adds comparisons against the item's new neighbours. */
   reorderItem(itemId: string, nextOrder: string[]): void;
   setPreviewTab(tab: PreviewTab): void;
@@ -181,6 +201,10 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           source,
           roles,
           alreadyRanked,
+          // The first list the user sets up defines what the rest of the
+          // document inherits, so there is never a document without an answer.
+          listDefaults: { roles, alreadyRanked },
+          configuredExplicitly: true,
           createdAt: timestamp,
           updatedAt: timestamp,
         };
@@ -229,12 +253,15 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
             ),
         ];
 
+        const settled = alreadyRanked ?? workspace.alreadyRanked;
+
         set({
           workspace: {
             ...workspace,
             source,
             roles,
-            alreadyRanked: alreadyRanked ?? workspace.alreadyRanked,
+            alreadyRanked: settled,
+            configuredExplicitly: true,
             updatedAt: timestamp,
           },
           items,
@@ -247,7 +274,12 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
        * is archived into savedLists instead of discarded; a list visited
        * before in this session is restored byte-for-byte, ratings and all.
        */
-      switchList({ source, roles, alreadyRanked = false }: StartInput) {
+      switchList({
+        source,
+        roles,
+        alreadyRanked = false,
+        configuredExplicitly = true,
+      }: StartInput) {
         const { workspace, items, comparisonEvents, savedLists } = get();
         if (workspace === null) {
           get().startRanking({ source, roles, alreadyRanked });
@@ -263,6 +295,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           arrayPath: workspace.source.arrayPath,
           roles: workspace.roles,
           alreadyRanked: workspace.alreadyRanked,
+          configuredExplicitly: workspace.configuredExplicitly,
           items,
           comparisonEvents,
           createdAt: workspace.createdAt,
@@ -270,14 +303,22 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         };
         const otherSaved = savedLists.filter((list) => pathKey(list.arrayPath) !== leftKey);
         const restored = otherSaved.find((list) => pathKey(list.arrayPath) === targetKey);
+        const listDefaults = workspace.listDefaults;
 
         if (restored !== undefined) {
           set({
             workspace: {
               id: restored.workspaceId,
               source,
-              roles: restored.roles,
-              alreadyRanked: restored.alreadyRanked,
+              // The caller resolved these against the defaults already, so a
+              // list never set up by hand picks up any change made since it
+              // was parked - see selectListConfig.
+              roles,
+              alreadyRanked,
+              listDefaults,
+              // Once a list is the user's own answer, coming back to it from
+              // the switcher must not quietly hand it back to the defaults.
+              configuredExplicitly: restored.configuredExplicitly || configuredExplicitly,
               createdAt: restored.createdAt,
               updatedAt: timestamp,
             },
@@ -295,6 +336,8 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           source,
           roles,
           alreadyRanked,
+          listDefaults,
+          configuredExplicitly,
           createdAt: timestamp,
           updatedAt: timestamp,
         };
@@ -307,6 +350,14 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           savedLists: [...otherSaved, archived],
           previewTab: 'ranked',
         });
+        persist();
+      },
+
+      setListDefaults(listDefaults: ListConfig) {
+        const workspace = get().workspace;
+        if (workspace === null) return;
+
+        set({ workspace: { ...workspace, listDefaults, updatedAt: now() } });
         persist();
       },
 
@@ -394,6 +445,9 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           saveOutcome: null,
           lastSavedAt: undefined,
           resumed: true,
+          // The document it named is gone, so preselecting it on the data
+          // screen would point at a list that no longer exists.
+          pendingSwitchPath: null,
         });
         storage.clear();
       },

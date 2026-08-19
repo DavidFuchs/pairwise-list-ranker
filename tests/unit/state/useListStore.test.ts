@@ -255,19 +255,29 @@ describe('switchList', () => {
     expect(saved?.comparisonEvents).toEqual(movieComparisons);
   });
 
-  it('restores a previously visited list exactly as it was left', () => {
+  it('restores the ranking of a previously visited list exactly as it was left', () => {
     const movieItems = store.getState().items;
     const movieComparisons = store.getState().comparisonEvents;
-    const movieRoles = store.getState().workspace?.roles;
 
     store.getState().switchList({ source: actors, roles: {} });
-    // Bring a fresh set of roles for actors - restoring movies must ignore
-    // these and use what movies actually had, not what is on screen now.
-    store.getState().switchList({ source: nested, roles: { labelField: 'unused' } });
+    store.getState().switchList({ source: nested, roles: { labelField: 'title' } });
 
     expect(store.getState().items).toEqual(movieItems);
     expect(store.getState().comparisonEvents).toEqual(movieComparisons);
-    expect(store.getState().workspace?.roles).toEqual(movieRoles);
+  });
+
+  /*
+   * Which fields a restored list comes back on is the caller's answer, not the
+   * archived one: the data screen sends what the user is looking at, and the
+   * switcher sends selectListConfig's - which returns a hand-configured list's
+   * own setup, and re-derives every other list from the document defaults. That
+   * is what lets a change to the defaults reach a list parked before it.
+   */
+  it('restores a list on the setup it is switched back with', () => {
+    store.getState().switchList({ source: actors, roles: {} });
+    store.getState().switchList({ source: nested, roles: { labelField: 'renamed' } });
+
+    expect(store.getState().workspace?.roles).toEqual({ labelField: 'renamed' });
   });
 
   it('leaves the list being switched to out of savedLists once it is active', () => {
@@ -466,5 +476,148 @@ describe('reorderItem', () => {
     empty.getState().reorderItem('a', ['a', 'b']);
 
     expect(empty.getState().workspace).toBeNull();
+  });
+});
+
+describe('reset', () => {
+  it('forgets a list the switcher asked the data screen to configure', () => {
+    const store = makeStore();
+    store.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
+    store.getState().requestListSwitch(['actors']);
+
+    store.getState().reset();
+
+    expect(store.getState().pendingSwitchPath).toBeNull();
+  });
+});
+
+describe('document-wide list defaults', () => {
+  let store: ReturnType<typeof makeStore>;
+  const actors: DataSource = {
+    format: 'yaml',
+    rawText: '',
+    document: {
+      movies: [{ title: 'Alien' }, { title: 'Arrival' }],
+      actors: [{ name: 'Weaver' }, { name: 'Adams' }],
+    },
+    arrayPath: ['actors'],
+  };
+  const movies: DataSource = { ...actors, arrayPath: ['movies'] };
+
+  beforeEach(() => {
+    store = makeStore();
+  });
+
+  it('takes the defaults from the first list the user sets up', () => {
+    store.getState().startRanking({
+      source: movies,
+      roles: { labelField: 'title' },
+      alreadyRanked: true,
+    });
+
+    expect(store.getState().workspace?.listDefaults).toEqual({
+      roles: { labelField: 'title' },
+      alreadyRanked: true,
+    });
+  });
+
+  it('counts the first list as set up by hand', () => {
+    store.getState().startRanking({ source: movies, roles: { labelField: 'title' } });
+
+    expect(store.getState().workspace?.configuredExplicitly).toBe(true);
+  });
+
+  it('rewrites the defaults when the user asks for it', () => {
+    store.getState().startRanking({ source: movies, roles: { labelField: 'title' } });
+
+    store.getState().setListDefaults({ roles: { labelField: 'name' }, alreadyRanked: true });
+
+    expect(store.getState().workspace?.listDefaults).toEqual({
+      roles: { labelField: 'name' },
+      alreadyRanked: true,
+    });
+  });
+
+  it('leaves the list being edited alone when the defaults are rewritten', () => {
+    store.getState().startRanking({ source: movies, roles: { labelField: 'title' } });
+
+    store.getState().setListDefaults({ roles: { labelField: 'name' }, alreadyRanked: true });
+
+    expect(store.getState().workspace?.roles).toEqual({ labelField: 'title' });
+    expect(store.getState().workspace?.alreadyRanked).toBe(false);
+  });
+
+  it('has no defaults to set before there is a document', () => {
+    store.getState().setListDefaults({ roles: { labelField: 'name' }, alreadyRanked: true });
+
+    expect(store.getState().workspace).toBeNull();
+  });
+
+  it('leaves the defaults alone for an ordinary edit', () => {
+    store.getState().startRanking({ source: movies, roles: { labelField: 'title' } });
+
+    store.getState().applyEdits({
+      source: movies,
+      roles: { labelField: 'title' },
+      alreadyRanked: true,
+    });
+
+    expect(store.getState().workspace?.listDefaults.alreadyRanked).toBe(false);
+  });
+
+  it('leaves a list derived from the defaults unmarked', () => {
+    store.getState().startRanking({ source: movies, roles: { labelField: 'title' } });
+
+    store
+      .getState()
+      .switchList({ source: actors, roles: { labelField: 'name' }, configuredExplicitly: false });
+
+    expect(store.getState().workspace?.configuredExplicitly).toBe(false);
+  });
+
+  it('marks a list the user set up on the data screen', () => {
+    store.getState().startRanking({ source: movies, roles: { labelField: 'title' } });
+
+    store.getState().switchList({ source: actors, roles: { labelField: 'name' } });
+
+    expect(store.getState().workspace?.configuredExplicitly).toBe(true);
+  });
+
+  it('keeps that mark on the list it archives', () => {
+    store.getState().startRanking({ source: movies, roles: { labelField: 'title' } });
+
+    store
+      .getState()
+      .switchList({ source: actors, roles: { labelField: 'name' }, configuredExplicitly: false });
+
+    const saved = store.getState().savedLists.find((list) => list.arrayPath.join('.') === 'movies');
+    expect(saved?.configuredExplicitly).toBe(true);
+  });
+
+  it('does not unmark a list that was set up by hand when it is switched back to', () => {
+    store.getState().startRanking({ source: movies, roles: { labelField: 'title' } });
+    store.getState().switchList({ source: actors, roles: { labelField: 'name' } });
+    store
+      .getState()
+      .switchList({ source: movies, roles: { labelField: 'title' }, configuredExplicitly: false });
+
+    expect(store.getState().workspace?.configuredExplicitly).toBe(true);
+  });
+
+  it('carries the defaults across a switch, so the whole document keeps one answer', () => {
+    store.getState().startRanking({
+      source: movies,
+      roles: { labelField: 'title' },
+      alreadyRanked: true,
+    });
+
+    store
+      .getState()
+      .switchList({ source: actors, roles: { labelField: 'name' }, configuredExplicitly: false });
+
+    expect(store.getState().workspace?.listDefaults).toEqual({
+      roles: { labelField: 'title' },
+      alreadyRanked: true,
+    });
   });
 });

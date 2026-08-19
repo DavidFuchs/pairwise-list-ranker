@@ -1,12 +1,20 @@
 import { buildExport } from '@/lib/export/buildExport';
-import { formatPath } from '@/lib/import/arrayCandidates';
+import { entriesAtPath, formatPath } from '@/lib/import/arrayCandidates';
+import { resolveRoles } from '@/lib/import/roles';
 import { selectNextPair } from '@/lib/ranking/pairSelection';
 import { rankItems, replayComparisons } from '@/lib/ranking/rebuildRanking';
 import type { RankingStates } from '@/lib/ranking/rebuildRanking';
 import { isComplexItemValue } from '@/types/list';
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent, RankedItem } from '@/types/ranking';
-import type { PreviewTab, SourceFormat, Workspace } from '@/types/source';
+import type {
+  FieldRoles,
+  ListConfig,
+  PreviewTab,
+  SavedList,
+  SourceFormat,
+  Workspace,
+} from '@/types/source';
 
 export interface ActivePair {
   left: ListItem;
@@ -98,22 +106,67 @@ export function selectRemovedCount(items: ListItem[]): number {
   return items.filter((item) => !item.active).length;
 }
 
+/**
+ * How one list is set up, without naming it: `shown by title · already ranked`.
+ * Empty for a plain list in no particular order, which has nothing to say.
+ * Both list pickers show this per row, so what a row promises before you pick
+ * it and what the toolbar says afterwards are the same words.
+ */
+export function describeRoles(roles: FieldRoles, alreadyRanked: boolean): string {
+  const parts: string[] = [];
+  if (roles.labelField !== undefined) parts.push(`shown by ${roles.labelField}`);
+  if (roles.positionField !== undefined) parts.push(`${roles.positionField} written back`);
+  if (alreadyRanked) parts.push('already ranked');
+
+  return parts.join(' · ');
+}
+
 /** e.g. `movies · shown by title · order written back` */
 export function selectContextLine(workspace: Workspace | null): string {
   if (workspace === null) return '';
 
-  const parts = [formatPath(workspace.source.arrayPath)];
-  if (workspace.roles.labelField !== undefined) {
-    parts.push(`shown by ${workspace.roles.labelField}`);
-  }
-  if (workspace.roles.positionField !== undefined) {
-    parts.push(`${workspace.roles.positionField} written back`);
-  }
-  if (workspace.alreadyRanked) {
-    parts.push('already ranked');
+  const name = formatPath(workspace.source.arrayPath);
+  const roles = describeRoles(workspace.roles, workspace.alreadyRanked);
+
+  return roles === '' ? name : `${name} · ${roles}`;
+}
+
+/**
+ * The setup one list in the document would be ranked with. A list the user set
+ * up by hand answers for itself, whether it is the active one or parked in
+ * savedLists. Every other list takes the document's defaults - resolveRoles
+ * keeps the default field only where that list can honour it, and falls back to
+ * the list's own best field otherwise. Deriving is what lets the switcher move
+ * to a new list in one press instead of sending the user through the data
+ * screen first; every picker row shows the answer, so a wrong guess is visible
+ * and one Configure away from being fixed.
+ *
+ * The active list always answers for itself, set up by hand or not: the
+ * comparison deck and the export read those same fields, so a row claiming
+ * anything else would be describing a list that is not on screen.
+ */
+export function selectListConfig(
+  workspace: Workspace | null,
+  savedLists: SavedList[],
+  path: string[],
+): ListConfig {
+  if (workspace === null) return { roles: {}, alreadyRanked: false };
+
+  const key = path.join('.');
+  if (key === workspace.source.arrayPath.join('.')) {
+    return { roles: workspace.roles, alreadyRanked: workspace.alreadyRanked };
   }
 
-  return parts.join(' · ');
+  const saved = savedLists.find((list) => list.arrayPath.join('.') === key);
+  if (saved !== undefined && saved.configuredExplicitly) {
+    return { roles: saved.roles, alreadyRanked: saved.alreadyRanked };
+  }
+
+  const entries = entriesAtPath(workspace.source.document, path);
+  return {
+    roles: resolveRoles(entries, workspace.listDefaults.roles),
+    alreadyRanked: workspace.listDefaults.alreadyRanked,
+  };
 }
 
 /** Only the tabs this source can honestly produce. */

@@ -11,9 +11,11 @@ import { Button } from '@/components/ui/Button';
 import { downloadName, exportFilename } from '@/lib/export/filenames';
 import { findArrayCandidates } from '@/lib/import/arrayCandidates';
 import {
+  describeRoles,
   selectAvailableTabs,
   selectContextLine,
   selectExportText,
+  selectListConfig,
   selectProgress,
   selectRemovedCount,
   selectWorkspaceView,
@@ -63,42 +65,42 @@ export default function RankScreen() {
   const { candidates } = findArrayCandidates(workspace.source.document);
   const listOptions: ListSwitcherOption[] = candidates.map((candidate) => {
     const key = candidate.path.join('.');
-    const option = { path: candidate.path, count: candidate.count, entryKind: candidate.entryKind };
-
-    if (key === workspace.source.arrayPath.join('.')) {
-      const activeProgress = selectProgress(items, comparisonEvents, workspace.alreadyRanked);
-      return {
-        ...option,
-        coverage: activeProgress.coverage > 0 ? activeProgress.coverage : undefined,
-        configured: true,
-      };
-    }
+    const config = selectListConfig(workspace, savedLists, candidate.path);
+    const configLine = describeRoles(config.roles, config.alreadyRanked);
 
     const saved = savedLists.find((list) => list.arrayPath.join('.') === key);
-    if (saved === undefined) return { ...option, configured: false };
-    const savedProgress = selectProgress(saved.items, saved.comparisonEvents, saved.alreadyRanked);
+    const progress =
+      key === workspace.source.arrayPath.join('.')
+        ? selectProgress(items, comparisonEvents, workspace.alreadyRanked)
+        : saved === undefined
+          ? undefined
+          : selectProgress(saved.items, saved.comparisonEvents, saved.alreadyRanked);
+
     return {
-      ...option,
-      coverage: savedProgress.coverage > 0 ? savedProgress.coverage : undefined,
-      configured: true,
+      ...candidate,
+      configLine,
+      coverage: progress !== undefined && progress.coverage > 0 ? progress.coverage : undefined,
     };
   });
 
-  // A list already configured (the active one, or one parked in savedLists)
-  // switches to instantly - its fields and ranked-order answer are already
-  // known. A list never chosen before has neither, so rather than guess them
-  // silently, this hands off to the data screen with that list preselected.
+  // Every list switches instantly, including one never chosen before: rather
+  // than stopping the user at the data screen to answer questions they have
+  // already answered for this document, it inherits the active list's setup -
+  // see selectListConfig, which keeps the inherited field only where the new
+  // list can carry it. The switcher shows that answer on every row, and
+  // Configure is there for the times the guess is wrong.
   function switchToList(path: string[]) {
     if (workspace === null) return;
-    const key = path.join('.');
 
-    const saved = savedLists.find((list) => list.arrayPath.join('.') === key);
-    if (saved !== undefined) {
-      const source: DataSource = { ...workspace.source, arrayPath: path };
-      listStore.getState().switchList({ source, roles: saved.roles, alreadyRanked: saved.alreadyRanked });
-      return;
-    }
+    const source: DataSource = { ...workspace.source, arrayPath: path };
+    const { roles, alreadyRanked } = selectListConfig(workspace, savedLists, path);
+    // Derived, not chosen: leaving it unmarked is what lets a later change to
+    // the document defaults still reach this list.
+    listStore.getState().switchList({ source, roles, alreadyRanked, configuredExplicitly: false });
+  }
 
+  /** Changes a list's fields or its order, on the screen that owns those. */
+  function configureList(path: string[]) {
     listStore.getState().requestListSwitch(path);
     router.replace('/');
   }
@@ -113,6 +115,7 @@ export default function RankScreen() {
           caption={selectContextLine(workspace)}
           options={listOptions}
           onSelect={switchToList}
+          onConfigure={configureList}
         />
       }
       onReset={() => {

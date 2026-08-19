@@ -38,17 +38,35 @@ const dataSourceSchema = z.object({
   arrayPath: z.array(z.string()),
 });
 
-const workspaceSchema = z.object({
-  id: z.string().min(1),
-  source: dataSourceSchema,
-  roles: z.object({
-    labelField: z.string().optional(),
-    positionField: z.string().optional(),
-  }),
-  alreadyRanked: z.boolean().optional().default(false),
-  createdAt: z.string(),
-  updatedAt: z.string(),
+const rolesSchema = z.object({
+  labelField: z.string().optional(),
+  positionField: z.string().optional(),
 });
+
+/**
+ * listDefaults and configuredExplicitly arrived after lists could be switched
+ * between, so they are optional here rather than a version bump: a snapshot
+ * written before them describes a document whose only setup was chosen by
+ * hand, which is exactly what those fallbacks say.
+ */
+const workspaceSchema = z
+  .object({
+    id: z.string().min(1),
+    source: dataSourceSchema,
+    roles: rolesSchema,
+    alreadyRanked: z.boolean().optional().default(false),
+    listDefaults: z.object({ roles: rolesSchema, alreadyRanked: z.boolean() }).optional(),
+    configuredExplicitly: z.boolean().optional().default(true),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .transform((workspace) => ({
+    ...workspace,
+    listDefaults: workspace.listDefaults ?? {
+      roles: workspace.roles,
+      alreadyRanked: workspace.alreadyRanked,
+    },
+  }));
 
 const listItemSchema = z.object({
   id: z.string().min(1),
@@ -71,11 +89,9 @@ const comparisonEventSchema = z.object({
 const savedListSchema = z.object({
   workspaceId: z.string().min(1),
   arrayPath: z.array(z.string()),
-  roles: z.object({
-    labelField: z.string().optional(),
-    positionField: z.string().optional(),
-  }),
+  roles: rolesSchema,
   alreadyRanked: z.boolean(),
+  configuredExplicitly: z.boolean().optional().default(true),
   items: z.array(listItemSchema),
   comparisonEvents: z.array(comparisonEventSchema),
   createdAt: z.string(),
