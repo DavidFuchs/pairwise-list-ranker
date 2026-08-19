@@ -163,3 +163,47 @@ describe('editing data mid-run', () => {
     expect(value).toContain('list2:\n  - chevy\n  - ford\n  - gm');
   });
 });
+
+/**
+ * Reported bug: changing only "What order is your list in" produced a summary
+ * that counted entries and promised the rankings were kept, as though the data
+ * had been rewritten. Nothing about the data changed, and the ranking does not
+ * survive untouched - the order setting re-seeds every rating.
+ */
+describe('editing only the setup', () => {
+  beforeEach(() => {
+    listStore.getState().reset();
+    globalThis.localStorage?.clear();
+    replace.mockClear();
+    push.mockClear();
+  });
+
+  it('summarises the option, not the untouched entries', async () => {
+    seedWorkspace();
+    const user = userEvent.setup();
+    render(<DataScreen />);
+
+    await user.click(screen.getByLabelText(/already ranked, best to worst/i));
+    await user.click(await screen.findByRole('button', { name: /apply edits/i }));
+
+    expect(screen.getByText(/order setting changed to best to worst/i)).toBeDefined();
+    expect(screen.queryByText(/items unchanged/i)).toBeNull();
+    // The box was pre-filled with the ranking's order, so leaving it alone is
+    // not a reorder, however far the ranking has moved from the import.
+    expect(screen.queryByText(/^order changed/i)).toBeNull();
+    expect(screen.queryByText(/nothing changed/i)).toBeNull();
+    expect(screen.queryByText(/rankings kept/i)).toBeNull();
+  });
+
+  it('applies the option once confirmed', async () => {
+    seedWorkspace();
+    const user = userEvent.setup();
+    render(<DataScreen />);
+
+    await user.click(screen.getByLabelText(/already ranked, best to worst/i));
+    await user.click(await screen.findByRole('button', { name: /apply edits/i }));
+    await user.click(screen.getByRole('button', { name: /apply edits/i }));
+
+    expect(listStore.getState().workspace?.alreadyRanked).toBe(true);
+  });
+});

@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/Button';
 import { buildExport, buildExportDocument } from '@/lib/export/buildExport';
 import { useSourceDraft } from '@/lib/hooks/useSourceDraft';
 import type { SourceDraftSeed } from '@/lib/hooks/useSourceDraft';
-import { diffImport } from '@/lib/import/diff';
-import type { ImportDiff } from '@/lib/import/diff';
+import { diffImport, diffSettings } from '@/lib/import/diff';
+import type { ImportDiff, SettingsDiff } from '@/lib/import/diff';
 import {
   describeRoles,
   selectListConfig,
@@ -80,7 +80,9 @@ export default function DataScreen() {
   const seed = useMemo(() => buildDraftSeed(), []);
 
   const draft = useSourceDraft(seed);
-  const [pending, setPending] = useState<ImportDiff | null>(null);
+  // Both halves of what one press of Apply edits would do: what it does to
+  // the entries, and what it does to how they are ranked.
+  const [pending, setPending] = useState<{ diff: ImportDiff; settings: SettingsDiff } | null>(null);
 
   useEffect(() => {
     listStore.getState().hydrate();
@@ -211,7 +213,29 @@ export default function DataScreen() {
       return;
     }
 
-    setPending(diffImport(current.items, draft.entries, current.comparisonEvents));
+    const workspaceConfig = {
+      roles: current.workspace!.roles,
+      alreadyRanked: current.workspace!.alreadyRanked,
+    };
+
+    // Diffed against the order the text box was filled with - the ranking's
+    // own order - not the order the entries were imported in. Otherwise every
+    // list a comparison has moved reports an order change the user never made.
+    const shownOrder = selectRanking(
+      current.items,
+      current.comparisonEvents,
+      current.workspace!.alreadyRanked,
+    ).map((entry) => entry.item);
+
+    setPending({
+      diff: diffImport(shownOrder, draft.entries, current.comparisonEvents),
+      // Compared against what submitting actually applies below, which is the
+      // draft's own answer rather than the order control's cosmetic guess.
+      settings: diffSettings(workspaceConfig, {
+        roles: draft.roles,
+        alreadyRanked: draft.alreadyRanked,
+      }),
+    });
   }
 
   function handleConfirm() {
@@ -285,7 +309,8 @@ export default function DataScreen() {
           />
         ) : (
           <ApplySummary
-            diff={pending}
+            diff={pending.diff}
+            settings={pending.settings}
             onCancel={() => setPending(null)}
             onConfirm={handleConfirm}
           />

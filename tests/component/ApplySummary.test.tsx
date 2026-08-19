@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ApplySummary } from '@/components/data/ApplySummary';
+import type { SettingsDiff } from '@/lib/import/diff';
 import type { ListItem } from '@/types/list';
 
 function item(id: string): ListItem {
@@ -17,8 +18,29 @@ function item(id: string): ListItem {
   };
 }
 
+const settledSettings: SettingsDiff = {
+  order: 'unchanged',
+  label: null,
+  writeBack: null,
+  changed: false,
+};
+
+/** Entries untouched: what an edit that only changed the options leaves behind. */
+const untouchedData = {
+  kept: [
+    { item: item('a'), entry: 'x' },
+    { item: item('b'), entry: 'y' },
+  ],
+  added: [] as unknown[],
+  removed: [] as ListItem[],
+  keptComparisons: 0,
+  ordered: [],
+  reordered: false,
+};
+
 function setup(overrides: Partial<React.ComponentProps<typeof ApplySummary>> = {}) {
   const props = {
+    settings: settledSettings,
     diff: {
       kept: [item('a'), item('b')].map((entry) => ({ item: entry, entry: 'x' })),
       added: ['y'] as unknown[],
@@ -66,34 +88,16 @@ describe('ApplySummary', () => {
     expect(onCancel).toHaveBeenCalled();
   });
 
-  it('reads sensibly when nothing changed', () => {
-    setup({
-      diff: {
-        kept: [{ item: item('a'), entry: 'x' }],
-        added: [],
-        removed: [],
-        keptComparisons: 0,
-        ordered: [],
-        reordered: false,
-      },
-    });
+  it('counts nothing when no entry was touched', () => {
+    setup({ diff: untouchedData });
 
-    expect(screen.getByText(/1 item unchanged/i)).toBeDefined();
+    expect(screen.queryByText(/unchanged/i)).toBeNull();
     expect(screen.queryByText(/added/i)).toBeNull();
     expect(screen.queryByText(/removed/i)).toBeNull();
   });
 
   it('says plainly when applying would change nothing', () => {
-    setup({
-      diff: {
-        kept: [{ item: item('a'), entry: 'x' }],
-        added: [],
-        removed: [],
-        keptComparisons: 0,
-        ordered: [],
-        reordered: false,
-      },
-    });
+    setup({ diff: untouchedData });
 
     expect(screen.getByText(/nothing changed/i)).toBeDefined();
   });
@@ -158,5 +162,114 @@ describe('ApplySummary', () => {
     });
 
     expect(screen.getByText(/will follow your text/i)).toBeDefined();
+  });
+
+  /**
+   * An edit that only answered the setup questions differently is not an edit
+   * to the data, and counting entries at it reads as though it were.
+   */
+  describe('settings', () => {
+    it('does not claim nothing changed when only an option changed', () => {
+      setup({
+        diff: untouchedData,
+        settings: { ...settledSettings, order: 'seeded', changed: true },
+      });
+
+      expect(screen.queryByText(/nothing changed/i)).toBeNull();
+    });
+
+    it('names the consequence of declaring the list already ranked', () => {
+      setup({
+        diff: untouchedData,
+        settings: { ...settledSettings, order: 'seeded', changed: true },
+      });
+
+      expect(screen.getByText(/best to worst/i)).toBeDefined();
+      expect(screen.getByText(/ratings restart from/i)).toBeDefined();
+    });
+
+    it('names the consequence of withdrawing that claim', () => {
+      setup({
+        diff: untouchedData,
+        settings: { ...settledSettings, order: 'flattened', changed: true },
+      });
+
+      expect(screen.getByText(/no particular order/i)).toBeDefined();
+      expect(screen.getByText(/restart flat/i)).toBeDefined();
+    });
+
+    /**
+     * Re-seeding derives every starting rating again, so the ranking numbers
+     * move even though every comparison behind them survives. Saying the
+     * rankings are kept would be the same lie the counts used to tell.
+     */
+    it('never promises the rankings are kept when the order option changed', () => {
+      setup({
+        diff: { ...untouchedData, added: ['z'], keptComparisons: 12 },
+        settings: { ...settledSettings, order: 'seeded', changed: true },
+      });
+
+      expect(screen.queryByText(/rankings kept/i)).toBeNull();
+      expect(screen.getByText(/12 comparisons are kept and replayed/i)).toBeDefined();
+      expect(screen.getByText(/ranking numbers will shift/i)).toBeDefined();
+    });
+
+    it('says what decides the ranking when the order option changed before any comparison', () => {
+      setup({
+        diff: untouchedData,
+        settings: { ...settledSettings, order: 'seeded', changed: true },
+      });
+
+      expect(screen.getByText(/nothing has been compared yet/i)).toBeDefined();
+    });
+
+    it('reports the label field the cards will use', () => {
+      setup({
+        diff: untouchedData,
+        settings: {
+          ...settledSettings,
+          label: { from: 'name', to: 'title' },
+          changed: true,
+        },
+      });
+
+      expect(screen.getByText(/cards now show “title”/i)).toBeDefined();
+    });
+
+    /** The write-back field reaches the exported file and nothing else. */
+    it('reports the write-back field as an export change', () => {
+      setup({
+        diff: untouchedData,
+        settings: {
+          ...settledSettings,
+          writeBack: { from: undefined, to: 'rank' },
+          changed: true,
+        },
+      });
+
+      expect(screen.getByText(/export will now number your items in “rank”/i)).toBeDefined();
+    });
+
+    it('reports the write-back field being cleared', () => {
+      setup({
+        diff: untouchedData,
+        settings: {
+          ...settledSettings,
+          writeBack: { from: 'rank', to: undefined },
+          changed: true,
+        },
+      });
+
+      expect(screen.getByText(/export will no longer number your items/i)).toBeDefined();
+    });
+
+    it('reports data and settings changes together', () => {
+      setup({
+        settings: { ...settledSettings, order: 'seeded', changed: true },
+      });
+
+      expect(screen.getByText(/1 item added/i)).toBeDefined();
+      expect(screen.getByText(/best to worst/i)).toBeDefined();
+    });
   });
 });

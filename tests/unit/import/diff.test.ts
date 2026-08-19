@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { deepEqual } from '@/lib/import/deepEqual';
-import { diffImport } from '@/lib/import/diff';
+import { diffImport, diffSettings } from '@/lib/import/diff';
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent } from '@/types/ranking';
+import type { ListConfig } from '@/types/source';
 
 function item(id: string, value: unknown, active = true): ListItem {
   return {
@@ -167,5 +168,66 @@ describe('the order the edited document lists', () => {
     const items = [item('a', 'Alien'), item('b', 'Arrival'), item('c', 'Solaris')];
 
     expect(diffImport(items, ['Solaris', 'Alien']).reordered).toBe(true);
+  });
+});
+
+describe('diffSettings', () => {
+  const plain: ListConfig = { roles: {}, alreadyRanked: false };
+
+  it('reports nothing when the setup is untouched', () => {
+    const config: ListConfig = {
+      roles: { labelField: 'title', positionField: 'rank' },
+      alreadyRanked: true,
+    };
+
+    expect(diffSettings(config, { ...config, roles: { ...config.roles } })).toEqual({
+      order: 'unchanged',
+      label: null,
+      writeBack: null,
+      changed: false,
+    });
+  });
+
+  it('reports the order option turning on', () => {
+    const diff = diffSettings(plain, { roles: {}, alreadyRanked: true });
+
+    expect(diff.order).toBe('seeded');
+    expect(diff.changed).toBe(true);
+  });
+
+  it('reports the order option turning off', () => {
+    const diff = diffSettings({ roles: {}, alreadyRanked: true }, plain);
+
+    expect(diff.order).toBe('flattened');
+    expect(diff.changed).toBe(true);
+  });
+
+  it('reports the label field moving between fields', () => {
+    const diff = diffSettings(
+      { roles: { labelField: 'name' }, alreadyRanked: false },
+      { roles: { labelField: 'title' }, alreadyRanked: false },
+    );
+
+    expect(diff.label).toEqual({ from: 'name', to: 'title' });
+    expect(diff.changed).toBe(true);
+  });
+
+  it('reports the write-back field being chosen and cleared', () => {
+    const chosen = diffSettings(plain, { roles: { positionField: 'rank' }, alreadyRanked: false });
+    const cleared = diffSettings({ roles: { positionField: 'rank' }, alreadyRanked: false }, plain);
+
+    expect(chosen.writeBack).toEqual({ from: undefined, to: 'rank' });
+    expect(cleared.writeBack).toEqual({ from: 'rank', to: undefined });
+  });
+
+  it('reports every option changing at once', () => {
+    const diff = diffSettings(plain, {
+      roles: { labelField: 'title', positionField: 'rank' },
+      alreadyRanked: true,
+    });
+
+    expect(diff.order).toBe('seeded');
+    expect(diff.label).toEqual({ from: undefined, to: 'title' });
+    expect(diff.writeBack).toEqual({ from: undefined, to: 'rank' });
   });
 });

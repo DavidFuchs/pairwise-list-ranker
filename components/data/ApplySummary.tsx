@@ -1,11 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
-import type { ImportDiff } from '@/lib/import/diff';
+import type { ImportDiff, SettingsDiff } from '@/lib/import/diff';
 import { colors, fonts, radius, space } from '@/lib/theme';
 
 export interface ApplySummaryProps {
   diff: ImportDiff;
+  settings: SettingsDiff;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -14,8 +15,57 @@ function plural(count: number): string {
   return count === 1 ? 'item' : 'items';
 }
 
-/** Applying edits mid-run is safe, so it says exactly what it will do first. */
-export function ApplySummary({ diff, onCancel, onConfirm }: ApplySummaryProps) {
+/**
+ * One line per setting the user answered differently, each naming what the
+ * new answer does rather than repeating the answer back. Only the order
+ * setting reaches the ranking; the other two reach the cards and the export.
+ */
+function settingsLines(settings: SettingsDiff): string[] {
+  const lines: string[] = [];
+
+  if (settings.order === 'seeded') {
+    lines.push(
+      'Order setting changed to best to worst - ratings restart from the order the list is in now, instead of flat',
+    );
+  }
+  if (settings.order === 'flattened') {
+    lines.push(
+      'Order setting changed to no particular order - ratings restart flat, instead of from the order the list is in',
+    );
+  }
+
+  if (settings.label !== null) {
+    lines.push(
+      settings.label.to === undefined
+        ? 'Cards no longer show a chosen field'
+        : `Cards now show “${settings.label.to}”`,
+    );
+  }
+
+  if (settings.writeBack !== null) {
+    lines.push(
+      settings.writeBack.to === undefined
+        ? `Export will no longer number your items in “${settings.writeBack.from}”`
+        : `Export will now number your items in “${settings.writeBack.to}”`,
+    );
+  }
+
+  return lines;
+}
+
+/**
+ * Applying edits mid-run is safe, so it says exactly what it will do first.
+ * Data and setup are edited by the same press but are not the same thing:
+ * entry counts are shown only when entries actually moved, so an edit that
+ * only answered the setup questions differently never reads as one that
+ * rewrote the list.
+ */
+export function ApplySummary({ diff, settings, onCancel, onConfirm }: ApplySummaryProps) {
+  const dataChanged = diff.reordered || diff.added.length > 0 || diff.removed.length > 0;
+  // Every starting rating is derived again from the order setting, so the
+  // standings move even though every comparison behind them survives.
+  const reseeded = settings.order !== 'unchanged';
+
   return (
     <View style={styles.panel} dataSet={{ surface: 'panel' }}>
       <Text style={styles.title}>Applying your edits</Text>
@@ -28,9 +78,13 @@ export function ApplySummary({ diff, onCancel, onConfirm }: ApplySummaryProps) {
         </Text>
       )}
 
-      <Text style={styles.line}>
-        {`${diff.kept.length} ${plural(diff.kept.length)} unchanged - rankings kept`}
-      </Text>
+      {dataChanged && (
+        <Text style={styles.line}>
+          {reseeded
+            ? `${diff.kept.length} ${plural(diff.kept.length)} unchanged`
+            : `${diff.kept.length} ${plural(diff.kept.length)} unchanged - rankings kept`}
+        </Text>
+      )}
 
       {diff.added.length > 0 && (
         <Text style={styles.line}>
@@ -44,11 +98,13 @@ export function ApplySummary({ diff, onCancel, onConfirm }: ApplySummaryProps) {
         </Text>
       )}
 
-      {!diff.reordered && diff.added.length === 0 && diff.removed.length === 0 ? (
-        <Text style={styles.note}>Nothing changed - applying will leave the list as it is.</Text>
-      ) : (
-        <Text style={styles.note}>{`${diff.keptComparisons} comparisons kept`}</Text>
-      )}
+      {settingsLines(settings).map((line) => (
+        <Text key={line} style={styles.line}>
+          {line}
+        </Text>
+      ))}
+
+      <Text style={styles.note}>{note(diff, settings, dataChanged, reseeded)}</Text>
 
       <View style={styles.actions}>
         <Button label="Cancel" accessibilityLabel="Cancel" variant="ghost" onPress={onCancel} />
@@ -61,6 +117,26 @@ export function ApplySummary({ diff, onCancel, onConfirm }: ApplySummaryProps) {
       </View>
     </View>
   );
+}
+
+/** The one line about what happens to the comparisons already recorded. */
+function note(
+  diff: ImportDiff,
+  settings: SettingsDiff,
+  dataChanged: boolean,
+  reseeded: boolean,
+): string {
+  if (!dataChanged && !settings.changed) {
+    return 'Nothing changed - applying will leave the list as it is.';
+  }
+
+  if (reseeded) {
+    return diff.keptComparisons > 0
+      ? `Your ${diff.keptComparisons} comparisons are kept and replayed, but the ranking numbers will shift.`
+      : 'Nothing has been compared yet, so the new order setting decides the ranking.';
+  }
+
+  return `${diff.keptComparisons} comparisons kept`;
 }
 
 const styles = StyleSheet.create({
