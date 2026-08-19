@@ -1,25 +1,26 @@
-import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 
-import { ApplySummary } from '@/components/data/ApplySummary';
-import { FoundPanel } from '@/components/data/FoundPanel';
-import { SourceInput } from '@/components/data/SourceInput';
-import { AppShell } from '@/components/layout/AppShell';
-import { PageNav } from '@/components/layout/PageNav';
-import { Button } from '@/components/ui/Button';
-import { buildExport, buildExportDocument } from '@/lib/export/buildExport';
-import { useSourceDraft } from '@/lib/hooks/useSourceDraft';
-import type { SourceDraftSeed } from '@/lib/hooks/useSourceDraft';
-import { diffImport, diffSettings } from '@/lib/import/diff';
-import type { ImportDiff, SettingsDiff } from '@/lib/import/diff';
+import { ApplySummary } from "@/components/data/ApplySummary";
+import { FoundPanel } from "@/components/data/FoundPanel";
+import { SourceInput } from "@/components/data/SourceInput";
+import { AppShell } from "@/components/layout/AppShell";
+import { PageNav } from "@/components/layout/PageNav";
+import { Button } from "@/components/ui/Button";
+import { buildExport, buildExportDocument } from "@/lib/export/buildExport";
+import { useSourceDraft } from "@/lib/hooks/useSourceDraft";
+import type { SourceDraftSeed } from "@/lib/hooks/useSourceDraft";
+import { diffImport, diffSettings } from "@/lib/import/diff";
+import type { ImportDiff, SettingsDiff } from "@/lib/import/diff";
 import {
   describeRoles,
   selectListConfig,
   selectProgress,
   selectRanking,
-} from '@/lib/state/selectors';
-import { listStore, useListStore } from '@/lib/state/useListStore';
-import type { DataSource } from '@/types/source';
+} from "@/lib/state/selectors";
+import type { CoverageReading } from "@/lib/state/selectors";
+import { listStore, useListStore } from "@/lib/state/useListStore";
+import type { DataSource } from "@/types/source";
 
 /**
  * Every list already known this session, for the "already ranked" default -
@@ -33,22 +34,38 @@ function buildDraftSeed(): SourceDraftSeed | undefined {
   if (state.workspace === null) return undefined;
 
   const knownLists: Record<string, boolean> = {
-    [state.workspace.source.arrayPath.join('.')]: state.workspace.alreadyRanked,
+    [state.workspace.source.arrayPath.join(".")]: state.workspace.alreadyRanked,
   };
 
   let document = state.workspace.source.document;
   for (const list of state.savedLists) {
-    knownLists[list.arrayPath.join('.')] = list.alreadyRanked;
-    const ranking = selectRanking(list.items, list.comparisonEvents, list.alreadyRanked);
+    knownLists[list.arrayPath.join(".")] = list.alreadyRanked;
+    const ranking = selectRanking(
+      list.items,
+      list.comparisonEvents,
+      list.alreadyRanked,
+    );
     document = buildExportDocument(
-      { format: state.workspace.source.format, rawText: '', document, arrayPath: list.arrayPath },
+      {
+        format: state.workspace.source.format,
+        rawText: "",
+        document,
+        arrayPath: list.arrayPath,
+      },
       list.roles,
       ranking.map((entry) => entry.item.value),
     );
   }
 
-  const activeRanking = selectRanking(state.items, state.comparisonEvents, state.workspace.alreadyRanked);
-  const sourceWithCurrentOrder: DataSource = { ...state.workspace.source, document };
+  const activeRanking = selectRanking(
+    state.items,
+    state.comparisonEvents,
+    state.workspace.alreadyRanked,
+  );
+  const sourceWithCurrentOrder: DataSource = {
+    ...state.workspace.source,
+    document,
+  };
   const rawText = buildExport(
     sourceWithCurrentOrder,
     state.workspace.roles,
@@ -82,7 +99,10 @@ export default function DataScreen() {
   const draft = useSourceDraft(seed);
   // Both halves of what one press of Apply edits would do: what it does to
   // the entries, and what it does to how they are ranked.
-  const [pending, setPending] = useState<{ diff: ImportDiff; settings: SettingsDiff } | null>(null);
+  const [pending, setPending] = useState<{
+    diff: ImportDiff;
+    settings: SettingsDiff;
+  } | null>(null);
 
   useEffect(() => {
     listStore.getState().hydrate();
@@ -100,34 +120,48 @@ export default function DataScreen() {
   useEffect(() => {
     if (!hydrated || resumed) return;
     listStore.getState().markResumed();
-    if (workspace !== null) router.replace('/rank');
+    if (workspace !== null) router.replace("/rank");
   }, [hydrated, resumed, workspace, router]);
 
   const editing = workspace !== null;
   // An empty box isn't a parse error, so neither panel should treat it as one.
-  const rawTextIsBlank = draft.rawText.trim() === '';
+  const rawTextIsBlank = draft.rawText.trim() === "";
   const isSwitchingList =
     workspace !== null &&
     draft.selectedPath !== null &&
-    workspace.source.arrayPath.join('.') !== draft.selectedPath.join('.');
+    workspace.source.arrayPath.join(".") !== draft.selectedPath.join(".");
 
   // Every list that already has a ranking percent earns a meter, whether that
   // came from real comparisons, from being declared already ranked, or both -
   // and whether it is the one currently active or one parked in savedLists
   // while another list is being worked on.
   const rankedCoverages = useMemo(() => {
-    const coverages: Record<string, number> = {};
+    const coverages: Record<string, CoverageReading> = {};
 
     for (const list of savedLists) {
-      const listProgress = selectProgress(list.items, list.comparisonEvents, list.alreadyRanked);
+      const listProgress = selectProgress(
+        list.items,
+        list.comparisonEvents,
+        list.alreadyRanked,
+      );
       if (listProgress.coverage === 0) continue;
-      coverages[list.arrayPath.join('.')] = listProgress.coverage;
+      coverages[list.arrayPath.join(".")] = {
+        coverage: listProgress.coverage,
+        earned: listProgress.earnedCoverage,
+      };
     }
 
     if (workspace !== null) {
-      const activeProgress = selectProgress(items, comparisonEvents, workspace.alreadyRanked);
+      const activeProgress = selectProgress(
+        items,
+        comparisonEvents,
+        workspace.alreadyRanked,
+      );
       if (activeProgress.coverage > 0) {
-        coverages[workspace.source.arrayPath.join('.')] = activeProgress.coverage;
+        coverages[workspace.source.arrayPath.join(".")] = {
+          coverage: activeProgress.coverage,
+          earned: activeProgress.earnedCoverage,
+        };
       }
     }
 
@@ -141,9 +175,15 @@ export default function DataScreen() {
   // sends draft.alreadyRanked (the list's real, safe answer), never this
   // cosmetic guess, so an already-ranked-by-comparisons list is never
   // silently reseeded from scratch.
-  const selectedPathKey = draft.selectedPath === null ? null : draft.selectedPath.join('.');
-  const selectedCoverage = selectedPathKey === null ? 0 : (rankedCoverages[selectedPathKey] ?? 0);
-  const orderPickerValue = draft.alreadyRankedIsExplicit ? draft.alreadyRanked : selectedCoverage > 0;
+  const selectedPathKey =
+    draft.selectedPath === null ? null : draft.selectedPath.join(".");
+  // Only lists with a reading at all are in the map, so having one is itself
+  // the "already has a ranking percent" test.
+  const selectedCoverage =
+    selectedPathKey === null ? undefined : rankedCoverages[selectedPathKey];
+  const orderPickerValue = draft.alreadyRankedIsExplicit
+    ? draft.alreadyRanked
+    : selectedCoverage !== undefined;
 
   // Whether the controls on screen already say what every list not set up by
   // hand follows, which decides both halves of the Set as default control.
@@ -162,10 +202,13 @@ export default function DataScreen() {
     const scope =
       workspace === null
         ? null
-        : { ...workspace, source: { ...workspace.source, document: draft.analysis.document } };
+        : {
+            ...workspace,
+            source: { ...workspace.source, document: draft.analysis.document },
+          };
 
     for (const candidate of draft.analysis.candidates) {
-      const key = candidate.path.join('.');
+      const key = candidate.path.join(".");
       const config = selectListConfig(scope, savedLists, candidate.path);
       lines[key] = describeRoles(config.roles, config.alreadyRanked);
     }
@@ -195,7 +238,7 @@ export default function DataScreen() {
         roles: draft.roles,
         alreadyRanked: draft.alreadyRanked,
       });
-      router.replace('/rank');
+      router.replace("/rank");
       return;
     }
 
@@ -205,11 +248,15 @@ export default function DataScreen() {
     // A different list is not an edit to this one, and nothing about it is
     // destructive - each list's ranking is kept and restored when you come
     // back to it - so it applies immediately instead of asking to confirm.
-    if (previousPath.join('.') !== source.arrayPath.join('.')) {
+    if (previousPath.join(".") !== source.arrayPath.join(".")) {
       listStore
         .getState()
-        .switchList({ source, roles: draft.roles, alreadyRanked: draft.alreadyRanked });
-      router.replace('/rank');
+        .switchList({
+          source,
+          roles: draft.roles,
+          alreadyRanked: draft.alreadyRanked,
+        });
+      router.replace("/rank");
       return;
     }
 
@@ -243,15 +290,19 @@ export default function DataScreen() {
     if (source === null) return;
     listStore
       .getState()
-      .applyEdits({ source, roles: draft.roles, alreadyRanked: draft.alreadyRanked });
+      .applyEdits({
+        source,
+        roles: draft.roles,
+        alreadyRanked: draft.alreadyRanked,
+      });
     setPending(null);
-    router.replace('/rank');
+    router.replace("/rank");
   }
 
   return (
     <AppShell
-      listName={editing ? 'Editing your data' : 'New list'}
-      statusText={editing ? 'Editing your data' : 'Nothing saved yet'}
+      listName={editing ? "Editing your data" : "New list"}
+      statusText={editing ? "Editing your data" : "Nothing saved yet"}
       stage={
         <>
           {editing && (
@@ -261,7 +312,7 @@ export default function DataScreen() {
                 accessibilityLabel="Back to ranking"
                 variant="secondary"
                 size="sm"
-                onPress={() => router.replace('/rank')}
+                onPress={() => router.replace("/rank")}
               />
             </PageNav>
           )}
@@ -282,14 +333,24 @@ export default function DataScreen() {
       preview={
         pending === null ? (
           <FoundPanel
-            analysis={rawTextIsBlank ? { ...draft.analysis, issues: [] } : draft.analysis}
+            analysis={
+              rawTextIsBlank
+                ? { ...draft.analysis, issues: [] }
+                : draft.analysis
+            }
             selectedPath={draft.selectedPath}
             roles={draft.roles}
             alreadyRanked={orderPickerValue}
             isDefault={settingsAreDefault}
             entries={draft.entries}
             isBlank={rawTextIsBlank}
-            ctaLabel={isSwitchingList ? 'Switch list' : editing ? 'Apply edits' : 'Start ranking'}
+            ctaLabel={
+              isSwitchingList
+                ? "Switch list"
+                : editing
+                  ? "Apply edits"
+                  : "Start ranking"
+            }
             rankedCoverages={rankedCoverages}
             configLines={configLines}
             onSelectPath={draft.selectPath}
@@ -302,7 +363,10 @@ export default function DataScreen() {
                 ? () =>
                     listStore
                       .getState()
-                      .setListDefaults({ roles: draft.roles, alreadyRanked: orderPickerValue })
+                      .setListDefaults({
+                        roles: draft.roles,
+                        alreadyRanked: orderPickerValue,
+                      })
                 : undefined
             }
             onSubmit={handleSubmit}

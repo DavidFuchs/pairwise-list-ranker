@@ -154,6 +154,21 @@ html, body { background-color: var(--canvas); }
 }
 
 /*
+ * The stretch of the meter an already-ranked import was credited without
+ * earning. Hatched rather than tinted a second colour: the accent is still the
+ * accent, so the run reads as the same progress in a less settled state, and
+ * the track showing through says plainly that nothing has filled it in yet.
+ * Every comparison turns a little of it solid.
+ */
+[data-fill='claimed'] {
+  background-image: repeating-linear-gradient(
+    -90deg,
+    var(--accent) 0 2px,
+    var(--surface-muted) 2px 10px
+  );
+}
+
+/*
  * The one deliberate exception to the single-accent rule, and only here: past
  * the estimate the meter plates itself in gold, so surplus comparisons read as
  * earned rather than as a bar stuck at full.
@@ -326,7 +341,7 @@ html, body { background-color: var(--canvas); }
 }
 `;
 
-export const THEME_STORAGE_KEY = 'pairwise-list-ranker:theme';
+export const THEME_STORAGE_KEY = "pairwise-list-ranker:theme";
 
 /**
  * Runs before first paint: promotes a saved preference to `data-theme` so the

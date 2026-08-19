@@ -1,12 +1,12 @@
-import { buildExport } from '@/lib/export/buildExport';
-import { entriesAtPath, formatPath } from '@/lib/import/arrayCandidates';
-import { resolveRoles } from '@/lib/import/roles';
-import { selectNextPair } from '@/lib/ranking/pairSelection';
-import { rankItems, replayComparisons } from '@/lib/ranking/rebuildRanking';
-import type { RankingStates } from '@/lib/ranking/rebuildRanking';
-import { isComplexItemValue } from '@/types/list';
-import type { ListItem } from '@/types/list';
-import type { ComparisonEvent, RankedItem } from '@/types/ranking';
+import { buildExport } from "@/lib/export/buildExport";
+import { entriesAtPath, formatPath } from "@/lib/import/arrayCandidates";
+import { resolveRoles } from "@/lib/import/roles";
+import { selectNextPair } from "@/lib/ranking/pairSelection";
+import { rankItems, replayComparisons } from "@/lib/ranking/rebuildRanking";
+import type { RankingStates } from "@/lib/ranking/rebuildRanking";
+import { isComplexItemValue } from "@/types/list";
+import type { ListItem } from "@/types/list";
+import type { ComparisonEvent, RankedItem } from "@/types/ranking";
 import type {
   FieldRoles,
   ListConfig,
@@ -14,7 +14,7 @@ import type {
   SavedList,
   SourceFormat,
   Workspace,
-} from '@/types/source';
+} from "@/types/source";
 
 export interface ActivePair {
   left: ListItem;
@@ -61,7 +61,8 @@ export function selectWorkspaceView(
 
   const byId = new Map(items.map((item) => [item.id, item]));
   const left = candidate === null ? undefined : byId.get(candidate.leftItemId);
-  const right = candidate === null ? undefined : byId.get(candidate.rightItemId);
+  const right =
+    candidate === null ? undefined : byId.get(candidate.rightItemId);
 
   const view: WorkspaceView = {
     states,
@@ -96,8 +97,10 @@ export function selectExportText(
   events: ComparisonEvent[],
   format: SourceFormat,
 ): string {
-  if (workspace === null) return '';
-  const ranked = selectRanking(items, events, workspace.alreadyRanked).map((entry) => entry.item);
+  if (workspace === null) return "";
+  const ranked = selectRanking(items, events, workspace.alreadyRanked).map(
+    (entry) => entry.item,
+  );
   return buildExport(workspace.source, workspace.roles, ranked, format);
 }
 
@@ -112,23 +115,28 @@ export function selectRemovedCount(items: ListItem[]): number {
  * Both list pickers show this per row, so what a row promises before you pick
  * it and what the toolbar says afterwards are the same words.
  */
-export function describeRoles(roles: FieldRoles, alreadyRanked: boolean): string {
+export function describeRoles(
+  roles: FieldRoles,
+  alreadyRanked: boolean,
+): string {
   const parts: string[] = [];
-  if (roles.labelField !== undefined) parts.push(`shown by ${roles.labelField}`);
-  if (roles.positionField !== undefined) parts.push(`${roles.positionField} written back`);
-  if (alreadyRanked) parts.push('already ranked');
+  if (roles.labelField !== undefined)
+    parts.push(`shown by ${roles.labelField}`);
+  if (roles.positionField !== undefined)
+    parts.push(`${roles.positionField} written back`);
+  if (alreadyRanked) parts.push("already ranked");
 
-  return parts.join(' · ');
+  return parts.join(" · ");
 }
 
 /** e.g. `movies · shown by title · order written back` */
 export function selectContextLine(workspace: Workspace | null): string {
-  if (workspace === null) return '';
+  if (workspace === null) return "";
 
   const name = formatPath(workspace.source.arrayPath);
   const roles = describeRoles(workspace.roles, workspace.alreadyRanked);
 
-  return roles === '' ? name : `${name} · ${roles}`;
+  return roles === "" ? name : `${name} · ${roles}`;
 }
 
 /**
@@ -152,12 +160,12 @@ export function selectListConfig(
 ): ListConfig {
   if (workspace === null) return { roles: {}, alreadyRanked: false };
 
-  const key = path.join('.');
-  if (key === workspace.source.arrayPath.join('.')) {
+  const key = path.join(".");
+  if (key === workspace.source.arrayPath.join(".")) {
     return { roles: workspace.roles, alreadyRanked: workspace.alreadyRanked };
   }
 
-  const saved = savedLists.find((list) => list.arrayPath.join('.') === key);
+  const saved = savedLists.find((list) => list.arrayPath.join(".") === key);
   if (saved !== undefined && saved.configuredExplicitly) {
     return { roles: saved.roles, alreadyRanked: saved.alreadyRanked };
   }
@@ -171,22 +179,28 @@ export function selectListConfig(
 
 /** Only the tabs this source can honestly produce. */
 export function selectAvailableTabs(workspace: Workspace | null): PreviewTab[] {
-  if (workspace === null) return ['ranked'];
-  return workspace.source.format === 'list'
-    ? ['ranked', 'list', 'yaml', 'json']
-    : ['ranked', 'yaml', 'json'];
+  if (workspace === null) return ["ranked"];
+  return workspace.source.format === "list"
+    ? ["ranked", "list", "yaml", "json"]
+    : ["ranked", "yaml", "json"];
 }
 
 /** The label shown on a comparison card or a ranked row. */
-export function selectItemLabel(item: ListItem, labelField: string | undefined): string {
+export function selectItemLabel(
+  item: ListItem,
+  labelField: string | undefined,
+): string {
   const value = item.value;
   if (!isComplexItemValue(value)) return String(value);
 
   const preferred = labelField === undefined ? undefined : value[labelField];
-  if (typeof preferred === 'string' || typeof preferred === 'number') return String(preferred);
+  if (typeof preferred === "string" || typeof preferred === "number")
+    return String(preferred);
 
-  const firstString = Object.values(value).find((entry) => typeof entry === 'string');
-  return typeof firstString === 'string' ? firstString : 'Untitled item';
+  const firstString = Object.values(value).find(
+    (entry) => typeof entry === "string",
+  );
+  return typeof firstString === "string" ? firstString : "Untitled item";
 }
 
 /** Progress summary for the status strip. */
@@ -194,9 +208,15 @@ export function selectProgress(
   items: ListItem[],
   events: ComparisonEvent[],
   alreadyRanked = false,
-): { activeItems: number; comparisons: number; skips: number; coverage: number } {
+): {
+  activeItems: number;
+  comparisons: number;
+  skips: number;
+  coverage: number;
+  earnedCoverage: number;
+} {
   const activeItems = items.filter((item) => item.active).length;
-  const rated = events.filter((event) => event.outcome !== 'skip').length;
+  const rated = events.filter((event) => event.outcome !== "skip").length;
   const skips = events.length - rated;
 
   // A rough "how far along am I" signal: comparisons made against the number
@@ -205,14 +225,35 @@ export function selectProgress(
   // Deliberately not clamped at 1. The target is an estimate, not a finish
   // line, and comparisons past it still sharpen the order - so capping here
   // would freeze the meter and tell the user their work had stopped counting.
-  const target = activeItems < 2 ? 0 : Math.ceil(activeItems * Math.log2(activeItems));
+  const target =
+    activeItems < 2 ? 0 : Math.ceil(activeItems * Math.log2(activeItems));
   const fromComparisons = target === 0 ? 0 : rated / target;
   // A list declared already ranked starts fully credited - the order is
   // trusted from the outset - and further comparisons still sharpen it past
   // that point, the same as surplus work on any other list.
-  const coverage = target === 0 ? 0 : alreadyRanked ? 1 + fromComparisons : fromComparisons;
+  const coverage =
+    target === 0 ? 0 : alreadyRanked ? 1 + fromComparisons : fromComparisons;
 
-  return { activeItems, comparisons: rated, skips, coverage };
+  // The same figure without the import's credit: what the comparisons alone
+  // have paid for. The meter needs both to show which part of its run the user
+  // has earned and which part is still the import's word.
+  return {
+    activeItems,
+    comparisons: rated,
+    skips,
+    coverage,
+    earnedCoverage: fromComparisons,
+  };
+}
+
+/**
+ * A meter's two readings: the coverage it shows, and the part of that coverage
+ * comparisons alone earned. Carried together wherever a list's progress travels
+ * to a meter, since the bar cannot hatch the difference without both.
+ */
+export interface CoverageReading {
+  coverage: number;
+  earned: number;
 }
 
 /**
@@ -231,17 +272,30 @@ const SURPLUS_CAP = 200;
  * unusable until then.
  */
 const ESTIMATE_MET_NOTE =
-  'The list is sorted well enough to use. Keep going and each comparison sharpens the pairs that are still close.';
+  "The list is sorted well enough to use. Keep going and each comparison sharpens the pairs that are still close.";
 
 /**
  * Everything the meter needs to draw itself and say what it means: the green
- * run, the gold coat over it, one number that agrees with both, and the note
- * that appears once the estimate is behind the user.
+ * run, the part of that run nobody has earned yet, the gold coat over it, one
+ * number that agrees with all three, and the note that appears once the
+ * estimate is behind the user.
+ *
+ * `earnedCoverage` is the same reading with the import's credit stripped out.
+ * A list marked already ranked is handed the whole estimate on its word, which
+ * would otherwise draw the same full green run as an afternoon of comparisons.
+ * Passing what the comparisons alone paid for lets the bar hatch the
+ * difference, and the claim converts to solid as the work lands. It defaults to
+ * the coverage itself, which claims nothing: a list with no credit to strip has
+ * earned everything it shows.
  */
-export function describeCoverage(coverage: number): {
+export function describeCoverage(
+  coverage: number,
+  earnedCoverage: number = coverage,
+): {
   label: string;
   valueText: string;
   filled: number;
+  claimed: number;
   surplus: number;
   note: string | null;
 } {
@@ -251,10 +305,32 @@ export function describeCoverage(coverage: number): {
   // "200%+" is a glyph, not a sentence; spoken aloud it wants words.
   const spoken = capped ? `over ${SURPLUS_CAP}%` : label;
 
+  const filled = Math.min(100, percent);
+  // Never negative: comparisons past the estimate overshoot the green run, and
+  // overshooting it is not owing anything to the import.
+  const claimed = Math.max(0, filled - Math.round(earnedCoverage * 100));
+
+  // Colour is the whole signal for the claimed run, so the readout has to carry
+  // it too. Once every point has been earned the clause goes away rather than
+  // reporting a credit of nothing.
+  const credit =
+    claimed === 0
+      ? null
+      : claimed === filled
+        ? "credited to the order you imported"
+        : `${claimed}% of it still credited to the order you imported`;
+
+  const parts = [
+    spoken,
+    percent > 100 ? "past the estimate" : null,
+    credit,
+  ].filter((part): part is string => part !== null);
+
   return {
     label,
-    valueText: percent > 100 ? `${spoken}, past the estimate` : spoken,
-    filled: Math.min(100, percent),
+    valueText: parts.join(", "),
+    filled,
+    claimed,
     surplus: Math.min(100, Math.max(0, percent - 100)),
     // Tied to the number on screen rather than to raw coverage, so the note
     // arrives with the 100% the user can actually read.

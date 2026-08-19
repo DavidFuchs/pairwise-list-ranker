@@ -1,21 +1,22 @@
-import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { ItemCard } from '@/components/comparison/ItemCard';
-import { ProgressMeter } from '@/components/ui/ProgressMeter';
-import { useComparisonShortcuts } from '@/lib/hooks/useComparisonShortcuts';
-import { describeCoverage, selectItemLabel } from '@/lib/state/selectors';
-import type { ActivePair } from '@/lib/state/selectors';
-import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
-import { isComplexItemValue } from '@/types/list';
-import type { ListItem } from '@/types/list';
-import type { ComparisonOutcome } from '@/types/ranking';
+import { ItemCard } from "@/components/comparison/ItemCard";
+import { ProgressMeter } from "@/components/ui/ProgressMeter";
+import { useComparisonShortcuts } from "@/lib/hooks/useComparisonShortcuts";
+import { describeCoverage, selectItemLabel } from "@/lib/state/selectors";
+import type { ActivePair } from "@/lib/state/selectors";
+import { colors, fonts, radius, space, typeScale } from "@/lib/theme";
+import { isComplexItemValue } from "@/types/list";
+import type { ListItem } from "@/types/list";
+import type { ComparisonOutcome } from "@/types/ranking";
 
 export interface DeckProgress {
   activeItems: number;
   comparisons: number;
   skips: number;
   coverage: number;
+  earnedCoverage: number;
 }
 
 export interface ComparisonDeckProps {
@@ -39,7 +40,7 @@ export function ComparisonDeck({
   onOutcome,
   onDelete,
 }: ComparisonDeckProps) {
-  const [armed, setArmed] = useState<'left' | 'right' | null>(null);
+  const [armed, setArmed] = useState<"left" | "right" | null>(null);
   // Details belong to the pair: seeing one item's fields against the other's
   // summary is not a comparison. One switch shows or hides both.
   const [showDetails, setShowDetails] = useState(false);
@@ -55,7 +56,7 @@ export function ComparisonDeck({
   const confirmDelete = useCallback(() => {
     setArmed((side) => {
       if (side !== null && pair !== null) {
-        onDelete(side === 'left' ? pair.left.id : pair.right.id);
+        onDelete(side === "left" ? pair.left.id : pair.right.id);
       }
       return null;
     });
@@ -65,10 +66,11 @@ export function ComparisonDeck({
     enabled: pair !== null,
     armed: armed !== null,
     onChoose: useCallback(
-      (side, strong) => emit(strong ? (`${side}_strong` as ComparisonOutcome) : side),
+      (side, strong) =>
+        emit(strong ? (`${side}_strong` as ComparisonOutcome) : side),
       [emit],
     ),
-    onSkip: useCallback(() => emit('skip'), [emit]),
+    onSkip: useCallback(() => emit("skip"), [emit]),
     onArmDelete: useCallback((side) => setArmed(side), []),
     onConfirmDelete: confirmDelete,
     onCancelDelete: useCallback(() => setArmed(null), []),
@@ -93,9 +95,13 @@ export function ComparisonDeck({
     );
   }
 
-  const { label: percentLabel, note: coverageNote } = describeCoverage(progress.coverage);
+  const { label: percentLabel, note: coverageNote } = describeCoverage(
+    progress.coverage,
+  );
   // Nothing to toggle when the items are bare strings.
-  const hasDetails = [pair.left, pair.right].some((item) => hasDetailFields(item, sortField));
+  const hasDetails = [pair.left, pair.right].some((item) =>
+    hasDetailFields(item, sortField),
+  );
 
   return (
     <View style={styles.stage}>
@@ -109,9 +115,15 @@ export function ComparisonDeck({
         <Text style={styles.announcement}>
           {`Comparing ${selectItemLabel(pair.left, sortField)} and ${selectItemLabel(pair.right, sortField)}`}
         </Text>
-        <ProgressMeter coverage={progress.coverage} accessibilityLabel="Ranking progress" />
+        <ProgressMeter
+          coverage={progress.coverage}
+          earnedCoverage={progress.earnedCoverage}
+          accessibilityLabel="Ranking progress"
+        />
         {/* Neutral, not gold: the surplus colour belongs to the meter alone. */}
-        {coverageNote !== null && <Text style={styles.coverageNote}>{coverageNote}</Text>}
+        {coverageNote !== null && (
+          <Text style={styles.coverageNote}>{coverageNote}</Text>
+        )}
       </View>
 
       {/* Wraps to stacked cards on narrow screens without measuring anything. */}
@@ -121,10 +133,10 @@ export function ComparisonDeck({
           side="left"
           sortField={sortField}
           expanded={showDetails}
-          pendingDelete={armed === 'left'}
-          onChoose={() => choose('left')}
-          onChooseStrong={() => choose('left_strong')}
-          onRequestDelete={() => setArmed('left')}
+          pendingDelete={armed === "left"}
+          onChoose={() => choose("left")}
+          onChooseStrong={() => choose("left_strong")}
+          onRequestDelete={() => setArmed("left")}
           onConfirmDelete={confirmDelete}
           onCancelDelete={() => setArmed(null)}
         />
@@ -139,10 +151,10 @@ export function ComparisonDeck({
           side="right"
           sortField={sortField}
           expanded={showDetails}
-          pendingDelete={armed === 'right'}
-          onChoose={() => choose('right')}
-          onChooseStrong={() => choose('right_strong')}
-          onRequestDelete={() => setArmed('right')}
+          pendingDelete={armed === "right"}
+          onChoose={() => choose("right")}
+          onChooseStrong={() => choose("right_strong")}
+          onRequestDelete={() => setArmed("right")}
           onConfirmDelete={confirmDelete}
           onCancelDelete={() => setArmed(null)}
         />
@@ -159,7 +171,7 @@ export function ComparisonDeck({
               style={styles.detailsToggle}
             >
               <Text style={styles.detailsToggleText}>
-                {showDetails ? 'Hide details' : 'Show details'}
+                {showDetails ? "Hide details" : "Show details"}
               </Text>
             </Pressable>
           )}
@@ -167,7 +179,7 @@ export function ComparisonDeck({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Skip this pair"
-            onPress={() => choose('skip')}
+            onPress={() => choose("skip")}
             style={styles.skip}
           >
             <Text style={styles.skipText}>Skip this pair</Text>
@@ -187,20 +199,24 @@ export function ComparisonDeck({
  * is a dead end, and a confirmation whose keys are unstated is another.
  */
 function shortcutLine(awaitingSide: boolean, armed: boolean): string {
-  if (armed) return 'Enter removes · Esc keeps';
-  if (awaitingSide) return 'Removing: press L or R for a side · any other key cancels';
-  return 'Arrow keys choose · shift + arrow for much better · S skips · D then L or R removes';
+  if (armed) return "Enter removes · Esc keeps";
+  if (awaitingSide)
+    return "Removing: press L or R for a side · any other key cancels";
+  return "Arrow keys choose · shift + arrow for much better · S skips · D then L or R removes";
 }
 
 /** Whether an item carries anything beyond the field that titles its card. */
-function hasDetailFields(item: ListItem, sortField: string | undefined): boolean {
+function hasDetailFields(
+  item: ListItem,
+  sortField: string | undefined,
+): boolean {
   if (!isComplexItemValue(item.value)) return false;
   return Object.keys(item.value).some((key) => key !== sortField);
 }
 
 function Notice({ title, body }: { title: string; body: string }) {
   return (
-    <View style={styles.notice} dataSet={{ surface: 'panel' }}>
+    <View style={styles.notice} dataSet={{ surface: "panel" }}>
       <Text style={styles.noticeTitle}>{title}</Text>
       <Text style={styles.noticeBody}>{body}</Text>
     </View>
@@ -209,7 +225,7 @@ function Notice({ title, body }: { title: string; body: string }) {
 
 const styles = StyleSheet.create({
   stage: { gap: space.lg },
-  trayActions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  trayActions: { flexDirection: "row", alignItems: "center", gap: space.sm },
   detailsToggle: {
     paddingVertical: space.xs,
     paddingHorizontal: space.md,
@@ -218,14 +234,23 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  detailsToggleText: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
+  detailsToggleText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
   gutter: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: space.sm,
     paddingHorizontal: space.xs,
   },
-  gutterLine: { flex: 1, width: 1, minHeight: space.lg, backgroundColor: colors.border },
+  gutterLine: {
+    flex: 1,
+    width: 1,
+    minHeight: space.lg,
+    backgroundColor: colors.border,
+  },
   gutterText: {
     fontFamily: fonts.body,
     fontSize: 11,
@@ -233,14 +258,22 @@ const styles = StyleSheet.create({
     color: colors.textFaint,
   },
   statusStrip: { gap: space.sm },
-  statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   status: {
     fontFamily: fonts.mono,
     fontSize: 12,
     letterSpacing: 0.4,
     color: colors.textSecondary,
   },
-  statusPercent: { fontFamily: fonts.mono, fontSize: 11, color: colors.textFaint },
+  statusPercent: {
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    color: colors.textFaint,
+  },
   coverageNote: {
     fontFamily: fonts.body,
     fontSize: 12,
@@ -249,21 +282,21 @@ const styles = StyleSheet.create({
   },
   // Present for screen readers and announcements, but not visually.
   announcement: {
-    position: 'absolute',
+    position: "absolute",
     width: 1,
     height: 1,
-    overflow: 'hidden',
+    overflow: "hidden",
     opacity: 0,
   },
   cards: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'stretch',
-    justifyContent: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "stretch",
+    justifyContent: "center",
     gap: space.md,
   },
   tray: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: space.xs,
     paddingTop: space.xs,
   },
@@ -277,14 +310,14 @@ const styles = StyleSheet.create({
   skipText: {
     fontFamily: fonts.body,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.textSecondary,
   },
   shortcuts: {
     fontFamily: fonts.mono,
     fontSize: 11,
     lineHeight: 16,
-    textAlign: 'center',
+    textAlign: "center",
     color: colors.textFaint,
   },
   notice: {
@@ -292,15 +325,19 @@ const styles = StyleSheet.create({
     padding: space.xl,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
   noticeTitle: {
     ...typeScale.sectionTitle,
     fontFamily: fonts.heading,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.textPrimary,
   },
-  noticeBody: { ...typeScale.body, fontFamily: fonts.body, color: colors.textSecondary },
+  noticeBody: {
+    ...typeScale.body,
+    fontFamily: fonts.body,
+    color: colors.textSecondary,
+  },
 });

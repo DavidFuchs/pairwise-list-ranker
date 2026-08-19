@@ -1,16 +1,17 @@
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { ListOptionRow } from '@/components/data/ListOptionRow';
-import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
-import { formatPath, MIN_RANKABLE } from '@/lib/import/arrayCandidates';
-import type { ArrayCandidate } from '@/lib/import/arrayCandidates';
-import { colors, fonts, radius, space } from '@/lib/theme';
+import { ListOptionRow } from "@/components/data/ListOptionRow";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
+import { formatPath, MIN_RANKABLE } from "@/lib/import/arrayCandidates";
+import type { ArrayCandidate } from "@/lib/import/arrayCandidates";
+import type { CoverageReading } from "@/lib/state/selectors";
+import { colors, fonts, radius, space } from "@/lib/theme";
 
 export interface ListSwitcherOption extends ArrayCandidate {
   /** Ranking progress for this list, if it has any yet. */
-  coverage?: number;
+  coverage?: CoverageReading;
   /**
    * The setup this list would be ranked with, e.g. "shown by title · already
    * ranked". A list never set up by hand takes the document's defaults, so
@@ -50,7 +51,7 @@ export function ListSwitcher({
   const [open, setOpen] = useState(false);
   if (options.length < 2) return null;
 
-  const currentKey = currentPath.join('.');
+  const currentKey = currentPath.join(".");
 
   return (
     <View style={styles.wrap}>
@@ -58,7 +59,10 @@ export function ListSwitcher({
         accessibilityRole="button"
         accessibilityLabel={`Switch list - currently ranking ${formatPath(currentPath)}, ${options.length} lists available`}
         onPress={() => setOpen(true)}
-        style={({ pressed }) => [styles.trigger, pressed && styles.triggerPressed]}
+        style={({ pressed }) => [
+          styles.trigger,
+          pressed && styles.triggerPressed,
+        ]}
       >
         <Text style={styles.triggerPath} numberOfLines={1}>
           {formatPath(currentPath)}
@@ -71,14 +75,19 @@ export function ListSwitcher({
 
       <Modal visible={open} onClose={() => setOpen(false)} title="Switch list">
         <Text style={styles.hint}>
-          This data has {options.length} lists you can rank. Pick one to switch to it right away,
-          on the settings shown under it. Configure changes one list{'’'}s fields or whether its
-          order is already best to worst, and can set the default the others follow.
+          This data has {options.length} lists you can rank. Pick one to switch
+          to it right away, on the settings shown under it. Configure changes
+          one list{"’"}s fields or whether its order is already best to worst,
+          and can set the default the others follow.
         </Text>
 
-        <View style={styles.options} role="radiogroup" aria-label="Which list to rank">
+        <View
+          style={styles.options}
+          role="radiogroup"
+          aria-label="Which list to rank"
+        >
           {options.map((option) => {
-            const key = option.path.join('.');
+            const key = option.path.join(".");
             const selected = key === currentKey;
 
             return (
@@ -88,7 +97,7 @@ export function ListSwitcher({
                 selected={selected}
                 coverage={option.coverage}
                 configLine={option.configLine}
-                meta={selected ? 'Ranking now' : undefined}
+                meta={selected ? "Ranking now" : undefined}
                 onPress={() => {
                   setOpen(false);
                   if (!selected) onSelect(option.path);
@@ -118,11 +127,11 @@ export function ListSwitcher({
 const styles = StyleSheet.create({
   wrap: { flexShrink: 1, gap: 1 },
   trigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
     gap: space.xs,
-    maxWidth: '100%',
+    maxWidth: "100%",
     paddingVertical: 3,
     paddingHorizontal: space.sm,
     borderRadius: radius.sm,
@@ -130,16 +139,29 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surfaceSunken,
   },
-  triggerPressed: { backgroundColor: colors.accentSoft, borderColor: colors.accentSoftBorder },
+  triggerPressed: {
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.accentSoftBorder,
+  },
   triggerPath: {
     fontFamily: fonts.mono,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.textPrimary,
     flexShrink: 1,
   },
   chevron: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint },
-  caption: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary, marginLeft: 2 },
-  hint: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.textSecondary },
+  caption: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginLeft: 2,
+  },
+  hint: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textSecondary,
+  },
   options: { gap: space.xs, marginTop: space.sm },
 });

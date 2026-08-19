@@ -1,17 +1,21 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from "react-native";
 
-import { ArrayPicker } from '@/components/data/ArrayPicker';
-import { LabelPicker } from '@/components/data/LabelPicker';
-import { OrderPicker } from '@/components/data/OrderPicker';
-import { PositionPicker } from '@/components/data/PositionPicker';
-import { Button } from '@/components/ui/Button';
-import type { SourceAnalysis } from '@/lib/import/analyze';
-import { collectLabelFieldCandidates, describeObjectSchema } from '@/lib/import/labelField';
-import { detectPositionFields } from '@/lib/import/positionField';
-import { describeReadiness } from '@/lib/import/readiness';
-import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
-import type { ComplexItemValue } from '@/types/list';
-import type { FieldRoles } from '@/types/source';
+import { ArrayPicker } from "@/components/data/ArrayPicker";
+import { LabelPicker } from "@/components/data/LabelPicker";
+import { OrderPicker } from "@/components/data/OrderPicker";
+import { PositionPicker } from "@/components/data/PositionPicker";
+import { Button } from "@/components/ui/Button";
+import type { SourceAnalysis } from "@/lib/import/analyze";
+import {
+  collectLabelFieldCandidates,
+  describeObjectSchema,
+} from "@/lib/import/labelField";
+import { detectPositionFields } from "@/lib/import/positionField";
+import { describeReadiness } from "@/lib/import/readiness";
+import type { CoverageReading } from "@/lib/state/selectors";
+import { colors, fonts, radius, space, typeScale } from "@/lib/theme";
+import type { ComplexItemValue } from "@/types/list";
+import type { FieldRoles } from "@/types/source";
 
 export interface FoundPanelProps {
   analysis: SourceAnalysis;
@@ -28,7 +32,7 @@ export interface FoundPanelProps {
   ctaLabel: string;
   /** Path key to ranking coverage for every candidate that already has
    *  progress behind it - see ArrayPicker. */
-  rankedCoverages?: Record<string, number>;
+  rankedCoverages?: Record<string, CoverageReading>;
   /** Path key to the setup each list would be ranked with - see ArrayPicker. */
   configLines?: Record<string, string>;
   onSelectPath: (path: string[]) => void;
@@ -39,7 +43,7 @@ export interface FoundPanelProps {
 }
 
 function isPlainObject(value: unknown): value is ComplexItemValue {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function countOf(amount: number, noun: string): string {
@@ -82,15 +86,15 @@ export function FoundPanel({
   const askedByPicker = objects.length > 0 && roles.labelField === undefined;
 
   return (
-    <View style={styles.panel} dataSet={{ surface: 'panel' }}>
+    <View style={styles.panel} dataSet={{ surface: "panel" }}>
       <View style={styles.header}>
         <Text style={styles.title}>What we found</Text>
         <Text style={styles.subtitle}>
           {isBlank
-            ? 'Nothing yet'
+            ? "Nothing yet"
             : entries.length > 0 || analysis.candidates.length <= 1
-              ? countOf(entries.length, 'item')
-              : countOf(analysis.candidates.length, 'list')}
+              ? countOf(entries.length, "item")
+              : countOf(analysis.candidates.length, "list")}
         </Text>
       </View>
 
@@ -147,8 +151,8 @@ export function FoundPanel({
           />
           <Text style={styles.defaultsHint}>
             {isDefault
-              ? 'These are the default. Lists you have not set up yourself follow them, here and in the list switcher.'
-              : 'Lists you have not set up yourself follow these settings, here and in the list switcher.'}
+              ? "These are the default. Lists you have not set up yourself follow them, here and in the list switcher."
+              : "Lists you have not set up yourself follow these settings, here and in the list switcher."}
           </Text>
         </View>
       )}
@@ -169,7 +173,7 @@ export function FoundPanel({
 }
 
 const styles = StyleSheet.create({
-  defaults: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  defaults: { flexDirection: "row", alignItems: "center", gap: space.md },
   defaultsHint: {
     flex: 1,
     fontFamily: fonts.body,
@@ -190,15 +194,24 @@ const styles = StyleSheet.create({
   title: {
     ...typeScale.sectionTitle,
     fontFamily: fonts.heading,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.textPrimary,
   },
-  subtitle: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
+  subtitle: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
   warning: { fontFamily: fonts.body, fontSize: 12, color: colors.warningText },
   // Plain text, like every other hint here. A sunken fill inside a hairline
   // border is this app's word for "you can interact with this" - it is the
   // editor, the format tabs, and every picker option - so a read-only message
   // wearing it reads as a field to type in, especially above a submit button.
-  reason: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.textSecondary },
-  cta: { alignSelf: 'stretch' },
+  reason: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textSecondary,
+  },
+  cta: { alignSelf: "stretch" },
 });

@@ -1,8 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from "react-native";
 
-import { ListOptionRow } from '@/components/data/ListOptionRow';
-import type { ArrayCandidate } from '@/lib/import/arrayCandidates';
-import { colors, fonts, space } from '@/lib/theme';
+import { ListOptionRow } from "@/components/data/ListOptionRow";
+import type { ArrayCandidate } from "@/lib/import/arrayCandidates";
+import type { CoverageReading } from "@/lib/state/selectors";
+import { colors, fonts, space } from "@/lib/theme";
 
 export interface ArrayPickerProps {
   candidates: ArrayCandidate[];
@@ -11,7 +12,7 @@ export interface ArrayPickerProps {
   /** Path key ("a.b", joined with ".") to ranking coverage for every
    *  candidate that already has progress behind it - each list in the
    *  document keeps its own, so more than one can show a meter. */
-  rankedCoverages?: Record<string, number>;
+  rankedCoverages?: Record<string, CoverageReading>;
   /** Path key to the setup that list would be ranked with, e.g.
    *  "shown by title · already ranked". See selectListConfig. */
   configLines?: Record<string, string>;
@@ -30,14 +31,18 @@ export function ArrayPicker({
 }: ArrayPickerProps) {
   if (candidates.length < 2) return null;
 
-  const selectedKey = value === null ? null : value.join('.');
+  const selectedKey = value === null ? null : value.join(".");
 
   return (
-    <View style={styles.group} role="radiogroup" aria-label="Which list to rank">
+    <View
+      style={styles.group}
+      role="radiogroup"
+      aria-label="Which list to rank"
+    >
       <Text style={styles.heading}>Rank which list?</Text>
 
       {candidates.map((candidate) => {
-        const key = candidate.path.join('.');
+        const key = candidate.path.join(".");
 
         return (
           <ListOptionRow
@@ -52,8 +57,9 @@ export function ArrayPicker({
       })}
 
       <Text style={styles.hint}>
-        You can rank each list separately and switch between them anytime - on the ranking screen,
-        click the list name in the top-left corner. Nothing is lost when you switch.
+        You can rank each list separately and switch between them anytime - on
+        the ranking screen, click the list name in the top-left corner. Nothing
+        is lost when you switch.
       </Text>
     </View>
   );
@@ -64,8 +70,13 @@ const styles = StyleSheet.create({
   heading: {
     fontFamily: fonts.heading,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.textPrimary,
   },
-  hint: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.textSecondary },
+  hint: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textSecondary,
+  },
 });
