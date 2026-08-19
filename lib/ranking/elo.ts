@@ -4,18 +4,29 @@ import type { ComparisonOutcome, RankingState } from '@/types/ranking';
 export const INITIAL_RATING = 1500;
 
 /**
- * Total rating spread, best item to worst, used to seed an import the user
- * has marked as already ranked. A fixed total (not a per-step gap) keeps the
- * top-to-bottom range bounded no matter how long the list is, but on its own
- * it would squeeze short lists into huge adjacent-item gaps (a 3-item list
- * would space its items 300 points apart). ALREADY_RANKED_MAX_STEP caps the
- * per-adjacent gap so short lists still start close enough together to
- * reorder in a handful of comparisons.
+ * Half the rating spread, midpoint to either end, used to seed an import the
+ * user has marked as already ranked: the best item starts this far above 1500
+ * and the worst this far below, for a 600-point range top to bottom. A fixed
+ * range (not a per-step gap) keeps that range bounded no matter how long the
+ * list is, but on its own it would squeeze short lists into huge adjacent-item
+ * gaps (a 3-item list would space its items 300 points apart).
+ * ALREADY_RANKED_MAX_STEP caps the per-adjacent gap instead.
  */
 export const ALREADY_RANKED_SPREAD = 300;
 
-/** Largest rating gap seedRating will put between adjacent items. */
-export const ALREADY_RANKED_MAX_STEP = 100;
+/**
+ * Largest rating gap seedRating will put between adjacent items.
+ *
+ * Chosen so a seeded order yields to the strongest thing the user can say
+ * about a pair and holds against the ordinary one: one "much better" reorders
+ * adjacent neighbours, one normal win does not. Both halves have to survive an
+ * item settling out of its provisional window, since that is when the user is
+ * fine-tuning near-neighbours, and the settled K-factors are the weaker pair.
+ * Those four conditions admit only a gap between about 40 and 48, and 44 sits
+ * in the middle of that band. See the reorder invariants in the elo tests,
+ * which fail if a K-factor moves without this following it.
+ */
+export const ALREADY_RANKED_MAX_STEP = 44;
 
 /** Standard rating movement for a settled item. */
 export const BASE_K_FACTOR = 24;

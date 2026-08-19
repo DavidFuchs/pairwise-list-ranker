@@ -60,8 +60,8 @@ describe('seedRating', () => {
   });
 
   it('puts the first item at the top of the spread and the last at the bottom once the list is long enough to use the full spread', () => {
-    expect(seedRating(0, 7, true)).toBe(INITIAL_RATING + ALREADY_RANKED_SPREAD);
-    expect(seedRating(6, 7, true)).toBe(INITIAL_RATING - ALREADY_RANKED_SPREAD);
+    expect(seedRating(0, 15, true)).toBe(INITIAL_RATING + ALREADY_RANKED_SPREAD);
+    expect(seedRating(14, 15, true)).toBe(INITIAL_RATING - ALREADY_RANKED_SPREAD);
   });
 
   it('centers the middle item of an odd-length list on the initial rating', () => {
@@ -77,6 +77,56 @@ describe('seedRating', () => {
   it('spaces the two items of a pair one capped step apart', () => {
     expect(seedRating(0, 2, true)).toBe(INITIAL_RATING + ALREADY_RANKED_MAX_STEP / 2);
     expect(seedRating(1, 2, true)).toBe(INITIAL_RATING - ALREADY_RANKED_MAX_STEP / 2);
+  });
+});
+
+/**
+ * The gap a capped seed leaves between adjacent items. Every already-ranked
+ * list short enough for ALREADY_RANKED_MAX_STEP to bind starts its neighbours
+ * exactly this far apart, so it is the gap the reorder invariants below are
+ * stated against.
+ */
+const SEEDED_GAP = seedRating(0, 3, true) - seedRating(1, 3, true);
+
+/**
+ * Whether one upset by the lower-seeded half of an adjacent pair is enough to
+ * put it above its neighbour. Both items move, so the gap closes by twice each
+ * item's swing.
+ */
+function upsetFlipsSeededPair(
+  make: (itemId: string, rating: number) => RankingState,
+  strong: boolean,
+): boolean {
+  const top = make('top', INITIAL_RATING + SEEDED_GAP / 2);
+  const bottom = make('bottom', INITIAL_RATING - SEEDED_GAP / 2);
+
+  const update = applyComparison(top, bottom, strong ? 'right_strong' : 'right', AT);
+  return update.right.rating > update.left.rating;
+}
+
+/**
+ * What ALREADY_RANKED_MAX_STEP is chosen to buy. A seeded order has to yield
+ * to the strongest thing the user can say about a pair and hold against the
+ * ordinary one, or the claim it encodes is either unshakeable or worthless.
+ * Both halves have to survive an item settling, because that is when the user
+ * is fine-tuning near-neighbours. Together these pin the step into a narrow
+ * band; they fail if a K-factor is retuned without revisiting the seed.
+ */
+describe('seedRating reorder invariants', () => {
+  it('lets one "much better" upset reorder adjacent seeded neighbours while they are provisional', () => {
+    expect(upsetFlipsSeededPair(createRankingState, true)).toBe(true);
+  });
+
+  it('holds adjacent seeded neighbours against a normal win while they are provisional', () => {
+    expect(upsetFlipsSeededPair(createRankingState, false)).toBe(false);
+  });
+
+  it('still lets one "much better" upset reorder adjacent seeded neighbours once they settle', () => {
+    expect(upsetFlipsSeededPair(settled, true)).toBe(true);
+  });
+
+  it('holds adjacent seeded neighbours against a normal win once they settle', () => {
+    expect(upsetFlipsSeededPair(settled, false)).toBe(false);
   });
 });
 

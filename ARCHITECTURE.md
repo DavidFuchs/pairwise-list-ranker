@@ -165,6 +165,19 @@ Defaults:
 - strong-win multiplier: `1.75`
 - optional low-comparison bonus: slightly higher K-factor for early rounds
 
+Seeding an already-ranked import:
+- unranked imports seed every item flat at `1500`
+- a list the user marks best-to-worst seeds a descending gradient instead, so
+  comparisons refine the imported order rather than rebuild it
+- half-spread: `300`, so the gradient runs `1800` down to `1200` whatever the
+  list length
+- adjacent-gap cap: `44`, which keeps short lists from being spread so far
+  apart that a comparison cannot reorder them. It binds for lists of 14 or
+  fewer; longer lists take the shrinking `600/(n-1)` step
+- the cap is tied to the K-factors above: one "much better" reorders adjacent
+  seeded neighbours, one normal win does not, and both hold once an item has
+  settled. Retuning a K-factor means revisiting the cap
+
 Outcome mapping:
 - `left`: left score `1`, right score `0`
 - `right`: left score `0`, right score `1`
