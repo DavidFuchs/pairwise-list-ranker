@@ -66,6 +66,7 @@ export function AppShell({
             onPress={() => setHowItWorksOpen(true)}
           />
           <ThemeToggle />
+          {onReset !== undefined && <View style={styles.headerDivider} />}
           {onReset === undefined ? null : confirmingReset ? (
             <>
               <Button
@@ -78,7 +79,7 @@ export function AppShell({
               <Button
                 label="Start over"
                 accessibilityLabel="Confirm start over"
-                variant="danger"
+                variant="dangerStrong"
                 size="sm"
                 onPress={() => {
                   setConfirmingReset(false);
@@ -90,7 +91,7 @@ export function AppShell({
             <Button
               label="Start over"
               accessibilityLabel="Start over"
-              variant="ghost"
+              variant="danger"
               size="sm"
               onPress={() => setConfirmingReset(true)}
             />
@@ -162,6 +163,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  headerDivider: { width: 1, height: 20, backgroundColor: colors.border },
   githubLink: {
     width: 36,
     height: 36,

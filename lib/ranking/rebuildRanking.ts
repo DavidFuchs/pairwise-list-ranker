@@ -87,9 +87,18 @@ export function rebuildRanking(
   return rankItems(items, replayComparisons(items, events, alreadyRanked), events);
 }
 
+/**
+ * Timestamps are only millisecond-resolution, so events recorded in one tick
+ * tie - a hand reorder always records its two neighbour comparisons together.
+ * The sort is stable, so ties keep the order the events were appended in, which
+ * is the order they happened. Falling back to the event id would sort those by
+ * random UUID instead, and Elo is order-dependent: replaying a reorder
+ * backwards moves the item roughly 1.4 points the wrong way, enough to carry it
+ * past an item nobody compared.
+ */
 function byEventTime(a: ComparisonEvent, b: ComparisonEvent): number {
-  if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? -1 : 1;
-  return a.id < b.id ? -1 : 1;
+  if (a.createdAt === b.createdAt) return 0;
+  return a.createdAt < b.createdAt ? -1 : 1;
 }
 
 /** `wins.get(winnerId)` holds every item that winner has beaten. */

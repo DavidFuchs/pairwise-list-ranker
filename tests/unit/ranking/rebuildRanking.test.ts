@@ -79,6 +79,37 @@ describe('rebuildRanking', () => {
     expect(shuffled).toEqual(inOrder);
   });
 
+  /**
+   * Two events recorded in the same tick carry the same millisecond timestamp.
+   * Elo is order-dependent, so breaking that tie on the random event id makes
+   * the replay a coin flip. A hand reorder records both neighbour comparisons
+   * at once, and the ~1.4 points between the two replay orders is enough to
+   * carry the moved item past a bystander nobody compared.
+   */
+  it('replays same-millisecond events in the order they were recorded', () => {
+    const items = [item('a'), item('b'), item('c'), item('d')];
+    const sameTick = (id: string, left: string, right: string, outcome: ComparisonOutcome) => ({
+      id,
+      listId: LIST_ID,
+      leftItemId: left,
+      rightItemId: right,
+      outcome,
+      createdAt: '2026-08-15T13:00:00.000Z',
+    });
+
+    // 'a' is dropped between 'b' and 'c': it loses to the neighbour above and
+    // beats the one below. 'd' is untouched. The ids sort against the recorded
+    // order, the way two random UUIDs do half the time.
+    const recorded = [
+      sameTick('zzz', 'a', 'b', 'right'),
+      sameTick('aaa', 'a', 'c', 'left'),
+    ];
+
+    // 'a' landed above 'c', so it must also stay above the bystander it started
+    // above. Replaying backwards drops it below 'd' instead.
+    expect(ids(rebuildRanking(items, recorded))).toEqual(['b', 'a', 'd', 'c']);
+  });
+
   it('leaves the order unchanged when a pair is skipped', () => {
     const items = [item('a'), item('b')];
 

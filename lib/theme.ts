@@ -33,6 +33,7 @@ export const colors = {
   warningText: 'var(--warning-text)',
   danger: 'var(--danger)',
   dangerText: 'var(--danger-text)',
+  dangerOnFill: 'var(--danger-on-fill)',
   dangerSoft: 'var(--danger-soft)',
   dangerSoftBorder: 'var(--danger-soft-border)',
 } as const;

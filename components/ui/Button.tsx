@@ -4,7 +4,13 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { useReducedMotion } from '@/lib/hooks/useReducedMotion';
 import { colors, fonts, motion, radius, space } from '@/lib/theme';
 
-export type ButtonVariant = 'primary' | 'emphasis' | 'secondary' | 'ghost' | 'danger';
+export type ButtonVariant =
+  | 'primary'
+  | 'emphasis'
+  | 'secondary'
+  | 'ghost'
+  | 'danger'
+  | 'dangerStrong';
 
 export interface ButtonProps {
   label: string;
@@ -19,7 +25,12 @@ export interface ButtonProps {
 /**
  * The button hierarchy from UX.md: primary picks a winner, emphasis marks a
  * much-better win without shouting louder than primary, ghost/secondary carry
- * neutral actions, danger stays quiet until it is armed.
+ * neutral actions.
+ *
+ * Destructive actions come in two weights. `danger` outlines in red on the
+ * plain surface: loud enough to find, quiet enough that it never outranks the
+ * comparison cards. `dangerStrong` fills, and is reserved for the armed half of
+ * a confirmation so that arming is visible rather than just worded.
  */
 export function Button({
   label,
@@ -86,7 +97,8 @@ const variantStyles = StyleSheet.create({
   emphasis: { backgroundColor: colors.accentSoft, borderColor: colors.accentSoftBorder },
   secondary: { backgroundColor: colors.surface, borderColor: colors.border },
   ghost: { backgroundColor: 'transparent', borderColor: 'transparent' },
-  danger: { backgroundColor: colors.surface, borderColor: colors.dangerSoftBorder },
+  danger: { backgroundColor: colors.surface, borderColor: colors.danger },
+  dangerStrong: { backgroundColor: colors.danger, borderColor: colors.danger },
 });
 
 const labelStyles = StyleSheet.create({
@@ -95,4 +107,5 @@ const labelStyles = StyleSheet.create({
   secondary: { color: colors.textPrimary },
   ghost: { color: colors.textSecondary },
   danger: { color: colors.danger },
+  dangerStrong: { color: colors.dangerOnFill },
 });

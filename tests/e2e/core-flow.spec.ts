@@ -149,7 +149,7 @@ test('much better records a strong win in one click', async ({ page }) => {
   await expect(page.getByText(/^1 comparisons ·/)).toBeVisible();
 });
 
-test('reordering by hand restarts the ranking', async ({ page }) => {
+test('reordering by hand adds to the comparisons instead of discarding them', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
   await page.getByLabel(/^Choose /).first().click();
@@ -159,20 +159,18 @@ test('reordering by hand restarts the ranking', async ({ page }) => {
   await page.getByRole('button', { name: /^Reorder / }).first().focus();
   await page.keyboard.press('Alt+ArrowDown');
 
-  await expect(page.getByText(/starts a new ranking session/)).toBeVisible();
-  await page.getByRole('button', { name: 'Reorder and restart' }).click();
-
-  await expect(page.getByText(/^0 comparisons ·/)).toBeVisible();
+  // The move counts as two ordinary comparisons against its new neighbours, so
+  // the earlier pick survives rather than being thrown away and re-seeded.
+  await expect(page.getByText(/^3 comparisons ·/)).toBeVisible();
 });
 
-test('reordering applies silently when there is nothing to lose', async ({ page }) => {
+test('reordering applies immediately, with no confirmation to clear', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
 
   await page.getByRole('button', { name: /^Reorder Tacos/ }).focus();
   await page.keyboard.press('Alt+ArrowDown');
 
-  await expect(page.getByText(/starts a new ranking session/)).toBeHidden();
   await expect(page.getByRole('button', { name: /^Reorder Tacos, position 2/ })).toBeVisible();
 });
 

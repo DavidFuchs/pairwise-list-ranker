@@ -379,6 +379,11 @@ Hierarchy:
   on the soft accent surface reserved for it.
 - secondary: skip, drill-in, downloads, reorder grips
 - tertiary/destructive: remove item, a faint glyph until it is armed
+- workspace reset: the one destructive action that is not faint at rest. `Start
+  over` is the only way out of a list, so it wears a red outline on the plain
+  surface and sits behind a hairline that separates it from the header's
+  utilities. Arming it fills the outline in. It never takes the accent, so it
+  cannot outrank the comparison cards it shares the screen with.
 
 ### Choices
 
@@ -519,6 +524,8 @@ Local persistence unavailable:
 Reset workspace:
 - explain that current in-browser state will be cleared
 - never imply exported files are affected
+- outlined in danger at rest so it is findable, filled only once armed, so the
+  two steps of the confirmation are told apart by weight and not by copy alone
 
 ## Export presentation rules
 
