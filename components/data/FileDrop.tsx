@@ -9,9 +9,10 @@ export interface FileDropProps {
 
 /**
  * Web-only: React Native has no file input, and this app ships as a static web
- * bundle. The hidden input is the picker; the surrounding View is the drop
- * target. Rendering `createElement('input', ...)` on native crashes (React
- * Native has no host component named "input"), so this is skipped there.
+ * bundle. The hidden input is the picker; dropping a file is handled by
+ * AppShell's page-wide drop target, not here. Rendering
+ * `createElement('input', ...)` on native crashes (React Native has no host
+ * component named "input"), so this is skipped there.
  */
 export function FileDrop({ onFile }: FileDropProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -25,18 +26,7 @@ export function FileDrop({ onFile }: FileDropProps) {
   }
 
   return (
-    <View
-      style={styles.zone}
-      // react-native-web forwards unknown props to the DOM node, which is how
-      // a React Native View becomes a drop target.
-      {...{
-        onDragOver: (event: DragEvent) => event.preventDefault(),
-        onDrop: (event: DragEvent) => {
-          event.preventDefault();
-          void readFirst(event.dataTransfer?.files ?? null);
-        },
-      }}
-    >
+    <View style={styles.zone}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Choose a file to import"
@@ -46,7 +36,7 @@ export function FileDrop({ onFile }: FileDropProps) {
         <Text style={styles.buttonLabel}>Choose a file</Text>
       </Pressable>
 
-      <Text style={styles.hint}>or drop one here</Text>
+      <Text style={styles.hint}>or drop one anywhere on the page</Text>
 
       {createElement('input', {
         ref: inputRef,

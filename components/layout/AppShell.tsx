@@ -1,6 +1,14 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Modal as RNModal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { HowItWorksModal } from '@/components/layout/HowItWorksModal';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
@@ -24,6 +32,12 @@ export interface AppShellProps {
   rail?: ReactNode;
   stage: ReactNode;
   preview: ReactNode;
+  /**
+   * Turns the whole page into a drop target for a dragged-in file, with a
+   * full-screen overlay while the drag is over it. Omitted on screens with
+   * nothing to import into, e.g. the rank screen.
+   */
+  onFileDrop?: (text: string) => void;
 }
 
 /**
@@ -40,9 +54,79 @@ export function AppShell({
   rail,
   stage,
   preview,
+  onFileDrop,
 }: AppShellProps) {
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
+  const [fileDragActive, setFileDragActive] = useState(false);
+  // dragenter/dragleave fire as the pointer crosses every child element, not
+  // just the page's own edges, so a bare boolean flickers - a depth counter
+  // only reaches zero once the drag has actually left the window.
+  const dragDepth = useRef(0);
+
+  useEffect(() => {
+    if (onFileDrop === undefined || Platform.OS !== 'web') return;
+
+    const isFileDrag = (event: DragEvent) =>
+      event.dataTransfer !== null && Array.from(event.dataTransfer.types).includes('Files');
+
+    const onDragEnter = (event: DragEvent) => {
+      if (!isFileDrag(event)) return;
+      event.preventDefault();
+      dragDepth.current += 1;
+      setFileDragActive(true);
+    };
+    const onDragOver = (event: DragEvent) => {
+      if (!isFileDrag(event)) return;
+      event.preventDefault();
+    };
+    const onDragLeave = (event: DragEvent) => {
+      // Leaving the browser window entirely (not just crossing into a child
+      // element) reports no related target - the browser won't send a
+      // matching dragenter to balance the count from here, and no `drop`
+      // will ever follow once the pointer is outside the page. Reset
+      // outright rather than decrementing, or the overlay would be stuck
+      // until an unrelated later drag happened to bring the count back down.
+      if (event.relatedTarget === null) {
+        dragDepth.current = 0;
+        setFileDragActive(false);
+        return;
+      }
+      if (!isFileDrag(event)) return;
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (dragDepth.current === 0) setFileDragActive(false);
+    };
+    const onDrop = (event: DragEvent) => {
+      if (!isFileDrag(event)) return;
+      event.preventDefault();
+      dragDepth.current = 0;
+      setFileDragActive(false);
+      const file = event.dataTransfer?.files[0];
+      if (file === undefined) return;
+      void file.text().then(onFileDrop);
+    };
+
+    // Alt-tabbing away mid-drag (into the OS or another app) doesn't
+    // reliably send a dragleave to balance the count either - blur is the
+    // catch-all for "the drag left some way we didn't get a dragleave for".
+    const onBlur = () => {
+      dragDepth.current = 0;
+      setFileDragActive(false);
+    };
+
+    window.addEventListener('dragenter', onDragEnter);
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('dragleave', onDragLeave);
+    window.addEventListener('drop', onDrop);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('dragenter', onDragEnter);
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('dragleave', onDragLeave);
+      window.removeEventListener('drop', onDrop);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, [onFileDrop]);
 
   return (
     <View style={styles.root} dataSet={{ surface: 'canvas' }}>
@@ -130,6 +214,17 @@ export function AppShell({
           </View>
         </View>
       </ScrollView>
+
+      {onFileDrop !== undefined && (
+        <RNModal visible={fileDragActive} transparent animationType="none" onRequestClose={() => {}}>
+          <View style={styles.dropOverlay} pointerEvents="none">
+            <View style={styles.dropCard}>
+              <Text style={styles.dropTitle}>Drop to import</Text>
+              <Text style={styles.dropSubtitle}>Release anywhere on the page</Text>
+            </View>
+          </View>
+        </RNModal>
+      )}
     </View>
   );
 }
@@ -189,4 +284,29 @@ const styles = StyleSheet.create({
   // either can't shrink any further, the row wraps to a stacked layout.
   stage: { flexGrow: 2, flexShrink: 1, flexBasis: 0, minWidth: 320, gap: space.lg },
   preview: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 300, minHeight: 520 },
+  dropOverlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: space.xl,
+    backgroundColor: colors.overlay,
+  },
+  dropCard: {
+    alignItems: 'center',
+    gap: space.xs,
+    paddingVertical: space.xl,
+    paddingHorizontal: space.xxl,
+    borderRadius: radius.lg,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: colors.accentStrong,
+    backgroundColor: colors.accentSoft,
+  },
+  dropTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.accentStrong,
+  },
+  dropSubtitle: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary },
 });

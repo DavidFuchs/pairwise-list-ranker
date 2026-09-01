@@ -40,6 +40,67 @@ test('first run asks for data before anything else', async ({ page }) => {
   );
 });
 
+test('dragging a file anywhere on the page shows a drop overlay and imports on release', async ({
+  page,
+}) => {
+  // No <input type=file> equivalent for a raw OS drag, so the drag is
+  // simulated the way a browser's own DragEvent carries files: a DataTransfer
+  // holding a File, dispatched on the page body - far from the "Choose a
+  // file" control - to prove the whole page is the target, not just that
+  // control's own small zone.
+  const duringDrag = await page.evaluate(async () => {
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(new File(['Alpha\nBeta\nGamma'], 'list.txt', { type: 'text/plain' }));
+    const eventInit = { bubbles: true, cancelable: true, dataTransfer, clientX: 5, clientY: 5 };
+    document.body.dispatchEvent(new DragEvent('dragenter', eventInit));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    return document.body.textContent?.includes('Drop to import') ?? false;
+  });
+  expect(duringDrag).toBe(true);
+  await expect(page.getByText('Drop to import')).toBeVisible();
+
+  const imported = await page.evaluate(async () => {
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(new File(['Alpha\nBeta\nGamma'], 'list.txt', { type: 'text/plain' }));
+    const eventInit = { bubbles: true, cancelable: true, dataTransfer, clientX: 5, clientY: 5 };
+    document.body.dispatchEvent(new DragEvent('dragover', eventInit));
+    document.body.dispatchEvent(new DragEvent('drop', eventInit));
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return {
+      textareaValue: (document.querySelector('textarea') as HTMLTextAreaElement | null)?.value ?? null,
+      overlayGone: !(document.body.textContent?.includes('Drop to import') ?? false),
+    };
+  });
+
+  expect(imported.textareaValue).toBe('Alpha\nBeta\nGamma');
+  expect(imported.overlayGone).toBe(true);
+  await expect(page.getByLabel('Your list')).toHaveValue('Alpha\nBeta\nGamma');
+});
+
+test('dragging a file out of the window without dropping clears the overlay', async ({ page }) => {
+  // A browser reports no relatedTarget on the dragleave that fires when the
+  // pointer leaves the window entirely - that, not a `drop`, is what has to
+  // clear the overlay here, since the drag is abandoned rather than released.
+  const stillShown = await page.evaluate(async () => {
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(new File(['x'], 'a.txt', { type: 'text/plain' }));
+    document.body.dispatchEvent(
+      new DragEvent('dragenter', { bubbles: true, cancelable: true, dataTransfer }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    document.body.dispatchEvent(
+      new DragEvent('dragleave', { bubbles: true, cancelable: true, dataTransfer, relatedTarget: null }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return document.body.textContent?.includes('Drop to import') ?? false;
+  });
+
+  expect(stillShown).toBe(false);
+  await expect(page.getByText('Drop to import')).toBeHidden();
+});
+
 test('ranks a plain list and exports it', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();

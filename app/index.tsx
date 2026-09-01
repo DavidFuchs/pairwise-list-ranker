@@ -303,6 +303,10 @@ export default function DataScreen() {
     <AppShell
       listName={editing ? "Editing your data" : "New list"}
       statusText={editing ? "Editing your data" : "Nothing saved yet"}
+      onFileDrop={(text) => {
+        setPending(null);
+        draft.setRawText(text);
+      }}
       stage={
         <>
           {editing && (
