@@ -44,6 +44,13 @@ export function ComparisonDeck({
   // Details belong to the pair: seeing one item's fields against the other's
   // summary is not a comparison. One switch shows or hides both.
   const [showDetails, setShowDetails] = useState(false);
+  // Each card reports its own row offset on layout. When they land on
+  // different rows the pair has wrapped, and the "or" gutter between them
+  // needs to read as a horizontal break rather than a vertical rule floating
+  // beside the left card.
+  const [leftY, setLeftY] = useState<number | null>(null);
+  const [rightY, setRightY] = useState<number | null>(null);
+  const stacked = leftY !== null && rightY !== null && leftY !== rightY;
 
   const emit = useCallback(
     (outcome: ComparisonOutcome) => {
@@ -126,7 +133,9 @@ export function ComparisonDeck({
         )}
       </View>
 
-      {/* Wraps to stacked cards on narrow screens without measuring anything. */}
+      {/* Wraps to stacked cards on narrow screens via plain flex-wrap; the
+          cards' onLayout only tracks whether they landed on the same row, so
+          the gutter between them can reorient to match. */}
       <View style={styles.cards}>
         <ItemCard
           item={pair.left}
@@ -139,11 +148,12 @@ export function ComparisonDeck({
           onRequestDelete={() => setArmed("left")}
           onConfirmDelete={confirmDelete}
           onCancelDelete={() => setArmed(null)}
+          onLayout={(event) => setLeftY(event.nativeEvent.layout.y)}
         />
-        <View style={styles.gutter} aria-hidden>
-          <View style={styles.gutterLine} />
+        <View style={[styles.gutter, stacked && styles.gutterStacked]} aria-hidden>
+          <View style={[styles.gutterLine, stacked && styles.gutterLineStacked]} />
           <Text style={styles.gutterText}>or</Text>
-          <View style={styles.gutterLine} />
+          <View style={[styles.gutterLine, stacked && styles.gutterLineStacked]} />
         </View>
 
         <ItemCard
@@ -157,6 +167,7 @@ export function ComparisonDeck({
           onRequestDelete={() => setArmed("right")}
           onConfirmDelete={confirmDelete}
           onCancelDelete={() => setArmed(null)}
+          onLayout={(event) => setRightY(event.nativeEvent.layout.y)}
         />
       </View>
 
@@ -245,11 +256,26 @@ const styles = StyleSheet.create({
     gap: space.sm,
     paddingHorizontal: space.xs,
   },
+  // Once the cards stack onto separate rows, the divider between them needs
+  // to read as a horizontal break rather than a vertical rule left dangling
+  // beside the top card.
+  gutterStacked: {
+    flexDirection: "row",
+    width: "100%",
+    paddingHorizontal: 0,
+    paddingVertical: space.sm,
+  },
   gutterLine: {
     flex: 1,
     width: 1,
     minHeight: space.lg,
     backgroundColor: colors.border,
+  },
+  gutterLineStacked: {
+    width: undefined,
+    height: 1,
+    minHeight: 0,
+    minWidth: space.lg,
   },
   gutterText: {
     fontFamily: fonts.body,

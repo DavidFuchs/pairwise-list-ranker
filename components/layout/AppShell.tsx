@@ -77,7 +77,7 @@ export function AppShell({
                 onPress={() => setConfirmingReset(false)}
               />
               <Button
-                label="Start over"
+                label="Confirm"
                 accessibilityLabel="Confirm start over"
                 variant="dangerStrong"
                 size="sm"
@@ -183,10 +183,10 @@ const styles = StyleSheet.create({
   scrollBody: { padding: space.lg },
   body: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg, alignItems: 'flex-start' },
   rail: { flexGrow: 1, flexShrink: 1, flexBasis: 260, minWidth: 240, maxWidth: 340, gap: space.md },
-  // Stage claims spare width first so the rank screen's two comparison cards
-  // stay side by side (they need ~620px to avoid wrapping); past its cap the
-  // spare space goes to the preview card so its controls (e.g. the
-  // order-picker buttons) have room to sit on one line.
-  stage: { flexGrow: 2, flexShrink: 1, flexBasis: 420, minWidth: 320, maxWidth: 640, gap: space.lg },
-  preview: { flexGrow: 1, flexShrink: 1, flexBasis: 400, minWidth: 360, minHeight: 520 },
+  // Stage and preview share spare width 2:1 (flex-basis 0 puts all of it up
+  // for grabs), so preview settles at roughly a third of the row and stage
+  // the rest, with no leftover gap. Their minWidths are the wrap floor: once
+  // either can't shrink any further, the row wraps to a stacked layout.
+  stage: { flexGrow: 2, flexShrink: 1, flexBasis: 0, minWidth: 320, gap: space.lg },
+  preview: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 300, minHeight: 520 },
 });
