@@ -19,6 +19,14 @@ async function enterData(page: Page, text: string) {
   await page.getByLabel('Your list').fill(text);
 }
 
+async function chooseCardRows(page: Page) {
+  const cards = page.getByLabel(/^Choose /);
+  const first = await cards.nth(0).boundingBox();
+  const second = await cards.nth(1).boundingBox();
+  if (first === null || second === null) throw new Error('Expected both choice cards to be laid out.');
+  return { firstY: first.y, secondY: second.y };
+}
+
 test.beforeEach(async ({ page }) => {
   const errors: string[] = [];
   page.on('console', (message) => {
@@ -208,6 +216,29 @@ test('much better records a strong win in one click', async ({ page }) => {
   await page.getByRole('button', { name: /is much better$/ }).first().click();
 
   await expect(page.getByText(/^1 comparisons ·/)).toBeVisible();
+});
+
+test('choice cards return to one row after rotating back to landscape', async ({ page }) => {
+  await page.setViewportSize({ width: 1194, height: 834 });
+  await enterData(page, DINNERS);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  await expect.poll(async () => {
+    const { firstY, secondY } = await chooseCardRows(page);
+    return Math.abs(firstY - secondY) < 4;
+  }).toBe(true);
+
+  await page.setViewportSize({ width: 834, height: 1194 });
+  await expect.poll(async () => {
+    const { firstY, secondY } = await chooseCardRows(page);
+    return Math.abs(firstY - secondY) >= 4;
+  }).toBe(true);
+
+  await page.setViewportSize({ width: 1194, height: 834 });
+  await expect.poll(async () => {
+    const { firstY, secondY } = await chooseCardRows(page);
+    return Math.abs(firstY - secondY) < 4;
+  }).toBe(true);
 });
 
 test('reordering by hand adds to the comparisons instead of discarding them', async ({ page }) => {

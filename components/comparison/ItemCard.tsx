@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import type { LayoutChangeEvent } from 'react-native';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ObjectDrilldown } from '@/components/comparison/ObjectDrilldown';
@@ -37,8 +36,6 @@ export interface ItemCardProps {
   onCancelDelete?: () => void;
   /** True while this card is waiting for the user to confirm a delete. */
   pendingDelete?: boolean;
-  /** Reports this card's row position, so the deck can tell whether the pair has wrapped onto separate lines. */
-  onLayout?: (event: LayoutChangeEvent) => void;
 }
 
 export function ItemCard({
@@ -52,7 +49,6 @@ export function ItemCard({
   onConfirmDelete,
   onCancelDelete,
   pendingDelete = false,
-  onLayout,
 }: ItemCardProps) {
   const reducedMotion = useReducedMotion();
   const [opacity] = useState(() => new Animated.Value(1));
@@ -103,7 +99,6 @@ export function ItemCard({
     <Animated.View
       style={[styles.card, { opacity }]}
       dataSet={{ surface: 'card' }}
-      onLayout={onLayout}
     >
       <Pressable
         // Not accessibilityRole="button": the card contains real buttons

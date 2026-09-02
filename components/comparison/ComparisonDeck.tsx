@@ -27,6 +27,14 @@ export interface ComparisonDeckProps {
   onDelete: (itemId: string) => void;
 }
 
+const CARD_MIN_WIDTH = 250;
+// The inline gutter needs enough room for the vertical rule, the word "or",
+// and its horizontal padding. Giving it an explicit minimum also lets the deck
+// decide whether two cards plus the gutter can fit before the gutter itself
+// changes shape and starts influencing the answer.
+const INLINE_GUTTER_MIN_WIDTH = 56;
+const INLINE_LAYOUT_MIN_WIDTH = CARD_MIN_WIDTH * 2 + INLINE_GUTTER_MIN_WIDTH + space.md * 2;
+
 /**
  * The comparison stage. Each card owns the actions for its own item - choose,
  * much better, remove - so there is no detached bank of buttons to map back
@@ -44,13 +52,12 @@ export function ComparisonDeck({
   // Details belong to the pair: seeing one item's fields against the other's
   // summary is not a comparison. One switch shows or hides both.
   const [showDetails, setShowDetails] = useState(false);
-  // Each card reports its own row offset on layout. When they land on
-  // different rows the pair has wrapped, and the "or" gutter between them
-  // needs to read as a horizontal break rather than a vertical rule floating
-  // beside the left card.
-  const [leftY, setLeftY] = useState<number | null>(null);
-  const [rightY, setRightY] = useState<number | null>(null);
-  const stacked = leftY !== null && rightY !== null && leftY !== rightY;
+  // Whether the pair can fit side by side is a property of the row's own
+  // width. Deriving it from where the cards happened to land becomes circular:
+  // once a narrow layout makes the gutter span the full row, that full-width
+  // gutter keeps the cards stacked even after the viewport widens again.
+  const [cardsWidth, setCardsWidth] = useState<number | null>(null);
+  const stacked = cardsWidth !== null && cardsWidth < INLINE_LAYOUT_MIN_WIDTH;
 
   const emit = useCallback(
     (outcome: ComparisonOutcome) => {
@@ -133,10 +140,13 @@ export function ComparisonDeck({
         )}
       </View>
 
-      {/* Wraps to stacked cards on narrow screens via plain flex-wrap; the
-          cards' onLayout only tracks whether they landed on the same row, so
-          the gutter between them can reorient to match. */}
-      <View style={styles.cards}>
+      {/* Wraps to stacked cards on narrow screens via plain flex-wrap; a width
+          measurement on the row decides whether the gutter should present as a
+          vertical divider or a full-width horizontal break. */}
+      <View
+        style={styles.cards}
+        onLayout={(event) => setCardsWidth(event.nativeEvent.layout.width)}
+      >
         <ItemCard
           item={pair.left}
           side="left"
@@ -148,7 +158,6 @@ export function ComparisonDeck({
           onRequestDelete={() => setArmed("left")}
           onConfirmDelete={confirmDelete}
           onCancelDelete={() => setArmed(null)}
-          onLayout={(event) => setLeftY(event.nativeEvent.layout.y)}
         />
         <View style={[styles.gutter, stacked && styles.gutterStacked]} aria-hidden>
           <View style={[styles.gutterLine, stacked && styles.gutterLineStacked]} />
@@ -167,7 +176,6 @@ export function ComparisonDeck({
           onRequestDelete={() => setArmed("right")}
           onConfirmDelete={confirmDelete}
           onCancelDelete={() => setArmed(null)}
-          onLayout={(event) => setRightY(event.nativeEvent.layout.y)}
         />
       </View>
 
@@ -251,6 +259,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   gutter: {
+    minWidth: INLINE_GUTTER_MIN_WIDTH,
     alignItems: "center",
     justifyContent: "center",
     gap: space.sm,
@@ -262,6 +271,7 @@ const styles = StyleSheet.create({
   gutterStacked: {
     flexDirection: "row",
     width: "100%",
+    minWidth: 0,
     paddingHorizontal: 0,
     paddingVertical: space.sm,
   },
