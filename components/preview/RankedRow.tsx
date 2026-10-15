@@ -4,6 +4,9 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFlipAnimation } from '@/lib/hooks/useFlipAnimation';
 import { colors, fonts, radius, space } from '@/lib/theme';
 
+/** Rows are one fixed height so a long list can be windowed without measuring. */
+export const ROW_HEIGHT = 56;
+
 export interface RankedRowProps {
   id: string;
   rank: number;
@@ -39,7 +42,7 @@ export function RankedRow({
     <Animated.View
       role="listitem"
       onLayout={(event) => setY(event.nativeEvent.layout.y)}
-      dataSet={dragging ? { dragging: 'true' } : undefined}
+      dataSet={dragging ? { id, dragging: 'true' } : { id }}
       style={[styles.row, dragging && styles.rowDragging, { transform: [{ translateY: offset }] }]}
     >
       {insertBefore && <View style={styles.insertBefore} dataSet={{ insertion: 'true' }} />}
@@ -74,7 +77,7 @@ export function RankedRow({
       </View>
 
       <View style={styles.body}>
-        <Text style={styles.label} numberOfLines={2}>
+        <Text style={styles.label} numberOfLines={1}>
           {label}
         </Text>
         {meta !== null && (
@@ -94,7 +97,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    paddingVertical: space.sm,
+    height: ROW_HEIGHT,
     paddingHorizontal: space.sm,
     borderRadius: radius.sm,
     backgroundColor: colors.surface,

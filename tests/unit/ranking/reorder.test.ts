@@ -4,6 +4,7 @@ import {
   dragInsertIndex,
   gapMovesRow,
   insertIndexFor,
+  insertIndexForUniform,
   moveItem,
   targetIndexForGap,
 } from '@/lib/ranking/reorder';
@@ -144,5 +145,20 @@ describe('gapMovesRow', () => {
   it('reports a real move', () => {
     expect(gapMovesRow(1, 0)).toBe(true);
     expect(gapMovesRow(1, 3)).toBe(true);
+  });
+});
+
+describe('insertIndexForUniform', () => {
+  const H = 56;
+  const pitch = 60;
+
+  it('agrees with measuring every row', () => {
+    const rows = Array.from({ length: 100 }, (_, i) => ({ y: 10 + i * pitch, height: H }));
+    for (const pointer of [-50, 0, 37, 38, 39, 300, 1234, 5990, 6100, 9999]) {
+      // Only rows 40..60 are "mounted"; the first of them is measured.
+      expect(insertIndexForUniform(100, 40, rows[40]!.y, H, pitch, pointer)).toBe(
+        insertIndexFor(rows, pointer),
+      );
+    }
   });
 });

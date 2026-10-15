@@ -6,6 +6,7 @@ import { StrongChoiceButton } from '@/components/comparison/StrongChoiceButton';
 import { TrashIcon } from '@/components/ui/TrashIcon';
 import { useReducedMotion } from '@/lib/hooks/useReducedMotion';
 import { selectItemLabel } from '@/lib/state/selectors';
+import { summaryEntries, summaryText } from '@/lib/state/summary';
 import { colors, fonts, motion, radius, space, typeScale } from '@/lib/theme';
 import { isComplexItemValue } from '@/types/list';
 import type { ListItem } from '@/types/list';
@@ -97,12 +98,12 @@ export function ItemCard({
   const chosen = summaryFields !== undefined && summaryFields.length > 0;
   // Chosen fields are guaranteed, so both cards of a pair show the same keys
   // and an item without one says so instead of silently dropping it.
-  const chips: [string, unknown][] = chosen
-    ? summaryFields.map((key): [string, unknown] => [
-        key,
-        isComplexItemValue(item.value) ? item.value[key] : undefined,
-      ])
-    : detailFields.filter(([, value]) => isChipValue(value)).slice(0, MAX_CHIPS);
+  const chips: [string, string][] = chosen
+    ? summaryEntries(item, summaryFields)
+    : detailFields
+        .filter(([, value]) => isChipValue(value))
+        .slice(0, MAX_CHIPS)
+        .map(([key, value]) => [key, summaryText(value)]);
   const interactive = onChoose !== undefined;
   const canChoose = interactive && !pendingDelete;
 
@@ -150,12 +151,15 @@ export function ItemCard({
         )}
       </View>
 
-      {/* The chips are a summary of the details, so they step aside for them. */}
-      {!expanded && chips.length > 0 && (
+      {/*
+        Auto-picked chips are a summary of the details, so they step aside for
+        them. Chosen fields stay: they are the part the user asked to always see.
+      */}
+      {(chosen || !expanded) && chips.length > 0 && (
         <View style={styles.chipRow}>
           {chips.map(([key, value]) => (
             <View key={key} style={styles.chip}>
-              <Text style={styles.chipText}>{`${key}: ${chipText(value)}`}</Text>
+              <Text style={styles.chipText}>{`${key}: ${value}`}</Text>
             </View>
           ))}
         </View>
@@ -230,12 +234,6 @@ export function ItemCard({
  */
 function focusNode(node: View | null): void {
   (node as unknown as HTMLElement | null)?.focus?.();
-}
-
-function chipText(value: unknown): string {
-  if (value === undefined || value === null || value === '') return '–';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
 }
 
 function isChipValue(value: unknown): boolean {

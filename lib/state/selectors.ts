@@ -339,3 +339,53 @@ export function describeCoverage(
     note: percent >= 100 ? ESTIMATE_MET_NOTE : null,
   };
 }
+
+/** Adjacent ratings further apart than this are settled without a head-to-head. */
+export const STABLE_GAP = 60;
+
+export interface StabilityReading {
+  /** Neighbouring pairs in the current order. */
+  pairs: number;
+  /** Neighbours nobody has compared and whose ratings are still close. */
+  unresolved: number;
+}
+
+/**
+ * How settled the order is, measured where it can still move: between
+ * neighbours. A pair is resolved once the two have been compared directly (a
+ * skip does not count) or their ratings sit far enough apart that one more
+ * click is unlikely to swap them. Far-apart items are not asked about at all,
+ * which is why this settles well before every pair has been seen.
+ */
+export function selectStability(
+  ranking: RankedItem<ListItem>[],
+  events: ComparisonEvent[],
+): StabilityReading {
+  const met = new Set<string>();
+  for (const event of events) {
+    if (event.outcome === "skip") continue;
+    met.add(`${event.leftItemId} ${event.rightItemId}`);
+    met.add(`${event.rightItemId} ${event.leftItemId}`);
+  }
+
+  let unresolved = 0;
+  for (let i = 0; i + 1 < ranking.length; i += 1) {
+    const upper = ranking[i]!;
+    const lower = ranking[i + 1]!;
+    const compared = met.has(`${upper.item.id} ${lower.item.id}`);
+    const apart = upper.state.rating - lower.state.rating >= STABLE_GAP;
+    if (!compared && !apart) unresolved += 1;
+  }
+
+  return { pairs: Math.max(0, ranking.length - 1), unresolved };
+}
+
+/** One line for the status strip; nothing until there is an order to judge. */
+export function describeStability(reading: StabilityReading): string {
+  if (reading.pairs === 0) return "";
+  if (reading.unresolved === 0) {
+    return "Every neighbouring pair is settled. The order is ready to export.";
+  }
+  const noun = reading.unresolved === 1 ? "pair" : "pairs";
+  return `${reading.unresolved} neighbouring ${noun} still too close to call.`;
+}

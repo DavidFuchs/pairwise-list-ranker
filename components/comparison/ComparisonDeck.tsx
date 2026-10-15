@@ -4,8 +4,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ItemCard } from "@/components/comparison/ItemCard";
 import { ProgressMeter } from "@/components/ui/ProgressMeter";
 import { useComparisonShortcuts } from "@/lib/hooks/useComparisonShortcuts";
-import { describeCoverage, selectItemLabel } from "@/lib/state/selectors";
-import type { ActivePair } from "@/lib/state/selectors";
+import { describeCoverage, describeStability, selectItemLabel } from "@/lib/state/selectors";
+import type { ActivePair, StabilityReading } from "@/lib/state/selectors";
 import { colors, fonts, radius, space, typeScale } from "@/lib/theme";
 import { isComplexItemValue } from "@/types/list";
 import type { ListItem } from "@/types/list";
@@ -26,6 +26,10 @@ export interface ComparisonDeckProps {
   summaryFields?: string[];
   onOutcome: (outcome: ComparisonOutcome) => void;
   onDelete: (itemId: string) => void;
+  /** Present only while there is something to take back. */
+  onUndo?: () => void;
+  /** How the order is shaping up, for the status strip. */
+  stability?: StabilityReading;
 }
 
 const CARD_MIN_WIDTH = 250;
@@ -49,6 +53,8 @@ export function ComparisonDeck({
   summaryFields,
   onOutcome,
   onDelete,
+  onUndo,
+  stability,
 }: ComparisonDeckProps) {
   const [armed, setArmed] = useState<"left" | "right" | null>(null);
   // Details belong to the pair: seeing one item's fields against the other's
@@ -90,6 +96,7 @@ export function ComparisonDeck({
     onArmDelete: useCallback((side) => setArmed(side), []),
     onConfirmDelete: confirmDelete,
     onCancelDelete: useCallback(() => setArmed(null), []),
+    onUndo,
   });
 
   // A pointer answering the pair abandons a D that is still waiting for its
@@ -139,6 +146,9 @@ export function ComparisonDeck({
         {/* Neutral, not gold: the surplus colour belongs to the meter alone. */}
         {coverageNote !== null && (
           <Text style={styles.coverageNote}>{coverageNote}</Text>
+        )}
+        {stability !== undefined && (
+          <Text style={styles.coverageNote}>{describeStability(stability)}</Text>
         )}
       </View>
 
@@ -199,6 +209,20 @@ export function ComparisonDeck({
             </Pressable>
           )}
 
+          {onUndo !== undefined && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Undo last decision"
+              onPress={() => {
+                setArmed(null);
+                onUndo();
+              }}
+              style={styles.skip}
+            >
+              <Text style={styles.skipText}>Undo</Text>
+            </Pressable>
+          )}
+
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Skip this pair"
@@ -225,7 +249,7 @@ function shortcutLine(awaitingSide: boolean, armed: boolean): string {
   if (armed) return "Enter removes · Esc keeps";
   if (awaitingSide)
     return "Removing: press L or R for a side · any other key cancels";
-  return "Arrow keys choose · shift + arrow for much better · S skips · D then L or R removes";
+  return "Arrow keys choose · shift + arrow for much better · S skips · D then L or R removes · Ctrl/Cmd+Z undoes";
 }
 
 /** Whether an item carries anything beyond the field that titles its card. */

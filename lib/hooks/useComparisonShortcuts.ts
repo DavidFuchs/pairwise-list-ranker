@@ -9,6 +9,8 @@ export interface ComparisonShortcutHandlers {
   onArmDelete: (side: ShortcutSide) => void;
   onConfirmDelete: () => void;
   onCancelDelete: () => void;
+  /** Takes back the last decision. Bound to Ctrl/Cmd+Z; absent when there is nothing to undo. */
+  onUndo?: () => void;
   /** True while a delete is waiting for confirmation. */
   armed: boolean;
   enabled: boolean;
@@ -35,6 +37,7 @@ export function useComparisonShortcuts({
   onArmDelete,
   onConfirmDelete,
   onCancelDelete,
+  onUndo,
   armed,
   enabled,
 }: ComparisonShortcutHandlers): ComparisonShortcutState {
@@ -49,7 +52,16 @@ export function useComparisonShortcuts({
     if (!enabled || typeof window === 'undefined') return;
 
     const handler = (event: KeyboardEvent) => {
-      if (isTypingTarget(event.target) || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (isTypingTarget(event.target)) return;
+
+      if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'z') {
+        if (armed || onUndo === undefined) return;
+        event.preventDefault();
+        onUndo();
+        return;
+      }
+
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
 
       if (armed) {
         // Enter is bound globally so the confirmation answers the hand already
@@ -106,6 +118,7 @@ export function useComparisonShortcuts({
     onArmDelete,
     onConfirmDelete,
     onCancelDelete,
+    onUndo,
     armed,
     sideRequested,
     enabled,

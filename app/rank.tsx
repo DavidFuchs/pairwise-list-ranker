@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import { ComparisonDeck } from "@/components/comparison/ComparisonDeck";
 import { AppShell } from "@/components/layout/AppShell";
@@ -8,7 +8,9 @@ import type { ListSwitcherOption } from "@/components/layout/ListSwitcher";
 import { PageNav } from "@/components/layout/PageNav";
 import { PreviewPane } from "@/components/preview/PreviewPane";
 import { Button } from "@/components/ui/Button";
-import { downloadName, exportFilename } from "@/lib/export/filenames";
+import { downloadText, pickTextFile } from "@/lib/browser/exportActions";
+import { downloadName, exportFilename, slugify } from "@/lib/export/filenames";
+import { buildProgressFile, parseProgressFile } from "@/lib/progress/progressFile";
 import { findArrayCandidates } from "@/lib/import/arrayCandidates";
 import {
   describeRoles,
@@ -18,6 +20,7 @@ import {
   selectListConfig,
   selectProgress,
   selectRemovedCount,
+  selectStability,
   selectWorkspaceView,
 } from "@/lib/state/selectors";
 import { listStore, useListStore } from "@/lib/state/useListStore";
@@ -35,6 +38,7 @@ export default function RankScreen() {
     (state) => state.persistenceAvailable,
   );
   const saveOutcome = useListStore((state) => state.saveOutcome);
+  const canUndo = useListStore((state) => state.undoStack.length > 0);
 
   useEffect(() => {
     listStore.getState().hydrate();
@@ -55,12 +59,18 @@ export default function RankScreen() {
     comparisonEvents,
     workspace?.alreadyRanked ?? false,
   );
+  const stability = selectStability(view.ranking, comparisonEvents);
   const format: SourceFormat =
     previewTab === "ranked" ? (workspace?.source.format ?? "list") : previewTab;
-  const exportText =
-    previewTab === "ranked"
-      ? ""
-      : selectExportText(workspace, items, comparisonEvents, format);
+  // Serializing a large document is the slowest thing this screen does, and
+  // it only changes when the data or the tab does.
+  const exportText = useMemo(
+    () =>
+      previewTab === "ranked"
+        ? ""
+        : selectExportText(workspace, items, comparisonEvents, format),
+    [previewTab, workspace, items, comparisonEvents, format],
+  );
 
   // The static build renders without localStorage, so the persistence answer
   // only exists after hydration. Showing it sooner mismatches the served HTML.
@@ -168,6 +178,8 @@ export default function RankScreen() {
             progress={progress}
             sortField={workspace.roles.labelField}
             summaryFields={workspace.roles.summaryFields}
+            onUndo={canUndo ? () => listStore.getState().undo() : undefined}
+            stability={stability}
             onOutcome={(outcome) => {
               if (view.pair === null) return;
               listStore
@@ -189,6 +201,7 @@ export default function RankScreen() {
           onTabChange={(tab) => listStore.getState().setPreviewTab(tab)}
           ranking={view.ranking}
           labelField={workspace.roles.labelField}
+          summaryFields={workspace.roles.summaryFields}
           exportText={exportText}
           filename={exportFilename(downloadName(workspace.source), format)}
           format={format}
@@ -196,6 +209,31 @@ export default function RankScreen() {
           onReorder={(itemId, nextOrder) =>
             listStore.getState().reorderItem(itemId, nextOrder)
           }
+          progressFile={{
+            onSave: () => {
+              const file = buildProgressFile(
+                items,
+                comparisonEvents,
+                workspace.source.arrayPath,
+                new Date().toISOString(),
+              );
+              const name = `${slugify(downloadName(workspace.source))}-progress.json`;
+              return downloadText(name, JSON.stringify(file, null, 2), "application/json")
+                ? `Saved ${name}`
+                : "Download unavailable";
+            },
+            onLoad: async () => {
+              const text = await pickTextFile("application/json,.json");
+              if (text === null) return null;
+              const parsed = parseProgressFile(text);
+              if (!parsed.ok) return parsed.reason;
+              const result = listStore.getState().loadProgress(parsed.file);
+              const skipped = result.unmatchedEvents + result.unmatchedRemoved;
+              return skipped === 0
+                ? `Loaded ${result.matchedEvents} comparisons.`
+                : `Loaded ${result.matchedEvents} comparisons. ${skipped} did not match an item in this list (edited or removed since the save).`;
+            },
+          }}
         />
       }
     />

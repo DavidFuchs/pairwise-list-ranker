@@ -202,9 +202,10 @@ test('details open on both cards from one toggle', async ({ page }) => {
 
   await page.getByRole('switch', { name: 'Show details on both cards' }).click();
 
-  // Expanded, both cards show the fields in full and the chips step aside.
-  await expect(alien.getByText('year: 1979')).toBeHidden();
-  await expect(arrival.getByText('year: 2016')).toBeHidden();
+  // Expanded, both cards show every field in full, and the chosen summary
+  // fields stay put above them.
+  await expect(alien.getByText('year: 1979')).toBeVisible();
+  await expect(arrival.getByText('year: 2016')).toBeVisible();
   await expect(alien.getByText('1979', { exact: true })).toBeVisible();
   await expect(arrival.getByText('2016', { exact: true })).toBeVisible();
 });
@@ -348,4 +349,32 @@ test('reordering the text is reported as an order change', async ({ page }) => {
   await page.getByRole('button', { name: /^Apply edits$/ }).click();
 
   await expect(page.getByRole('listitem').first()).toContainText('Pho');
+});
+
+test('a long list does not make the layout flicker or the page scroll sideways', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const songs = Array.from({ length: 800 }, (_, i) => `Song number ${i}`).join('\n');
+  await enterData(page, songs);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+  await expect(page.getByRole('region', { name: 'Current ranking' })).toBeVisible();
+
+  // The loop this guards against: a page scrollbar appearing narrows the
+  // layout, which changes the content height, which removes the scrollbar.
+  // Sample the preview's width over time; a loop would show more than one value.
+  const widths = new Set<number>();
+  for (let i = 0; i < 20; i += 1) {
+    const box = await page.getByRole('region', { name: 'Current ranking' }).boundingBox();
+    if (box !== null) widths.add(Math.round(box.width));
+    await page.waitForTimeout(50);
+  }
+  expect(widths.size).toBe(1);
+
+  // Windowed: nowhere near all 800 rows are in the DOM.
+  const mounted = await page.getByRole('listitem').count();
+  expect(mounted).toBeLessThan(120);
+
+  const overflowX = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  );
+  expect(overflowX).toBe(false);
 });

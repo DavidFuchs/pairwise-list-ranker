@@ -28,8 +28,10 @@ function startRanking() {
 /**
  * A reload keeps whatever localStorage holds but starts with empty memory,
  * which is what makes hydration observable.
+ * The page flushes a pending save as it goes away, so the helper does too.
  */
 function simulateReload() {
+  listStore.getState().flush();
   listStore.setState({
     workspace: null,
     items: [],

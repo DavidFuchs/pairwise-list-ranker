@@ -101,3 +101,16 @@ describe('RankedListPreview', () => {
     expect(onReorder).not.toHaveBeenCalled();
   });
 });
+
+describe('RankedListPreview with a long list', () => {
+  it('mounts only a window of the rows', () => {
+    const labels = Array.from({ length: 500 }, (_, i) => `Song ${i}`);
+    setup({ ranking: ranked(labels) });
+
+    const mounted = screen.getAllByRole('listitem').length;
+    expect(mounted).toBeGreaterThan(0);
+    expect(mounted).toBeLessThan(100);
+    expect(screen.getByText('Song 0')).toBeDefined();
+    expect(screen.queryByText('Song 499')).toBeNull();
+  });
+});

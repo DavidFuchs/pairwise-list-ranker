@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { StorageLike } from '@/lib/persistence/workspaceStorage';
-import { createWorkspaceStorage } from '@/lib/persistence/workspaceStorage';
+import { WORKSPACE_STORAGE_KEY, createWorkspaceStorage } from '@/lib/persistence/workspaceStorage';
+import { buildProgressFile } from '@/lib/progress/progressFile';
 import { createListStore } from '@/lib/state/useListStore';
 import type { DataSource } from '@/types/source';
 
@@ -619,5 +620,104 @@ describe('document-wide list defaults', () => {
       roles: { labelField: 'title' },
       alreadyRanked: true,
     });
+  });
+});
+
+describe('undo', () => {
+  function started() {
+    const store = makeStore();
+    store.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
+    return store;
+  }
+
+  it('takes back the last comparison', () => {
+    const store = started();
+    const [a, b] = store.getState().items;
+    store.getState().recordComparison(a!.id, b!.id, 'left');
+    expect(store.getState().comparisonEvents).toHaveLength(1);
+
+    store.getState().undo();
+
+    expect(store.getState().comparisonEvents).toHaveLength(0);
+    expect(store.getState().undoStack).toHaveLength(0);
+  });
+
+  it('brings back a removed item', () => {
+    const store = started();
+    const [a] = store.getState().items;
+    store.getState().removeItem(a!.id);
+    expect(store.getState().items[0]!.active).toBe(false);
+
+    store.getState().undo();
+
+    expect(store.getState().items[0]!.active).toBe(true);
+  });
+
+  it('takes back a hand reorder in one step', () => {
+    const store = started();
+    const [a, b] = store.getState().items;
+    store.getState().reorderItem(b!.id, [b!.id, a!.id]);
+    const added = store.getState().comparisonEvents.length;
+    expect(added).toBeGreaterThan(0);
+
+    store.getState().undo();
+
+    expect(store.getState().comparisonEvents).toHaveLength(0);
+  });
+
+  it('does nothing when there is nothing to undo', () => {
+    const store = started();
+    store.getState().undo();
+    expect(store.getState().comparisonEvents).toHaveLength(0);
+  });
+});
+
+describe('loadProgress', () => {
+  it('replaces comparisons with those in the file, matched by item value', () => {
+    const store = makeStore();
+    store.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
+    const [a, b] = store.getState().items;
+    store.getState().recordComparison(a!.id, b!.id, 'right_strong');
+    const file = buildProgressFile(
+      store.getState().items,
+      store.getState().comparisonEvents,
+      ['movies'],
+      '2026-08-16T00:00:00.000Z',
+    );
+
+    const fresh = makeStore();
+    fresh.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
+    const result = fresh.getState().loadProgress(file);
+
+    expect(result.matchedEvents).toBe(1);
+    expect(fresh.getState().comparisonEvents[0]).toMatchObject({ outcome: 'right_strong' });
+    expect(fresh.getState().ranking()[0]!.item.value).toEqual({ title: 'Arrival' });
+  });
+});
+
+describe('delayed saving', () => {
+  it('batches writes and flushes on demand', () => {
+    vi.useFakeTimers();
+    try {
+      const backend = memoryBackend();
+      const store = createListStore({
+        storage: createWorkspaceStorage(backend),
+        createId: () => `id-${(ids += 1)}`,
+        saveDelayMs: 500,
+      });
+      store.getState().startRanking({ source: nested, roles: {} });
+      expect(backend.data.has(WORKSPACE_STORAGE_KEY)).toBe(false);
+
+      vi.advanceTimersByTime(500);
+      expect(backend.data.has(WORKSPACE_STORAGE_KEY)).toBe(true);
+
+      backend.data.clear();
+      const [a, b] = store.getState().items;
+      store.getState().recordComparison(a!.id, b!.id, 'left');
+      store.getState().flush();
+      expect(backend.data.has(WORKSPACE_STORAGE_KEY)).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

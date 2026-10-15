@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ExportToolbar } from '@/components/preview/ExportToolbar';
+import { ProgressFileControls } from '@/components/preview/ProgressFileControls';
+import type { ProgressFileControlsProps } from '@/components/preview/ProgressFileControls';
 import { PreviewTabs } from '@/components/preview/PreviewTabs';
 import { RankedListPreview } from '@/components/preview/RankedListPreview';
 import { ReadOnlyCode } from '@/components/preview/ReadOnlyCode';
@@ -15,6 +17,7 @@ export interface PreviewPaneProps {
   onTabChange: (tab: PreviewTab) => void;
   ranking: RankedItem<ListItem>[];
   labelField?: string;
+  summaryFields?: string[];
   /** The user's document, ranked and serialized for the active tab. */
   exportText: string;
   filename: string;
@@ -22,6 +25,8 @@ export interface PreviewPaneProps {
   /** Items deleted during comparison, which the export leaves out. */
   removedCount: number;
   onReorder: (itemId: string, nextOrder: string[]) => void;
+  /** When given, the pane offers saving and loading a progress file. */
+  progressFile?: ProgressFileControlsProps;
 }
 
 /**
@@ -35,11 +40,13 @@ export function PreviewPane({
   onTabChange,
   ranking,
   labelField,
+  summaryFields,
   exportText,
   filename,
   format,
   removedCount,
   onReorder,
+  progressFile,
 }: PreviewPaneProps) {
   return (
     <View style={styles.pane} dataSet={{ surface: 'panel' }}>
@@ -58,9 +65,11 @@ export function PreviewPane({
 
       <PreviewTabs tab={tab} tabs={tabs} onChange={onTabChange} />
 
+      {progressFile !== undefined && <ProgressFileControls {...progressFile} />}
+
       {tab === 'ranked' ? (
         <View style={styles.body} accessibilityLabel="Current ranking" role="region">
-          <RankedListPreview ranking={ranking} sortField={labelField} onReorder={onReorder} />
+          <RankedListPreview ranking={ranking} sortField={labelField} summaryFields={summaryFields} onReorder={onReorder} />
         </View>
       ) : (
         <View style={styles.body}>

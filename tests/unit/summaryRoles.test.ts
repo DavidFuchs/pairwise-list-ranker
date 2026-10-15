@@ -16,9 +16,12 @@ describe('resolveRoles summaryFields', () => {
     expect(roles.summaryFields).toEqual(['genre', 'year']);
   });
 
-  it('omits the key when nothing survives', () => {
-    expect(resolveRoles(entries, { labelField: 'title', summaryFields: ['gone'] })).not.toHaveProperty(
-      'summaryFields',
-    );
+  it('treats a cleared choice as a choice, and does not suggest over it', () => {
+    expect(resolveRoles(entries, { labelField: 'title', summaryFields: [] }).summaryFields).toEqual([]);
+  });
+
+  it('suggests short fields every item carries when nothing was chosen', () => {
+    // genre is missing from one item, so only year qualifies.
+    expect(resolveRoles(entries, { labelField: 'title' }).summaryFields).toEqual(['year']);
   });
 });

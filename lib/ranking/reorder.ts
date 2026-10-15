@@ -57,3 +57,21 @@ export function targetIndexForGap(fromIndex: number, gap: number): number {
 export function gapMovesRow(fromIndex: number, gap: number): boolean {
   return gap !== fromIndex && gap !== fromIndex + 1;
 }
+
+/**
+ * `insertIndexFor` for rows of one height at one spacing, when only the first
+ * is measured - a windowed list has just a slice of its rows in the DOM.
+ * `firstIndex` is the list index of the measured row.
+ */
+export function insertIndexForUniform(
+  count: number,
+  firstIndex: number,
+  firstTop: number,
+  rowHeight: number,
+  pitch: number,
+  pointerY: number,
+): number {
+  const rowsBefore = (pointerY - firstTop - rowHeight / 2) / pitch + firstIndex;
+  if (rowsBefore <= 0) return 0;
+  return Math.min(count, Math.ceil(rowsBefore));
+}

@@ -588,3 +588,24 @@ describe("details, shared by the pair", () => {
     expect(screen.queryByRole("switch", { name: /show details/i })).toBeNull();
   });
 });
+
+describe("ComparisonDeck undo and stability", () => {
+  it("offers Undo only when there is something to undo", () => {
+    setup();
+    expect(screen.queryByRole("button", { name: /undo/i })).toBeNull();
+  });
+
+  it("undoes from the button and from Ctrl+Z", async () => {
+    const { user, onUndo } = setup({ onUndo: vi.fn() });
+
+    await user.click(screen.getByRole("button", { name: /undo/i }));
+    await user.keyboard("{Control>}z{/Control}");
+
+    expect(onUndo).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports how many neighbouring pairs are still unsettled", () => {
+    setup({ stability: { pairs: 5, unresolved: 2 } });
+    expect(screen.getByText(/2 neighbouring pairs still too close/)).toBeDefined();
+  });
+});

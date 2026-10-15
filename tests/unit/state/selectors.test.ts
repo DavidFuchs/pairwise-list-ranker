@@ -525,7 +525,7 @@ describe("selectListConfig", () => {
     };
 
     expect(selectListConfig(onYear, [], ["books"])).toEqual({
-      roles: { labelField: "title" },
+      roles: { labelField: "title", summaryFields: ["year"] },
       alreadyRanked: true,
     });
   });
@@ -550,7 +550,7 @@ describe("selectListConfig", () => {
     };
 
     expect(selectListConfig(defaults, [inherited], ["actors"])).toEqual({
-      roles: { labelField: "nickname" },
+      roles: { labelField: "nickname", summaryFields: ["name"] },
       alreadyRanked: true,
     });
   });

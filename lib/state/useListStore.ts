@@ -2,6 +2,8 @@ import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
 
+import { applyProgressFile } from '@/lib/progress/progressFile';
+import type { ProgressFile } from '@/lib/progress/progressFile';
 import { entriesAtPath } from '@/lib/import/arrayCandidates';
 import { diffImport } from '@/lib/import/diff';
 import { WORKSPACE_VERSION } from '@/lib/persistence/workspaceSnapshot';
@@ -29,6 +31,27 @@ export interface ListStoreOptions {
   storage?: WorkspaceStorage;
   now?: () => string;
   createId?: () => string;
+  /**
+   * Writing the snapshot serializes the whole document, which is too much to
+   * do on every click of a large list. A positive delay batches writes to at
+   * most one per interval; zero (the default) saves on every change.
+   */
+  saveDelayMs?: number;
+}
+
+/** One step the user can take back. */
+export type UndoEntry =
+  | { kind: 'comparison'; eventIds: string[] }
+  | { kind: 'remove'; itemId: string };
+
+const MAX_UNDO = 200;
+
+/** What loading a progress file did, for the status line. */
+export interface ProgressLoadResult {
+  matchedEvents: number;
+  unmatchedEvents: number;
+  removed: number;
+  unmatchedRemoved: number;
 }
 
 /** What the data screen hands over when the user commits their choices. */
@@ -67,6 +90,8 @@ export interface ListState {
    * Cleared once the data screen has read it.
    */
   pendingSwitchPath: string[] | null;
+  /** In memory only: undo does not survive a reload. */
+  undoStack: UndoEntry[];
 
   ranking(): RankedItem<ListItem>[];
   currentPair(): ActivePair | null;
@@ -93,6 +118,12 @@ export interface ListState {
   setPreviewTab(tab: PreviewTab): void;
   recordComparison(leftItemId: string, rightItemId: string, outcome: ComparisonOutcome): void;
   removeItem(itemId: string): void;
+  /** Takes back the last comparison, reorder or removal. */
+  undo(): void;
+  /** Replaces this list's comparisons, and adds the removals, from a saved progress file. */
+  loadProgress(file: ProgressFile): ProgressLoadResult;
+  /** Writes any save still waiting on the delay. */
+  flush(): void;
   markResumed(): void;
   reset(): void;
   requestListSwitch(path: string[]): void;
@@ -111,10 +142,34 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
   const storage = options.storage ?? createWorkspaceStorage();
   const now = options.now ?? (() => new Date().toISOString());
   const createId = options.createId ?? defaultCreateId;
+  const saveDelayMs = options.saveDelayMs ?? 0;
 
   return createStore<ListState>()((set, get) => {
+    let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function cancelPendingSave(): void {
+      if (saveTimer === null) return;
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+
     /** Browser persistence is a convenience, never the system of record. */
     function persist(): void {
+      if (saveDelayMs <= 0) {
+        writeSnapshot();
+        return;
+      }
+      // The write reads the latest state when it fires, so one pending timer
+      // covers every change made while it waits.
+      if (saveTimer === null) {
+        saveTimer = setTimeout(() => {
+          saveTimer = null;
+          writeSnapshot();
+        }, saveDelayMs);
+      }
+    }
+
+    function writeSnapshot(): void {
       const { workspace, items, comparisonEvents, savedLists, previewTab } = get();
       if (workspace === null) {
         storage.clear();
@@ -132,6 +187,23 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
 
       const outcome = storage.save(snapshot);
       set({ saveOutcome: outcome, ...(outcome === 'saved' ? { lastSavedAt: now() } : {}) });
+    }
+
+    function pushUndo(entry: UndoEntry): UndoEntry[] {
+      return [...get().undoStack, entry].slice(-MAX_UNDO);
+    }
+
+    if (saveDelayMs > 0 && typeof window !== 'undefined') {
+      // A save still waiting when the page goes away would be lost.
+      const flushNow = () => {
+        if (saveTimer === null) return;
+        cancelPendingSave();
+        writeSnapshot();
+      };
+      window.addEventListener('pagehide', flushNow);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') flushNow();
+      });
     }
 
     function makeComparisonEvent(
@@ -166,6 +238,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       hydrated: false,
       resumed: false,
       pendingSwitchPath: null,
+      undoStack: [],
 
       ranking() {
         const { items, comparisonEvents, workspace } = get();
@@ -216,6 +289,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           items: entries.map((entry) => makeItem(workspace.id, entry)),
           comparisonEvents: [],
           previewTab: 'ranked',
+          undoStack: [],
         });
         persist();
       },
@@ -265,6 +339,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
             updatedAt: timestamp,
           },
           items,
+          undoStack: [],
         });
         persist();
       },
@@ -326,6 +401,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
             comparisonEvents: restored.comparisonEvents,
             savedLists: [...otherSaved.filter((list) => list !== restored), archived],
             previewTab: 'ranked',
+            undoStack: [],
           });
           persist();
           return;
@@ -349,6 +425,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           comparisonEvents: [],
           savedLists: [...otherSaved, archived],
           previewTab: 'ranked',
+          undoStack: [],
         });
         persist();
       },
@@ -391,7 +468,10 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         }
         if (events.length === 0) return;
 
-        set({ comparisonEvents: [...comparisonEvents, ...events] });
+        set({
+          comparisonEvents: [...comparisonEvents, ...events],
+          undoStack: pushUndo({ kind: 'comparison', eventIds: events.map((entry) => entry.id) }),
+        });
         persist();
       },
 
@@ -408,19 +488,84 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         if (!isRankable(leftItemId) || !isRankable(rightItemId)) return;
 
         const event = makeComparisonEvent(workspace.id, leftItemId, rightItemId, outcome);
-        set({ comparisonEvents: [...comparisonEvents, event] });
+        set({
+          comparisonEvents: [...comparisonEvents, event],
+          undoStack: pushUndo({ kind: 'comparison', eventIds: [event.id] }),
+        });
         persist();
       },
 
       /** Deleting never records a comparison: the pair simply goes away. */
       removeItem(itemId: string) {
         const timestamp = now();
+        const wasActive = get().items.some((item) => item.id === itemId && item.active);
         set({
+          undoStack: wasActive ? pushUndo({ kind: 'remove', itemId }) : get().undoStack,
           items: get().items.map((item) =>
             item.id === itemId ? { ...item, active: false, updatedAt: timestamp } : item,
           ),
         });
         persist();
+      },
+
+      undo() {
+        const entry = get().undoStack.at(-1);
+        if (entry === undefined) return;
+        const undoStack = get().undoStack.slice(0, -1);
+
+        if (entry.kind === 'comparison') {
+          const gone = new Set(entry.eventIds);
+          set({
+            comparisonEvents: get().comparisonEvents.filter((event) => !gone.has(event.id)),
+            undoStack,
+          });
+        } else {
+          const timestamp = now();
+          set({
+            items: get().items.map((item) =>
+              item.id === entry.itemId ? { ...item, active: true, updatedAt: timestamp } : item,
+            ),
+            undoStack,
+          });
+        }
+        persist();
+      },
+
+      loadProgress(file: ProgressFile): ProgressLoadResult {
+        const { workspace, items } = get();
+        if (workspace === null) {
+          return { matchedEvents: 0, unmatchedEvents: 0, removed: 0, unmatchedRemoved: 0 };
+        }
+
+        const applied = applyProgressFile(file, items, workspace.id, createId);
+        const removed = new Set(applied.removedIds);
+        const timestamp = now();
+
+        set({
+          comparisonEvents: applied.events,
+          // Removals only ever add: an item inactive here may have been
+          // dropped by an edit of the document, and is not the file's to revive.
+          items: items.map((item) =>
+            item.active && removed.has(item.id)
+              ? { ...item, active: false, updatedAt: timestamp }
+              : item,
+          ),
+          undoStack: [],
+        });
+        persist();
+
+        return {
+          matchedEvents: applied.matchedEvents,
+          unmatchedEvents: applied.unmatchedEvents,
+          removed: applied.removedIds.length,
+          unmatchedRemoved: applied.unmatchedRemoved,
+        };
+      },
+
+      flush() {
+        if (saveTimer === null) return;
+        cancelPendingSave();
+        writeSnapshot();
       },
 
       markResumed() {
@@ -448,7 +593,9 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           // The document it named is gone, so preselecting it on the data
           // screen would point at a list that no longer exists.
           pendingSwitchPath: null,
+          undoStack: [],
         });
+        cancelPendingSave();
         storage.clear();
       },
     };
@@ -456,7 +603,7 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
 }
 
 /** The app-wide workspace. Tests build their own with `createListStore`. */
-export const listStore = createListStore();
+export const listStore = createListStore({ saveDelayMs: 400 });
 
 export function useListStore<T>(selector: (state: ListState) => T): T {
   return useStore(listStore, selector);
