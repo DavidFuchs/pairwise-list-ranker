@@ -156,7 +156,7 @@ export function ItemCard({
         them. Chosen fields stay: they are the part the user asked to always see.
       */}
       {(chosen || !expanded) && chips.length > 0 && (
-        <View style={styles.chipRow}>
+        <View style={[styles.chipRow, chosen && styles.chipColumn]}>
           {chips.map(([key, value]) => (
             <View key={key} style={styles.chip}>
               <Text style={styles.chipText}>{`${key}: ${value}`}</Text>
@@ -289,6 +289,8 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
+  // Chosen fields each get a line, so both cards of a pair line up row for row.
+  chipColumn: { flexDirection: 'column', alignItems: 'flex-start', flexWrap: 'nowrap' },
   chip: {
     paddingVertical: 4,
     paddingHorizontal: 9,
