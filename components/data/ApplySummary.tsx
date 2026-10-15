@@ -42,6 +42,14 @@ function settingsLines(settings: SettingsDiff): string[] {
     );
   }
 
+  if (settings.summary !== undefined) {
+    lines.push(
+      settings.summary.to.length === 0
+        ? 'Cards will pick their own details'
+        : `Cards will always show ${settings.summary.to.join(', ')}`,
+    );
+  }
+
   if (settings.writeBack !== null) {
     lines.push(
       settings.writeBack.to === undefined

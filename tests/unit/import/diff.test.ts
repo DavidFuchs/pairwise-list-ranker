@@ -231,3 +231,17 @@ describe('diffSettings', () => {
     expect(diff.writeBack).toEqual({ from: undefined, to: 'rank' });
   });
 });
+
+describe('diffSettings summary fields', () => {
+  const base = { roles: { labelField: 'title', summaryFields: ['a', 'b'] }, alreadyRanked: false };
+
+  it('notices when only the order of the card fields changed', () => {
+    const diff = diffSettings(base, { ...base, roles: { ...base.roles, summaryFields: ['b', 'a'] } });
+    expect(diff.changed).toBe(true);
+    expect(diff.summary).toEqual({ to: ['b', 'a'] });
+  });
+
+  it('says nothing when they are the same', () => {
+    expect(diffSettings(base, { ...base }).summary).toBeUndefined();
+  });
+});

@@ -721,3 +721,31 @@ describe('delayed saving', () => {
     }
   });
 });
+
+describe('hydrate with delayed saving', () => {
+  it('does not replace newer in-memory state with the older saved copy', () => {
+    vi.useFakeTimers();
+    try {
+      const backend = memoryBackend();
+      const store = createListStore({
+        storage: createWorkspaceStorage(backend),
+        createId: () => `id-${(ids += 1)}`,
+        saveDelayMs: 500,
+      });
+      store.getState().hydrate();
+      store.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
+      store.getState().flush();
+
+      store.getState().applyEdits({
+        source: nested,
+        roles: { labelField: 'title', summaryFields: ['year'] },
+      });
+      // A screen mounting before the delayed save has fired.
+      store.getState().hydrate();
+
+      expect(store.getState().workspace?.roles.summaryFields).toEqual(['year']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

@@ -251,6 +251,11 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       },
 
       hydrate() {
+        // Memory is ahead of storage whenever a save is waiting on its delay,
+        // so reading storage back after the first load would throw away the
+        // user's latest change - every screen calls this as it mounts.
+        if (get().hydrated) return;
+
         const snapshot = storage.load();
         if (snapshot === null) {
           set({ hydrated: true });
