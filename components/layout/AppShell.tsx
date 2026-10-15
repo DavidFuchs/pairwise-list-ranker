@@ -201,7 +201,7 @@ export function AppShell({
 
       <HowItWorksModal visible={howItWorksOpen} onClose={() => setHowItWorksOpen(false)} />
 
-      <ScrollView contentContainerStyle={styles.scrollBody}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollBody}>
         <View style={styles.body}>
           {rail != null && <View style={styles.rail}>{rail}</View>}
 
@@ -275,6 +275,8 @@ const styles = StyleSheet.create({
     color: colors.dangerText,
     backgroundColor: colors.dangerSoft,
   },
+  // Reserve the scrollbar's width so it appearing never re-wraps the layout.
+  scroll: { scrollbarGutter: 'stable' } as object,
   scrollBody: { padding: space.lg },
   body: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg, alignItems: 'flex-start' },
   rail: { flexGrow: 1, flexShrink: 1, flexBasis: 260, minWidth: 240, maxWidth: 340, gap: space.md },
@@ -283,7 +285,7 @@ const styles = StyleSheet.create({
   // the rest, with no leftover gap. Their minWidths are the wrap floor: once
   // either can't shrink any further, the row wraps to a stacked layout.
   stage: { flexGrow: 2, flexShrink: 1, flexBasis: 0, minWidth: 320, gap: space.lg },
-  preview: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 300, minHeight: 520 },
+  preview: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 300, minHeight: 520, height: '85vh' as unknown as number },
   dropOverlay: {
     flex: 1,
     alignItems: 'center',
