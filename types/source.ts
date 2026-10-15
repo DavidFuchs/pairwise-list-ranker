@@ -19,9 +19,17 @@ export interface DataSource {
   arrayPath: string[];
 }
 
+export const MAX_SUMMARY_FIELDS = 3;
+
 export interface FieldRoles {
   /** Object entries only: which field shows on the comparison cards. */
   labelField?: string;
+  /**
+   * Object entries only: up to MAX_SUMMARY_FIELDS fields always shown, in this
+   * order, on each comparison card. Empty or absent means the card picks its
+   * own from whatever the item happens to carry.
+   */
+  summaryFields?: string[];
   /** Optional: which field is rewritten with 1..N on export. */
   positionField?: string;
 }

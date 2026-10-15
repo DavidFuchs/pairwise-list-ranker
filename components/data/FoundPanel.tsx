@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { ArrayPicker } from "@/components/data/ArrayPicker";
 import { LabelPicker } from "@/components/data/LabelPicker";
 import { OrderPicker } from "@/components/data/OrderPicker";
+import { SummaryFieldPicker } from "@/components/data/SummaryFieldPicker";
 import { PositionPicker } from "@/components/data/PositionPicker";
 import { Button } from "@/components/ui/Button";
 import type { SourceAnalysis } from "@/lib/import/analyze";
@@ -121,13 +122,22 @@ export function FoundPanel({
         />
       )}
 
+      {objects.length > 0 && roles.labelField !== undefined && (
+        <SummaryFieldPicker
+          schema={describeObjectSchema(objects)}
+          labelField={roles.labelField}
+          value={roles.summaryFields ?? []}
+          onChange={(summaryFields) => onRolesChange({ ...roles, summaryFields })}
+        />
+      )}
+
       <PositionPicker
         candidates={detectPositionFields(entries)}
         value={roles.positionField}
         onChange={(positionField) =>
           onRolesChange(
             positionField === undefined
-              ? { labelField: roles.labelField }
+              ? { labelField: roles.labelField, summaryFields: roles.summaryFields }
               : { ...roles, positionField },
           )
         }

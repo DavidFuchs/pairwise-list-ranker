@@ -167,6 +167,7 @@ export default function RankScreen() {
             pair={view.pair}
             progress={progress}
             sortField={workspace.roles.labelField}
+            summaryFields={workspace.roles.summaryFields}
             onOutcome={(outcome) => {
               if (view.pair === null) return;
               listStore

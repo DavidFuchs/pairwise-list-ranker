@@ -122,6 +122,8 @@ export function describeRoles(
   const parts: string[] = [];
   if (roles.labelField !== undefined)
     parts.push(`shown by ${roles.labelField}`);
+  if (roles.summaryFields !== undefined && roles.summaryFields.length > 0)
+    parts.push(`showing ${roles.summaryFields.join(", ")}`);
   if (roles.positionField !== undefined)
     parts.push(`${roles.positionField} written back`);
   if (alreadyRanked) parts.push("already ranked");

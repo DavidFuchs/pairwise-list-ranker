@@ -23,6 +23,7 @@ export interface ComparisonDeckProps {
   pair: ActivePair | null;
   progress: DeckProgress;
   sortField?: string;
+  summaryFields?: string[];
   onOutcome: (outcome: ComparisonOutcome) => void;
   onDelete: (itemId: string) => void;
 }
@@ -45,6 +46,7 @@ export function ComparisonDeck({
   pair,
   progress,
   sortField,
+  summaryFields,
   onOutcome,
   onDelete,
 }: ComparisonDeckProps) {
@@ -151,6 +153,7 @@ export function ComparisonDeck({
           item={pair.left}
           side="left"
           sortField={sortField}
+          summaryFields={summaryFields}
           expanded={showDetails}
           pendingDelete={armed === "left"}
           onChoose={() => choose("left")}
@@ -169,6 +172,7 @@ export function ComparisonDeck({
           item={pair.right}
           side="right"
           sortField={sortField}
+          summaryFields={summaryFields}
           expanded={showDetails}
           pendingDelete={armed === "right"}
           onChoose={() => choose("right")}

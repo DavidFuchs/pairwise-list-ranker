@@ -5,6 +5,7 @@ import {
 } from '@/lib/import/labelField';
 import { detectPositionFields, preferredPositionField } from '@/lib/import/positionField';
 import type { ComplexItemValue } from '@/types/list';
+import { MAX_SUMMARY_FIELDS } from '@/types/source';
 import type { FieldRoles } from '@/types/source';
 
 function isPlainObject(value: unknown): value is ComplexItemValue {
@@ -30,8 +31,16 @@ export function resolveRoles(entries: unknown[], previous: FieldRoles = {}): Fie
   );
   const positionField = keepsPosition ? previous.positionField : preferredPositionField(entries);
 
+  // A summary field is kept only while some item still carries it, and never
+  // duplicates the title.
+  const present = new Set(objects.flatMap((object) => Object.keys(object)));
+  const summaryFields = [...new Set(previous.summaryFields ?? [])]
+    .filter((field) => present.has(field) && field !== labelField)
+    .slice(0, MAX_SUMMARY_FIELDS);
+
   return {
     ...(labelField === undefined ? {} : { labelField }),
+    ...(summaryFields.length === 0 ? {} : { summaryFields }),
     ...(positionField === undefined ? {} : { positionField }),
   };
 }

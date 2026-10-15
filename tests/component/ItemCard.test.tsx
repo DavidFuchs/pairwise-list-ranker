@@ -25,6 +25,22 @@ describe('ItemCard', () => {
     expect(screen.getByText('Arrival')).toBeDefined();
   });
 
+  it('always shows the chosen summary fields, in order, even when the item lacks one', () => {
+    render(
+      <ItemCard
+        item={item({ title: 'Arrival', year: 2016, genre: 'Sci-fi', note: 'a very long note that would never fit a chip' })}
+        side="left"
+        sortField="title"
+        summaryFields={['genre', 'director', 'note']}
+      />,
+    );
+
+    expect(screen.getByText('genre: Sci-fi')).toBeDefined();
+    expect(screen.getByText('director: –')).toBeDefined();
+    expect(screen.getByText(/note: a very long note/)).toBeDefined();
+    expect(screen.queryByText(/year/)).toBeNull();
+  });
+
   it('summarises a few secondary fields without expanding', () => {
     render(
       <ItemCard

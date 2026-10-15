@@ -191,7 +191,9 @@ export default function DataScreen() {
     workspace !== null &&
     workspace.listDefaults.alreadyRanked === orderPickerValue &&
     workspace.listDefaults.roles.labelField === draft.roles.labelField &&
-    workspace.listDefaults.roles.positionField === draft.roles.positionField;
+    workspace.listDefaults.roles.positionField === draft.roles.positionField &&
+    (workspace.listDefaults.roles.summaryFields ?? []).join('\u0000') ===
+      (draft.roles.summaryFields ?? []).join('\u0000');
 
   // What each list would be ranked with, shown on its row the same way the
   // toolbar's switcher shows it. The list being edited follows the controls

@@ -19,6 +19,8 @@ export interface ItemCardProps {
   item: ListItem;
   side: 'left' | 'right';
   sortField?: string;
+  /** Fields every card shows as chips, in order, whether or not the item has them. */
+  summaryFields?: string[];
   /**
    * Details are shown or hidden for the pair, not per card: comparing one
    * item's details against the other's summary is not a comparison anyone
@@ -42,6 +44,7 @@ export function ItemCard({
   item,
   side,
   sortField,
+  summaryFields,
   expanded = false,
   onChoose,
   onChooseStrong,
@@ -91,7 +94,15 @@ export function ItemCard({
   const label = selectItemLabel(item, sortField);
   const fields = isComplexItemValue(item.value) ? Object.entries(item.value) : [];
   const detailFields = fields.filter(([key]) => key !== sortField);
-  const chips = detailFields.filter(([, value]) => isChipValue(value)).slice(0, MAX_CHIPS);
+  const chosen = summaryFields !== undefined && summaryFields.length > 0;
+  // Chosen fields are guaranteed, so both cards of a pair show the same keys
+  // and an item without one says so instead of silently dropping it.
+  const chips: [string, unknown][] = chosen
+    ? summaryFields.map((key): [string, unknown] => [
+        key,
+        isComplexItemValue(item.value) ? item.value[key] : undefined,
+      ])
+    : detailFields.filter(([, value]) => isChipValue(value)).slice(0, MAX_CHIPS);
   const interactive = onChoose !== undefined;
   const canChoose = interactive && !pendingDelete;
 
@@ -144,7 +155,7 @@ export function ItemCard({
         <View style={styles.chipRow}>
           {chips.map(([key, value]) => (
             <View key={key} style={styles.chip}>
-              <Text style={styles.chipText}>{`${key}: ${String(value)}`}</Text>
+              <Text style={styles.chipText}>{`${key}: ${chipText(value)}`}</Text>
             </View>
           ))}
         </View>
@@ -219,6 +230,12 @@ export function ItemCard({
  */
 function focusNode(node: View | null): void {
   (node as unknown as HTMLElement | null)?.focus?.();
+}
+
+function chipText(value: unknown): string {
+  if (value === undefined || value === null || value === '') return '–';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
 }
 
 function isChipValue(value: unknown): boolean {

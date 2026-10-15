@@ -66,6 +66,7 @@ export interface SourceDraft {
 interface RolesChoice {
   labelField?: string;
   positionField?: string;
+  summaryFields?: string[];
   /** Distinguishes "not chosen yet" from "deliberately set to none". */
   positionCleared: boolean;
 }
@@ -157,9 +158,17 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
 
     const previous =
       choice !== undefined
-        ? { labelField: choice.labelField, positionField: choice.positionField }
+        ? {
+            labelField: choice.labelField,
+            positionField: choice.positionField,
+            summaryFields: choice.summaryFields,
+          }
         : selectedPath !== null && seed !== undefined && pathKey === seed.arrayPath.join('.')
-          ? { labelField: seed.roles.labelField, positionField: seed.roles.positionField }
+          ? {
+              labelField: seed.roles.labelField,
+              positionField: seed.roles.positionField,
+              summaryFields: seed.roles.summaryFields,
+            }
           : {};
 
     const resolved = resolveRoles(entries, previous);
@@ -197,6 +206,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
         [pathKey]: {
           labelField: next.labelField,
           positionField: next.positionField,
+          summaryFields: next.summaryFields,
           positionCleared: next.positionField === undefined,
         },
       }));
