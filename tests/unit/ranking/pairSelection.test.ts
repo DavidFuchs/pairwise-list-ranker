@@ -155,6 +155,7 @@ describe('selectNextPair', () => {
       event('c', 'd', 'left', 2),
       event('a', 'c', 'left', 3),
       event('b', 'd', 'left', 4),
+      event('b', 'c', 'left', 5),
     ];
 
     const pair = selectNextPair(items, states, history);
@@ -187,5 +188,16 @@ describe('selectNextPair', () => {
     const pair = selectNextPair([item('a'), item('b')], statesFor({ a: {}, b: {} }), []);
 
     expect(pair?.score).toBeGreaterThan(0);
+  });
+});
+
+describe('adjacent pairs', () => {
+  it('prefers an uncompared neighbour over an equally unseen pair further apart', () => {
+    const items = ['a', 'b', 'c', 'd'].map((id) => item(id));
+    const states = statesFor({ a: {}, b: {}, c: {}, d: {} });
+    // a-b and c-d are already met, so of the unmet pairs only b-c are neighbours.
+    const events = [event('a', 'b', 'left', 1), event('c', 'd', 'left', 2)];
+
+    expect(pairIds(selectNextPair(items, states, events))).toEqual(['b', 'c']);
   });
 });
