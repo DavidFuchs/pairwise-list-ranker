@@ -97,10 +97,11 @@ Test with VoiceOver (macOS), NVDA (Windows), or TalkBack (Android).
 
 Check 1440, 1280, 1024, 820, and 390 px wide.
 
-- [ ] 1440: three columns, balanced, nothing off-screen.
-- [ ] 1280: still three columns or a clean two-column fallback.
-- [ ] 1024/820: the preview drops below the comparison area intact.
-- [ ] 390: everything stacks, cards are full width, tap targets stay large.
+- [ ] 1440/1280/1024/820: the stage and the sidebar sit side by side with a divider between them; the sidebar opens at 380px.
+- [ ] Dragging the divider resizes the sidebar live; the stage never gets narrower than 320px.
+- [ ] With the divider focused, arrow keys resize it (Shift for bigger steps), Home/End jump to the limits, and Enter or a double-click restores the default. None of these answer the current pair.
+- [ ] The chosen width survives a reload; on a window too narrow for it the sidebar shrinks, then returns once there is room.
+- [ ] 390: the sidebar drops below the stage, no divider, cards are full width, tap targets stay large.
 - [ ] No horizontal page scrollbar at any width.
 - [ ] Long item labels and long field values wrap instead of overflowing.
 

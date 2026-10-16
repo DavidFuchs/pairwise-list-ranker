@@ -11,9 +11,11 @@ import {
 } from 'react-native';
 
 import { HowItWorksModal } from '@/components/layout/HowItWorksModal';
+import { SPLIT_DIVIDER_WIDTH, SplitDivider } from '@/components/layout/SplitDivider';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { Button } from '@/components/ui/Button';
 import { GitHubIcon } from '@/components/ui/GitHubIcon';
+import { SIDEBAR_DEFAULT_WIDTH, SIDEBAR_MIN_WIDTH, useSidebarWidth } from '@/lib/hooks/useSidebarWidth';
 import { colors, fonts, radius, space } from '@/lib/theme';
 
 const REPO_URL = 'https://github.com/DavidFuchs/pairwise-list-ranker';
@@ -40,11 +42,18 @@ export interface AppShellProps {
   onFileDrop?: (text: string) => void;
 }
 
+/** The stage never gets narrower than this while the sidebar sits beside it. */
+const STAGE_MIN_WIDTH = 320;
+const RAIL_WIDTH = 260;
+
 /**
- * The three regions size themselves with flex-basis and wrap: three columns
- * when there is room, then the preview drops below, then everything stacks.
- * Doing this in flexbox rather than from a measured window width keeps the
- * static build and the hydrated page rendering the same markup.
+ * A split view: the stage on the left, the sidebar on the right, and a
+ * draggable divider between them. The split is decided from the body's own
+ * measured width; when the stage and the narrowest sidebar no longer fit side
+ * by side, the sidebar drops below the stage instead. Until that first
+ * measurement (the static build, the first frame after hydration) the regions
+ * fall back to flex-wrap at the default width, so the page that loads already
+ * looks like the split it is about to become.
  */
 export function AppShell({
   listName,
@@ -63,6 +72,24 @@ export function AppShell({
   // just the page's own edges, so a bare boolean flickers - a depth counter
   // only reaches zero once the drag has actually left the window.
   const dragDepth = useRef(0);
+
+  const { width: savedSidebarWidth, setWidth: saveSidebarWidth } = useSidebarWidth();
+  // Held locally while a drag is under way so every pixel of it doesn't go
+  // through localStorage; saved once when the drag settles.
+  const [draggingSidebarWidth, setDraggingSidebarWidth] = useState<number | null>(null);
+  const [bodyWidth, setBodyWidth] = useState<number | null>(null);
+
+  const railSpace = rail != null ? RAIL_WIDTH + space.lg : 0;
+  const maxSidebarWidth =
+    bodyWidth === null ? SIDEBAR_MIN_WIDTH : bodyWidth - railSpace - STAGE_MIN_WIDTH - SPLIT_DIVIDER_WIDTH;
+  const layout: 'pending' | 'split' | 'stacked' =
+    bodyWidth === null ? 'pending' : maxSidebarWidth >= SIDEBAR_MIN_WIDTH ? 'split' : 'stacked';
+  // The saved width is what the user asked for; a window too narrow for it
+  // squeezes the sidebar for now without forgetting that choice.
+  const sidebarWidth = Math.max(
+    SIDEBAR_MIN_WIDTH,
+    Math.min(maxSidebarWidth, draggingSidebarWidth ?? savedSidebarWidth),
+  );
 
   useEffect(() => {
     if (onFileDrop === undefined || Platform.OS !== 'web') return;
@@ -202,14 +229,44 @@ export function AppShell({
       <HowItWorksModal visible={howItWorksOpen} onClose={() => setHowItWorksOpen(false)} />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollBody}>
-        <View style={styles.body}>
-          {rail != null && <View style={styles.rail}>{rail}</View>}
+        <View
+          style={[styles.body, layout === 'split' && styles.bodySplit, layout === 'stacked' && styles.bodyStacked]}
+          onLayout={(event) => setBodyWidth(event.nativeEvent.layout.width)}
+        >
+          {rail != null && <View style={[styles.rail, layout === 'split' && styles.railSplit]}>{rail}</View>}
 
-          <View style={styles.stage} role="main">
+          <View
+            style={[styles.stage, layout === 'split' && styles.stageSplit, layout === 'stacked' && styles.stageStacked]}
+            role="main"
+          >
             {stage}
           </View>
 
-          <View style={styles.preview} role="complementary">
+          {layout === 'split' && (
+            <SplitDivider
+              width={sidebarWidth}
+              min={SIDEBAR_MIN_WIDTH}
+              max={maxSidebarWidth}
+              onResize={setDraggingSidebarWidth}
+              onCommit={(width) => {
+                setDraggingSidebarWidth(null);
+                saveSidebarWidth(width);
+              }}
+              onReset={() => {
+                setDraggingSidebarWidth(null);
+                saveSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
+              }}
+            />
+          )}
+
+          <View
+            style={[
+              styles.preview,
+              layout === 'split' && [styles.previewSplit, { width: sidebarWidth }],
+              layout === 'stacked' && styles.previewStacked,
+            ]}
+            role="complementary"
+          >
             {preview}
           </View>
         </View>
@@ -278,14 +335,28 @@ const styles = StyleSheet.create({
   // Reserve the scrollbar's width so it appearing never re-wraps the layout.
   scroll: { scrollbarGutter: 'stable' } as object,
   scrollBody: { padding: space.lg },
+  // The pending layout: flex-wrap with the sidebar at its default width, so
+  // the static page matches the split it hydrates into.
   body: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg, alignItems: 'flex-start' },
-  rail: { flexGrow: 1, flexShrink: 1, flexBasis: 260, minWidth: 240, maxWidth: 340, gap: space.md },
-  // Stage and preview share spare width 2:1 (flex-basis 0 puts all of it up
-  // for grabs), so preview settles at roughly a third of the row and stage
-  // the rest, with no leftover gap. Their minWidths are the wrap floor: once
-  // either can't shrink any further, the row wraps to a stacked layout.
-  stage: { flexGrow: 2, flexShrink: 1, flexBasis: 0, minWidth: 320, gap: space.lg },
-  preview: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 300, minHeight: 520, height: '85vh' as unknown as number },
+  // The divider is the gutter between stage and sidebar, so no gap here.
+  bodySplit: { flexWrap: 'nowrap', gap: 0 },
+  bodyStacked: { flexDirection: 'column', alignItems: 'stretch' },
+  rail: { flexGrow: 1, flexShrink: 1, flexBasis: RAIL_WIDTH, minWidth: 240, maxWidth: 340, gap: space.md },
+  railSplit: { flexGrow: 0, flexShrink: 0, width: RAIL_WIDTH, marginRight: space.lg },
+  stage: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: STAGE_MIN_WIDTH, gap: space.lg },
+  stageSplit: { minWidth: 0 },
+  // In a column, flex-basis would size height rather than width.
+  stageStacked: { flexBasis: 'auto', flexGrow: 0, minWidth: 0 },
+  preview: {
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: SIDEBAR_DEFAULT_WIDTH,
+    minWidth: SIDEBAR_MIN_WIDTH,
+    minHeight: 520,
+    height: '85vh' as unknown as number,
+  },
+  previewSplit: { flexShrink: 0, flexBasis: 'auto', minWidth: 0 },
+  previewStacked: { flexShrink: 0, flexBasis: 'auto', minWidth: 0 },
   dropOverlay: {
     flex: 1,
     alignItems: 'center',
