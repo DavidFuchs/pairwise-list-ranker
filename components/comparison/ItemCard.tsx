@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ObjectDrilldown } from '@/components/comparison/ObjectDrilldown';
+import { PreviewButton } from '@/components/preview/PreviewButton';
 import { StrongChoiceButton } from '@/components/comparison/StrongChoiceButton';
 import { TrashIcon } from '@/components/ui/TrashIcon';
 import { useReducedMotion } from '@/lib/hooks/useReducedMotion';
@@ -22,6 +23,8 @@ export interface ItemCardProps {
   sortField?: string;
   /** Fields every card shows as chips, in order, whether or not the item has them. */
   summaryFields?: string[];
+  /** The field holding an Apple Music id, drawn as a play button instead of text. */
+  previewField?: string;
   /**
    * Details are shown or hidden for the pair, not per card: comparing one
    * item's details against the other's summary is not a comparison anyone
@@ -46,6 +49,7 @@ export function ItemCard({
   side,
   sortField,
   summaryFields,
+  previewField,
   expanded = false,
   onChoose,
   onChooseStrong,
@@ -95,11 +99,11 @@ export function ItemCard({
   const label = selectItemLabel(item, sortField);
   const fields = isComplexItemValue(item.value) ? Object.entries(item.value) : [];
   const detailFields = fields.filter(([key]) => key !== sortField);
-  const chosen = summaryFields !== undefined && summaryFields.length > 0;
+  const chosen = (summaryFields !== undefined && summaryFields.length > 0) || previewField !== undefined;
   // Chosen fields are guaranteed, so both cards of a pair show the same keys
   // and an item without one says so instead of silently dropping it.
   const chips: [string, string][] = chosen
-    ? summaryEntries(item, summaryFields)
+    ? summaryEntries(item, summaryFields ?? [])
     : detailFields
         .filter(([, value]) => isChipValue(value))
         .slice(0, MAX_CHIPS)
@@ -163,6 +167,13 @@ export function ItemCard({
             </View>
           ))}
         </View>
+      )}
+
+      {previewField !== undefined && (
+        <PreviewButton
+          value={isComplexItemValue(item.value) ? item.value[previewField] : undefined}
+          label={label}
+        />
       )}
 
       {expanded && detailFields.length > 0 && isComplexItemValue(item.value) && (

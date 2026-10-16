@@ -101,6 +101,7 @@ Each card contains, top to bottom:
   where it sits.
 - the item label, from the label field for object entries
 - summary chips for short scalar fields
+- a play button, when a field is drawn as an Apple Music preview
 - an expandable details region for the rest of the object
 - a footer, aligned across both cards, holding:
   - a `Click to choose` hint, always visible: touch devices never hover, and

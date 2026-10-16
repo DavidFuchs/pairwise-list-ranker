@@ -19,7 +19,10 @@ export interface DataSource {
   arrayPath: string[];
 }
 
-export const MAX_SUMMARY_FIELDS = 3;
+export const MAX_SUMMARY_FIELDS = 5;
+
+/** Special ways to draw a field. Plain text is the absence of one. */
+export type FieldRenderer = 'apple-music-preview';
 
 export interface FieldRoles {
   /** Object entries only: which field shows on the comparison cards. */
@@ -30,6 +33,11 @@ export interface FieldRoles {
    * own from whatever the item happens to carry.
    */
   summaryFields?: string[];
+  /**
+   * How a chosen summary field is drawn when not as plain text. Only fields
+   * with a special renderer appear here; absent means plain text.
+   */
+  fieldRenderers?: Record<string, FieldRenderer>;
   /** Optional: which field is rewritten with 1..N on export. */
   positionField?: string;
 }

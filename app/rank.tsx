@@ -8,6 +8,7 @@ import type { ListSwitcherOption } from "@/components/layout/ListSwitcher";
 import { PageNav } from "@/components/layout/PageNav";
 import { PreviewPane } from "@/components/preview/PreviewPane";
 import { Button } from "@/components/ui/Button";
+import { layoutSummary } from "@/lib/renderers";
 import { downloadText, pickTextFile } from "@/lib/browser/exportActions";
 import { downloadName, exportFilename, slugify } from "@/lib/export/filenames";
 import { buildProgressFile, parseProgressFile } from "@/lib/progress/progressFile";
@@ -83,6 +84,7 @@ export default function RankScreen() {
         : "Memory only";
 
   if (workspace === null) return null;
+  const summary = layoutSummary(workspace.roles);
 
   const { candidates } = findArrayCandidates(workspace.source.document);
   const listOptions: ListSwitcherOption[] = candidates.map((candidate) => {
@@ -177,7 +179,8 @@ export default function RankScreen() {
             pair={view.pair}
             progress={progress}
             sortField={workspace.roles.labelField}
-            summaryFields={workspace.roles.summaryFields}
+            summaryFields={summary.plainFields}
+            previewField={summary.previewField}
             onUndo={canUndo ? () => listStore.getState().undo() : undefined}
             stability={stability}
             onOutcome={(outcome) => {
@@ -201,7 +204,8 @@ export default function RankScreen() {
           onTabChange={(tab) => listStore.getState().setPreviewTab(tab)}
           ranking={view.ranking}
           labelField={workspace.roles.labelField}
-          summaryFields={workspace.roles.summaryFields}
+          summaryFields={summary.plainFields}
+            previewField={summary.previewField}
           exportText={exportText}
           filename={exportFilename(downloadName(workspace.source), format)}
           format={format}

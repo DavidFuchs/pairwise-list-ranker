@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { PreviewButton } from '@/components/preview/PreviewButton';
 import { useFlipAnimation } from '@/lib/hooks/useFlipAnimation';
 import { colors, fonts, radius, space } from '@/lib/theme';
 
@@ -12,6 +13,8 @@ export interface RankedRowProps {
   rank: number;
   label: string;
   meta: string | null;
+  /** The raw value of the preview field, when one is chosen. */
+  previewValue?: unknown;
   rating: number;
   /** True while this row is the one being dragged. */
   dragging: boolean;
@@ -27,6 +30,7 @@ export function RankedRow({
   rank,
   label,
   meta,
+  previewValue,
   rating,
   dragging,
   insertBefore = false,
@@ -86,6 +90,8 @@ export function RankedRow({
           </Text>
         )}
       </View>
+
+      <PreviewButton value={previewValue} label={label} compact />
 
       <Text style={styles.rating}>{Math.round(rating)}</Text>
     </Animated.View>

@@ -24,6 +24,7 @@ export interface ComparisonDeckProps {
   progress: DeckProgress;
   sortField?: string;
   summaryFields?: string[];
+  previewField?: string;
   onOutcome: (outcome: ComparisonOutcome) => void;
   onDelete: (itemId: string) => void;
   /** Present only while there is something to take back. */
@@ -51,6 +52,7 @@ export function ComparisonDeck({
   progress,
   sortField,
   summaryFields,
+  previewField,
   onOutcome,
   onDelete,
   onUndo,
@@ -164,6 +166,7 @@ export function ComparisonDeck({
           side="left"
           sortField={sortField}
           summaryFields={summaryFields}
+          previewField={previewField}
           expanded={showDetails}
           pendingDelete={armed === "left"}
           onChoose={() => choose("left")}
@@ -183,6 +186,7 @@ export function ComparisonDeck({
           side="right"
           sortField={sortField}
           summaryFields={summaryFields}
+          previewField={previewField}
           expanded={showDetails}
           pendingDelete={armed === "right"}
           onChoose={() => choose("right")}

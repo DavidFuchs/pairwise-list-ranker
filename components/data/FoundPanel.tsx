@@ -127,7 +127,10 @@ export function FoundPanel({
           schema={describeObjectSchema(objects)}
           labelField={roles.labelField}
           value={roles.summaryFields ?? []}
-          onChange={(summaryFields) => onRolesChange({ ...roles, summaryFields })}
+          renderers={roles.fieldRenderers}
+          onChange={(summaryFields, fieldRenderers) =>
+            onRolesChange({ ...roles, summaryFields, fieldRenderers })
+          }
         />
       )}
 
@@ -137,7 +140,11 @@ export function FoundPanel({
         onChange={(positionField) =>
           onRolesChange(
             positionField === undefined
-              ? { labelField: roles.labelField, summaryFields: roles.summaryFields }
+              ? {
+                  labelField: roles.labelField,
+                  summaryFields: roles.summaryFields,
+                  fieldRenderers: roles.fieldRenderers,
+                }
               : { ...roles, positionField },
           )
         }

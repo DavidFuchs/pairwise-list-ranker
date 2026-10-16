@@ -69,6 +69,10 @@ Docker, for self-hosting the static build:
 docker compose up --build   # http://localhost:8080
 ```
 
+Card fields can be drawn as Apple Music previews. The storefront is a build-time
+setting, `EXPO_PUBLIC_APPLE_MUSIC_REGION` (default `CA`, falls back to `US`); see
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ## Under the hood
 
 - **Ranking** is weighted Elo ([lib/ranking/](lib/ranking/)). Comparison

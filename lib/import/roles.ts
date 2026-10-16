@@ -4,6 +4,7 @@ import {
   preferredLabelField,
 } from '@/lib/import/labelField';
 import { detectPositionFields, preferredPositionField } from '@/lib/import/positionField';
+import { cleanRenderers } from '@/lib/renderers';
 import type { ComplexItemValue } from '@/types/list';
 import { MAX_SUMMARY_FIELDS } from '@/types/source';
 import type { FieldRoles } from '@/types/source';
@@ -42,9 +43,12 @@ export function resolveRoles(entries: unknown[], previous: FieldRoles = {}): Fie
           .filter((field) => present.has(field) && field !== labelField)
           .slice(0, MAX_SUMMARY_FIELDS);
 
+  const fieldRenderers = cleanRenderers(previous.fieldRenderers, summaryFields);
+
   return {
     ...(labelField === undefined ? {} : { labelField }),
     ...(summaryFields.length === 0 && previous.summaryFields === undefined ? {} : { summaryFields }),
+    ...(fieldRenderers === undefined ? {} : { fieldRenderers }),
     ...(positionField === undefined ? {} : { positionField }),
   };
 }

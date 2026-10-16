@@ -8,6 +8,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
+ARG EXPO_PUBLIC_APPLE_MUSIC_REGION=CA
+ENV EXPO_PUBLIC_APPLE_MUSIC_REGION=$EXPO_PUBLIC_APPLE_MUSIC_REGION
 RUN npm run build:web
 
 FROM nginx:1.27-alpine AS runtime

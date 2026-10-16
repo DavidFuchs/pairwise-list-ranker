@@ -14,6 +14,7 @@ export interface RankedListPreviewProps {
   ranking: RankedItem<ListItem>[];
   sortField?: string;
   summaryFields?: string[];
+  previewField?: string;
   onReorder: (itemId: string, nextOrder: string[]) => void;
 }
 
@@ -33,7 +34,7 @@ const ROW_PITCH = ROW_HEIGHT + space.xs;
  * compares the item against its new neighbours, the same as picking it in a
  * side-by-side round, so it applies immediately - nothing is discarded.
  */
-export function RankedListPreview({ ranking, sortField, summaryFields, onReorder }: RankedListPreviewProps) {
+export function RankedListPreview({ ranking, sortField, summaryFields, previewField, onReorder }: RankedListPreviewProps) {
   const orderedIds = useMemo(() => ranking.map((entry) => entry.item.id), [ranking]);
   /**
    * Nothing moves until the drop. The rows hold still and a line shows where
@@ -185,7 +186,8 @@ export function RankedListPreview({ ranking, sortField, summaryFields, onReorder
               id={id}
               rank={index + 1}
               label={selectItemLabel(entry.item, sortField)}
-              meta={metaFor(entry.item, sortField, summaryFields)}
+              meta={metaFor(entry.item, sortField, summaryFields, previewField !== undefined)}
+              previewValue={previewValueOf(entry.item, previewField)}
               rating={entry.state.rating}
               dragging={dragging?.id === id}
               insertBefore={insertionGap === index}
@@ -205,10 +207,12 @@ function metaFor(
   item: ListItem,
   sortField: string | undefined,
   summaryFields: string[] | undefined,
+  hasPreviewField: boolean,
 ): string | null {
   if (!isComplexItemValue(item.value)) return null;
 
   // Chosen fields read the same here as on the comparison cards.
+  if (hasPreviewField && (summaryFields === undefined || summaryFields.length === 0)) return null;
   if (summaryFields !== undefined && summaryFields.length > 0) {
     return summaryEntries(item, summaryFields)
       .map(([key, value]) => `${key}: ${value}`)
@@ -221,6 +225,10 @@ function metaFor(
     .map(([key, value]) => `${key}: ${String(value)}`);
 
   return parts.length === 0 ? null : parts.join('  ·  ');
+}
+
+function previewValueOf(item: ListItem, field: string | undefined): unknown {
+  return field !== undefined && isComplexItemValue(item.value) ? item.value[field] : undefined;
 }
 
 function isScalar(value: unknown): boolean {

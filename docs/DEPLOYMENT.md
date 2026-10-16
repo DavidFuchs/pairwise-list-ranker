@@ -52,8 +52,22 @@ The published port is configurable:
 WEB_PORT=9000 docker compose up --build
 ```
 
-The runtime image contains nginx and static files only. It needs no environment
-variables, no secrets, and no network access at runtime.
+The runtime image contains nginx and static files only. It needs no secrets and
+no server-side network access.
+
+### Apple Music previews
+
+A card field can be drawn as an Apple Music preview (a play button) instead of
+text. The browser looks the track id up on Apple's public lookup API, in one
+storefront and then in the US one as a fallback. The first storefront is a
+build-time setting, `EXPO_PUBLIC_APPLE_MUSIC_REGION`, a two-letter country code
+that defaults to `CA`. It is compiled into the bundle, so changing it means
+rebuilding:
+
+```bash
+APPLE_MUSIC_REGION=GB docker compose up --build
+EXPO_PUBLIC_APPLE_MUSIC_REGION=GB npm run build:web   # without Docker
+```
 
 ## Hosting without Docker
 

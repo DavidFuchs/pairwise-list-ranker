@@ -42,6 +42,7 @@ const rolesSchema = z.object({
   labelField: z.string().optional(),
   positionField: z.string().optional(),
   summaryFields: z.array(z.string()).optional(),
+  fieldRenderers: z.record(z.string(), z.enum(['apple-music-preview'])).optional(),
 });
 
 /**

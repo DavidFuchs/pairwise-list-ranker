@@ -123,7 +123,11 @@ export function describeRoles(
   if (roles.labelField !== undefined)
     parts.push(`shown by ${roles.labelField}`);
   if (roles.summaryFields !== undefined && roles.summaryFields.length > 0)
-    parts.push(`showing ${roles.summaryFields.join(", ")}`);
+    parts.push(
+      `showing ${roles.summaryFields
+        .map((field) => (roles.fieldRenderers?.[field] === "apple-music-preview" ? `${field} (preview)` : field))
+        .join(", ")}`,
+    );
   if (roles.positionField !== undefined)
     parts.push(`${roles.positionField} written back`);
   if (alreadyRanked) parts.push("already ranked");

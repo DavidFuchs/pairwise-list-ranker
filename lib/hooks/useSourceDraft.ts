@@ -67,6 +67,7 @@ interface RolesChoice {
   labelField?: string;
   positionField?: string;
   summaryFields?: string[];
+  fieldRenderers?: FieldRoles['fieldRenderers'];
   /** Distinguishes "not chosen yet" from "deliberately set to none". */
   positionCleared: boolean;
 }
@@ -162,12 +163,14 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
             labelField: choice.labelField,
             positionField: choice.positionField,
             summaryFields: choice.summaryFields,
+            fieldRenderers: choice.fieldRenderers,
           }
         : selectedPath !== null && seed !== undefined && pathKey === seed.arrayPath.join('.')
           ? {
               labelField: seed.roles.labelField,
               positionField: seed.roles.positionField,
               summaryFields: seed.roles.summaryFields,
+              fieldRenderers: seed.roles.fieldRenderers,
             }
           : {};
 
@@ -207,6 +210,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
           labelField: next.labelField,
           positionField: next.positionField,
           summaryFields: next.summaryFields,
+          fieldRenderers: next.fieldRenderers,
           positionCleared: next.positionField === undefined,
         },
       }));
