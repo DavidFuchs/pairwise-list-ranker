@@ -254,7 +254,7 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
   },
   {
     title: 'Ways to draw a field',
-    summary: 'Text, links, pictures, tags, dates, durations, ratings and more.',
+    summary: 'Text, money, links, pictures, places, tags, dates, ratings and more.',
     body: (
       <>
         <P>
@@ -295,6 +295,22 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
         >
           Shortens large numbers - 1,534,000 becomes 1.5M - for play counts, populations, prices.
         </Renderer>
+        <Renderer
+          name="Currency"
+          offered="Offered when every value is a number. Pick the currency: USD, CAD, EUR, GBP, AUD, JPY, CHF or INR."
+          example={<FieldValue field="rent" value={2400} renderer="currency-CAD" withKey textStyle={styles.exampleText} />}
+        >
+          Writes the number as money, the way it is written where you are. Whole amounts drop the
+          cents, so a salary reads $120,000 rather than $120,000.00.
+        </Renderer>
+        <Renderer
+          name="Long text"
+          offered="Offered when every value is text and at least one runs past 80 characters or over more than one line."
+          example={<Text style={styles.exampleText}>notes: Close to the park, but…</Text>}
+        >
+          Notes, descriptions and pitches. A card shows the first three lines with a <K>More</K>{' '}
+          button for the rest, which never chooses the card. The ranked list keeps it to one line.
+        </Renderer>
 
         <Text style={styles.group}>Lists and yes-or-no</Text>
         <Renderer
@@ -306,12 +322,45 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
           list shows a dash.
         </Renderer>
         <Renderer
+          name="Choice"
+          offered="Offered when every value is a short word or phrase, at most 8 different ones, and at least one repeats."
+          example={<FieldValue field="priority" value="High" renderer="choice" />}
+        >
+          A coloured label for categories: priority, status, cuisine, genre. The colour comes from the
+          word itself, so the same word is the same colour on every card. Priorities keep the colours
+          they mean - high and urgent are red, medium amber, low green.
+        </Renderer>
+        <Renderer
           name="Badge"
           offered="Offered when every value is true or false."
           example={<FieldValue field="explicit" value renderer="badge" />}
         >
           Shows the field&apos;s name as a label when the value is true, and nothing at all when it
           is false - quieter than a line saying false on every card.
+        </Renderer>
+
+        <Text style={styles.group}>Places and colours</Text>
+        <Renderer
+          name="Location"
+          offered="Offered when every value is a map position - {lat, lng}, [lat, lng] or 43.65, -79.38 - or is text in a field named like a place: address, city, venue, location…"
+          example={<FieldValue field="address" value="100 Queen St W" renderer="location" withKey textStyle={styles.exampleText} />}
+        >
+          The place as a link that opens it on a map in a new tab, without choosing the card.
+        </Renderer>
+        <Renderer
+          name="Flag"
+          offered="Offered when every value is a two-letter country code, like CA or jp."
+          example={<FieldValue field="country" value="CA" renderer="flag" withKey textStyle={styles.exampleText} />}
+        >
+          The country&apos;s flag and its name in your language. Some systems, Windows among them,
+          draw flags as the two letters instead; the name is always there.
+        </Renderer>
+        <Renderer
+          name="Colour swatch"
+          offered="Offered when every value is a colour written as #hex, rgb() or hsl()."
+          example={<FieldValue field="paint" value="#336699" renderer="color-swatch" withKey textStyle={styles.exampleText} />}
+        >
+          A small square of the colour beside its code - for palettes, paints and brand choices.
         </Renderer>
 
         <Text style={styles.group}>Ratings</Text>
@@ -361,12 +410,35 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
           load keeps an empty frame, so everything still lines up.
         </Renderer>
         <Renderer
+          name="Image gallery"
+          offered="Offered when every value is a list of image links, or a single one, and at least one is a list."
+          example={
+            <View style={styles.imageExample}>
+              <FieldImage value={undefined} size={28} label="" />
+              <FieldImage value={undefined} size={28} label="" />
+              <FieldImage value={undefined} size={28} label="" />
+            </View>
+          }
+        >
+          Several pictures for one item - an apartment&apos;s rooms, a venue from every side. They go
+          in the same place as an image, with arrows under it to page through them.
+        </Renderer>
+        <Renderer
           name="YouTube thumbnail"
           offered="Offered when every value is a YouTube video address - watch, youtu.be, shorts, embed or live."
           example={<FieldImage value={undefined} size={56} label="" />}
         >
           The video&apos;s own picture, in the same place an image goes, marked with a small play
           sign. Clicking it on a card opens the video in a new tab, without choosing the card.
+        </Renderer>
+        <Renderer
+          name="Steam header"
+          offered="Offered when every value is a Steam app id, like 620, or a store.steampowered.com/app/… address."
+          example={<FieldImage value={undefined} size={64} aspect={460 / 215} label="" />}
+        >
+          The game&apos;s banner from its Steam store page, kept wide rather than cropped. Clicking it
+          opens the store page. A few newer games keep their banner where it cannot be guessed from the
+          id; those show an empty frame.
         </Renderer>
         <Renderer
           name="Apple Music preview"
@@ -377,10 +449,21 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
           the end of each ranked row, and on the field itself while you set up. Clips are looked up
           in Apple Music&apos;s catalogue; a track with no clip simply has no button.
         </Renderer>
+        <Renderer
+          name="Deezer preview"
+          offered="Offered when every value is a Deezer track id or a deezer.com/track/… address."
+          example={<PreviewButtonPlaceholder />}
+        >
+          The same play button, with the clip from Deezer&apos;s catalogue. Track ids from Apple Music
+          and Deezer are both plain numbers, so a field of them is offered both - pick the catalogue
+          the ids came from.
+        </Renderer>
         <P>
-          A card has room for one picture and one play button. If two fields ask for either, the
-          first in the card&apos;s order gets it, and the second falls back: a second image or video
-          shows as a link, a second track id as text.
+          A card has one picture and one play button, and every field drawn as either feeds them.
+          Pictures from every picture field - images, galleries, thumbnails, banners - join one
+          gallery in the card&apos;s order. Clip fields line up as fallbacks: the button plays from
+          the first in the card&apos;s order that has a clip, so a track missing from Apple Music can
+          still play from Deezer. The ranked list shows each row&apos;s first picture.
         </P>
       </>
     ),

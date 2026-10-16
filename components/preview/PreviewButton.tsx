@@ -2,12 +2,14 @@ import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { stopPreview, togglePreview, useIsPlaying, usePreviewUrl } from '@/lib/preview/applePreview';
+import { stopPreview, useIsPlaying } from '@/lib/preview/playback';
+import { togglePreviewOf, usePreviewSources } from '@/lib/preview/previewSources';
+import type { PreviewSource } from '@/lib/renderers';
 import { colors, fonts, radius, space } from '@/lib/theme';
 
 export interface PreviewButtonProps {
-  /** The raw field value: an Apple Music track id. */
-  value: unknown;
+  /** Where to look for a clip, in order: the first that has one is played. */
+  sources: PreviewSource[];
   /** What the preview is of, for the accessible name. */
   label: string;
   /** A round icon for dense rows; the card gets a labelled button. */
@@ -17,18 +19,19 @@ export interface PreviewButtonProps {
 }
 
 /**
- * A play button for a 30-second Apple Music preview. It draws nothing until a
- * preview is known to exist, so an item with no preview simply has no button.
+ * A play button for a 30-second preview, from the first source that has one.
+ * It draws nothing until a preview is known to exist, so an item with no
+ * preview anywhere simply has no button.
  */
-export function PreviewButton({ value, label, compact = false, placeholder = null }: PreviewButtonProps) {
-  const id = typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
-  const url = usePreviewUrl(id === '' ? undefined : id);
-  const playing = useIsPlaying(id);
+export function PreviewButton({ sources, label, compact = false, placeholder = null }: PreviewButtonProps) {
+  const found = usePreviewSources(sources);
+  const key = found?.key ?? '';
+  const playing = useIsPlaying(key);
 
   // A card that is replaced or scrolled away must not keep playing.
-  useEffect(() => () => stopPreview(id), [id]);
+  useEffect(() => () => stopPreview(key), [key]);
 
-  if (typeof url !== 'string') return <>{placeholder}</>;
+  if (found === null || found === undefined) return <>{placeholder}</>;
 
   return (
     <Pressable
@@ -38,7 +41,7 @@ export function PreviewButton({ value, label, compact = false, placeholder = nul
       onPress={(event) => {
         // The card and the row around this are controls of their own.
         event.stopPropagation();
-        togglePreview(id, url);
+        togglePreviewOf(found);
       }}
       style={[styles.button, compact ? styles.compact : styles.labelled, playing && styles.active]}
     >

@@ -225,9 +225,8 @@ export default function RankScreen() {
             sortField={workspace.roles.labelField}
             summaryFields={summary.plainFields}
             renderers={summary.renderers}
-            previewField={summary.previewField}
-            pictureField={summary.pictureField}
-            pictureRenderer={summary.pictureRenderer}
+            pictureFields={summary.pictureFields}
+            mediaFields={summary.mediaFields}
             onUndo={canUndo ? () => listStore.getState().undo() : undefined}
             stability={stability}
             onOutcome={(outcome) => {
@@ -253,9 +252,8 @@ export default function RankScreen() {
           labelField={workspace.roles.labelField}
           summaryFields={summary.plainFields}
           renderers={summary.renderers}
-          previewField={summary.previewField}
-          pictureField={summary.pictureField}
-          pictureRenderer={summary.pictureRenderer}
+          pictureFields={summary.pictureFields}
+          mediaFields={summary.mediaFields}
           exportText={exportText}
           filename={exportFilename(downloadName(workspace.source), format)}
           format={format}

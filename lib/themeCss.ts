@@ -8,7 +8,8 @@
  *
  * The palette is grayscale everywhere except one neon poison-green/yellow
  * accent family: panels, canvas, borders, and text are true neutrals, and
- * the accent (plus its gradient partner) is the only saturated colour.
+ * the accent (plus its gradient partner) is the only saturated colour of the
+ * app's own. Choice labels are the exception, colouring the user's data.
  */
 
 const LIGHT_TOKENS = `
@@ -63,6 +64,18 @@ const LIGHT_TOKENS = `
   --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --ring: rgba(69, 209, 36, 0.4);
   --overlay: rgba(22, 23, 26, 0.45);
+  /*
+   * Choice labels, the one place data brings its own colours. Each tone is a
+   * pale fill, a border and text dark enough to read on that fill.
+   */
+  --tone-red-bg: #FDECEC; --tone-red-border: #F5C2C2; --tone-red-text: #A3271F;
+  --tone-amber-bg: #FDF3DC; --tone-amber-border: #F1D58F; --tone-amber-text: #7F520A;
+  --tone-green-bg: #E5F6EC; --tone-green-border: #A9DDBD; --tone-green-text: #17703F;
+  --tone-teal-bg: #E0F5F4; --tone-teal-border: #9FD9D5; --tone-teal-text: #0F6B66;
+  --tone-blue-bg: #E6F0FD; --tone-blue-border: #AFCBF3; --tone-blue-text: #1F5AA8;
+  --tone-violet-bg: #F0EAFD; --tone-violet-border: #CDBBF3; --tone-violet-text: #5B3AA6;
+  --tone-pink-bg: #FCE9F3; --tone-pink-border: #F0B8D6; --tone-pink-text: #A3245F;
+  --tone-slate-bg: #ECEEF1; --tone-slate-border: #C9CED6; --tone-slate-text: #454B55;
 `;
 
 const DARK_TOKENS = `
@@ -110,6 +123,14 @@ const DARK_TOKENS = `
   --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --ring: rgba(57, 255, 20, 0.5);
   --overlay: rgba(0, 0, 0, 0.65);
+  --tone-red-bg: #2E1515; --tone-red-border: #5C2626; --tone-red-text: #FF9C94;
+  --tone-amber-bg: #2E2310; --tone-amber-border: #5E4618; --tone-amber-text: #EFC078;
+  --tone-green-bg: #10281A; --tone-green-border: #1F5233; --tone-green-text: #6FD69A;
+  --tone-teal-bg: #0E2827; --tone-teal-border: #1E504D; --tone-teal-text: #6ED6CF;
+  --tone-blue-bg: #111F33; --tone-blue-border: #24406B; --tone-blue-text: #8DB8F5;
+  --tone-violet-bg: #1E1733; --tone-violet-border: #3E2F6B; --tone-violet-text: #BCA5F5;
+  --tone-pink-bg: #2E1322; --tone-pink-border: #5E2745; --tone-pink-text: #F59CC8;
+  --tone-slate-bg: #1D2024; --tone-slate-border: #3A3F46; --tone-slate-text: #B5BCC6;
 `;
 
 export const themeCss = `

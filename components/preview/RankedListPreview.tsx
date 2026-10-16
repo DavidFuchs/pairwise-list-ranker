@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { RankedRow, ROW_HEIGHT } from '@/components/preview/RankedRow';
 import { gapMovesRow, insertIndexForUniform, moveItem, targetIndexForGap } from '@/lib/ranking/reorder';
 import { selectItemLabel } from '@/lib/state/selectors';
-import { formatValue, pictureUrl } from '@/lib/renderers';
+import { formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
 import { colors, fonts, space } from '@/lib/theme';
 import { isComplexItemValue } from '@/types/list';
 import type { ListItem } from '@/types/list';
@@ -17,10 +17,10 @@ export interface RankedListPreviewProps {
   summaryFields?: string[];
   /** How each of summaryFields reads; a field absent here is plain text. */
   renderers?: Record<string, FieldRenderer>;
-  previewField?: string;
-  /** The field pictured at the start of every row: an image, or a video's thumbnail. */
-  pictureField?: string;
-  pictureRenderer?: FieldRenderer;
+  /** Fields pictured at the start of every row; a row shows the first picture they give. */
+  pictureFields?: string[];
+  /** Fields naming a clip for each row's play button, tried in order. */
+  mediaFields?: string[];
   onReorder: (itemId: string, nextOrder: string[]) => void;
 }
 
@@ -43,9 +43,8 @@ export function RankedListPreview({
   sortField,
   summaryFields,
   renderers,
-  previewField,
-  pictureField,
-  pictureRenderer,
+  pictureFields,
+  mediaFields,
   onReorder,
 }: RankedListPreviewProps) {
   const orderedIds = useMemo(() => ranking.map((entry) => entry.item.id), [ranking]);
@@ -200,9 +199,9 @@ export function RankedListPreview({
               rank={index + 1}
               label={selectItemLabel(entry.item, sortField)}
               meta={metaFor(entry.item, summaryFields, renderers)}
-              previewValue={fieldValue(entry.item, previewField)}
-              showImage={pictureField !== undefined}
-              imageValue={pictureUrl(fieldValue(entry.item, pictureField), pictureRenderer)}
+              previewSources={itemPreviewSources((field) => fieldValue(entry.item, field), mediaFields, renderers)}
+              showImage={(pictureFields ?? []).length > 0}
+              imageValue={itemPictures((field) => fieldValue(entry.item, field), pictureFields, renderers)[0]?.uri}
               rating={entry.state.rating}
               dragging={dragging?.id === id}
               insertBefore={insertionGap === index}

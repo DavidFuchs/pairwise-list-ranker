@@ -13,9 +13,11 @@ import {
   formatValue,
   isLink,
   linkText,
-  pictureUrl,
+  picturesOf,
+  previewSourceOf,
   ratingScale,
   rendererOptionsFor,
+  slotOf,
 } from '@/lib/renderers';
 import type { RendererOption } from '@/lib/renderers';
 import { summaryText } from '@/lib/state/summary';
@@ -72,16 +74,42 @@ function rendererOf(style: FieldStyle): FieldRenderer | undefined {
 /** The field's sample values, drawn the way a card would draw them. */
 function StylePreview({ style, samples, field }: { style: FieldStyle; samples: Sample[]; field: string }) {
   const renderer = rendererOf(style);
-  if (renderer === 'apple-music-preview') return <PreviewButtonPlaceholder />;
-  if (renderer === 'image' || renderer === 'youtube') {
+  if (slotOf(renderer) === 'media') return <PreviewButtonPlaceholder />;
+  if (slotOf(renderer) === 'picture') {
+    // A gallery's first value alone can fill the row, so pictures are counted, not values.
+    const pictures = samples
+      .flatMap((sample) => picturesOf(sample.raw, renderer).map((picture) => ({ picture, label: sample.text })))
+      .slice(0, MAX_SAMPLES);
     return (
       <View style={styles.thumbs}>
-        {samples
-          .filter((sample) => pictureUrl(sample.raw, renderer) !== undefined)
-          .map((sample) => (
-            <FieldPicture key={sample.text} value={sample.raw} renderer={renderer} size={32} label={sample.text} linked={false} />
-          ))}
+        {pictures.map(({ picture, label }, index) => (
+          <FieldPicture
+            key={`${index}-${picture.uri}`}
+            picture={picture}
+            // A wide banner keeps its height near a square thumbnail's.
+            size={picture.aspect > 1 ? 64 : 32}
+            label={label}
+            linked={false}
+          />
+        ))}
       </View>
+    );
+  }
+  // A few values side by side, each drawn: the colours are the point.
+  if (renderer === 'choice' || renderer === 'color-swatch') {
+    return (
+      <View style={[styles.thumbs, styles.wrap]}>
+        {samples.map((sample) => (
+          <FieldValue key={sample.text} field={field} value={sample.raw} renderer={renderer} textStyle={styles.samples} />
+        ))}
+      </View>
+    );
+  }
+  if (renderer === 'long-text') {
+    return (
+      <Text style={styles.samples} numberOfLines={2}>
+        {formatValue(samples[0]?.raw, renderer, field)}
+      </Text>
     );
   }
   if (renderer === 'link') {
@@ -145,8 +173,9 @@ function RendererChoice({
   const name = option.id === undefined ? 'Text' : option.label;
   const hint = option.id === undefined ? option.label : option.hint;
 
-  if (option.scales !== undefined) {
-    const chosen = option.scales.find((entry) => entry.id === current && isShown);
+  if (option.variants !== undefined) {
+    const prompt = option.variantPrompt ?? '';
+    const chosen = option.variants.find((entry) => entry.id === current && isShown);
     const previewed = chosen?.id ?? option.id;
     return (
       <View style={[styles.choice, chosen !== undefined && styles.choiceActive]}>
@@ -154,20 +183,20 @@ function RendererChoice({
           <Text style={[styles.choiceName, chosen !== undefined && styles.fieldSelected]}>{name}</Text>
           <Text style={styles.choiceHint}>{hint}</Text>
         </View>
-        <View style={styles.scales} role="radiogroup" aria-label={`${name} out of`}>
-          <Text style={styles.choiceHint}>out of</Text>
-          {option.scales.map((entry) => {
+        <View style={styles.scales} role="radiogroup" aria-label={`${name} ${prompt}`}>
+          <Text style={styles.choiceHint}>{prompt}</Text>
+          {option.variants.map((entry) => {
             const active = entry.id === chosen?.id;
             return (
               <Pressable
                 key={entry.id}
                 role="radio"
-                accessibilityLabel={`Show ${field} as ${name} out of ${entry.scale}`}
+                accessibilityLabel={`Show ${field} as ${name} ${prompt} ${entry.label}`}
                 aria-checked={active}
                 onPress={() => onChoose(entry.id)}
                 style={[styles.scale, active && styles.scaleActive]}
               >
-                <Text style={[styles.scaleText, active && styles.fieldSelected]}>{entry.scale}</Text>
+                <Text style={[styles.scaleText, active && styles.fieldSelected]}>{entry.label}</Text>
               </Pressable>
             );
           })}
@@ -271,7 +300,8 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
     const open = openField === field.field;
     const values = valuesOf(objects, field.field);
     const samples = samplesOf(values);
-    const renderers = rendererOptionsFor(values);
+    const renderers = rendererOptionsFor(values, field.field);
+    const plays = slotOf(rendererOf(current)) === 'media';
     const hasMenu = !isTitle && renderers.length > 1;
 
     return (
@@ -320,7 +350,7 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
                 )}
               </View>
               {/* A play button is the whole preview, and it sits on the right. */}
-              {rendererOf(current) !== 'link' && rendererOf(current) !== 'apple-music-preview' && (
+              {rendererOf(current) !== 'link' && !plays && (
                 <StylePreview style={current} samples={samples} field={field.field} />
               )}
             </Pressable>
@@ -333,10 +363,10 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
             )}
           </View>
 
-          {rendererOf(current) === 'apple-music-preview' && (
+          {plays && (
             <View style={styles.play}>
               <PreviewButton
-                value={samples[0]?.raw}
+                sources={[previewSourceOf(samples[0]?.raw, rendererOf(current))].flatMap((source) => source ?? [])}
                 label={`${field.field} sample`}
                 compact
                 placeholder={<PreviewButtonPlaceholder />}
@@ -512,6 +542,8 @@ const styles = StyleSheet.create({
   samplesHidden: { color: colors.textFaint },
   samplesLink: { color: colors.accentStrong, textDecorationLine: 'underline' },
   thumbs: { flexDirection: 'row', gap: space.xs, marginTop: 2 },
+  // Drawn values wrap rather than run under the controls beside them.
+  wrap: { flexWrap: 'wrap', rowGap: 4, minWidth: 0 },
   side: {
     width: 36,
     alignItems: 'center',
@@ -540,7 +572,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  scales: { flexDirection: 'row', alignItems: 'center', gap: space.xs, marginVertical: 2 },
+  scales: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.xs, marginVertical: 2 },
   scale: {
     minWidth: 30,
     alignItems: 'center',

@@ -6,6 +6,8 @@ import { colors, fonts } from '@/lib/theme';
 
 export interface FieldLinkProps {
   url: string;
+  /** What the link reads as; the shortened address when absent. */
+  text?: string;
   /** Written before the address, as the other lines on a card are. */
   prefix?: string;
   textStyle?: StyleProp<TextStyle>;
@@ -16,7 +18,7 @@ export interface FieldLinkProps {
  * cells that are themselves controls, so a click on it stops here rather than
  * also choosing the card or the field around it.
  */
-export function FieldLink({ url, prefix, textStyle }: FieldLinkProps) {
+export function FieldLink({ url, text, prefix, textStyle }: FieldLinkProps) {
   const target = url.trim();
   const link = (
     <Pressable
@@ -31,7 +33,7 @@ export function FieldLink({ url, prefix, textStyle }: FieldLinkProps) {
       style={styles.link}
     >
       <Text style={[styles.base, textStyle, styles.text]} numberOfLines={1}>
-        {linkText(target)}
+        {text ?? linkText(target)}
       </Text>
     </Pressable>
   );

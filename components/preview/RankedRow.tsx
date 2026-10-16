@@ -4,6 +4,7 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FieldImage } from '@/components/preview/FieldImage';
 import { PreviewButton } from '@/components/preview/PreviewButton';
 import { useFlipAnimation } from '@/lib/hooks/useFlipAnimation';
+import type { PreviewSource } from '@/lib/renderers';
 import { colors, fonts, radius, space } from '@/lib/theme';
 
 /** Rows are one fixed height so a long list can be windowed without measuring. */
@@ -16,8 +17,8 @@ export interface RankedRowProps {
   rank: number;
   label: string;
   meta: string | null;
-  /** The raw value of the preview field, when one is chosen. */
-  previewValue?: unknown;
+  /** Where the row's play button looks for a clip, in order. */
+  previewSources?: PreviewSource[];
   /** True when a field is drawn as an image: every row then keeps a frame for one. */
   showImage?: boolean;
   imageValue?: unknown;
@@ -36,7 +37,7 @@ export function RankedRow({
   rank,
   label,
   meta,
-  previewValue,
+  previewSources = [],
   showImage = false,
   imageValue,
   rating,
@@ -101,7 +102,7 @@ export function RankedRow({
         )}
       </View>
 
-      <PreviewButton value={previewValue} label={label} compact />
+      <PreviewButton sources={previewSources} label={label} compact />
 
       <Text style={styles.rating}>{Math.round(rating)}</Text>
     </Animated.View>

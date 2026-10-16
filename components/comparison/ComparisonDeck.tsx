@@ -26,9 +26,8 @@ export interface ComparisonDeckProps {
   sortField?: string;
   summaryFields?: string[];
   renderers?: Record<string, FieldRenderer>;
-  previewField?: string;
-  pictureField?: string;
-  pictureRenderer?: FieldRenderer;
+  pictureFields?: string[];
+  mediaFields?: string[];
   onOutcome: (outcome: ComparisonOutcome) => void;
   onDelete: (itemId: string) => void;
   /** Present only while there is something to take back. */
@@ -59,9 +58,8 @@ export function ComparisonDeck({
   sortField,
   summaryFields,
   renderers,
-  previewField,
-  pictureField,
-  pictureRenderer,
+  pictureFields,
+  mediaFields,
   onOutcome,
   onDelete,
   onUndo,
@@ -176,9 +174,8 @@ export function ComparisonDeck({
           sortField={sortField}
           summaryFields={summaryFields}
           renderers={renderers}
-          previewField={previewField}
-          pictureField={pictureField}
-          pictureRenderer={pictureRenderer}
+          pictureFields={pictureFields}
+          mediaFields={mediaFields}
           expanded={showDetails}
           pendingDelete={armed === "left"}
           onChoose={() => choose("left")}
@@ -199,9 +196,8 @@ export function ComparisonDeck({
           sortField={sortField}
           summaryFields={summaryFields}
           renderers={renderers}
-          previewField={previewField}
-          pictureField={pictureField}
-          pictureRenderer={pictureRenderer}
+          pictureFields={pictureFields}
+          mediaFields={mediaFields}
           expanded={showDetails}
           pendingDelete={armed === "right"}
           onChoose={() => choose("right")}

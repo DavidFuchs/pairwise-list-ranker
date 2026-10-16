@@ -397,9 +397,14 @@ Rules:
 
 Comparison cards display:
 - primary label from `roles.labelField`
-- optional summary lines for up to 5 secondary fields, each drawn as plain text
-  or by a renderer; the Apple Music preview renderer draws a play button on the
-  card instead of a line of text
+- optional summary lines for secondary fields, each drawn as plain text or by a
+  renderer
+- one picture slot and one play button. Each renderer belongs to a slot
+  (`slotOf` in `lib/renderers.ts`): picture renderers (image, image gallery,
+  YouTube, Steam header) all feed one gallery in field order, and play-button
+  renderers (Apple Music, Deezer) form a fallback chain, each catalogue asked
+  only once the one before it has no clip. Deezer sends no CORS headers, so the
+  browser reads it as JSONP (`lib/preview/deezerPreview.ts`)
 - expandable detail region rendering remaining fields recursively
 
 ## 11. Testing strategy

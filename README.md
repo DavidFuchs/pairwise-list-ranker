@@ -68,15 +68,29 @@ suits it:
 | Text | anything | the value as written |
 | Link | a web address | a link that opens in a new tab |
 | Image | a link to a `.png`, `.jpg`, `.gif`, `.webp`, `.avif`, `.svg`… file | a picture beside the title, and a thumbnail in the ranked list |
+| Image gallery | a list of image links (single links allowed among them) | the pictures in the same place, with arrows to page through them |
 | YouTube thumbnail | a YouTube video address | the video's picture, opening the video |
+| Steam header | a Steam app id or `store.steampowered.com/app/…` address | the game's store banner, opening its store page |
 | Apple Music preview | an Apple Music track id | a round play button for a 30-second clip |
+| Deezer preview | a Deezer track id or `deezer.com/track/…` address | the same play button, with Deezer's clip |
 | Tags | a list of words or numbers | a row of small labels |
+| Choice | a short word, at most 8 different ones, some repeated | a coloured label; the same word is always the same colour, and priorities like high/low keep their meaning |
+| Long text | text, some of it past 80 characters or over several lines | three lines on a card, with **More** for the rest |
+| Location | a `{lat, lng}`, `[lat, lng]` or `lat, lng` position, or text in a field named like a place (`address`, `city`, `venue`…) | a link that opens the place on a map |
+| Flag | a two-letter country code, like `CA` | the flag and the country's name |
+| Colour swatch | a `#hex`, `rgb()` or `hsl()` colour | a square of the colour beside its code |
+| Currency | a number, in a currency you pick (USD, CAD, EUR, GBP, AUD, JPY, CHF, INR) | money as written where you are, like `$120,000` |
 | Date / Year only | a date written year first, like `2024-04-12` | `Apr 12, 2024` in your own format, or just `2024` |
 | Duration (seconds) | a whole number of seconds | `3:33`, or `1:02:15` past an hour |
 | Compact number | a number, at least one of them 1,000 or more | `1.5M` |
 | Badge | true or false | the field's name when true, nothing when false |
 | Stars | a number, out of a scale you pick (1, 5, 10 or 100) | five stars, lit to the score: 9.2/10 lights 92% of them |
 | Bar | a number, out of a scale you pick | a filled bar with the score beside it |
+
+A card has one picture and one play button, and every field drawn as either
+feeds them. Pictures from every picture field join one gallery, in the
+card's order. Clip fields are fallbacks: the button plays from the first one
+with a clip, so a track missing from Apple Music still plays from Deezer.
 
 ### Comparing
 

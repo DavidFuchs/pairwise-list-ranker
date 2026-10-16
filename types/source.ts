@@ -23,23 +23,37 @@ export interface DataSource {
 export const RATING_SCALES = [1, 5, 10, 100] as const;
 export type RatingScale = (typeof RATING_SCALES)[number];
 
+/** The currencies a money field can be read in, for the currency renderer. */
+export const CURRENCIES = ['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'JPY', 'CHF', 'INR'] as const;
+export type Currency = (typeof CURRENCIES)[number];
+
 /**
  * Special ways to draw a field. Plain text is the absence of one. A rating
- * carries its scale in its name, so the choice stays one plain string.
+ * carries its scale in its name, and money its currency, so the choice stays
+ * one plain string.
  */
 export const FIELD_RENDERERS = [
   'link',
   'image',
+  'image-gallery',
   'youtube',
+  'steam-header',
   'tags',
+  'choice',
+  'long-text',
+  'location',
+  'flag',
+  'color-swatch',
   'date',
   'year',
   'duration',
   'compact',
   'badge',
   'apple-music-preview',
+  'deezer-preview',
   ...RATING_SCALES.map((scale) => `stars-${scale}` as const),
   ...RATING_SCALES.map((scale) => `bar-${scale}` as const),
+  ...CURRENCIES.map((currency) => `currency-${currency}` as const),
 ] as const;
 export type FieldRenderer = (typeof FIELD_RENDERERS)[number];
 

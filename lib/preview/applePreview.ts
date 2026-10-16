@@ -1,5 +1,3 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
-
 /**
  * The Apple Music storefront looked up first. Set EXPO_PUBLIC_APPLE_MUSIC_REGION
  * to a two-letter country code when building; it is compiled into the bundle.
@@ -57,7 +55,7 @@ async function flush(): Promise<void> {
 }
 
 /** Requests made in the same tick share one lookup, so a whole screen costs one call. */
-export function requestPreviewUrl(id: string, onResolved: (url: string | null) => void): () => void {
+export function requestApplePreview(id: string, onResolved: (url: string | null) => void): () => void {
   if (resolved.has(id)) {
     onResolved(resolved.get(id) ?? null);
     return () => undefined;
@@ -73,64 +71,4 @@ export function requestPreviewUrl(id: string, onResolved: (url: string | null) =
     const current = waiting.get(id);
     if (current !== undefined) waiting.set(id, current.filter((callback) => callback !== onResolved));
   };
-}
-
-/** undefined while looking, null when there is no preview. */
-export function usePreviewUrl(id: string | undefined): string | null | undefined {
-  // Keyed by id, so a card that swaps to a new item never shows the last one's preview.
-  const [answer, setAnswer] = useState<{ id: string; url: string | null } | null>(null);
-
-  useEffect(() => {
-    if (id === undefined) return;
-    return requestPreviewUrl(id, (url) => setAnswer({ id, url }));
-  }, [id]);
-
-  if (id === undefined) return null;
-  if (answer?.id === id) return answer.url;
-  return resolved.get(id);
-}
-
-/* One shared audio element: starting a preview stops the one before it. */
-
-let audio: HTMLAudioElement | null = null;
-let playingId: string | null = null;
-const listeners = new Set<() => void>();
-
-function setPlaying(id: string | null): void {
-  playingId = id;
-  for (const listener of listeners) listener();
-}
-
-export function togglePreview(id: string, url: string): void {
-  if (typeof Audio === 'undefined') return;
-  if (audio === null) {
-    audio = new Audio();
-    audio.addEventListener('ended', () => setPlaying(null));
-  }
-  if (playingId === id) {
-    audio.pause();
-    setPlaying(null);
-    return;
-  }
-  audio.src = url;
-  setPlaying(id);
-  audio.play().catch(() => setPlaying(null));
-}
-
-/** Silences any preview, e.g. when the card it belongs to is replaced. */
-export function stopPreview(id: string): void {
-  if (playingId !== id) return;
-  audio?.pause();
-  setPlaying(null);
-}
-
-export function useIsPlaying(id: string): boolean {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    () => playingId === id,
-    () => false,
-  );
 }

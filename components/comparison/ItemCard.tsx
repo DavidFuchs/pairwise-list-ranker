@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ObjectDrilldown } from '@/components/comparison/ObjectDrilldown';
-import { FieldPicture } from '@/components/preview/FieldPicture';
+import { FieldGallery } from '@/components/preview/FieldGallery';
 import { FieldValue } from '@/components/preview/FieldValue';
 import { PreviewButton } from '@/components/preview/PreviewButton';
 import { StrongChoiceButton } from '@/components/comparison/StrongChoiceButton';
 import { TrashIcon } from '@/components/ui/TrashIcon';
 import { useReducedMotion } from '@/lib/hooks/useReducedMotion';
 import { selectItemLabel } from '@/lib/state/selectors';
-import { formatValue } from '@/lib/renderers';
+import { formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
 import { colors, fonts, motion, radius, space, typeScale } from '@/lib/theme';
 import { isComplexItemValue } from '@/types/list';
 import type { ListItem } from '@/types/list';
@@ -24,13 +24,12 @@ export interface ItemCardProps {
   sortField?: string;
   /** Fields every card shows as chips, in order, whether or not the item has them. */
   summaryFields?: string[];
-  /** How each of summaryFields is drawn; a field absent here is plain text. */
+  /** How each field is drawn, the picture and media fields included; absent is plain text. */
   renderers?: Record<string, FieldRenderer>;
-  /** The field holding an Apple Music id, drawn as a play button instead of text. */
-  previewField?: string;
-  /** The field pictured beside the title, and whether it is an image or a video. */
-  pictureField?: string;
-  pictureRenderer?: FieldRenderer;
+  /** Fields pictured beside the title, together, as one gallery in this order. */
+  pictureFields?: string[];
+  /** Fields naming a clip for the play button, tried in this order. */
+  mediaFields?: string[];
   /**
    * Details are shown or hidden for the pair, not per card: comparing one
    * item's details against the other's summary is not a comparison anyone
@@ -56,9 +55,8 @@ export function ItemCard({
   sortField,
   summaryFields,
   renderers,
-  previewField,
-  pictureField,
-  pictureRenderer,
+  pictureFields,
+  mediaFields,
   expanded = false,
   onChoose,
   onChooseStrong,
@@ -113,6 +111,8 @@ export function ItemCard({
   // pair show the same keys and an item without one says so instead of
   // silently dropping it. A false badge is the one line meant to say nothing.
   const chips = (summaryFields ?? []).filter((field) => formatValue(raw(field), renderers?.[field], field) !== null);
+  const pictures = itemPictures(raw, pictureFields, renderers);
+  const sources = itemPreviewSources(raw, mediaFields, renderers);
   const interactive = onChoose !== undefined;
   const canChoose = interactive && !pendingDelete;
 
@@ -145,8 +145,8 @@ export function ItemCard({
       )}
 
       <View style={styles.headline}>
-        {pictureField !== undefined && (
-          <FieldPicture value={raw(pictureField)} renderer={pictureRenderer} size={IMAGE_SIZE} label={label} />
+        {(pictureFields ?? []).length > 0 && (
+          <FieldGallery key={item.id} pictures={pictures} size={IMAGE_SIZE} label={label} />
         )}
         <View style={styles.headlineBody}>
           <View style={styles.topRow}>
@@ -154,7 +154,7 @@ export function ItemCard({
               {label}
             </Text>
 
-            {previewField !== undefined && <PreviewButton value={raw(previewField)} label={label} compact />}
+            {sources.length > 0 && <PreviewButton sources={sources} label={label} compact />}
           </View>
 
           {/* The fields the user chose stay through the details: they are the
@@ -162,7 +162,7 @@ export function ItemCard({
           {chips.length > 0 && (
             <View style={styles.chipColumn}>
               {chips.map((field) => (
-                <View key={field} style={styles.chip}>
+                <View key={field} style={[styles.chip, renderers?.[field] === 'long-text' && styles.chipBlock]}>
                   <FieldValue
                     field={field}
                     value={raw(field)}
@@ -327,6 +327,8 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.surfaceMuted,
   },
+  // Prose does not fit a pill: it reads as a block with softer corners.
+  chipBlock: { alignSelf: 'stretch', borderRadius: radius.sm, paddingVertical: 6 },
   chipText: {
     fontFamily: fonts.body,
     fontSize: 12,

@@ -262,8 +262,8 @@ describe('summary chips and details', () => {
         item={item({ ...film, poster: 'https://example.com/arrival.jpg' })}
         side="left"
         sortField="title"
-        pictureField="poster"
-        pictureRenderer="image"
+        pictureFields={['poster']}
+        renderers={{ poster: 'image' }}
       />,
     );
 
@@ -300,12 +300,91 @@ describe('summary chips and details', () => {
         item={item({ ...film, trailer: 'https://youtu.be/dQw4w9WgXcQ' })}
         side="left"
         sortField="title"
-        pictureField="trailer"
-        pictureRenderer="youtube"
+        pictureFields={['trailer']}
+        renderers={{ trailer: 'youtube' }}
       />,
     );
     expect(screen.getByRole('link', { name: 'Watch Arrival on YouTube' }).getAttribute('href')).toBe(
       'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     );
+  });
+});
+
+describe('ItemCard picture slot and new lines', () => {
+  const game = { title: 'Portal', steam: 620 };
+
+  it('pages through every picture field as one gallery, without choosing the card', async () => {
+    const onChoose = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ItemCard
+        item={item({ ...game, cover: 'https://example.com/cover.jpg', shots: ['https://example.com/1.png', 'https://example.com/2.png'] })}
+        side="left"
+        sortField="title"
+        pictureFields={['cover', 'shots']}
+        renderers={{ cover: 'image', shots: 'image-gallery' }}
+        onChoose={onChoose}
+      />,
+    );
+
+    expect(screen.getByRole('img', { name: 'Portal, picture 1 of 3' })).toBeDefined();
+    await user.click(screen.getByRole('button', { name: 'Next picture of Portal' }));
+    expect(screen.getByRole('img', { name: 'Portal, picture 2 of 3' })).toBeDefined();
+    await user.click(screen.getByRole('button', { name: 'Previous picture of Portal' }));
+    await user.click(screen.getByRole('button', { name: 'Previous picture of Portal' }));
+    // Wraps from the first to the last.
+    expect(screen.getByRole('img', { name: 'Portal, picture 3 of 3' })).toBeDefined();
+    expect(onChoose).not.toHaveBeenCalled();
+  });
+
+  it('shows one picture without a pager', () => {
+    render(
+      <ItemCard item={item(game)} side="left" sortField="title" pictureFields={['steam']} renderers={{ steam: 'steam-header' }} />,
+    );
+    expect(screen.queryByRole('button', { name: /picture of Portal/ })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Open Portal on Steam' }).getAttribute('href')).toBe(
+      'https://store.steampowered.com/app/620',
+    );
+  });
+
+  it('draws a choice, a swatch, a flag, money and a map link', () => {
+    render(
+      <ItemCard
+        item={item({ title: 'Office', priority: 'High', colour: '#336699', country: 'CA', rent: 2400, address: '100 Queen St W' })}
+        side="left"
+        sortField="title"
+        summaryFields={['priority', 'colour', 'country', 'rent', 'address']}
+        renderers={{
+          priority: 'choice',
+          colour: 'color-swatch',
+          country: 'flag',
+          rent: 'currency-CAD',
+          address: 'location',
+        }}
+      />,
+    );
+    expect(screen.getByText('High')).toBeDefined();
+    expect(screen.getByRole('img', { name: '#336699' })).toBeDefined();
+    expect(screen.getByText(/🇨🇦/)).toBeDefined();
+    expect(screen.getByText(/2,400/)).toBeDefined();
+    expect(screen.getByRole('link', { name: /100 Queen St W/ }).getAttribute('href')).toContain('google.com/maps');
+  });
+
+  it('folds long text behind a toggle that does not choose the card', async () => {
+    const onChoose = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ItemCard
+        item={item({ title: 'Plan', notes: 'word '.repeat(60) })}
+        side="left"
+        sortField="title"
+        summaryFields={['notes']}
+        renderers={{ notes: 'long-text' }}
+        onChoose={onChoose}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Show all of notes' }));
+    expect(screen.getByRole('button', { name: 'Show less of notes' })).toBeDefined();
+    expect(onChoose).not.toHaveBeenCalled();
   });
 });

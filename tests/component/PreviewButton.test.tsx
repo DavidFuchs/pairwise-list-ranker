@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ItemCard } from '@/components/comparison/ItemCard';
+import type { ItemCardProps } from '@/components/comparison/ItemCard';
+import { isExpired, setDeezerTransport } from '@/lib/preview/deezerPreview';
 import type { ListItem } from '@/types/list';
 
 const NOW = '2026-08-15T12:00:00.000Z';
@@ -69,7 +71,7 @@ describe('Apple Music preview on a card', () => {
         side="left"
         sortField="title"
         summaryFields={['artist']}
-        previewField="apple_music_id"
+        mediaFields={['apple_music_id']} renderers={{ apple_music_id: 'apple-music-preview' }}
         onChoose={onChoose}
       />,
     );
@@ -94,7 +96,7 @@ describe('Apple Music preview on a card', () => {
         side="left"
         sortField="title"
         summaryFields={['artist']}
-        previewField="apple_music_id"
+        mediaFields={['apple_music_id']} renderers={{ apple_music_id: 'apple-music-preview' }}
       />,
     );
 
@@ -116,9 +118,69 @@ describe('Apple Music preview on a card', () => {
     );
 
     render(
-      <ItemCard item={song('3003')} side="left" sortField="title" previewField="apple_music_id" />,
+      <ItemCard item={song('3003')} side="left" sortField="title" mediaFields={['apple_music_id']} renderers={{ apple_music_id: 'apple-music-preview' }} />,
     );
 
     expect(await screen.findByRole('button', { name: 'Play preview of Song' })).toBeDefined();
+  });
+});
+
+describe('several clip sources on a card', () => {
+  function track(apple: string, deezer: string): ListItem {
+    return { ...song(apple), value: { title: 'Song', apple_music_id: apple, deezer_id: deezer } };
+  }
+  const both: Pick<ItemCardProps, 'mediaFields' | 'renderers'> = {
+    mediaFields: ['apple_music_id', 'deezer_id'],
+    renderers: { apple_music_id: 'apple-music-preview', deezer_id: 'deezer-preview' },
+  };
+
+  it('plays from the first catalogue that has a clip, asking the next only when it has none', async () => {
+    mockLookup({});
+    const asked: string[] = [];
+    setDeezerTransport(async (url) => {
+      asked.push(url);
+      return { preview: 'https://cdn.example/deezer.mp3' };
+    });
+    const user = userEvent.setup();
+
+    render(<ItemCard item={track('4004', '77')} side="left" sortField="title" {...both} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Play preview of Song' }));
+    expect(asked).toEqual(['https://api.deezer.com/track/77']);
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
+  it('never asks the later catalogue when the first has a clip', async () => {
+    mockLookup({ '5005': 'https://audio.example/5005.m4a' });
+    const asked: string[] = [];
+    setDeezerTransport(async (url) => {
+      asked.push(url);
+      return { preview: 'https://cdn.example/deezer.mp3' };
+    });
+
+    render(<ItemCard item={track('5005', '78')} side="left" sortField="title" {...both} />);
+
+    expect(await screen.findByRole('button', { name: 'Play preview of Song' })).toBeDefined();
+    expect(asked).toEqual([]);
+  });
+
+  it('draws no button when no catalogue has a clip', async () => {
+    const calls = mockLookup({});
+    setDeezerTransport(async () => ({ error: { type: 'DataException' } }));
+
+    render(<ItemCard item={track('6006', '79')} side="left" sortField="title" {...both} />);
+
+    await waitFor(() => expect(calls.length).toBe(2));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByRole('button', { name: /preview of Song/ })).toBeNull();
+  });
+});
+
+describe('Deezer clip addresses', () => {
+  it('lapse a minute before the time they are signed for', () => {
+    const now = 1_800_000_000_000;
+    expect(isExpired('https://cdnt-preview.dzcdn.net/a.mp3?hdnea=exp=1800000030~acl=x', now)).toBe(true);
+    expect(isExpired('https://cdnt-preview.dzcdn.net/a.mp3?hdnea=exp=1800000600~acl=x', now)).toBe(false);
+    expect(isExpired('https://audio.example/a.mp3', now)).toBe(false);
   });
 });

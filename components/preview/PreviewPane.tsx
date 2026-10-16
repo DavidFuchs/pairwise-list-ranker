@@ -19,9 +19,8 @@ export interface PreviewPaneProps {
   labelField?: string;
   summaryFields?: string[];
   renderers?: Record<string, FieldRenderer>;
-  previewField?: string;
-  pictureField?: string;
-  pictureRenderer?: FieldRenderer;
+  pictureFields?: string[];
+  mediaFields?: string[];
   /** The user's document, ranked and serialized for the active tab. */
   exportText: string;
   filename: string;
@@ -46,9 +45,8 @@ export function PreviewPane({
   labelField,
   summaryFields,
   renderers,
-  previewField,
-  pictureField,
-  pictureRenderer,
+  pictureFields,
+  mediaFields,
   exportText,
   filename,
   format,
@@ -77,7 +75,7 @@ export function PreviewPane({
 
       {tab === 'ranked' ? (
         <View style={styles.body} accessibilityLabel="Current ranking" role="region">
-          <RankedListPreview ranking={ranking} sortField={labelField} summaryFields={summaryFields} renderers={renderers} previewField={previewField} pictureField={pictureField} pictureRenderer={pictureRenderer} onReorder={onReorder} />
+          <RankedListPreview ranking={ranking} sortField={labelField} summaryFields={summaryFields} renderers={renderers} pictureFields={pictureFields} mediaFields={mediaFields} onReorder={onReorder} />
         </View>
       ) : (
         <View style={styles.body}>
