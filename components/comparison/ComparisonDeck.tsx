@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { ItemCard } from "@/components/comparison/ItemCard";
+import { CARD_FLEX_BASIS, ItemCard } from "@/components/comparison/ItemCard";
 import { ProgressMeter } from "@/components/ui/ProgressMeter";
 import { useComparisonShortcuts } from "@/lib/hooks/useComparisonShortcuts";
 import { describeCoverage, describeStability, selectItemLabel } from "@/lib/state/selectors";
@@ -33,13 +33,15 @@ export interface ComparisonDeckProps {
   stability?: StabilityReading;
 }
 
-const CARD_MIN_WIDTH = 250;
 // The inline gutter needs enough room for the vertical rule, the word "or",
 // and its horizontal padding. Giving it an explicit minimum also lets the deck
 // decide whether two cards plus the gutter can fit before the gutter itself
 // changes shape and starts influencing the answer.
 const INLINE_GUTTER_MIN_WIDTH = 56;
-const INLINE_LAYOUT_MIN_WIDTH = CARD_MIN_WIDTH * 2 + INLINE_GUTTER_MIN_WIDTH + space.md * 2;
+// Flex-wrap breaks the row once the cards' flex basis no longer fits, so the
+// threshold has to use the basis too. Using their smaller minWidth left a band
+// of widths where the right card had wrapped but the rule stayed vertical.
+const INLINE_LAYOUT_MIN_WIDTH = CARD_FLEX_BASIS * 2 + INLINE_GUTTER_MIN_WIDTH + space.md * 2;
 
 /**
  * The comparison stage. Each card owns the actions for its own item - choose,

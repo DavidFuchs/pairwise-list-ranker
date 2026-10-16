@@ -252,11 +252,17 @@ function isChipValue(value: unknown): boolean {
   return typeof value === 'string' && value.length <= CHIP_MAX_LENGTH && value.trim() !== '';
 }
 
+/**
+ * The width a card asks for before growing. Flex-wrap breaks the line on this
+ * figure, not on minWidth, so the deck uses it to decide when the pair stacks.
+ */
+export const CARD_FLEX_BASIS = 280;
+
 const styles = StyleSheet.create({
   card: {
     flexGrow: 1,
     flexShrink: 1,
-    flexBasis: 280,
+    flexBasis: CARD_FLEX_BASIS,
     minWidth: 250,
     borderRadius: radius.lg,
     borderWidth: 1,
