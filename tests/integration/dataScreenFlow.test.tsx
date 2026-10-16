@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DataScreen from '@/app/index';
+import { SAMPLE_ROLES } from '@/lib/import/sampleData';
 import { listStore } from '@/lib/state/useListStore';
 
 const replace = vi.fn();
@@ -120,5 +121,39 @@ describe('the data screen', () => {
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/rank'));
     expect(replace).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('the sample songs', () => {
+  beforeEach(() => {
+    listStore.getState().reset();
+    globalThis.localStorage?.clear();
+  });
+
+  it('arrive set up to show the renderers off', async () => {
+    const user = userEvent.setup();
+    render(<DataScreen />);
+
+    await user.click(screen.getByRole('button', { name: /load the yaml sample/i }));
+
+    expect(screen.getByRole('button', { name: 'Label items by song_name' }).getAttribute('aria-pressed')).toBe('true');
+    for (const field of ['artwork_url', 'apple_music_id', 'duration_sec', 'explicit']) {
+      expect(screen.getByRole('checkbox', { name: `Show ${field} on cards` }).getAttribute('aria-checked')).toBe('true');
+    }
+
+    await user.click(screen.getByRole('button', { name: /start ranking/i }));
+    expect(listStore.getState().workspace?.roles.fieldRenderers).toEqual(SAMPLE_ROLES.fieldRenderers);
+    expect(listStore.getState().workspace?.source.arrayPath).toEqual(['songs']);
+  });
+
+  it('leave the plain list with nothing to set up', async () => {
+    const user = userEvent.setup();
+    render(<DataScreen />);
+
+    await user.click(screen.getByRole('button', { name: /load the plain list sample/i }));
+    await user.click(screen.getByRole('button', { name: /start ranking/i }));
+
+    expect(listStore.getState().items).toHaveLength(10);
+    expect(listStore.getState().workspace?.roles).toEqual({});
   });
 });

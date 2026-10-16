@@ -21,6 +21,7 @@ import {
   selectRanking,
 } from "@/lib/state/selectors";
 import type { CoverageReading } from "@/lib/state/selectors";
+import { SAMPLE_PATH, SAMPLE_ROLES } from "@/lib/import/sampleData";
 import { describeSession, readSavedFile } from "@/lib/session/sessionFile";
 import { listStore, useListStore } from "@/lib/state/useListStore";
 import type { DataSource } from "@/types/source";
@@ -373,6 +374,14 @@ export default function DataScreen() {
               draft.setRawText(text);
             }}
             onFile={openFile}
+            onSample={(format, text) => {
+              setPending(null);
+              setFileNotice(null);
+              // The songs arrive set up to show the renderers off; a plain
+              // list has no fields to set up.
+              if (format === "list") draft.setRawText(text);
+              else draft.loadPreset(text, SAMPLE_PATH, SAMPLE_ROLES);
+            }}
             override={draft.override}
             onOverrideChange={draft.setOverride}
             format={draft.analysis.format}

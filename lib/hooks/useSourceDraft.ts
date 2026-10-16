@@ -58,6 +58,8 @@ export interface SourceDraft {
   setOverride: (override: FormatOverride) => void;
   selectPath: (path: string[]) => void;
   setRoles: (roles: FieldRoles) => void;
+  /** Replaces the text and picks one of its lists with a setup already chosen - a sample, say. */
+  loadPreset: (text: string, path: string[], roles: FieldRoles) => void;
   setAlreadyRanked: (alreadyRanked: boolean) => void;
   /** The committed source, or null while a choice is still outstanding. */
   toSource: () => DataSource | null;
@@ -218,6 +220,23 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     [selectedPath],
   );
 
+  // One step, so the setup is recorded against the list it belongs to before
+  // any render resolves roles from the new text on its own.
+  const loadPreset = useCallback((text: string, path: string[], preset: FieldRoles) => {
+    setRawText(text);
+    setChosenPath(path);
+    setRolesOverride((current) => ({
+      ...current,
+      [path.join('.')]: {
+        labelField: preset.labelField,
+        positionField: preset.positionField,
+        summaryFields: preset.summaryFields,
+        fieldRenderers: preset.fieldRenderers,
+        positionCleared: preset.positionField === undefined,
+      },
+    }));
+  }, []);
+
   const toSource = useCallback((): DataSource | null => {
     if (selectedPath === null || analysis.issues.length > 0) return null;
     return {
@@ -242,6 +261,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     setOverride,
     selectPath: setChosenPath,
     setRoles,
+    loadPreset,
     setAlreadyRanked,
     toSource,
   };

@@ -12,6 +12,8 @@ export type FormatOverride = SourceFormat | 'auto';
 export interface SourceInputProps {
   value: string;
   onChange: (text: string) => void;
+  /** A sample was asked for. Defaults to treating its text like typing. */
+  onSample?: (format: SourceFormat, text: string) => void;
   /** A chosen file's text, when it should be told apart from typing - a saved session, say. Defaults to onChange. */
   onFile?: (text: string) => void;
   override: FormatOverride;
@@ -48,6 +50,7 @@ export function SourceInput({
   value,
   onChange,
   onFile,
+  onSample,
   override,
   onOverrideChange,
   format,
@@ -105,7 +108,8 @@ export function SourceInput({
                     accessibilityLabel={`Load the ${option.label} sample`}
                     onPress={() => {
                       onOverrideChange(option.key);
-                      onChange(sample);
+                      if (onSample === undefined) onChange(sample);
+                      else onSample(option.key as SourceFormat, sample);
                     }}
                     hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                     dataSet={{ sample: 'tab' }}
