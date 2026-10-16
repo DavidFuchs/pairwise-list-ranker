@@ -1,16 +1,11 @@
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ArrayPicker } from "@/components/data/ArrayPicker";
-import { LabelPicker } from "@/components/data/LabelPicker";
+import { FieldPicker } from "@/components/data/FieldPicker";
 import { OrderPicker } from "@/components/data/OrderPicker";
-import { SummaryFieldPicker } from "@/components/data/SummaryFieldPicker";
 import { PositionPicker } from "@/components/data/PositionPicker";
 import { Button } from "@/components/ui/Button";
 import type { SourceAnalysis } from "@/lib/import/analyze";
-import {
-  collectLabelFieldCandidates,
-  describeObjectSchema,
-} from "@/lib/import/labelField";
 import { detectPositionFields } from "@/lib/import/positionField";
 import { describeReadiness } from "@/lib/import/readiness";
 import type { CoverageReading } from "@/lib/state/selectors";
@@ -82,10 +77,6 @@ export function FoundPanel({
     isBlank,
   });
 
-  // The label picker asks for itself, right beside the options. Repeating that
-  // ask down here would say the same sentence twice on one screen.
-  const askedByPicker = objects.length > 0 && roles.labelField === undefined;
-
   return (
     <View style={styles.panel} dataSet={{ surface: "panel" }}>
       <View style={styles.header}>
@@ -99,82 +90,71 @@ export function FoundPanel({
         </Text>
       </View>
 
-      <ArrayPicker
-        candidates={analysis.candidates}
-        value={selectedPath}
-        onChange={onSelectPath}
-        rankedCoverages={rankedCoverages}
-        configLines={configLines}
-      />
-
-      <OrderPicker
-        value={alreadyRanked}
-        itemCount={entries.length}
-        onChange={onAlreadyRankedChange}
-      />
-
-      {objects.length > 0 && (
-        <LabelPicker
-          candidates={collectLabelFieldCandidates(objects)}
-          schema={describeObjectSchema(objects)}
-          value={roles.labelField}
-          onChange={(labelField) => onRolesChange({ ...roles, labelField })}
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.body}>
+        <ArrayPicker
+          candidates={analysis.candidates}
+          value={selectedPath}
+          onChange={onSelectPath}
+          rankedCoverages={rankedCoverages}
+          configLines={configLines}
         />
-      )}
 
-      {objects.length > 0 && roles.labelField !== undefined && (
-        <SummaryFieldPicker
-          schema={describeObjectSchema(objects)}
-          labelField={roles.labelField}
-          value={roles.summaryFields ?? []}
-          renderers={roles.fieldRenderers}
-          onChange={(summaryFields, fieldRenderers) =>
-            onRolesChange({ ...roles, summaryFields, fieldRenderers })
+        <OrderPicker
+          value={alreadyRanked}
+          itemCount={entries.length}
+          onChange={onAlreadyRankedChange}
+        />
+
+        {objects.length > 0 && (
+          <FieldPicker
+            objects={objects}
+            roles={roles}
+            onChange={onRolesChange}
+          />
+        )}
+
+        <PositionPicker
+          candidates={detectPositionFields(entries)}
+          value={roles.positionField}
+          onChange={(positionField) =>
+            onRolesChange(
+              positionField === undefined
+                ? {
+                    labelField: roles.labelField,
+                    summaryFields: roles.summaryFields,
+                    fieldRenderers: roles.fieldRenderers,
+                  }
+                : { ...roles, positionField },
+            )
           }
         />
-      )}
 
-      <PositionPicker
-        candidates={detectPositionFields(entries)}
-        value={roles.positionField}
-        onChange={(positionField) =>
-          onRolesChange(
-            positionField === undefined
-              ? {
-                  labelField: roles.labelField,
-                  summaryFields: roles.summaryFields,
-                  fieldRenderers: roles.fieldRenderers,
-                }
-              : { ...roles, positionField },
-          )
-        }
-      />
-
-      {analysis.warnings.map((warning) => (
-        <Text key={warning} style={styles.warning}>
-          {warning}
-        </Text>
-      ))}
-
-      {analysis.candidates.length > 1 && onSetAsDefault !== undefined && (
-        <View style={styles.defaults}>
-          <Button
-            label="Set as default"
-            accessibilityLabel="Set as default"
-            variant="secondary"
-            size="sm"
-            disabled={isDefault}
-            onPress={onSetAsDefault}
-          />
-          <Text style={styles.defaultsHint}>
-            {isDefault
-              ? "These are the default. Lists you have not set up yourself follow them, here and in the list switcher."
-              : "Lists you have not set up yourself follow these settings, here and in the list switcher."}
+        {analysis.warnings.map((warning) => (
+          <Text key={warning} style={styles.warning}>
+            {warning}
           </Text>
-        </View>
-      )}
+        ))}
 
-      {readiness.reason !== undefined && !askedByPicker && (
+        {analysis.candidates.length > 1 && onSetAsDefault !== undefined && (
+          <View style={styles.defaults}>
+            <Button
+              label="Set as default"
+              accessibilityLabel="Set as default"
+              variant="secondary"
+              size="sm"
+              disabled={isDefault}
+              onPress={onSetAsDefault}
+            />
+            <Text style={styles.defaultsHint}>
+              {isDefault
+                ? "These are the default. Lists you have not set up yourself follow them, here and in the list switcher."
+                : "Lists you have not set up yourself follow these settings, here and in the list switcher."}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      {readiness.reason !== undefined && (
         <Text style={styles.reason}>{readiness.reason}</Text>
       )}
 
@@ -198,8 +178,11 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     color: colors.textSecondary,
   },
+  // The sidebar has a fixed height, so the settings scroll inside the panel's
+  // border while the title and the call to action stay put.
   panel: {
     flex: 1,
+    minHeight: 0,
     gap: space.md,
     padding: space.lg,
     borderRadius: radius.lg,
@@ -208,6 +191,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   header: { gap: 2 },
+  scroll: { flex: 1, minHeight: 0, marginHorizontal: -space.lg },
+  body: { gap: space.md, paddingHorizontal: space.lg },
   title: {
     ...typeScale.sectionTitle,
     fontFamily: fonts.heading,

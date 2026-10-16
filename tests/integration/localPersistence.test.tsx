@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import DataScreen from '@/app/index';
 import RankScreen from '@/app/rank';
 import { WORKSPACE_STORAGE_KEY } from '@/lib/persistence/workspaceStorage';
 import { listStore } from '@/lib/state/useListStore';
@@ -95,6 +96,29 @@ describe('local persistence', () => {
     render(<RankScreen />);
 
     expect(screen.getByRole('tab', { name: /json/i }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('resumes a saved list into ranking when the site opens on the data screen', () => {
+    startRanking();
+    simulateReload();
+
+    render(<DataScreen />);
+
+    expect(replace).toHaveBeenCalledWith('/rank');
+  });
+
+  // Opening the site on the rank page used to leave the resume unspent, so
+  // the first press of Edit data was taken for it and bounced straight back.
+  it('stays on the data screen after opening the site on the rank page', () => {
+    startRanking();
+    simulateReload();
+
+    render(<RankScreen />);
+    cleanup();
+    replace.mockClear();
+    render(<DataScreen />);
+
+    expect(replace).not.toHaveBeenCalledWith('/rank');
   });
 
   it('starts clean when the saved workspace is corrupt', () => {

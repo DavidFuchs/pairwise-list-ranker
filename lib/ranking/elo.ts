@@ -88,6 +88,10 @@ export function applyComparison(
   outcome: ComparisonOutcome,
   at: string,
 ): ComparisonUpdate {
+  // Placements are replayed by rebuildRanking, which owns the order they are
+  // about; there is no contest here to score.
+  if (outcome === 'place_below' || outcome === 'place_above') return { left, right };
+
   if (outcome === 'skip') {
     return {
       left: { ...left, skips: left.skips + 1, lastComparedAt: at },

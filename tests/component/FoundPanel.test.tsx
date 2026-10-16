@@ -56,13 +56,13 @@ describe('FoundPanel', () => {
   });
 
   it('offers the label fields of the selected array', () => {
-    setup();
+    setup({ roles: {} });
 
     expect(screen.getByRole('button', { name: /label items by title/i })).toBeDefined();
   });
 
   it('reports a label choice', async () => {
-    const { onRolesChange, user } = setup();
+    const { onRolesChange, user } = setup({ roles: {} });
 
     await user.click(screen.getByRole('button', { name: /label items by title/i }));
 
@@ -101,7 +101,7 @@ describe('FoundPanel', () => {
     ).toBe('true');
   });
 
-  it('lets the label picker do the asking, rather than saying it twice', () => {
+  it('asks for a title when none is set', () => {
     setup({ roles: {} });
 
     expect(screen.getAllByText(/which field should title/i)).toHaveLength(1);

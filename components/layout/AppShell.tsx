@@ -340,7 +340,9 @@ const styles = StyleSheet.create({
   body: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg, alignItems: 'flex-start' },
   // The divider is the gutter between stage and sidebar, so no gap here.
   bodySplit: { flexWrap: 'nowrap', gap: 0 },
-  bodyStacked: { flexDirection: 'column', alignItems: 'stretch' },
+  // nowrap: a wrapping column sizes each line to its widest content, so a long
+  // unbroken sample would push the sidebar past the screen instead of truncating.
+  bodyStacked: { flexDirection: 'column', flexWrap: 'nowrap', alignItems: 'stretch' },
   rail: { flexGrow: 1, flexShrink: 1, flexBasis: RAIL_WIDTH, minWidth: 240, maxWidth: 340, gap: space.md },
   railSplit: { flexGrow: 0, flexShrink: 0, width: RAIL_WIDTH, marginRight: space.lg },
   stage: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: STAGE_MIN_WIDTH, gap: space.lg },

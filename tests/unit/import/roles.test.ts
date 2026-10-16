@@ -7,13 +7,13 @@ describe('resolveRoles', () => {
     expect(resolveRoles([{ title: 'Alien' }, { title: 'Arrival' }]).labelField).toBe('title');
   });
 
-  it('leaves the label unset when the choice is ambiguous', () => {
+  it('titles cards with the first field by default', () => {
     const roles = resolveRoles([
       { alpha: 'Alien', beta: 'Scott' },
       { alpha: 'Arrival', beta: 'Villeneuve' },
     ]);
 
-    expect(roles.labelField).toBeUndefined();
+    expect(roles.labelField).toBe('alpha');
   });
 
   it('preselects an ordering field', () => {

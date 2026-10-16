@@ -49,7 +49,10 @@ describe('the data screen', () => {
     expect(await screen.findByRole('radio', { name: /rank the list at movies/i })).toBeDefined();
     await user.click(screen.getByRole('radio', { name: /rank the list at movies/i }));
 
-    expect(screen.getByRole('button', { name: /label items by title/i })).toBeDefined();
+    // The first field titles the cards by default; any other is a tap away.
+    expect(
+      screen.getByRole('button', { name: /label items by title/i }).getAttribute('aria-pressed'),
+    ).toBe('true');
   });
 
   it('keeps the whole document, not only the ranked array', async () => {

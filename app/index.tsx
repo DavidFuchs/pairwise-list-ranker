@@ -2,6 +2,8 @@ import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 
 import { ApplySummary } from "@/components/data/ApplySummary";
+import { FileNotice } from "@/components/data/FileNotice";
+import type { FileNoticeState } from "@/components/data/FileNotice";
 import { FoundPanel } from "@/components/data/FoundPanel";
 import { SourceInput } from "@/components/data/SourceInput";
 import { AppShell } from "@/components/layout/AppShell";
@@ -19,6 +21,7 @@ import {
   selectRanking,
 } from "@/lib/state/selectors";
 import type { CoverageReading } from "@/lib/state/selectors";
+import { describeSession, readSavedFile } from "@/lib/session/sessionFile";
 import { listStore, useListStore } from "@/lib/state/useListStore";
 import type { DataSource } from "@/types/source";
 
@@ -103,10 +106,52 @@ export default function DataScreen() {
     diff: ImportDiff;
     settings: SettingsDiff;
   } | null>(null);
+  const [fileNotice, setFileNotice] = useState<FileNoticeState | null>(null);
 
   useEffect(() => {
     listStore.getState().hydrate();
   }, []);
+
+  /**
+   * A chosen or dropped file is either one of this app's own - a session to
+   * pick up where it left off, or an old progress file - or a list to import.
+   */
+  function openFile(text: string) {
+    const saved = readSavedFile(text);
+    if (saved.type === "other") {
+      setFileNotice(null);
+      setPending(null);
+      draft.setRawText(text);
+      return;
+    }
+    if (saved.type === "unreadable") {
+      setFileNotice({ message: saved.reason });
+      return;
+    }
+    if (saved.type === "progress") {
+      setFileNotice({
+        message:
+          "That is a progress file: it holds your decisions, but not the list. Put your list in and start ranking, then open the file there with Open session.",
+      });
+      return;
+    }
+
+    const open = () => {
+      setFileNotice(null);
+      listStore.getState().loadSession(saved.session);
+      router.replace("/rank");
+    };
+    const { comparisonEvents, savedLists: parked } = listStore.getState();
+    const atStake = comparisonEvents.length > 0 || parked.some((list) => list.comparisonEvents.length > 0);
+    if (atStake) {
+      setFileNotice({
+        confirm: `Open this session (${describeSession(saved.session)})? It replaces the list you are ranking now, and its progress is gone unless you saved it.`,
+        onConfirm: open,
+      });
+    } else {
+      open();
+    }
+  }
 
   // The list switcher's preselection is only meant for the render that reads
   // it into the seed above - clearing it here keeps a later, ordinary visit
@@ -307,10 +352,7 @@ export default function DataScreen() {
     <AppShell
       listName={editing ? "Editing your data" : "New list"}
       statusText={editing ? "Editing your data" : "Nothing saved yet"}
-      onFileDrop={(text) => {
-        setPending(null);
-        draft.setRawText(text);
-      }}
+      onFileDrop={openFile}
       stage={
         <>
           {editing && (
@@ -330,12 +372,14 @@ export default function DataScreen() {
               setPending(null);
               draft.setRawText(text);
             }}
+            onFile={openFile}
             override={draft.override}
             onOverrideChange={draft.setOverride}
             format={draft.analysis.format}
             issues={rawTextIsBlank ? [] : draft.analysis.issues}
             availableOverrides={draft.availableOverrides}
           />
+          {fileNotice !== null && <FileNotice notice={fileNotice} onDismiss={() => setFileNotice(null)} />}
         </>
       }
       preview={

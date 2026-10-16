@@ -19,16 +19,35 @@ export interface DataSource {
   arrayPath: string[];
 }
 
-export const MAX_SUMMARY_FIELDS = 5;
+/** What a score is out of, for the stars and bar renderers. */
+export const RATING_SCALES = [1, 5, 10, 100] as const;
+export type RatingScale = (typeof RATING_SCALES)[number];
 
-/** Special ways to draw a field. Plain text is the absence of one. */
-export type FieldRenderer = 'apple-music-preview';
+/**
+ * Special ways to draw a field. Plain text is the absence of one. A rating
+ * carries its scale in its name, so the choice stays one plain string.
+ */
+export const FIELD_RENDERERS = [
+  'link',
+  'image',
+  'youtube',
+  'tags',
+  'date',
+  'year',
+  'duration',
+  'compact',
+  'badge',
+  'apple-music-preview',
+  ...RATING_SCALES.map((scale) => `stars-${scale}` as const),
+  ...RATING_SCALES.map((scale) => `bar-${scale}` as const),
+] as const;
+export type FieldRenderer = (typeof FIELD_RENDERERS)[number];
 
 export interface FieldRoles {
   /** Object entries only: which field shows on the comparison cards. */
   labelField?: string;
   /**
-   * Object entries only: up to MAX_SUMMARY_FIELDS fields always shown, in this
+   * Object entries only: the fields always shown, in this
    * order, on each comparison card. Empty or absent means the card picks its
    * own from whatever the item happens to carry.
    */

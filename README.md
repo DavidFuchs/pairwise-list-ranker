@@ -43,6 +43,8 @@ converges quickly and keeps refining itself the longer you compare.
 - preview and export the current list as plain text, YAML, or JSON
 - optionally keep the working state locally in the browser, so a reload
   doesn't lose your progress
+- save the whole session - document, setup and every decision - to one file,
+  and open it anywhere to carry on where you left off
 
 ## Getting started
 

@@ -12,7 +12,7 @@ import type { ComparisonEvent, ComparisonOutcome } from '@/types/ranking';
 export const PROGRESS_FILE_KIND = 'pairwise-list-ranker-progress';
 export const PROGRESS_FILE_VERSION = 1;
 
-const outcomeSchema = z.enum(['left', 'right', 'left_strong', 'right_strong', 'skip']);
+const outcomeSchema = z.enum(['left', 'right', 'left_strong', 'right_strong', 'skip', 'place_below', 'place_above']);
 
 const progressFileSchema = z.object({
   kind: z.literal(PROGRESS_FILE_KIND),

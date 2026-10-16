@@ -1,12 +1,8 @@
 import type { ComplexItemValue } from '@/types/list';
 
 /**
- * Rules for choosing which field of an object list titles each card. A field is
- * only auto-selected when the choice is safe; otherwise the UI must ask.
+ * Rules for choosing which field of an object list titles each card.
  */
-
-/** Field names that are safe to preselect, best first. */
-export const PREFERRED_LABEL_FIELDS = ['title', 'name', 'label'] as const;
 
 const MAX_SAMPLES = 3;
 
@@ -82,19 +78,12 @@ export function collectLabelFieldCandidates(values: ComplexItemValue[]): LabelFi
 }
 
 /**
- * The safe default, or undefined when the user must decide. Only text fields
- * that every item carries are ever chosen automatically.
+ * The default title: the first field, in document order, that can be one.
+ * Always picked, so the card is complete from the start and changing the
+ * title is one tap rather than a question blocking the way.
  */
 export function preferredLabelField(candidates: LabelFieldCandidate[]): string | undefined {
-  const fullTextFields = candidates.filter(
-    (candidate) => candidate.coverage === 1 && candidate.types.every((type) => type === 'string'),
-  );
-
-  for (const preferred of PREFERRED_LABEL_FIELDS) {
-    if (fullTextFields.some((candidate) => candidate.field === preferred)) return preferred;
-  }
-
-  return fullTextFields.length === 1 ? fullTextFields[0]?.field : undefined;
+  return candidates.find((candidate) => candidate.coverage > 0)?.field;
 }
 
 /** Whether a chosen field still labels at least one item. */

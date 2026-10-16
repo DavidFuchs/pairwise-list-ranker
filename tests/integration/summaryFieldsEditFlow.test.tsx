@@ -46,12 +46,8 @@ describe('re-ordering card details while editing data', () => {
     const user = userEvent.setup();
     render(<DataScreen />);
 
-    for (const field of ['artist', 'album', 'year']) {
-      await user.click(screen.getByRole('button', { name: `Show ${field} on cards` }));
-    }
-    for (const field of ['year', 'artist', 'album']) {
-      await user.click(screen.getByRole('button', { name: `Show ${field} on cards` }));
-    }
+    await user.click(screen.getByRole('button', { name: 'Move year up' }));
+    await user.click(screen.getByRole('button', { name: 'Move year up' }));
     await user.click(screen.getByRole('button', { name: /apply edits/i }));
     await user.click(screen.getByRole('button', { name: /apply edits/i }));
 

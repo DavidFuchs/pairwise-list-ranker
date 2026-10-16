@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import type { ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { stopPreview, togglePreview, useIsPlaying, usePreviewUrl } from '@/lib/preview/applePreview';
 import { colors, fonts, radius, space } from '@/lib/theme';
@@ -11,13 +12,15 @@ export interface PreviewButtonProps {
   label: string;
   /** A round icon for dense rows; the card gets a labelled button. */
   compact?: boolean;
+  /** Drawn while no preview is known - still looking, or there is none. */
+  placeholder?: ReactNode;
 }
 
 /**
  * A play button for a 30-second Apple Music preview. It draws nothing until a
  * preview is known to exist, so an item with no preview simply has no button.
  */
-export function PreviewButton({ value, label, compact = false }: PreviewButtonProps) {
+export function PreviewButton({ value, label, compact = false, placeholder = null }: PreviewButtonProps) {
   const id = typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
   const url = usePreviewUrl(id === '' ? undefined : id);
   const playing = useIsPlaying(id);
@@ -25,7 +28,7 @@ export function PreviewButton({ value, label, compact = false }: PreviewButtonPr
   // A card that is replaced or scrolled away must not keep playing.
   useEffect(() => () => stopPreview(id), [id]);
 
-  if (typeof url !== 'string') return null;
+  if (typeof url !== 'string') return <>{placeholder}</>;
 
   return (
     <Pressable
@@ -42,6 +45,18 @@ export function PreviewButton({ value, label, compact = false }: PreviewButtonPr
       <Text style={[styles.glyph, playing && styles.glyphActive]}>{playing ? '■' : '▶'}</Text>
       {!compact && <Text style={[styles.text, playing && styles.glyphActive]}>{playing ? 'Stop' : 'Preview'}</Text>}
     </Pressable>
+  );
+}
+
+/**
+ * The compact button's look with nothing behind it: what a play button will
+ * be, shown while no preview is known.
+ */
+export function PreviewButtonPlaceholder() {
+  return (
+    <View style={[styles.button, styles.compact]} aria-hidden>
+      <Text style={styles.glyph}>▶</Text>
+    </View>
   );
 }
 

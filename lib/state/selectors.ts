@@ -1,6 +1,7 @@
 import { buildExport } from "@/lib/export/buildExport";
 import { entriesAtPath, formatPath } from "@/lib/import/arrayCandidates";
 import { resolveRoles } from "@/lib/import/roles";
+import { rendererNote } from "@/lib/renderers";
 import { selectNextPair } from "@/lib/ranking/pairSelection";
 import { rankItems, replayComparisons } from "@/lib/ranking/rebuildRanking";
 import type { RankingStates } from "@/lib/ranking/rebuildRanking";
@@ -125,7 +126,10 @@ export function describeRoles(
   if (roles.summaryFields !== undefined && roles.summaryFields.length > 0)
     parts.push(
       `showing ${roles.summaryFields
-        .map((field) => (roles.fieldRenderers?.[field] === "apple-music-preview" ? `${field} (preview)` : field))
+        .map((field) => {
+          const renderer = roles.fieldRenderers?.[field];
+          return renderer === undefined ? field : `${field} (${rendererNote(renderer)})`;
+        })
         .join(", ")}`,
     );
   if (roles.positionField !== undefined)

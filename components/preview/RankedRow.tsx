@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { FieldImage } from '@/components/preview/FieldImage';
 import { PreviewButton } from '@/components/preview/PreviewButton';
 import { useFlipAnimation } from '@/lib/hooks/useFlipAnimation';
 import { colors, fonts, radius, space } from '@/lib/theme';
 
 /** Rows are one fixed height so a long list can be windowed without measuring. */
 export const ROW_HEIGHT = 56;
+
+const THUMB_SIZE = 40;
 
 export interface RankedRowProps {
   id: string;
@@ -15,6 +18,9 @@ export interface RankedRowProps {
   meta: string | null;
   /** The raw value of the preview field, when one is chosen. */
   previewValue?: unknown;
+  /** True when a field is drawn as an image: every row then keeps a frame for one. */
+  showImage?: boolean;
+  imageValue?: unknown;
   rating: number;
   /** True while this row is the one being dragged. */
   dragging: boolean;
@@ -31,6 +37,8 @@ export function RankedRow({
   label,
   meta,
   previewValue,
+  showImage = false,
+  imageValue,
   rating,
   dragging,
   insertBefore = false,
@@ -79,6 +87,8 @@ export function RankedRow({
       <View style={styles.position}>
         <Text style={styles.positionText}>{String(rank)}</Text>
       </View>
+
+      {showImage && <FieldImage value={imageValue} size={THUMB_SIZE} label={label} />}
 
       <View style={styles.body}>
         <Text style={styles.label} numberOfLines={1}>
@@ -146,7 +156,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textSecondary,
   },
-  body: { flex: 1, gap: 1 },
+  body: { flex: 1, minWidth: 0, gap: 1 },
   label: {
     fontFamily: fonts.body,
     fontSize: 15,

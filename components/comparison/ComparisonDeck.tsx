@@ -10,6 +10,7 @@ import { colors, fonts, radius, space, typeScale } from "@/lib/theme";
 import { isComplexItemValue } from "@/types/list";
 import type { ListItem } from "@/types/list";
 import type { ComparisonOutcome } from "@/types/ranking";
+import type { FieldRenderer } from "@/types/source";
 
 export interface DeckProgress {
   activeItems: number;
@@ -24,7 +25,10 @@ export interface ComparisonDeckProps {
   progress: DeckProgress;
   sortField?: string;
   summaryFields?: string[];
+  renderers?: Record<string, FieldRenderer>;
   previewField?: string;
+  pictureField?: string;
+  pictureRenderer?: FieldRenderer;
   onOutcome: (outcome: ComparisonOutcome) => void;
   onDelete: (itemId: string) => void;
   /** Present only while there is something to take back. */
@@ -54,7 +58,10 @@ export function ComparisonDeck({
   progress,
   sortField,
   summaryFields,
+  renderers,
   previewField,
+  pictureField,
+  pictureRenderer,
   onOutcome,
   onDelete,
   onUndo,
@@ -168,7 +175,10 @@ export function ComparisonDeck({
           side="left"
           sortField={sortField}
           summaryFields={summaryFields}
+          renderers={renderers}
           previewField={previewField}
+          pictureField={pictureField}
+          pictureRenderer={pictureRenderer}
           expanded={showDetails}
           pendingDelete={armed === "left"}
           onChoose={() => choose("left")}
@@ -188,7 +198,10 @@ export function ComparisonDeck({
           side="right"
           sortField={sortField}
           summaryFields={summaryFields}
+          renderers={renderers}
           previewField={previewField}
+          pictureField={pictureField}
+          pictureRenderer={pictureRenderer}
           expanded={showDetails}
           pendingDelete={armed === "right"}
           onChoose={() => choose("right")}

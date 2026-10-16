@@ -4,21 +4,25 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { RankedRow, ROW_HEIGHT } from '@/components/preview/RankedRow';
 import { gapMovesRow, insertIndexForUniform, moveItem, targetIndexForGap } from '@/lib/ranking/reorder';
 import { selectItemLabel } from '@/lib/state/selectors';
-import { summaryEntries } from '@/lib/state/summary';
+import { formatValue, pictureUrl } from '@/lib/renderers';
 import { colors, fonts, space } from '@/lib/theme';
 import { isComplexItemValue } from '@/types/list';
 import type { ListItem } from '@/types/list';
 import type { RankedItem } from '@/types/ranking';
+import type { FieldRenderer } from '@/types/source';
 
 export interface RankedListPreviewProps {
   ranking: RankedItem<ListItem>[];
   sortField?: string;
   summaryFields?: string[];
+  /** How each of summaryFields reads; a field absent here is plain text. */
+  renderers?: Record<string, FieldRenderer>;
   previewField?: string;
+  /** The field pictured at the start of every row: an image, or a video's thumbnail. */
+  pictureField?: string;
+  pictureRenderer?: FieldRenderer;
   onReorder: (itemId: string, nextOrder: string[]) => void;
 }
-
-const MAX_META_FIELDS = 2;
 
 /** Short lists render whole: windowing buys nothing and costs a layout pass. */
 const VIRTUALIZE_ABOVE = 60;
@@ -30,11 +34,20 @@ const ROW_PITCH = ROW_HEIGHT + space.xs;
 
 
 /**
- * The ranking, and the one place it can be arranged by hand. A manual move
- * compares the item against its new neighbours, the same as picking it in a
- * side-by-side round, so it applies immediately - nothing is discarded.
+ * The ranking, and the one place it can be arranged by hand. A manual move is
+ * recorded as a placement in the comparison history: the item lands exactly
+ * where it was dropped, nothing else moves, and nothing is discarded.
  */
-export function RankedListPreview({ ranking, sortField, summaryFields, previewField, onReorder }: RankedListPreviewProps) {
+export function RankedListPreview({
+  ranking,
+  sortField,
+  summaryFields,
+  renderers,
+  previewField,
+  pictureField,
+  pictureRenderer,
+  onReorder,
+}: RankedListPreviewProps) {
   const orderedIds = useMemo(() => ranking.map((entry) => entry.item.id), [ranking]);
   /**
    * Nothing moves until the drop. The rows hold still and a line shows where
@@ -186,8 +199,10 @@ export function RankedListPreview({ ranking, sortField, summaryFields, previewFi
               id={id}
               rank={index + 1}
               label={selectItemLabel(entry.item, sortField)}
-              meta={metaFor(entry.item, sortField, summaryFields, previewField !== undefined)}
-              previewValue={previewValueOf(entry.item, previewField)}
+              meta={metaFor(entry.item, summaryFields, renderers)}
+              previewValue={fieldValue(entry.item, previewField)}
+              showImage={pictureField !== undefined}
+              imageValue={pictureUrl(fieldValue(entry.item, pictureField), pictureRenderer)}
               rating={entry.state.rating}
               dragging={dragging?.id === id}
               insertBefore={insertionGap === index}
@@ -203,36 +218,28 @@ export function RankedListPreview({ ranking, sortField, summaryFields, previewFi
   );
 }
 
+/**
+ * The ticked fields as one line, each read the way its renderer draws it on
+ * the cards - a row is a single line of text, so stars become `★ 9.2/10`.
+ */
 function metaFor(
   item: ListItem,
-  sortField: string | undefined,
   summaryFields: string[] | undefined,
-  hasPreviewField: boolean,
+  renderers: Record<string, FieldRenderer> | undefined,
 ): string | null {
-  if (!isComplexItemValue(item.value)) return null;
-
-  // Chosen fields read the same here as on the comparison cards.
-  if (hasPreviewField && (summaryFields === undefined || summaryFields.length === 0)) return null;
-  if (summaryFields !== undefined && summaryFields.length > 0) {
-    return summaryEntries(item, summaryFields)
-      .map(([key, value]) => `${key}: ${value}`)
-      .join('  ·  ');
-  }
-
-  const parts = Object.entries(item.value)
-    .filter(([key, value]) => key !== sortField && isScalar(value))
-    .slice(0, MAX_META_FIELDS)
-    .map(([key, value]) => `${key}: ${String(value)}`);
-
+  if (summaryFields === undefined || summaryFields.length === 0) return null;
+  const parts = summaryFields.flatMap((field) => {
+    const renderer = renderers?.[field];
+    const text = formatValue(fieldValue(item, field), renderer, field);
+    if (text === null) return [];
+    // A badge is its own name; anything else is named before its value.
+    return [renderer === 'badge' ? text : `${field}: ${text}`];
+  });
   return parts.length === 0 ? null : parts.join('  ·  ');
 }
 
-function previewValueOf(item: ListItem, field: string | undefined): unknown {
+function fieldValue(item: ListItem, field: string | undefined): unknown {
   return field !== undefined && isComplexItemValue(item.value) ? item.value[field] : undefined;
-}
-
-function isScalar(value: unknown): boolean {
-  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }
 
 const styles = StyleSheet.create({

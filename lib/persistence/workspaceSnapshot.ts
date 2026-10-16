@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent } from '@/types/ranking';
+import { FIELD_RENDERERS } from '@/types/source';
 import type { PreviewTab, SavedList, Workspace } from '@/types/source';
 
 /** Bump when the persisted shape changes so stale snapshots are dropped. */
@@ -42,7 +43,7 @@ const rolesSchema = z.object({
   labelField: z.string().optional(),
   positionField: z.string().optional(),
   summaryFields: z.array(z.string()).optional(),
-  fieldRenderers: z.record(z.string(), z.enum(['apple-music-preview'])).optional(),
+  fieldRenderers: z.record(z.string(), z.enum(FIELD_RENDERERS)).optional(),
 });
 
 /**
@@ -84,7 +85,7 @@ const comparisonEventSchema = z.object({
   listId: z.string().min(1),
   leftItemId: z.string().min(1),
   rightItemId: z.string().min(1),
-  outcome: z.enum(['left', 'right', 'left_strong', 'right_strong', 'skip']),
+  outcome: z.enum(['left', 'right', 'left_strong', 'right_strong', 'skip', 'place_below', 'place_above']),
   createdAt: z.string(),
 });
 

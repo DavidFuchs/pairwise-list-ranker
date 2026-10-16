@@ -122,6 +122,10 @@ export interface ListState {
   undo(): void;
   /** Replaces this list's comparisons, and adds the removals, from a saved progress file. */
   loadProgress(file: ProgressFile): ProgressLoadResult;
+  /** The whole session as it stands, for a session file; null with nothing loaded. */
+  snapshot(): WorkspaceSnapshot | null;
+  /** Replaces everything with a saved session, ready to carry on ranking. */
+  loadSession(session: WorkspaceSnapshot): void;
   /** Writes any save still waiting on the delay. */
   flush(): void;
   markResumed(): void;
@@ -169,14 +173,11 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       }
     }
 
-    function writeSnapshot(): void {
+    /** Everything worth keeping, as the browser save and a session file both hold it. */
+    function buildSnapshot(): WorkspaceSnapshot | null {
       const { workspace, items, comparisonEvents, savedLists, previewTab } = get();
-      if (workspace === null) {
-        storage.clear();
-        return;
-      }
-
-      const snapshot: WorkspaceSnapshot = {
+      if (workspace === null) return null;
+      return {
         version: WORKSPACE_VERSION,
         workspace,
         items,
@@ -184,6 +185,14 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         savedLists,
         ui: { previewTab },
       };
+    }
+
+    function writeSnapshot(): void {
+      const snapshot = buildSnapshot();
+      if (snapshot === null) {
+        storage.clear();
+        return;
+      }
 
       const outcome = storage.save(snapshot);
       set({ saveOutcome: outcome, ...(outcome === 'saved' ? { lastSavedAt: now() } : {}) });
@@ -462,14 +471,15 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         const aboveId = index > 0 ? nextOrder[index - 1] : undefined;
         const belowId = index < nextOrder.length - 1 ? nextOrder[index + 1] : undefined;
 
+        // One placement, anchored to the item now directly above - or, at the
+        // top, directly below. Comparisons against the new neighbours would
+        // move them too, and a single nudge rarely carries the item all the
+        // way to where it was dropped.
         const events: ComparisonEvent[] = [];
-        // The neighbour now above ranks better, so it wins; the one now below
-        // ranks worse, so the moved item wins that pair.
         if (aboveId !== undefined && isActive(aboveId)) {
-          events.push(makeComparisonEvent(workspace.id, itemId, aboveId, 'right'));
-        }
-        if (belowId !== undefined && isActive(belowId)) {
-          events.push(makeComparisonEvent(workspace.id, itemId, belowId, 'left'));
+          events.push(makeComparisonEvent(workspace.id, itemId, aboveId, 'place_below'));
+        } else if (belowId !== undefined && isActive(belowId)) {
+          events.push(makeComparisonEvent(workspace.id, itemId, belowId, 'place_above'));
         }
         if (events.length === 0) return;
 
@@ -565,6 +575,29 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           removed: applied.removedIds.length,
           unmatchedRemoved: applied.unmatchedRemoved,
         };
+      },
+
+      snapshot() {
+        return buildSnapshot();
+      },
+
+      loadSession(session: WorkspaceSnapshot) {
+        cancelPendingSave();
+        set({
+          workspace: session.workspace,
+          items: session.items,
+          comparisonEvents: session.comparisonEvents,
+          savedLists: session.savedLists,
+          previewTab: session.ui.previewTab,
+          // History from before belongs to the list being replaced.
+          undoStack: [],
+          pendingSwitchPath: null,
+          // Loaded on purpose, so neither a later hydrate nor the data
+          // screen's resume should second-guess it.
+          hydrated: true,
+          resumed: true,
+        });
+        persist();
       },
 
       flush() {

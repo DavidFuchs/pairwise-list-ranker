@@ -1,6 +1,19 @@
 /** Pairwise comparison and rating shapes. See ARCHITECTURE.md sections 5.1 and 6. */
 
-export type ComparisonOutcome = 'left' | 'right' | 'left_strong' | 'right_strong' | 'skip';
+/**
+ * A choice between two items, or a placement from the ranked list: the left
+ * item moved by hand to sit directly below (or, at the very top, directly
+ * above) the right one. A placement is a statement about position, not a
+ * contest, so it moves only the item that was moved.
+ */
+export type ComparisonOutcome =
+  | 'left'
+  | 'right'
+  | 'left_strong'
+  | 'right_strong'
+  | 'skip'
+  | 'place_below'
+  | 'place_above';
 
 export interface RankingState {
   itemId: string;

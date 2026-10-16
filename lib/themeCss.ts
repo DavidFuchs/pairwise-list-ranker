@@ -36,6 +36,9 @@ const LIGHT_TOKENS = `
   --accent-gradient-end: #7BDE1A;
   --surplus: #C98A0B;
   --surplus-strong: #E0A93A;
+  /* Star ratings. Not the surplus gold, which belongs to the meter alone. */
+  --star: #E8B100;
+  --star-empty: #D9D9D3;
   /*
    * Metal at temperature, for the much-better button on hover. The body goes
    * dark and the rim runs bright, which is both how hot metal actually reads
@@ -86,6 +89,8 @@ const DARK_TOKENS = `
   --accent-gradient-end: #8CFF3E;
   --surplus: #FFC53D;
   --surplus-strong: #FFA71A;
+  --star: #FFD23F;
+  --star-empty: #3A3D42;
   /* On black the rim can go white-hot, which is where most of the heat reads. */
   --heat-core: #297912;
   --heat-edge: #143009;

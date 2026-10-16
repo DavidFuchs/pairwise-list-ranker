@@ -20,8 +20,7 @@ describe('resolveRoles summaryFields', () => {
     expect(resolveRoles(entries, { labelField: 'title', summaryFields: [] }).summaryFields).toEqual([]);
   });
 
-  it('suggests short fields every item carries when nothing was chosen', () => {
-    // genre is missing from one item, so only year qualifies.
-    expect(resolveRoles(entries, { labelField: 'title' }).summaryFields).toEqual(['year']);
+  it('chooses no fields for the user when nothing was chosen', () => {
+    expect(resolveRoles(entries, { labelField: 'title' }).summaryFields).toBeUndefined();
   });
 });

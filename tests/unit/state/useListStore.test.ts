@@ -390,25 +390,33 @@ describe('reorderItem', () => {
     );
   }
 
-  it('adds a comparison against each new neighbour', () => {
+  it('records one placement under the item now above it', () => {
     const [alien, arrival, aliens] = [idFor('Alien'), idFor('Arrival'), idFor('Aliens')];
 
     store.getState().reorderItem(aliens, [alien, aliens, arrival]);
 
     expect(store.getState().comparisonEvents).toEqual([
-      expect.objectContaining({ leftItemId: aliens, rightItemId: alien, outcome: 'right' }),
-      expect.objectContaining({ leftItemId: aliens, rightItemId: arrival, outcome: 'left' }),
+      expect.objectContaining({ leftItemId: aliens, rightItemId: alien, outcome: 'place_below' }),
     ]);
   });
 
-  it('adds only one comparison when dropped at an edge', () => {
+  it('anchors to the item below when dropped at the top', () => {
     const [alien, arrival, aliens] = [idFor('Alien'), idFor('Arrival'), idFor('Aliens')];
 
-    store.getState().reorderItem(alien, [arrival, aliens, alien]);
+    store.getState().reorderItem(aliens, [aliens, alien, arrival]);
 
     expect(store.getState().comparisonEvents).toEqual([
-      expect.objectContaining({ leftItemId: alien, rightItemId: aliens, outcome: 'right' }),
+      expect.objectContaining({ leftItemId: aliens, rightItemId: alien, outcome: 'place_above' }),
     ]);
+  });
+
+  it('can be undone', () => {
+    const [alien, arrival, aliens] = [idFor('Alien'), idFor('Arrival'), idFor('Aliens')];
+
+    store.getState().reorderItem(aliens, [aliens, alien, arrival]);
+    store.getState().undo();
+
+    expect(store.getState().comparisonEvents).toEqual([]);
   });
 
   it('keeps existing comparison history rather than clearing it', () => {
@@ -417,7 +425,7 @@ describe('reorderItem', () => {
 
     store.getState().reorderItem(aliens, [alien, aliens, arrival]);
 
-    expect(store.getState().comparisonEvents).toHaveLength(3);
+    expect(store.getState().comparisonEvents).toHaveLength(2);
     expect(store.getState().comparisonEvents[0]).toEqual(
       expect.objectContaining({ leftItemId: alien, rightItemId: arrival, outcome: 'left' }),
     );
@@ -436,7 +444,7 @@ describe('reorderItem', () => {
     expect(store.getState().workspace?.source.document).toEqual(triple.document);
   });
 
-  it('nudges the derived ranking toward the dropped position', () => {
+  it('puts the item in the derived ranking exactly where it was dropped', () => {
     const [alien, arrival, aliens] = [idFor('Alien'), idFor('Arrival'), idFor('Aliens')];
 
     store.getState().reorderItem(aliens, [alien, aliens, arrival]);

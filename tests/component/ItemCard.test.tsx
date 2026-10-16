@@ -41,7 +41,7 @@ describe('ItemCard', () => {
     expect(screen.queryByText(/year/)).toBeNull();
   });
 
-  it('summarises a few secondary fields without expanding', () => {
+  it('shows only the title until fields are chosen', () => {
     render(
       <ItemCard
         item={item({ title: 'Arrival', year: 2016, director: 'Denis Villeneuve' })}
@@ -50,8 +50,8 @@ describe('ItemCard', () => {
       />,
     );
 
-    expect(screen.getByText(/2016/)).toBeDefined();
-    expect(screen.getByText(/Denis Villeneuve/)).toBeDefined();
+    expect(screen.queryByText(/2016/)).toBeNull();
+    expect(screen.queryByText(/Denis Villeneuve/)).toBeNull();
   });
 
   it('keeps the full object hidden until details are opened', () => {
@@ -213,16 +213,99 @@ describe('choosing by pressing the card', () => {
 describe('summary chips and details', () => {
   const film = { title: 'Arrival', year: 2016, director: 'Denis Villeneuve' };
 
-  it('summarises fields as chips while details are closed', () => {
-    render(<ItemCard item={item(film)} side="left" sortField="title" />);
+  it('shows chosen fields as chips while details are closed', () => {
+    render(<ItemCard item={item(film)} side="left" sortField="title" summaryFields={['year']} />);
 
     expect(screen.getByText('year: 2016')).toBeDefined();
   });
 
-  it('drops the chips once details show the same fields in full', () => {
-    render(<ItemCard item={item(film)} side="left" sortField="title" expanded />);
+  it('draws a link field as a link that opens in a new tab', () => {
+    render(
+      <ItemCard
+        item={item({ ...film, site: 'https://example.com/arrival' })}
+        side="left"
+        sortField="title"
+        summaryFields={['site']}
+        renderers={{ site: 'link' }}
+      />,
+    );
 
-    expect(screen.queryByText('year: 2016')).toBeNull();
-    expect(screen.getByText('2016')).toBeDefined();
+    const link = screen.getByRole('link');
+    expect(link.getAttribute('href')).toBe('https://example.com/arrival');
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.textContent).toBe('example.com/arrival');
+  });
+
+  it('does not choose the card when its link is clicked', async () => {
+    const onChoose = vi.fn();
+    render(
+      <ItemCard
+        item={item({ ...film, site: 'https://example.com/arrival' })}
+        side="left"
+        sortField="title"
+        summaryFields={['site']}
+        renderers={{ site: 'link' }}
+        onChoose={onChoose}
+      />,
+    );
+
+    // A real anchor would navigate; jsdom only reports it.
+    const link = screen.getByRole('link');
+    link.addEventListener('click', (event) => event.preventDefault());
+    await userEvent.setup().click(link);
+    expect(onChoose).not.toHaveBeenCalled();
+  });
+
+  it('pictures an image field beside the title', () => {
+    render(
+      <ItemCard
+        item={item({ ...film, poster: 'https://example.com/arrival.jpg' })}
+        side="left"
+        sortField="title"
+        pictureField="poster"
+        pictureRenderer="image"
+      />,
+    );
+
+    expect(screen.getByRole('img', { name: 'Arrival' })).toBeDefined();
+  });
+
+  it('draws a rating as stars against its scale', () => {
+    render(
+      <ItemCard
+        item={item({ ...film, score: 9.2 })}
+        side="left"
+        sortField="title"
+        summaryFields={['score']}
+        renderers={{ score: 'stars-10' }}
+      />,
+    );
+    expect(screen.getByRole('img', { name: '9.2/10' })).toBeDefined();
+  });
+
+  it('leaves out a false badge and names a true one', () => {
+    const { rerender } = render(
+      <ItemCard item={item({ ...film, explicit: false })} side="left" sortField="title" summaryFields={['explicit']} renderers={{ explicit: 'badge' }} />,
+    );
+    expect(screen.queryByText(/explicit/)).toBeNull();
+    rerender(
+      <ItemCard item={item({ ...film, explicit: true })} side="left" sortField="title" summaryFields={['explicit']} renderers={{ explicit: 'badge' }} />,
+    );
+    expect(screen.getByText('explicit')).toBeDefined();
+  });
+
+  it('pictures a YouTube video by its thumbnail, opening the video', () => {
+    render(
+      <ItemCard
+        item={item({ ...film, trailer: 'https://youtu.be/dQw4w9WgXcQ' })}
+        side="left"
+        sortField="title"
+        pictureField="trailer"
+        pictureRenderer="youtube"
+      />,
+    );
+    expect(screen.getByRole('link', { name: 'Watch Arrival on YouTube' }).getAttribute('href')).toBe(
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    );
   });
 });

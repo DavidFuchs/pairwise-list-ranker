@@ -72,44 +72,26 @@ describe('collectLabelFieldCandidates', () => {
 });
 
 describe('preferredLabelField', () => {
-  it('preselects a well-known label field', () => {
-    expect(preferredLabelField(collectLabelFieldCandidates(films))).toBe('title');
-  });
-
-  it('prefers title over name when both exist', () => {
+  it('picks the first field', () => {
     const both = [{ name: 'a', title: 'b' }, { name: 'c', title: 'd' }];
 
-    expect(preferredLabelField(collectLabelFieldCandidates(both))).toBe('title');
+    expect(preferredLabelField(collectLabelFieldCandidates(both))).toBe('name');
   });
 
-  it('ignores a well-known field that only some items have', () => {
-    const patchy = [{ title: 'Arrival', ref: 'a' }, { ref: 'b' }];
-
-    expect(preferredLabelField(collectLabelFieldCandidates(patchy))).toBe('ref');
-  });
-
-  it('ignores a well-known field that is not text', () => {
-    const numeric = [{ name: 1, code: 'a' }, { name: 2, code: 'b' }];
-
-    expect(preferredLabelField(collectLabelFieldCandidates(numeric))).toBe('code');
-  });
-
-  it('falls back to the only text field that every item has', () => {
-    const single = [{ code: 'a', year: 2016 }, { code: 'b', year: 1979 }];
-
-    expect(preferredLabelField(collectLabelFieldCandidates(single))).toBe('code');
-  });
-
-  it('asks the user to choose when several text fields compete', () => {
-    const ambiguous = [{ alpha: 'a', beta: 'b' }, { alpha: 'c', beta: 'd' }];
-
-    expect(preferredLabelField(collectLabelFieldCandidates(ambiguous))).toBeUndefined();
-  });
-
-  it('asks the user to choose when only numbers are available', () => {
+  it('picks the first field even when it is a number', () => {
     const numeric = [{ year: 2016, rank: 1 }, { year: 1979, rank: 2 }];
 
-    expect(preferredLabelField(collectLabelFieldCandidates(numeric))).toBeUndefined();
+    expect(preferredLabelField(collectLabelFieldCandidates(numeric))).toBe('year');
+  });
+
+  it('skips fields that cannot be a title', () => {
+    const nested = [{ cast: ['Adams'], title: 'Arrival' }, { cast: ['Weaver'], title: 'Alien' }];
+
+    expect(preferredLabelField(collectLabelFieldCandidates(nested))).toBe('title');
+  });
+
+  it('has nothing to pick without a scalar field', () => {
+    expect(preferredLabelField(collectLabelFieldCandidates([{ cast: ['Adams'] }]))).toBeUndefined();
   });
 });
 

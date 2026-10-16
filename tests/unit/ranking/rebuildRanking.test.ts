@@ -281,3 +281,74 @@ describe('the order items arrived in', () => {
     expect(rebuildRanking(items, events)[0]?.item.value).toBe('Ramen');
   });
 });
+
+describe('placements from the ranked list', () => {
+  const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  const eight = () => letters.map((id) => item(id));
+
+  it('puts an item exactly where it was dropped, however far it moved', () => {
+    // h, last of eight untouched items, placed directly above a.
+    const ranked = rebuildRanking(eight(), [event('h', 'a', 'place_above', 1)]);
+    expect(ids(ranked)).toEqual(['h', 'a', 'b', 'c', 'd', 'e', 'f', 'g']);
+  });
+
+  it('moves nothing but the item that was moved', () => {
+    const ranked = rebuildRanking(eight(), [event('a', 'f', 'place_below', 1)]);
+    expect(ids(ranked)).toEqual(['b', 'c', 'd', 'e', 'f', 'a', 'g', 'h']);
+  });
+
+  it('places between neighbours with different ratings, after real comparisons', () => {
+    const history = [
+      event('a', 'b', 'left', 1),
+      event('b', 'c', 'left', 2),
+      event('c', 'd', 'left', 3),
+      event('a', 'c', 'left', 4),
+    ];
+    const before = ids(rebuildRanking(eight(), history));
+    const moved = before[before.length - 1]!;
+    const anchor = before[1]!;
+
+    const after = ids(rebuildRanking(eight(), [...history, event(moved, anchor, 'place_below', 5)]));
+
+    const expected = before.filter((id) => id !== moved);
+    expected.splice(2, 0, moved);
+    expect(after).toEqual(expected);
+  });
+
+  it('keeps the ratings of a tied group within a fraction of a point', () => {
+    const states = replayComparisons(eight(), [event('h', 'c', 'place_below', 1)]);
+    for (const state of states.values()) {
+      expect(Math.abs(state.rating - INITIAL_RATING)).toBeLessThanOrEqual(0.25);
+    }
+  });
+
+  it('places at the bottom', () => {
+    const ranked = rebuildRanking(eight(), [event('a', 'h', 'place_below', 1)]);
+    expect(ids(ranked)).toEqual(['b', 'c', 'd', 'e', 'f', 'g', 'h', 'a']);
+  });
+
+  it('lets later comparisons move a placed item again', () => {
+    const ranked = rebuildRanking(eight(), [
+      event('h', 'a', 'place_above', 1),
+      event('b', 'h', 'left_strong', 2),
+      event('c', 'h', 'left_strong', 3),
+    ]);
+    expect(ids(ranked)[0]).not.toBe('h');
+  });
+
+  it('survives a run of placements, each landing where it was put', () => {
+    const ranked = rebuildRanking(eight(), [
+      event('h', 'a', 'place_above', 1),
+      event('h', 'e', 'place_below', 2),
+      event('c', 'f', 'place_below', 3),
+      event('g', 'b', 'place_below', 4),
+    ]);
+    // a b c d e f g h -> h a .. -> a b c d e h f g -> a b d e h f c g -> a b g d e h f c
+    expect(ids(ranked)).toEqual(['a', 'b', 'g', 'd', 'e', 'h', 'f', 'c']);
+  });
+
+  it('ignores a placement anchored to an item the list no longer has', () => {
+    const ranked = rebuildRanking(eight(), [event('h', 'zz', 'place_below', 1)]);
+    expect(ids(ranked)).toEqual(letters);
+  });
+});

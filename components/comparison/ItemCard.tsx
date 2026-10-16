@@ -2,20 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ObjectDrilldown } from '@/components/comparison/ObjectDrilldown';
+import { FieldPicture } from '@/components/preview/FieldPicture';
+import { FieldValue } from '@/components/preview/FieldValue';
 import { PreviewButton } from '@/components/preview/PreviewButton';
 import { StrongChoiceButton } from '@/components/comparison/StrongChoiceButton';
 import { TrashIcon } from '@/components/ui/TrashIcon';
 import { useReducedMotion } from '@/lib/hooks/useReducedMotion';
 import { selectItemLabel } from '@/lib/state/selectors';
-import { summaryEntries, summaryText } from '@/lib/state/summary';
+import { formatValue } from '@/lib/renderers';
 import { colors, fonts, motion, radius, space, typeScale } from '@/lib/theme';
 import { isComplexItemValue } from '@/types/list';
 import type { ListItem } from '@/types/list';
+import type { FieldRenderer } from '@/types/source';
 
-/** Values longer than this belong in the details panel, not in a summary chip. */
-const CHIP_MAX_LENGTH = 20;
-
-const MAX_CHIPS = 3;
+/** The picture beside the title, when a field is drawn as an image. */
+const IMAGE_SIZE = 112;
 
 export interface ItemCardProps {
   item: ListItem;
@@ -23,8 +24,13 @@ export interface ItemCardProps {
   sortField?: string;
   /** Fields every card shows as chips, in order, whether or not the item has them. */
   summaryFields?: string[];
+  /** How each of summaryFields is drawn; a field absent here is plain text. */
+  renderers?: Record<string, FieldRenderer>;
   /** The field holding an Apple Music id, drawn as a play button instead of text. */
   previewField?: string;
+  /** The field pictured beside the title, and whether it is an image or a video. */
+  pictureField?: string;
+  pictureRenderer?: FieldRenderer;
   /**
    * Details are shown or hidden for the pair, not per card: comparing one
    * item's details against the other's summary is not a comparison anyone
@@ -49,7 +55,10 @@ export function ItemCard({
   side,
   sortField,
   summaryFields,
+  renderers,
   previewField,
+  pictureField,
+  pictureRenderer,
   expanded = false,
   onChoose,
   onChooseStrong,
@@ -99,15 +108,11 @@ export function ItemCard({
   const label = selectItemLabel(item, sortField);
   const fields = isComplexItemValue(item.value) ? Object.entries(item.value) : [];
   const detailFields = fields.filter(([key]) => key !== sortField);
-  const chosen = (summaryFields !== undefined && summaryFields.length > 0) || previewField !== undefined;
-  // Chosen fields are guaranteed, so both cards of a pair show the same keys
-  // and an item without one says so instead of silently dropping it.
-  const chips: [string, string][] = chosen
-    ? summaryEntries(item, summaryFields ?? [])
-    : detailFields
-        .filter(([, value]) => isChipValue(value))
-        .slice(0, MAX_CHIPS)
-        .map(([key, value]) => [key, summaryText(value)]);
+  const raw = (field: string) => (isComplexItemValue(item.value) ? item.value[field] : undefined);
+  // Only the fields the user ticked, and every one of them, so both cards of a
+  // pair show the same keys and an item without one says so instead of
+  // silently dropping it. A false badge is the one line meant to say nothing.
+  const chips = (summaryFields ?? []).filter((field) => formatValue(raw(field), renderers?.[field], field) !== null);
   const interactive = onChoose !== undefined;
   const canChoose = interactive && !pendingDelete;
 
@@ -133,48 +138,44 @@ export function ItemCard({
         The title leads the card. Which side it is on is self-evident from
         where it sits, so nothing precedes it.
       */}
-      <View style={styles.topRow}>
-        <Text style={styles.title} numberOfLines={4}>
-          {label}
-        </Text>
-
-        {interactive && !pendingDelete && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Delete ${label}`}
-            onPress={(event) => {
-              event.stopPropagation();
-              onRequestDelete?.();
-            }}
-            ref={removeRef}
-            dataSet={{ remove: 'card' }}
-            style={styles.removeButton}
-          >
-            <TrashIcon />
-          </Pressable>
-        )}
-      </View>
-
-      {/*
-        Auto-picked chips are a summary of the details, so they step aside for
-        them. Chosen fields stay: they are the part the user asked to always see.
-      */}
-      {(chosen || !expanded) && chips.length > 0 && (
-        <View style={[styles.chipRow, chosen && styles.chipColumn]}>
-          {chips.map(([key, value]) => (
-            <View key={key} style={styles.chip}>
-              <Text style={styles.chipText}>{`${key}: ${value}`}</Text>
-            </View>
-          ))}
+      {canChoose && (
+        <View style={styles.hintBar}>
+          <Text style={styles.hint}>Click to choose</Text>
         </View>
       )}
 
-      {previewField !== undefined && (
-        <PreviewButton
-          value={isComplexItemValue(item.value) ? item.value[previewField] : undefined}
-          label={label}
-        />
-      )}
+      <View style={styles.headline}>
+        {pictureField !== undefined && (
+          <FieldPicture value={raw(pictureField)} renderer={pictureRenderer} size={IMAGE_SIZE} label={label} />
+        )}
+        <View style={styles.headlineBody}>
+          <View style={styles.topRow}>
+            <Text style={styles.title} numberOfLines={4}>
+              {label}
+            </Text>
+
+            {previewField !== undefined && <PreviewButton value={raw(previewField)} label={label} compact />}
+          </View>
+
+          {/* The fields the user chose stay through the details: they are the
+              part asked to always be seen. */}
+          {chips.length > 0 && (
+            <View style={styles.chipColumn}>
+              {chips.map((field) => (
+                <View key={field} style={styles.chip}>
+                  <FieldValue
+                    field={field}
+                    value={raw(field)}
+                    renderer={renderers?.[field]}
+                    withKey
+                    textStyle={styles.chipText}
+                  />
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </View>
 
       {expanded && detailFields.length > 0 && isComplexItemValue(item.value) && (
         <View style={styles.detailsBlock}>
@@ -223,9 +224,22 @@ export function ItemCard({
             </View>
           ) : (
             <View style={styles.actions}>
-              <Text style={styles.hint}>
-                Click to choose
-              </Text>
+              {/* Bottom left, away from the play button at the top and the
+                  strong choice on the right, so neither is ever a slip away
+                  from removing the item. */}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Delete ${label}`}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  onRequestDelete?.();
+                }}
+                ref={removeRef}
+                dataSet={{ remove: 'card' }}
+                style={styles.removeButton}
+              >
+                <TrashIcon />
+              </Pressable>
 
               {onChooseStrong !== undefined && (
                 <StrongChoiceButton label={label} onPress={onChooseStrong} />
@@ -245,11 +259,6 @@ export function ItemCard({
  */
 function focusNode(node: View | null): void {
   (node as unknown as HTMLElement | null)?.focus?.();
-}
-
-function isChipValue(value: unknown): boolean {
-  if (typeof value === 'number' || typeof value === 'boolean') return true;
-  return typeof value === 'string' && value.length <= CHIP_MAX_LENGTH && value.trim() !== '';
 }
 
 /**
@@ -305,10 +314,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     color: colors.textPrimary,
   },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
+  // The picture sits to the left of everything it illustrates; the footer
+  // below still spans the card.
+  headline: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
+  headlineBody: { flex: 1, minWidth: 0, gap: space.md },
   // Chosen fields each get a line, so both cards of a pair line up row for row.
-  chipColumn: { flexDirection: 'column', alignItems: 'flex-start', flexWrap: 'nowrap' },
+  chipColumn: { flexDirection: 'column', alignItems: 'flex-start', gap: space.xs },
   chip: {
+    maxWidth: '100%',
     paddingVertical: 4,
     paddingHorizontal: 9,
     borderRadius: 999,
@@ -334,9 +347,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: space.sm,
     minHeight: 40,
   },
-  hint: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint },
+  // Above everything it describes, set like the app's other small labels.
+  hintBar: {
+    alignItems: 'center',
+    paddingBottom: space.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  hint: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: colors.textFaint,
+  },
   confirm: {
     gap: space.sm,
     padding: space.sm,

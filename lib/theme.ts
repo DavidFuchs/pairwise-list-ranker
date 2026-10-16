@@ -27,6 +27,8 @@ export const colors = {
   violet: 'var(--violet)',
   surplus: 'var(--surplus)',
   surplusStrong: 'var(--surplus-strong)',
+  star: 'var(--star)',
+  starEmpty: 'var(--star-empty)',
   success: 'var(--success)',
   successText: 'var(--success-text)',
   warning: 'var(--warning)',

@@ -255,12 +255,13 @@ describe('useSourceDraft', () => {
     const { result } = renderHook(() => useSourceDraft());
     act(() => result.current.setRawText(SAME_FIELD_NAME_LISTS));
     act(() => result.current.selectPath(['list1']));
-    act(() => result.current.setRoles({ labelField: 'foo' }));
-    expect(result.current.roles.labelField).toBe('foo');
+    act(() => result.current.setRoles({ labelField: 'bar' }));
+    expect(result.current.roles.labelField).toBe('bar');
 
     act(() => result.current.selectPath(['list2']));
 
-    expect(result.current.roles.labelField).toBeUndefined();
+    // list2 gets its own default - its first field - not list1's choice.
+    expect(result.current.roles.labelField).toBe('foo');
   });
 
   it('remembers a label field choice made for a non-seeded candidate when returning to it', () => {

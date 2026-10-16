@@ -7,11 +7,12 @@ import { ListSwitcher } from "@/components/layout/ListSwitcher";
 import type { ListSwitcherOption } from "@/components/layout/ListSwitcher";
 import { PageNav } from "@/components/layout/PageNav";
 import { PreviewPane } from "@/components/preview/PreviewPane";
+import type { OpenOutcome } from "@/components/preview/SessionControls";
 import { Button } from "@/components/ui/Button";
 import { layoutSummary } from "@/lib/renderers";
 import { downloadText, pickTextFile } from "@/lib/browser/exportActions";
 import { downloadName, exportFilename, slugify } from "@/lib/export/filenames";
-import { buildProgressFile, parseProgressFile } from "@/lib/progress/progressFile";
+import { buildSessionFile, describeSession, readSavedFile } from "@/lib/session/sessionFile";
 import { findArrayCandidates } from "@/lib/import/arrayCandidates";
 import {
   describeRoles,
@@ -26,6 +27,45 @@ import {
 } from "@/lib/state/selectors";
 import { listStore, useListStore } from "@/lib/state/useListStore";
 import type { DataSource, SourceFormat } from "@/types/source";
+
+/**
+ * Opens a session file, or a progress file from before sessions existed. A
+ * session replaces everything, so with decisions on the line it asks first.
+ */
+function openSavedFile(text: string): OpenOutcome {
+  const saved = readSavedFile(text);
+  if (saved.type === "unreadable") return { message: saved.reason };
+  if (saved.type === "other") return { message: "That is not a session file from this app." };
+
+  if (saved.type === "progress") {
+    const result = listStore.getState().loadProgress(saved.file);
+    const skipped = result.unmatchedEvents + result.unmatchedRemoved;
+    return {
+      message:
+        skipped === 0
+          ? `Loaded ${result.matchedEvents} comparisons from a progress file.`
+          : `Loaded ${result.matchedEvents} comparisons from a progress file. ${skipped} did not match an item in this list (edited or removed since the save).`,
+    };
+  }
+
+  const summary = describeSession(saved.session);
+  const apply = () => {
+    listStore.getState().loadSession(saved.session);
+    return `Opened the session: ${summary}.`;
+  };
+  return hasDecisions()
+    ? {
+        confirm: `Open this session (${summary})? It replaces the list you are ranking now, and its progress is gone unless you saved it.`,
+        apply,
+      }
+    : { message: apply() };
+}
+
+/** Whether replacing what is loaded would lose any choice or placement. */
+function hasDecisions(): boolean {
+  const { comparisonEvents, savedLists } = listStore.getState();
+  return comparisonEvents.length > 0 || savedLists.some((list) => list.comparisonEvents.length > 0);
+}
 
 export default function RankScreen() {
   const router = useRouter();
@@ -43,6 +83,10 @@ export default function RankScreen() {
 
   useEffect(() => {
     listStore.getState().hydrate();
+    // Opening the site on this page is already the resume the data screen
+    // would otherwise do. Left unmarked, the first trip to Edit data would be
+    // taken for that resume and bounced straight back here.
+    listStore.getState().markResumed();
   }, []);
 
   // Landing here with nothing to rank means a stale link or a cleared browser.
@@ -180,7 +224,10 @@ export default function RankScreen() {
             progress={progress}
             sortField={workspace.roles.labelField}
             summaryFields={summary.plainFields}
+            renderers={summary.renderers}
             previewField={summary.previewField}
+            pictureField={summary.pictureField}
+            pictureRenderer={summary.pictureRenderer}
             onUndo={canUndo ? () => listStore.getState().undo() : undefined}
             stability={stability}
             onOutcome={(outcome) => {
@@ -205,7 +252,10 @@ export default function RankScreen() {
           ranking={view.ranking}
           labelField={workspace.roles.labelField}
           summaryFields={summary.plainFields}
-            previewField={summary.previewField}
+          renderers={summary.renderers}
+          previewField={summary.previewField}
+          pictureField={summary.pictureField}
+          pictureRenderer={summary.pictureRenderer}
           exportText={exportText}
           filename={exportFilename(downloadName(workspace.source), format)}
           format={format}
@@ -213,29 +263,20 @@ export default function RankScreen() {
           onReorder={(itemId, nextOrder) =>
             listStore.getState().reorderItem(itemId, nextOrder)
           }
-          progressFile={{
+          sessionFile={{
             onSave: () => {
-              const file = buildProgressFile(
-                items,
-                comparisonEvents,
-                workspace.source.arrayPath,
-                new Date().toISOString(),
-              );
-              const name = `${slugify(downloadName(workspace.source))}-progress.json`;
+              const session = listStore.getState().snapshot();
+              if (session === null) return "Nothing to save yet";
+              const file = buildSessionFile(session, new Date().toISOString());
+              const name = `${slugify(downloadName(workspace.source))}-session.json`;
               return downloadText(name, JSON.stringify(file, null, 2), "application/json")
                 ? `Saved ${name}`
                 : "Download unavailable";
             },
-            onLoad: async () => {
+            onOpen: async () => {
               const text = await pickTextFile("application/json,.json");
               if (text === null) return null;
-              const parsed = parseProgressFile(text);
-              if (!parsed.ok) return parsed.reason;
-              const result = listStore.getState().loadProgress(parsed.file);
-              const skipped = result.unmatchedEvents + result.unmatchedRemoved;
-              return skipped === 0
-                ? `Loaded ${result.matchedEvents} comparisons.`
-                : `Loaded ${result.matchedEvents} comparisons. ${skipped} did not match an item in this list (edited or removed since the save).`;
+              return openSavedFile(text);
             },
           }}
         />

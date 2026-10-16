@@ -223,15 +223,25 @@ shows.
 Dragging shows a line where the row would land and moves nothing until it is
 released, so the list never shifts under the pointer aiming at it.
 
-Dragging a row does not override the derived ranking. It rewrites the source
-document's array into the dragged order and re-imports it through
-`startRanking`, so the ranking stays a pure derivation of comparison history
-and there is never a second source of truth for order.
+A drop is recorded in the comparison history as a placement - `place_below`,
+anchored to the row now directly above, or `place_above` at the very top - so
+the ranking stays a pure derivation of that history and there is never a
+second source of truth for order. Nothing is cleared, and undo takes a
+placement back like any other event.
 
-Because that clears the comparison history, it is confirmed whenever there are
-rated comparisons to lose. With none, it applies silently, which is what makes
-arranging several rows in a row bearable. Items removed during comparison are
-not carried into the new session.
+Replaying a placement ranks the list as it stood at that moment and gives the
+moved item a rating between its new neighbours', so it lands exactly where it
+was dropped and no other row moves. Neighbours on the same rating (items never
+compared all sit at 1500) leave no room, so that tied run is spread across at
+most half a point, keeping its own order. Ties are therefore judged at float
+noise (`RANK_EPSILON`), not at the displayed whole number: the fraction a
+placement relies on has to count.
+
+A placement is not a contest. It changes no wins, losses or K-factor counts,
+and later comparisons start from the placed rating, so they can still move it.
+An earlier version recorded a comparison against each new neighbour instead;
+that moved the neighbours too, and one Elo step rarely carried the item as far
+as it was dropped.
 
 ## 7. Import/export design
 

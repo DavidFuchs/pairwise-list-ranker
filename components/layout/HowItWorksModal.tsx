@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ItemCard } from '@/components/comparison/ItemCard';
+import { GuideTopics } from '@/components/layout/GuideTopics';
 import { Modal } from '@/components/ui/Modal';
 import { ProgressMeter } from '@/components/ui/ProgressMeter';
 import { describeCoverage } from '@/lib/state/selectors';
-import { colors, fonts, space, typeScale } from '@/lib/theme';
+import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
 import type { ListItem } from '@/types/list';
 
 export interface HowItWorksModalProps {
@@ -13,9 +15,48 @@ export interface HowItWorksModalProps {
   onClose: () => void;
 }
 
+type Tab = 'quick' | 'guide';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'quick', label: 'Quick start' },
+  { id: 'guide', label: 'Full guide' },
+];
+
+/**
+ * A window rather than a page of its own, so opening it from the setup screen
+ * never costs a list pasted but not yet ranked.
+ */
 export function HowItWorksModal({ visible, onClose }: HowItWorksModalProps) {
+  const [tab, setTab] = useState<Tab>('quick');
+
   return (
     <Modal visible={visible} onClose={onClose} title="How Pairwise works">
+      <View style={styles.tabs} role="tablist">
+        {TABS.map((option) => {
+          const selected = option.id === tab;
+          return (
+            <Pressable
+              key={option.id}
+              role="tab"
+              accessibilityLabel={option.label}
+              aria-selected={selected}
+              onPress={() => setTab(option.id)}
+              style={[styles.tab, selected && styles.tabSelected]}
+            >
+              <Text style={[styles.tabLabel, selected && styles.tabLabelSelected]}>{option.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {tab === 'guide' ? <GuideTopics /> : <QuickStart onOpenGuide={() => setTab('guide')} />}
+    </Modal>
+  );
+}
+
+function QuickStart({ onOpenGuide }: { onOpenGuide: () => void }) {
+  return (
+    <>
       <Section title="What this is">
         <Text style={styles.body}>
           Pairwise takes a list of things - books, ideas, candidates, anything - and puts it in
@@ -28,8 +69,8 @@ export function HowItWorksModal({ visible, onClose }: HowItWorksModalProps) {
         <Text style={styles.body}>
           Each round shows two items, just like this. Choose the one you prefer, or mark it{' '}
           <Text style={styles.emphasis}>“Much better”</Text> when it isn&apos;t close.
-          Can&apos;t compare them fairly? Skip the pair and move on to the next one. Alternatively,
-          click the X at the top-right to remove an item from the list.
+          Can&apos;t compare them fairly? Skip the pair and move on to the next one. To take an
+          item out of the list altogether, use the trash can at the bottom left of its card.
         </Text>
         <ChooseSideDiagram />
       </Section>
@@ -59,7 +100,18 @@ export function HowItWorksModal({ visible, onClose }: HowItWorksModalProps) {
         </Text>
         <RatingShiftDiagram />
       </Section>
-    </Modal>
+
+      <Section title="There is more">
+        <Text style={styles.body}>
+          Choosing what each card shows, drawing fields as links, pictures, star ratings and more,
+          moving items by hand, keyboard shortcuts, and saving a session to carry on later are all covered in the{' '}
+          <Text accessibilityRole="link" onPress={onOpenGuide} style={styles.guideLink}>
+            full guide
+          </Text>
+          .
+        </Text>
+      </Section>
+    </>
   );
 }
 
@@ -176,6 +228,21 @@ const styles = StyleSheet.create({
   },
   body: { ...typeScale.meta, fontFamily: fonts.body, color: colors.textSecondary },
   emphasis: { color: colors.accentStrong, fontWeight: '600' },
+  guideLink: { color: colors.accentStrong, fontWeight: '600', textDecorationLine: 'underline' },
+
+  // Mirrors PreviewTabs, the app's other set of tabs.
+  tabs: {
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
+    gap: space.xs,
+    padding: space.xs,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceSunken,
+  },
+  tab: { paddingVertical: space.xs, paddingHorizontal: space.md, borderRadius: radius.sm },
+  tabSelected: { backgroundColor: colors.surface },
+  tabLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
+  tabLabelSelected: { color: colors.textPrimary, fontWeight: '600' },
 
   // Choose-a-side diagram: mirrors ComparisonDeck's cards/gutter/skip exactly.
   diagramWrap: { alignItems: 'center', gap: space.sm, paddingTop: space.sm },

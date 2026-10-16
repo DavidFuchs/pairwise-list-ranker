@@ -36,7 +36,7 @@ export function FileDrop({ onFile }: FileDropProps) {
         <Text style={styles.buttonLabel}>Choose a file</Text>
       </Pressable>
 
-      <Text style={styles.hint}>or drop one anywhere on the page</Text>
+      <Text style={styles.hint}>or drop one anywhere on the page. A saved session opens where you left off.</Text>
 
       {createElement('input', {
         ref: inputRef,

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { colors, space } from '@/lib/theme';
@@ -32,9 +32,12 @@ export function SplitDivider({ width, min, max, onResize, onCommit, onReset }: S
   const [dragging, setDragging] = useState(false);
 
   // The listeners are bound once; the latest props reach them through a ref
-  // rather than rebinding on every pixel of a drag.
+  // rather than rebinding on every pixel of a drag. Refreshed in a layout
+  // effect, which runs before the browser can deliver the next event.
   const latest = useRef({ width, min, max, onResize, onCommit, onReset });
-  latest.current = { width, min, max, onResize, onCommit, onReset };
+  useLayoutEffect(() => {
+    latest.current = { width, min, max, onResize, onCommit, onReset };
+  });
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;

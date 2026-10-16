@@ -1,15 +1,15 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ExportToolbar } from '@/components/preview/ExportToolbar';
-import { ProgressFileControls } from '@/components/preview/ProgressFileControls';
-import type { ProgressFileControlsProps } from '@/components/preview/ProgressFileControls';
+import { SessionControls } from '@/components/preview/SessionControls';
+import type { SessionControlsProps } from '@/components/preview/SessionControls';
 import { PreviewTabs } from '@/components/preview/PreviewTabs';
 import { RankedListPreview } from '@/components/preview/RankedListPreview';
 import { ReadOnlyCode } from '@/components/preview/ReadOnlyCode';
 import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
 import type { ListItem } from '@/types/list';
 import type { RankedItem } from '@/types/ranking';
-import type { PreviewTab, SourceFormat } from '@/types/source';
+import type { FieldRenderer, PreviewTab, SourceFormat } from '@/types/source';
 
 export interface PreviewPaneProps {
   tab: PreviewTab;
@@ -18,7 +18,10 @@ export interface PreviewPaneProps {
   ranking: RankedItem<ListItem>[];
   labelField?: string;
   summaryFields?: string[];
+  renderers?: Record<string, FieldRenderer>;
   previewField?: string;
+  pictureField?: string;
+  pictureRenderer?: FieldRenderer;
   /** The user's document, ranked and serialized for the active tab. */
   exportText: string;
   filename: string;
@@ -26,8 +29,8 @@ export interface PreviewPaneProps {
   /** Items deleted during comparison, which the export leaves out. */
   removedCount: number;
   onReorder: (itemId: string, nextOrder: string[]) => void;
-  /** When given, the pane offers saving and loading a progress file. */
-  progressFile?: ProgressFileControlsProps;
+  /** When given, the pane offers saving and opening a session file. */
+  sessionFile?: SessionControlsProps;
 }
 
 /**
@@ -42,13 +45,16 @@ export function PreviewPane({
   ranking,
   labelField,
   summaryFields,
+  renderers,
   previewField,
+  pictureField,
+  pictureRenderer,
   exportText,
   filename,
   format,
   removedCount,
   onReorder,
-  progressFile,
+  sessionFile,
 }: PreviewPaneProps) {
   return (
     <View style={styles.pane} dataSet={{ surface: 'panel' }}>
@@ -67,11 +73,11 @@ export function PreviewPane({
 
       <PreviewTabs tab={tab} tabs={tabs} onChange={onTabChange} />
 
-      {progressFile !== undefined && <ProgressFileControls {...progressFile} />}
+      {sessionFile !== undefined && <SessionControls {...sessionFile} />}
 
       {tab === 'ranked' ? (
         <View style={styles.body} accessibilityLabel="Current ranking" role="region">
-          <RankedListPreview ranking={ranking} sortField={labelField} summaryFields={summaryFields} previewField={previewField} onReorder={onReorder} />
+          <RankedListPreview ranking={ranking} sortField={labelField} summaryFields={summaryFields} renderers={renderers} previewField={previewField} pictureField={pictureField} pictureRenderer={pictureRenderer} onReorder={onReorder} />
         </View>
       ) : (
         <View style={styles.body}>
