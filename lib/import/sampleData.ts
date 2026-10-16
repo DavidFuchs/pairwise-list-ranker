@@ -245,7 +245,7 @@ export const SAMPLE_ROLES: FieldRoles = {
     apple_music_id: 'apple-music-preview',
     deezer_id: 'deezer-preview',
     featured_artists: 'tags',
-    genre: 'choice',
+    genre: 'pills',
     release_date: 'year',
     duration_sec: 'duration',
     explicit: 'badge',

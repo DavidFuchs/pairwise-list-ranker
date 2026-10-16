@@ -96,7 +96,7 @@ function StylePreview({ style, samples, field }: { style: FieldStyle; samples: S
     );
   }
   // A few values side by side, each drawn: the colours are the point.
-  if (renderer === 'choice' || renderer === 'color-swatch') {
+  if (renderer === 'pills' || renderer === 'color-swatch') {
     return (
       <View style={[styles.thumbs, styles.wrap]}>
         {samples.map((sample) => (

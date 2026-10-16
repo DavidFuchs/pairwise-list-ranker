@@ -347,7 +347,7 @@ describe('ItemCard picture slot and new lines', () => {
     );
   });
 
-  it('draws a choice, a swatch, a flag, money and a map link', () => {
+  it('draws pills, a swatch, a flag, money and a map link', () => {
     render(
       <ItemCard
         item={item({ title: 'Office', priority: 'High', colour: '#336699', country: 'CA', rent: 2400, address: '100 Queen St W' })}
@@ -355,7 +355,7 @@ describe('ItemCard picture slot and new lines', () => {
         sortField="title"
         summaryFields={['priority', 'colour', 'country', 'rent', 'address']}
         renderers={{
-          priority: 'choice',
+          priority: 'pills',
           colour: 'color-swatch',
           country: 'flag',
           rent: 'currency-CAD',

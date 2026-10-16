@@ -117,17 +117,21 @@ function imageLinks(value: unknown): string[] | undefined {
   return undefined;
 }
 
-/* Choices: a few short words, repeated across items. */
+/* Pills: a few short words, repeated across items. */
 
-const CHOICE_MAX_VALUES = 8;
-const CHOICE_MAX_LENGTH = 32;
+/** More than this and the labels stop telling items apart at a glance. Tones repeat past eight. */
+const PILL_MAX_VALUES = 24;
+const PILL_MAX_LENGTH = 32;
 
-/** The colours a choice is drawn in. Each is a family of theme tokens. */
-export const CHOICE_TONES = ['red', 'amber', 'green', 'teal', 'blue', 'violet', 'pink', 'slate'] as const;
-export type ChoiceTone = (typeof CHOICE_TONES)[number];
+/** Field names that say their text is a category, so it can be drawn as pills before its values repeat. */
+const CATEGORY_FIELD = /genre|category|categories|type|kind|status|priority|tier|class|group|level|stage|state|severity|platform|cuisine|style|mood|format/i;
+
+/** The colours a pill is drawn in. Each is a family of theme tokens. */
+export const PILL_TONES = ['red', 'amber', 'green', 'teal', 'blue', 'violet', 'pink', 'slate'] as const;
+export type PillTone = (typeof PILL_TONES)[number];
 
 /** Words whose colour is part of what they mean, so "high" is never drawn calm. */
-const TONE_WORDS: Record<string, ChoiceTone> = {
+const TONE_WORDS: Record<string, PillTone> = {
   critical: 'red',
   blocker: 'red',
   urgent: 'red',
@@ -145,29 +149,31 @@ const TONE_WORDS: Record<string, ChoiceTone> = {
   could: 'green',
 };
 
-const choiceKey = (value: string) => value.trim().toLowerCase();
+const pillKey = (value: string) => value.trim().toLowerCase();
 
 /**
- * The colour a choice is drawn in. Read from the word alone, so a value is the
+ * The colour a pill is drawn in. Read from the word alone, so a value is the
  * same colour on every card, in every list, every time.
  */
-export function choiceTone(value: string): ChoiceTone {
-  const key = choiceKey(value);
+export function pillTone(value: string): PillTone {
+  const key = pillKey(value);
   const known = TONE_WORDS[key];
   if (known !== undefined) return known;
   let hash = 5381;
   for (const char of key) hash = ((hash * 33) ^ char.charCodeAt(0)) >>> 0;
-  return CHOICE_TONES[hash % CHOICE_TONES.length]!;
+  return PILL_TONES[hash % PILL_TONES.length]!;
 }
 
-function isChoiceList(values: unknown[]): boolean {
-  if (!values.every((value) => typeof value === 'string' && value.trim() !== '' && value.trim().length <= CHOICE_MAX_LENGTH)) {
+function isPillList(values: unknown[], field: string | undefined): boolean {
+  if (!values.every((value) => typeof value === 'string' && value.trim() !== '' && value.trim().length <= PILL_MAX_LENGTH)) {
     return false;
   }
-  const distinct = new Set((values as string[]).map(choiceKey)).size;
-  // At least one value repeats: a field where every item is different is a
-  // name, not a category.
-  return distinct <= CHOICE_MAX_VALUES && distinct < values.length;
+  const distinct = new Set((values as string[]).map(pillKey)).size;
+  if (distinct > PILL_MAX_VALUES) return false;
+  // A quarter of the items repeat a value already seen: a field where nearly
+  // every item is different is a name, not a category - unless its name says
+  // otherwise.
+  return distinct * 4 <= values.length * 3 || (field !== undefined && CATEGORY_FIELD.test(field));
 }
 
 /* Long text. */
@@ -356,10 +362,10 @@ const SPECIAL_RENDERERS: {
   },
   { id: 'tags', label: 'Tags', hint: 'Each entry as its own label', accepts: (values) => values.every(isTagList) },
   {
-    id: 'choice',
-    label: 'Choice',
+    id: 'pills',
+    label: 'Pills',
     hint: 'A coloured label, the same colour for the same word',
-    accepts: isChoiceList,
+    accepts: isPillList,
   },
   {
     id: 'long-text',
@@ -433,7 +439,11 @@ function fittingScales(values: unknown[]): RatingScale[] {
  * can be put on a map, where any other text cannot.
  */
 export function rendererOptionsFor(values: unknown[], field?: string): RendererOption[] {
-  const present = values.filter((value) => value !== undefined);
+  // An empty cell is a missing value, not one the renderer must draw: every
+  // renderer shows it as a dash, the same as an item without the field.
+  const present = values.filter(
+    (value) => value !== undefined && value !== null && !(typeof value === 'string' && value.trim() === ''),
+  );
   const types = [...new Set(present.map(typeOf))];
   const scales = present.length === 0 ? [] : fittingScales(present);
   const money = present.length > 0 && present.every(isNumber);
@@ -508,7 +518,7 @@ export function formatValue(value: unknown, renderer: FieldRenderer | undefined,
     }
     case 'tags':
       return isTagList(value) ? (value.length === 0 ? '–' : value.join(', ')) : summaryText(value);
-    case 'choice':
+    case 'pills':
       return typeof value === 'string' ? value.trim() : summaryText(value);
     case 'long-text':
       return typeof value === 'string' ? oneLine(value) : summaryText(value);

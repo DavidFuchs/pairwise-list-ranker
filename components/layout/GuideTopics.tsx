@@ -322,9 +322,9 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
           list shows a dash.
         </Renderer>
         <Renderer
-          name="Choice"
-          offered="Offered when every value is a short word or phrase, at most 8 different ones, and at least one repeats."
-          example={<FieldValue field="priority" value="High" renderer="choice" />}
+          name="Pills"
+          offered="Offered when every value is a short word or phrase, at most 24 different ones, and they repeat across items - or the field is named like a category, such as genre or status."
+          example={<FieldValue field="priority" value="High" renderer="pills" />}
         >
           A coloured label for categories: priority, status, cuisine, genre. The colour comes from the
           word itself, so the same word is the same colour on every card. Priorities keep the colours

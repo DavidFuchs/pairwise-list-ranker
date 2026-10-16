@@ -9,7 +9,7 @@
  * The palette is grayscale everywhere except one neon poison-green/yellow
  * accent family: panels, canvas, borders, and text are true neutrals, and
  * the accent (plus its gradient partner) is the only saturated colour of the
- * app's own. Choice labels are the exception, colouring the user's data.
+ * app's own. Pills are the exception, colouring the user's data.
  */
 
 const LIGHT_TOKENS = `
@@ -65,7 +65,7 @@ const LIGHT_TOKENS = `
   --ring: rgba(69, 209, 36, 0.4);
   --overlay: rgba(22, 23, 26, 0.45);
   /*
-   * Choice labels, the one place data brings its own colours. Each tone is a
+   * Pills, the one place data brings its own colours. Each tone is a
    * pale fill, a border and text dark enough to read on that fill.
    */
   --tone-red-bg: #FDECEC; --tone-red-border: #F5C2C2; --tone-red-text: #A3271F;

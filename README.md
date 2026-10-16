@@ -74,7 +74,7 @@ suits it:
 | Apple Music preview | an Apple Music track id | a round play button for a 30-second clip |
 | Deezer preview | a Deezer track id or `deezer.com/track/…` address | the same play button, with Deezer's clip |
 | Tags | a list of words or numbers | a row of small labels |
-| Choice | a short word, at most 8 different ones, some repeated | a coloured label; the same word is always the same colour, and priorities like high/low keep their meaning |
+| Pills | a short word, at most 24 different ones, repeated across items (or any, in a field named like genre, status or category) | a coloured label; the same word is always the same colour, and priorities like high/low keep their meaning |
 | Long text | text, some of it past 80 characters or over several lines | three lines on a card, with **More** for the rest |
 | Location | a `{lat, lng}`, `[lat, lng]` or `lat, lng` position, or text in a field named like a place (`address`, `city`, `venue`…) | a link that opens the place on a map |
 | Flag | a two-letter country code, like `CA` | the flag and the country's name |

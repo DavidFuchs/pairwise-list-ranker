@@ -39,7 +39,7 @@ export const FIELD_RENDERERS = [
   'youtube',
   'steam-header',
   'tags',
-  'choice',
+  'pills',
   'long-text',
   'location',
   'flag',

@@ -4,7 +4,7 @@ import type { StyleProp, TextStyle } from 'react-native';
 
 import { FieldLink } from '@/components/preview/FieldLink';
 import {
-  choiceTone,
+  pillTone,
   formatValue,
   isColor,
   isLink,
@@ -114,14 +114,14 @@ export function FieldValue({ field, value, renderer, withKey = false, textStyle 
     );
   }
 
-  if (renderer === 'choice' && typeof value === 'string' && value.trim() !== '') {
-    const tone = choiceTone(value);
+  if (renderer === 'pills' && typeof value === 'string' && value.trim() !== '') {
+    const tone = pillTone(value);
     return (
       <View style={styles.row}>
         {key}
         <Text
           style={[
-            styles.choice,
+            styles.pill,
             {
               backgroundColor: `var(--tone-${tone}-bg)`,
               borderColor: `var(--tone-${tone}-border)`,
@@ -238,7 +238,7 @@ function Plain({
 }
 
 const styles = StyleSheet.create({
-  choice: {
+  pill: {
     paddingVertical: 1,
     paddingHorizontal: 8,
     borderRadius: 999,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  choiceTone,
+  pillTone,
   cleanRenderers,
   coordinates,
   deezerTrackId,
@@ -58,6 +58,15 @@ describe('rendererOptionsFor', () => {
   it('ignores items without the field', () => {
     expect(offered(['https://example.com/a.png', undefined])).toContain('image');
     expect(offered([])).toEqual([undefined]);
+  });
+
+  it('reads null and blank values as missing, so one empty cell rules nothing out', () => {
+    expect(offered(['https://example.com/a.png', null, '', '  '])).toContain('image');
+    expect(offered(['Pop', 'Rock', null, 'Pop', ''])).toContain('pills');
+    expect(offered(['2024-01-02', null])).toContain('date');
+    expect(offered([4.5, null, 3])).toContain('stars-5');
+    expect(offered([true, null])).toContain('badge');
+    expect(offered([null, ''])).toEqual([undefined]);
   });
 });
 
@@ -313,18 +322,30 @@ describe('line renderers', () => {
     expect(formatValue(12.5, 'currency-EUR', 'price')).toMatch(/12\.50/);
   });
 
-  it('offers a choice for a few short words that repeat', () => {
-    expect(offered(['High', 'Low', 'High', 'Medium'])).toContain('choice');
+  it('offers pills for a few short words that repeat', () => {
+    expect(offered(['High', 'Low', 'High', 'Medium'])).toContain('pills');
     // Every item different: names, not a category.
-    expect(offered(['Arrival', 'Heat', 'Alien'])).not.toContain('choice');
-    expect(offered(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'a'])).not.toContain('choice');
+    expect(offered(['Arrival', 'Heat', 'Alien'])).not.toContain('pills');
+    expect(offered(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'a'])).not.toContain('pills');
   });
 
-  it('colours a choice by its word alone, and priorities by what they mean', () => {
-    expect(choiceTone('High')).toBe('red');
-    expect(choiceTone(' low ')).toBe('green');
-    expect(choiceTone('Medium')).toBe('amber');
-    expect(choiceTone('Thai')).toBe(choiceTone('thai'));
+  it('offers pills for a dozen or more categories, as long as they repeat', () => {
+    const genres = ['Pop', 'Rock', 'Metal', 'Country', 'Jazz', 'Blues', 'Folk', 'Soul', 'Funk', 'Reggae', 'Punk', 'Hip-Hop'];
+    expect(offered([...genres, ...genres])).toContain('pills');
+    expect(offered(Array.from({ length: 60 }, (_, index) => `Genre ${index % 30}`))).not.toContain('pills');
+  });
+
+  it('offers pills for a field named like a category, even before its values repeat', () => {
+    expect(rendererOptionsFor(['Pop', 'Rock', 'Metal'], 'genre').map((option) => option.id)).toContain('pills');
+    expect(rendererOptionsFor(['Open', 'Closed'], 'Status').map((option) => option.id)).toContain('pills');
+    expect(rendererOptionsFor(['Arrival', 'Heat', 'Alien'], 'title').map((option) => option.id)).not.toContain('pills');
+  });
+
+  it('colours a pill by its word alone, and priorities by what they mean', () => {
+    expect(pillTone('High')).toBe('red');
+    expect(pillTone(' low ')).toBe('green');
+    expect(pillTone('Medium')).toBe('amber');
+    expect(pillTone('Thai')).toBe(pillTone('thai'));
   });
 
   it('offers long text for prose', () => {
