@@ -5,6 +5,7 @@ import type { StyleProp, TextStyle } from 'react-native';
 
 import { FieldLink } from '@/components/preview/FieldLink';
 import {
+  fieldLabel,
   formatValue,
   isColor,
   isLink,
@@ -117,14 +118,14 @@ const RatingView: LineView = ({ value, renderer, fieldKey }) => {
 
 const LinkView: LineView = ({ field, value, withKey, textStyle }) =>
   isLink(value) ? (
-    <FieldLink url={value} prefix={withKey ? `${field}:` : undefined} textStyle={textStyle} />
+    <FieldLink url={value} prefix={withKey ? `${fieldLabel(field)}:` : undefined} textStyle={textStyle} />
   ) : undefined;
 
 /** Line renderers that draw more than text. Any other renderer reads as its formatted text. */
 const VIEWS: Partial<Record<FixedRenderer, LineView>> = {
   badge: ({ field, value }) => {
     if (value === false) return null;
-    return value === true ? <Text style={styles.badge}>{field}</Text> : undefined;
+    return value === true ? <Text style={styles.badge}>{fieldLabel(field)}</Text> : undefined;
   },
   tags: ({ value, fieldKey, textStyle }) =>
     Array.isArray(value) ? (
@@ -184,7 +185,7 @@ const VIEWS: Partial<Record<FixedRenderer, LineView>> = {
       <FieldLink
         url={url}
         text={`📍 ${text}`}
-        prefix={withKey ? `${field}:` : undefined}
+        prefix={withKey ? `${fieldLabel(field)}:` : undefined}
         textStyle={textStyle}
       />
     );
@@ -208,7 +209,7 @@ function viewFor(renderer: FieldRenderer): LineView | undefined {
  * Returns null when the renderer has nothing to show, like a false badge.
  */
 export function FieldValue({ field, value, renderer, withKey = false, textStyle }: FieldValueProps) {
-  const fieldKey = withKey ? <Text style={textStyle}>{`${field}:`}</Text> : null;
+  const fieldKey = withKey ? <Text style={textStyle}>{`${fieldLabel(field)}:`}</Text> : null;
   const view = renderer === undefined ? undefined : viewFor(renderer);
   const drawn = view?.({ field, value, renderer: renderer!, fieldKey, withKey, textStyle });
   return drawn === undefined ? (
@@ -254,12 +255,12 @@ function LongText({
   return (
     <View style={styles.long}>
       <Text ref={ref} style={textStyle} numberOfLines={open ? undefined : LONG_TEXT_LINES}>
-        {withKey ? `${field}: ${text}` : text}
+        {withKey ? `${fieldLabel(field)}: ${text}` : text}
       </Text>
       {folds && (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={open ? `Show less of ${field}` : `Show all of ${field}`}
+          accessibilityLabel={open ? `Show less of ${fieldLabel(field)}` : `Show all of ${fieldLabel(field)}`}
           aria-expanded={open}
           onPress={(event) => {
             event.stopPropagation();
@@ -288,7 +289,7 @@ function Plain({
   textStyle?: StyleProp<TextStyle>;
 }) {
   const text = formatValue(value, renderer, field) ?? summaryText(value);
-  return <Text style={textStyle}>{withKey ? `${field}: ${text}` : text}</Text>;
+  return <Text style={textStyle}>{withKey ? `${fieldLabel(field)}: ${text}` : text}</Text>;
 }
 
 const styles = StyleSheet.create({

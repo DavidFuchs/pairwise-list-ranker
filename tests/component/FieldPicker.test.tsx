@@ -250,8 +250,9 @@ describe('FieldPicker', () => {
     );
     expect(screen.getByText('Disco')).toBeDefined();
     expect(screen.getByText('2:51 · 1:02:15')).toBeDefined();
-    // The field's name, and its badge previewed from the item where it is true.
-    expect(screen.getAllByText('explicit')).toHaveLength(2);
+    // The field's own key names it; its badge previews as a card draws it.
+    expect(screen.getByText('explicit')).toBeDefined();
+    expect(screen.getByText('Explicit')).toBeDefined();
     expect(screen.getByText('2024 · 2021')).toBeDefined();
   });
 

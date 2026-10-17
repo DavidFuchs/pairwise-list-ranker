@@ -46,9 +46,9 @@ describe('ItemCard', () => {
       />,
     );
 
-    expect(screen.getByText('genre: Sci-fi')).toBeDefined();
-    expect(screen.getByText('director: –')).toBeDefined();
-    expect(screen.getByText(/note: a very long note/)).toBeDefined();
+    expect(screen.getByText('Genre: Sci-fi')).toBeDefined();
+    expect(screen.getByText('Director: –')).toBeDefined();
+    expect(screen.getByText(/Note: a very long note/)).toBeDefined();
     expect(screen.queryByText(/year/)).toBeNull();
   });
 
@@ -233,7 +233,7 @@ describe('summary chips and details', () => {
       />,
     );
 
-    expect(screen.getByText('year: 2016')).toBeDefined();
+    expect(screen.getByText('Year: 2016')).toBeDefined();
   });
 
   it('draws a link field as a link that opens in a new tab', () => {
@@ -332,7 +332,7 @@ describe('summary chips and details', () => {
         })}
       />,
     );
-    expect(screen.getByText('explicit')).toBeDefined();
+    expect(screen.getByText('Explicit')).toBeDefined();
   });
 
   it('pictures a YouTube video by its thumbnail, opening the video', () => {
@@ -453,8 +453,8 @@ describe('ItemCard picture slot and new lines', () => {
         onChoose={onChoose}
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'Show all of notes' }));
-    expect(screen.getByRole('button', { name: 'Show less of notes' })).toBeDefined();
+    await user.click(screen.getByRole('button', { name: 'Show all of Notes' }));
+    expect(screen.getByRole('button', { name: 'Show less of Notes' })).toBeDefined();
     expect(onChoose).not.toHaveBeenCalled();
   });
 });

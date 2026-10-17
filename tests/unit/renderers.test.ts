@@ -222,7 +222,7 @@ describe('new renderers', () => {
 
   it('draws a badge as the field name when true and nothing when false', () => {
     expect(offered([true, false])).toContain('badge');
-    expect(formatValue(true, 'badge', 'explicit')).toBe('explicit');
+    expect(formatValue(true, 'badge', 'explicit')).toBe('Explicit');
     expect(formatValue(false, 'badge', 'explicit')).toBeNull();
   });
 

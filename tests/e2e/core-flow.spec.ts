@@ -206,15 +206,15 @@ test('details open on both cards from one toggle', async ({ page }) => {
   const arrival = page.getByLabel('Choose Arrival');
 
   // Collapsed, each card summarises its fields as chips.
-  await expect(alien.getByText('year: 1979')).toBeVisible();
-  await expect(arrival.getByText('year: 2016')).toBeVisible();
+  await expect(alien.getByText('Year: 1979')).toBeVisible();
+  await expect(arrival.getByText('Year: 2016')).toBeVisible();
 
   await page.getByRole('switch', { name: 'Show details on both cards' }).click();
 
   // Expanded, both cards show every field in full, and the chosen summary
   // fields stay put above them.
-  await expect(alien.getByText('year: 1979')).toBeVisible();
-  await expect(arrival.getByText('year: 2016')).toBeVisible();
+  await expect(alien.getByText('Year: 1979')).toBeVisible();
+  await expect(arrival.getByText('Year: 2016')).toBeVisible();
   await expect(alien.getByText('1979', { exact: true })).toBeVisible();
   await expect(arrival.getByText('2016', { exact: true })).toBeVisible();
 });
@@ -469,7 +469,7 @@ test('on a phone, a whole decision fits on one screen', async ({ page }) => {
 
   // Details are a tap away, and bring back every field the card set aside.
   await page.getByRole('switch', { name: 'Show details on both cards' }).click();
-  await expect(cards.first().getByText('rotten_tomatoes:')).toBeVisible();
+  await expect(cards.first().getByText('Rotten tomatoes:')).toBeVisible();
 });
 
 test('on a phone, the setup screen keeps its main button on screen', async ({ page }) => {

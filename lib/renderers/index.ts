@@ -49,6 +49,7 @@ export {
   youtubeId,
 } from '@/lib/renderers/values';
 export type { PillTone } from '@/lib/renderers/values';
+export { fieldLabel } from '@/lib/renderers/fieldLabel';
 
 export interface RendererOption {
   /** Absent for the plain default. For one with variants, the first that fits. */

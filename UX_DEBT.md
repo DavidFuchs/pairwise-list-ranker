@@ -41,7 +41,7 @@ It falls short in three places:
 | 7 | Make taking the result away obvious | Flow | High | Done |
 | 8 | Do not present an order before there is one | Clarity | Medium | Done |
 | 9 | Say what the app does on the first screen | Onboarding | Medium | Done |
-| 10 | Show field names as people would write them | Clarity | Medium | Open |
+| 10 | Show field names as people would write them | Clarity | Medium | Done |
 | 11 | Say a shared-slot tip once, not under every field | Clarity | Low | Open |
 | 12 | Make the keyboard shortcuts findable | Speed | Medium | Done |
 | 13 | Avoid the layout jump when data first arrives | Polish | Low | Open |
@@ -261,6 +261,11 @@ they read as code.
 
 Fix: show a readable form ("Rotten tomatoes", "Box office (USD)") on cards,
 keeping the raw key in the field picker where it identifies the field.
+
+Done: `fieldLabel` turns snake, kebab and camel case into words in sentence
+case, keeps letter-words such as USD, IMDB and URL in capitals, and leaves a
+name that already has spaces as written. Cards, badges and the ranked list's
+meta line use it; the field picker and the details view keep raw keys.
 
 ### 11. The same tip, three times
 

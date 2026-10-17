@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { RankedRow, ROW_HEIGHT } from '@/components/preview/RankedRow';
 import { gapMovesRow, insertIndexForUniform, moveItem, targetIndexForGap } from '@/lib/ranking/reorder';
 import { selectItemLabel } from '@/lib/state/selectors';
-import { EMPTY_LAYOUT, formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
+import { EMPTY_LAYOUT, fieldLabel, formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
 import type { CardLayout, PreviewSource } from '@/lib/renderers';
 import { colors, fonts, space } from '@/lib/theme';
 import { fieldOf } from '@/types/list';
@@ -242,7 +242,7 @@ function metaFor(item: ListItem, { plainFields, renderers }: CardLayout): string
     const text = formatValue(fieldOf(item, field), renderer, field);
     if (text === null) return [];
     // A badge is its own name; anything else is named before its value.
-    return [renderer === 'badge' ? text : `${field}: ${text}`];
+    return [renderer === 'badge' ? text : `${fieldLabel(field)}: ${text}`];
   });
   return parts.length === 0 ? null : parts.join('  ·  ');
 }

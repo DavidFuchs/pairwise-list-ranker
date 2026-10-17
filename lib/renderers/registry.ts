@@ -35,6 +35,7 @@ import {
   steamAppId,
   youtubeId,
 } from '@/lib/renderers/values';
+import { fieldLabel } from '@/lib/renderers/fieldLabel';
 import { CURRENCIES, RATING_SCALES } from '@/types/source';
 import type { Currency, FieldRenderer, RatingScale } from '@/types/source';
 
@@ -303,7 +304,7 @@ export const RENDERERS: Record<FixedRenderer, RendererDefinition> = {
     label: 'Badge',
     hint: 'The field name when true, nothing when false',
     accepts: (values) => values.every((value) => typeof value === 'boolean'),
-    format: (value, field) => (value === true ? field : value === false ? null : undefined),
+    format: (value, field) => (value === true ? fieldLabel(field) : value === false ? null : undefined),
   },
   'apple-music-preview': {
     label: 'Apple Music preview',

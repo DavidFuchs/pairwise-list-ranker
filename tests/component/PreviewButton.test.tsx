@@ -79,7 +79,7 @@ describe('Apple Music preview on a card', () => {
     );
 
     const button = await screen.findByRole('button', { name: 'Play preview of Song' });
-    expect(screen.getByText('artist: Band')).toBeDefined();
+    expect(screen.getByText('Artist: Band')).toBeDefined();
     expect(screen.queryByText(/apple_music_id/)).toBeNull();
 
     await user.click(button);
