@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { useSourceDraft } from '@/lib/hooks/useSourceDraft';
 import { diffImport, diffSettings } from '@/lib/import/diff';
 import { pathKey, samePath } from '@/lib/import/paths';
+import { readTextFile } from '@/lib/browser/fileText';
 import { describeReadiness } from '@/lib/import/readiness';
 import { isPlainObject } from '@/lib/import/shape';
 import type { ImportDiff, SettingsDiff } from '@/lib/import/diff';
@@ -60,12 +61,32 @@ export default function DataScreen() {
    * A chosen or dropped file is either one of this app's own - a session to
    * pick up where it left off - or a list to import.
    */
-  function openFile(text: string) {
+  async function openFile(file: File) {
+    const read = await readTextFile(file);
+    if ('refused' in read) {
+      setFileNotice({ message: read.refused });
+      return;
+    }
+    const { name, text } = read;
     const saved = readSavedFile(text);
     if (saved.type === 'other') {
-      setFileNotice(null);
-      setPending(null);
-      draft.setRawText(text);
+      const replace = () => {
+        setFileNotice(null);
+        setPending(null);
+        draft.setRawText(text);
+      };
+      // A drop is easily a mistake, and the text box is the user's work: say
+      // what would be replaced before replacing it.
+      if (draft.rawText.trim() === '' || draft.rawText === text) {
+        replace();
+      } else {
+        setFileNotice({
+          confirm: `Replace the text in the box with "${name}"? What is there now is not kept.`,
+          confirmLabel: 'Replace',
+          confirmAccessibilityLabel: `Replace the text with ${name}`,
+          onConfirm: replace,
+        });
+      }
       return;
     }
     if (saved.type === 'unreadable') {

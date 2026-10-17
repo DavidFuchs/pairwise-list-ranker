@@ -46,7 +46,7 @@ export interface AppShellProps {
    * full-screen overlay while the drag is over it. Omitted on screens with
    * nothing to import into, e.g. the rank screen.
    */
-  onFileDrop?: (text: string) => void;
+  onFileDrop?: (file: File) => void;
   /**
    * Held at the bottom of the window, under the scrolling page, once the
    * columns stack: there the sidebar's own action would sit below everything
@@ -186,7 +186,7 @@ export function AppShell({
       setFileDragActive(false);
       const file = event.dataTransfer?.files[0];
       if (file === undefined) return;
-      void file.text().then(onFileDrop);
+      onFileDrop(file);
     };
 
     // Alt-tabbing away mid-drag (into the OS or another app) doesn't

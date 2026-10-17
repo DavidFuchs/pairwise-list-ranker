@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { readTextFile } from '@/lib/browser/fileText';
 
 import { FileDrop } from '@/components/data/FileDrop';
 import { SAMPLES } from '@/lib/import/sampleData';
@@ -14,8 +15,12 @@ export interface SourceInputProps {
   onChange: (text: string) => void;
   /** A sample was asked for. Defaults to treating its text like typing. */
   onSample?: (sample: Sample) => void;
-  /** A chosen file's text, when it should be told apart from typing - a saved session, say. Defaults to onChange. */
-  onFile?: (text: string) => void;
+  /**
+   * A chosen file, when it should be told apart from typing - a saved session,
+   * say. Defaults to reading it as text into onChange, leaving out a file that
+   * is not text.
+   */
+  onFile?: (file: File) => void;
   override: FormatOverride;
   onOverrideChange: (next: FormatOverride) => void;
   /** The format actually in use, whether detected or forced. */
@@ -90,7 +95,15 @@ export function SourceInput({
       />
 
       <View style={styles.controls}>
-        <FileDrop onFile={onFile ?? onChange} />
+        <FileDrop
+          onFile={
+            onFile ??
+            ((file) =>
+              void readTextFile(file).then((read) => {
+                if ('text' in read) onChange(read.text);
+              }))
+          }
+        />
 
         <View style={styles.overrides} role="radiogroup" aria-label="How to read the text">
           {visibleOverrides.map((option) => {

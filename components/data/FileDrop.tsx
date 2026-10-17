@@ -1,10 +1,12 @@
 import { createElement, useRef } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { TEXT_FILE_ACCEPT } from '@/lib/browser/fileText';
 import { colors, fonts, radius, space } from '@/lib/theme';
 
 export interface FileDropProps {
-  onFile: (text: string) => void;
+  /** The file chosen; reading it, and refusing what is not text, is the caller's. */
+  onFile: (file: File) => void;
 }
 
 /**
@@ -19,10 +21,9 @@ export function FileDrop({ onFile }: FileDropProps) {
 
   if (Platform.OS !== 'web') return null;
 
-  async function readFirst(files: FileList | null): Promise<void> {
+  function readFirst(files: FileList | null): void {
     const file = files?.[0];
-    if (file === undefined) return;
-    onFile(await file.text());
+    if (file !== undefined) onFile(file);
   }
 
   return (
@@ -43,10 +44,12 @@ export function FileDrop({ onFile }: FileDropProps) {
       {createElement('input', {
         ref: inputRef,
         type: 'file',
+        // Lists come as text, YAML or JSON; the picker offers those first.
+        accept: TEXT_FILE_ACCEPT,
         'aria-hidden': true,
         tabIndex: -1,
         style: { display: 'none' },
-        onChange: (event: { target: HTMLInputElement }) => void readFirst(event.target.files),
+        onChange: (event: { target: HTMLInputElement }) => readFirst(event.target.files),
       })}
     </View>
   );

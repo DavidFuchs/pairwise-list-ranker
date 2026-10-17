@@ -4,7 +4,15 @@ import { Button } from '@/components/ui/Button';
 import { colors, fonts, radius, space } from '@/lib/theme';
 
 /** Something to say about a file just opened, or a question to ask before using it. */
-export type FileNoticeState = { message: string } | { confirm: string; onConfirm: () => void };
+export type FileNoticeState =
+  | { message: string }
+  | {
+      confirm: string;
+      onConfirm: () => void;
+      /** The confirming button, and how it is spoken; a saved session by default. */
+      confirmLabel?: string;
+      confirmAccessibilityLabel?: string;
+    };
 
 export interface FileNoticeProps {
   notice: FileNoticeState;
@@ -24,8 +32,8 @@ export function FileNotice({ notice, onDismiss }: FileNoticeProps) {
           <>
             <Button label="Keep current" variant="ghost" size="sm" onPress={onDismiss} />
             <Button
-              label="Replace"
-              accessibilityLabel="Replace with the saved session"
+              label={notice.confirmLabel ?? 'Replace'}
+              accessibilityLabel={notice.confirmAccessibilityLabel ?? 'Replace with the saved session'}
               variant="dangerStrong"
               size="sm"
               onPress={notice.onConfirm}

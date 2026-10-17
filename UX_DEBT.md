@@ -55,7 +55,7 @@ It falls short in three places:
 | 21 | Mark section titles as headings | Accessibility | High | Open |
 | 22 | Give the choice cards a role screen readers will announce | Accessibility | Medium | Open |
 | 23 | Make dragging a ranked row work with a finger | Phone | High | Done |
-| 24 | Refuse files that are not text, and ask before replacing the editor | Trust | High | Open |
+| 24 | Refuse files that are not text, and ask before replacing the editor | Trust | High | Done |
 | 25 | Handle a file dropped on the ranking screen | Trust | Medium | Open |
 | 26 | Scroll the ranked list while dragging near its edge | Long lists | Medium | Open |
 | 27 | Set expectations on long lists | Long lists | Medium | Open |
@@ -435,6 +435,12 @@ whatever was in the editor without asking, so a mistaken drop loses typed work.
 Fix: accept text, YAML and JSON in the picker; refuse a file whose contents are
 not text with a short message; and ask, or allow undo, before replacing text
 that is already there.
+
+Done: the picker offers text, YAML and JSON. `readTextFile` refuses a file that
+states a non-text type, or whose first 4 KB hold a NUL or undecodable bytes,
+with "\"photo.png\" is not a text file. Pairwise reads plain lists, YAML and
+JSON." A file that would replace text already in the box asks first, and an
+empty box is filled straight away.
 
 ### 25. A file dropped on the ranking screen
 
