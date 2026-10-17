@@ -33,8 +33,7 @@ export function detectPositionFields(entries: unknown[]): PositionFieldCandidate
     .filter((field) => {
       const present = objects.map((entry) => entry[field]).filter((value) => value !== undefined);
       return (
-        present.length > 0 &&
-        present.every((value) => typeof value === 'number' && Number.isFinite(value))
+        present.length > 0 && present.every((value) => typeof value === 'number' && Number.isFinite(value))
       );
     })
     .map((field) => ({ field, suggested: ORDERING_NAME.test(field) }));

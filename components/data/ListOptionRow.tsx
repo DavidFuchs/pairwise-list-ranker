@@ -1,12 +1,12 @@
-import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ProgressMeter } from "@/components/ui/ProgressMeter";
-import { formatPath, MIN_RANKABLE } from "@/lib/import/arrayCandidates";
-import type { ArrayCandidate } from "@/lib/import/arrayCandidates";
-import { describeCoverage } from "@/lib/state/selectors";
-import type { CoverageReading } from "@/lib/state/selectors";
-import { colors, fonts, radius, space } from "@/lib/theme";
+import { ProgressMeter } from '@/components/ui/ProgressMeter';
+import { formatPath, MIN_RANKABLE } from '@/lib/import/arrayCandidates';
+import type { ArrayCandidate } from '@/lib/import/arrayCandidates';
+import { describeCoverage } from '@/lib/state/selectors';
+import type { CoverageReading } from '@/lib/state/selectors';
+import { colors, fonts, radius, space } from '@/lib/theme';
 
 export interface ListOptionRowProps {
   candidate: ArrayCandidate;
@@ -43,23 +43,13 @@ export function ListOptionRow({
 }: ListOptionRowProps) {
   const name = formatPath(candidate.path);
   const rankable = candidate.count >= MIN_RANKABLE;
-  const countText = `${candidate.count} ${candidate.entryKind === "object" ? "objects" : "texts"}`;
+  const countText = `${candidate.count} ${candidate.entryKind === 'object' ? 'objects' : 'texts'}`;
 
   return (
-    <View
-      style={[
-        styles.row,
-        selected && styles.rowSelected,
-        !rankable && styles.rowDisabled,
-      ]}
-    >
+    <View style={[styles.row, selected && styles.rowSelected, !rankable && styles.rowDisabled]}>
       <Pressable
         role="radio"
-        accessibilityLabel={
-          rankable
-            ? `Rank the list at ${name}`
-            : `${name} has too few items to rank`
-        }
+        accessibilityLabel={rankable ? `Rank the list at ${name}` : `${name} has too few items to rank`}
         accessibilityState={{ disabled: !rankable }}
         aria-checked={selected}
         disabled={!rankable}
@@ -67,19 +57,15 @@ export function ListOptionRow({
         style={styles.body}
       >
         <View style={styles.header}>
-          <Text style={[styles.path, selected && styles.pathSelected]}>
-            {name}
-          </Text>
-          <Text style={styles.meta}>
-            {rankable ? (meta ?? countText) : "Too few items to rank"}
-          </Text>
+          <Text style={[styles.path, selected && styles.pathSelected]}>{name}</Text>
+          <Text style={styles.meta}>{rankable ? (meta ?? countText) : 'Too few items to rank'}</Text>
         </View>
         {candidate.samples.length > 0 && (
           <Text style={styles.samples} numberOfLines={1}>
-            {candidate.samples.join(" · ")}
+            {candidate.samples.join(' · ')}
           </Text>
         )}
-        {configLine !== undefined && configLine !== "" && (
+        {configLine !== undefined && configLine !== '' && (
           <Text style={styles.config} numberOfLines={1}>
             {configLine}
           </Text>
@@ -93,9 +79,7 @@ export function ListOptionRow({
                 accessibilityLabel={`Ranking progress for ${name}`}
               />
             </View>
-            <Text style={styles.progressLabel}>
-              {describeCoverage(coverage.coverage).label}
-            </Text>
+            <Text style={styles.progressLabel}>{describeCoverage(coverage.coverage).label}</Text>
           </View>
         )}
       </Pressable>
@@ -106,13 +90,13 @@ export function ListOptionRow({
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: "row",
-    alignItems: "stretch",
+    flexDirection: 'row',
+    alignItems: 'stretch',
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surfaceSunken,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   rowSelected: {
     borderColor: colors.accentSoftBorder,
@@ -126,15 +110,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: space.sm,
   },
   path: {
     fontFamily: fonts.mono,
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: '600',
     color: colors.textPrimary,
   },
   pathSelected: { color: colors.accentStrong },
@@ -146,8 +130,8 @@ const styles = StyleSheet.create({
   },
   config: { fontFamily: fonts.body, fontSize: 11, color: colors.textFaint },
   progressRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: space.xs,
     marginTop: 2,
   },
@@ -158,7 +142,7 @@ const styles = StyleSheet.create({
     color: colors.textFaint,
   },
   action: {
-    justifyContent: "center",
+    justifyContent: 'center',
     paddingRight: space.md,
     paddingLeft: space.sm,
   },

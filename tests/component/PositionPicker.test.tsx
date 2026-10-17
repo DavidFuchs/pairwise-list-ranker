@@ -16,9 +16,7 @@ describe('PositionPicker', () => {
 
     expect(screen.getByRole('radio', { name: /write the new order into order/i })).toBeDefined();
     expect(screen.getByRole('radio', { name: /write the new order into year/i })).toBeDefined();
-    expect(
-      screen.getByRole('radio', { name: /do not write the order into any field/i }),
-    ).toBeDefined();
+    expect(screen.getByRole('radio', { name: /do not write the order into any field/i })).toBeDefined();
   });
 
   it('reports the chosen field', async () => {

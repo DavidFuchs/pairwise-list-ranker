@@ -29,10 +29,7 @@ const nestedSource: DataSource = {
   arrayPath: ['movies'],
 };
 
-const ranked = [
-  item('a', { title: 'Arrival', year: 2016 }),
-  item('b', { title: 'Alien', year: 1979 }),
-];
+const ranked = [item('a', { title: 'Arrival', year: 2016 }), item('b', { title: 'Alien', year: 1979 })];
 
 describe('setAtPath', () => {
   it('replaces a nested value without touching its siblings', () => {
@@ -59,10 +56,7 @@ describe('buildExportDocument', () => {
   });
 
   it('keeps sibling values untouched', () => {
-    const result = buildExportDocument(nestedSource, {}, [{ title: 'Arrival' }]) as Record<
-      string,
-      unknown
-    >;
+    const result = buildExportDocument(nestedSource, {}, [{ title: 'Arrival' }]) as Record<string, unknown>;
 
     expect(result.version).toBe(3);
     expect(result.notes).toBe('personal picks');
@@ -102,9 +96,9 @@ describe('buildExportDocument', () => {
   });
 
   it('appends a position field that did not exist', () => {
-    const result = buildExportDocument(nestedSource, { positionField: 'rank' }, [
-      { title: 'Arrival' },
-    ]) as { movies: Record<string, unknown>[] };
+    const result = buildExportDocument(nestedSource, { positionField: 'rank' }, [{ title: 'Arrival' }]) as {
+      movies: Record<string, unknown>[];
+    };
 
     expect(Object.keys(result.movies[0] ?? {})).toEqual(['title', 'rank']);
   });
@@ -116,9 +110,10 @@ describe('buildExportDocument', () => {
       arrayPath: [],
     };
 
-    expect(buildExportDocument(listSource, { positionField: 'order' }, ['Arrival', 'Alien'])).toEqual(
-      ['Arrival', 'Alien'],
-    );
+    expect(buildExportDocument(listSource, { positionField: 'order' }, ['Arrival', 'Alien'])).toEqual([
+      'Arrival',
+      'Alien',
+    ]);
   });
 });
 
@@ -149,9 +144,7 @@ describe('buildExport', () => {
   });
 
   it('uses the label field when writing object entries as a plain list', () => {
-    expect(buildExport(nestedSource, { labelField: 'title' }, ranked, 'list')).toBe(
-      'Arrival\nAlien\n',
-    );
+    expect(buildExport(nestedSource, { labelField: 'title' }, ranked, 'list')).toBe('Arrival\nAlien\n');
   });
 
   it('excludes items removed during comparison', () => {
@@ -161,9 +154,7 @@ describe('buildExport', () => {
   });
 
   it('is stable: the same inputs give the same text', () => {
-    expect(buildExport(nestedSource, {}, ranked, 'yaml')).toBe(
-      buildExport(nestedSource, {}, ranked, 'yaml'),
-    );
+    expect(buildExport(nestedSource, {}, ranked, 'yaml')).toBe(buildExport(nestedSource, {}, ranked, 'yaml'));
   });
 
   it('never mutates the stored source document', () => {

@@ -1,24 +1,17 @@
-import { buildExport } from "@/lib/export/buildExport";
-import { entriesAtPath, findArrayCandidates, formatPath } from "@/lib/import/arrayCandidates";
-import type { ArrayCandidate } from "@/lib/import/arrayCandidates";
-import { pathKey, samePath } from "@/lib/import/paths";
-import { activeList, listAt } from "@/lib/state/lists";
-import { resolveRoles } from "@/lib/import/roles";
-import { rendererNote } from "@/lib/renderers";
-import { selectNextPair } from "@/lib/ranking/pairSelection";
-import { rankItems, replayComparisons } from "@/lib/ranking/rebuildRanking";
-import type { RankingStates } from "@/lib/ranking/rebuildRanking";
-import { isComplexItemValue } from "@/types/list";
-import type { ListItem } from "@/types/list";
-import type { ComparisonEvent, RankedItem } from "@/types/ranking";
-import type {
-  FieldRoles,
-  ListConfig,
-  PreviewTab,
-  RankedList,
-  SourceFormat,
-  Workspace,
-} from "@/types/source";
+import { buildExport } from '@/lib/export/buildExport';
+import { entriesAtPath, findArrayCandidates, formatPath } from '@/lib/import/arrayCandidates';
+import type { ArrayCandidate } from '@/lib/import/arrayCandidates';
+import { pathKey, samePath } from '@/lib/import/paths';
+import { activeList, listAt } from '@/lib/state/lists';
+import { resolveRoles } from '@/lib/import/roles';
+import { rendererNote } from '@/lib/renderers';
+import { selectNextPair } from '@/lib/ranking/pairSelection';
+import { rankItems, replayComparisons } from '@/lib/ranking/rebuildRanking';
+import type { RankingStates } from '@/lib/ranking/rebuildRanking';
+import { isComplexItemValue } from '@/types/list';
+import type { ListItem } from '@/types/list';
+import type { ComparisonEvent, RankedItem } from '@/types/ranking';
+import type { FieldRoles, ListConfig, PreviewTab, RankedList, SourceFormat, Workspace } from '@/types/source';
 
 export interface ActivePair {
   left: ListItem;
@@ -81,8 +74,7 @@ export function selectWorkspaceView(
 
     const byId = new Map(items.map((item) => [item.id, item]));
     const left = candidate === null ? undefined : byId.get(candidate.leftItemId);
-    const right =
-      candidate === null ? undefined : byId.get(candidate.rightItemId);
+    const right = candidate === null ? undefined : byId.get(candidate.rightItemId);
 
     return { states, ranking, pair: left && right ? { left, right } : null };
   });
@@ -106,7 +98,7 @@ export function selectCurrentPair(
 
 /** The exportable text for one tab, built from the user's own document. */
 export function selectExportText(workspace: Workspace | null, format: SourceFormat): string {
-  if (workspace === null) return "";
+  if (workspace === null) return '';
   const list = activeList(workspace);
   const ranked = selectRanking(list.items, list.comparisonEvents, list.alreadyRanked).map(
     (entry) => entry.item,
@@ -125,13 +117,9 @@ export function selectRemovedCount(items: ListItem[]): number {
  * Both list pickers show this per row, so what a row promises before you pick
  * it and what the toolbar says afterwards are the same words.
  */
-export function describeRoles(
-  roles: FieldRoles,
-  alreadyRanked: boolean,
-): string {
+export function describeRoles(roles: FieldRoles, alreadyRanked: boolean): string {
   const parts: string[] = [];
-  if (roles.labelField !== undefined)
-    parts.push(`shown by ${roles.labelField}`);
+  if (roles.labelField !== undefined) parts.push(`shown by ${roles.labelField}`);
   if (roles.summaryFields !== undefined && roles.summaryFields.length > 0)
     parts.push(
       `showing ${roles.summaryFields
@@ -139,24 +127,23 @@ export function describeRoles(
           const renderer = roles.fieldRenderers?.[field];
           return renderer === undefined ? field : `${field} (${rendererNote(renderer)})`;
         })
-        .join(", ")}`,
+        .join(', ')}`,
     );
-  if (roles.positionField !== undefined)
-    parts.push(`${roles.positionField} written back`);
-  if (alreadyRanked) parts.push("already ranked");
+  if (roles.positionField !== undefined) parts.push(`${roles.positionField} written back`);
+  if (alreadyRanked) parts.push('already ranked');
 
-  return parts.join(" · ");
+  return parts.join(' · ');
 }
 
 /** e.g. `movies · shown by title · order written back` */
 export function selectContextLine(workspace: Workspace | null): string {
-  if (workspace === null) return "";
+  if (workspace === null) return '';
 
   const list = activeList(workspace);
   const name = formatPath(list.arrayPath);
   const roles = describeRoles(list.roles, list.alreadyRanked);
 
-  return roles === "" ? name : `${name} · ${roles}`;
+  return roles === '' ? name : `${name} · ${roles}`;
 }
 
 /**
@@ -191,7 +178,7 @@ function derivedConfig(document: unknown, defaults: ListConfig, path: string[]):
     roles: resolveRoles(entriesAtPath(document, path), defaults.roles),
     alreadyRanked: defaults.alreadyRanked,
   });
-  if (typeof document !== "object" || document === null) return derive();
+  if (typeof document !== 'object' || document === null) return derive();
 
   let byDefaults = derivedConfigCache.get(document);
   if (byDefaults === undefined) {
@@ -214,28 +201,20 @@ function derivedConfig(document: unknown, defaults: ListConfig, path: string[]):
 
 /** Only the tabs this source can honestly produce. */
 export function selectAvailableTabs(workspace: Workspace | null): PreviewTab[] {
-  if (workspace === null) return ["ranked"];
-  return workspace.source.format === "list"
-    ? ["ranked", "list", "yaml", "json"]
-    : ["ranked", "yaml", "json"];
+  if (workspace === null) return ['ranked'];
+  return workspace.source.format === 'list' ? ['ranked', 'list', 'yaml', 'json'] : ['ranked', 'yaml', 'json'];
 }
 
 /** The label shown on a comparison card or a ranked row. */
-export function selectItemLabel(
-  item: ListItem,
-  labelField: string | undefined,
-): string {
+export function selectItemLabel(item: ListItem, labelField: string | undefined): string {
   const value = item.value;
   if (!isComplexItemValue(value)) return String(value);
 
   const preferred = labelField === undefined ? undefined : value[labelField];
-  if (typeof preferred === "string" || typeof preferred === "number")
-    return String(preferred);
+  if (typeof preferred === 'string' || typeof preferred === 'number') return String(preferred);
 
-  const firstString = Object.values(value).find(
-    (entry) => typeof entry === "string",
-  );
-  return typeof firstString === "string" ? firstString : "Untitled item";
+  const firstString = Object.values(value).find((entry) => typeof entry === 'string');
+  return typeof firstString === 'string' ? firstString : 'Untitled item';
 }
 
 /** Progress summary for the status strip. */
@@ -251,7 +230,7 @@ export function selectProgress(
   earnedCoverage: number;
 } {
   const activeItems = items.filter((item) => item.active).length;
-  const rated = events.filter((event) => event.outcome !== "skip").length;
+  const rated = events.filter((event) => event.outcome !== 'skip').length;
   const skips = events.length - rated;
 
   // A rough "how far along am I" signal: comparisons made against the number
@@ -260,14 +239,12 @@ export function selectProgress(
   // Deliberately not clamped at 1. The target is an estimate, not a finish
   // line, and comparisons past it still sharpen the order - so capping here
   // would freeze the meter and tell the user their work had stopped counting.
-  const target =
-    activeItems < 2 ? 0 : Math.ceil(activeItems * Math.log2(activeItems));
+  const target = activeItems < 2 ? 0 : Math.ceil(activeItems * Math.log2(activeItems));
   const fromComparisons = target === 0 ? 0 : rated / target;
   // A list declared already ranked starts fully credited - the order is
   // trusted from the outset - and further comparisons still sharpen it past
   // that point, the same as surplus work on any other list.
-  const coverage =
-    target === 0 ? 0 : alreadyRanked ? 1 + fromComparisons : fromComparisons;
+  const coverage = target === 0 ? 0 : alreadyRanked ? 1 + fromComparisons : fromComparisons;
 
   // The same figure without the import's credit: what the comparisons alone
   // have paid for. The meter needs both to show which part of its run the user
@@ -298,9 +275,7 @@ export function selectCoverage(
   alreadyRanked: boolean,
 ): CoverageReading | undefined {
   const progress = selectProgress(items, events, alreadyRanked);
-  return progress.coverage > 0
-    ? { coverage: progress.coverage, earned: progress.earnedCoverage }
-    : undefined;
+  return progress.coverage > 0 ? { coverage: progress.coverage, earned: progress.earnedCoverage } : undefined;
 }
 
 /** One list in the document, as the list switcher offers it. */
@@ -327,7 +302,7 @@ const candidatesCache = new WeakMap<object, ArrayCandidate[]>();
 
 /** The lists a document holds. A walk of the whole document, so kept with it. */
 function candidatesOf(document: unknown): ArrayCandidate[] {
-  if (typeof document !== "object" || document === null) return findArrayCandidates(document).candidates;
+  if (typeof document !== 'object' || document === null) return findArrayCandidates(document).candidates;
   let candidates = candidatesCache.get(document);
   if (candidates === undefined) {
     candidates = findArrayCandidates(document).candidates;
@@ -370,7 +345,7 @@ const SURPLUS_CAP = 200;
  * unusable until then.
  */
 const ESTIMATE_MET_NOTE =
-  "The list is sorted well enough to use. Keep going and each comparison sharpens the pairs that are still close.";
+  'The list is sorted well enough to use. Keep going and each comparison sharpens the pairs that are still close.';
 
 /**
  * Everything the meter needs to draw itself and say what it means: the accent
@@ -415,18 +390,16 @@ export function describeCoverage(
     claimed === 0
       ? null
       : claimed === filled
-        ? "credited to the order you imported"
+        ? 'credited to the order you imported'
         : `${claimed}% of it still credited to the order you imported`;
 
-  const parts = [
-    spoken,
-    percent > 100 ? "past the estimate" : null,
-    credit,
-  ].filter((part): part is string => part !== null);
+  const parts = [spoken, percent > 100 ? 'past the estimate' : null, credit].filter(
+    (part): part is string => part !== null,
+  );
 
   return {
     label,
-    valueText: parts.join(", "),
+    valueText: parts.join(', '),
     filled,
     claimed,
     surplus: Math.min(100, Math.max(0, percent - 100)),
@@ -459,7 +432,7 @@ export function selectStability(
 ): StabilityReading {
   const met = new Set<string>();
   for (const event of events) {
-    if (event.outcome === "skip") continue;
+    if (event.outcome === 'skip') continue;
     met.add(`${event.leftItemId} ${event.rightItemId}`);
     met.add(`${event.rightItemId} ${event.leftItemId}`);
   }
@@ -478,10 +451,10 @@ export function selectStability(
 
 /** One line for the status strip; nothing until there is an order to judge. */
 export function describeStability(reading: StabilityReading): string {
-  if (reading.pairs === 0) return "";
+  if (reading.pairs === 0) return '';
   if (reading.unresolved === 0) {
-    return "Every neighbouring pair is settled. The order is ready to export.";
+    return 'Every neighbouring pair is settled. The order is ready to export.';
   }
-  const noun = reading.unresolved === 1 ? "pair" : "pairs";
+  const noun = reading.unresolved === 1 ? 'pair' : 'pairs';
   return `${reading.unresolved} neighbouring ${noun} still too close to call.`;
 }

@@ -28,10 +28,10 @@ describe('sample data', () => {
   });
 
   it('keeps dates and codes as text in the YAML movies', () => {
-    const movies = entriesAtPath(analyzeSource(MOVIE_SAMPLE.text, 'auto').document, MOVIE_SAMPLE.path) as Record<
-      string,
-      unknown
-    >[];
+    const movies = entriesAtPath(
+      analyzeSource(MOVIE_SAMPLE.text, 'auto').document,
+      MOVIE_SAMPLE.path,
+    ) as Record<string, unknown>[];
     expect(movies[0]?.release_date).toBe('2008-09-04');
     expect(movies.find((movie) => movie.title === 'Das Boot')?.country).toBe('DE');
   });
@@ -72,7 +72,9 @@ describe('sample data', () => {
 
   it('shows off renderers the songs leave out', () => {
     const songs = new Set(Object.values(SONG_SAMPLE.roles.fieldRenderers ?? {}));
-    const fresh = Object.values(MOVIE_SAMPLE.roles.fieldRenderers ?? {}).filter((renderer) => !songs.has(renderer));
+    const fresh = Object.values(MOVIE_SAMPLE.roles.fieldRenderers ?? {}).filter(
+      (renderer) => !songs.has(renderer),
+    );
     expect(fresh.length).toBeGreaterThanOrEqual(10);
   });
 

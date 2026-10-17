@@ -35,11 +35,7 @@ export function setAtPath(document: unknown, path: string[], value: unknown): un
  * The user's document back, with the ranked array spliced in at its own path.
  * Every other key, at every depth, survives exactly as it arrived.
  */
-export function buildExportDocument(
-  source: DataSource,
-  roles: FieldRoles,
-  entries: unknown[],
-): unknown {
+export function buildExportDocument(source: DataSource, roles: FieldRoles, entries: unknown[]): unknown {
   const positioned = entries.map((entry, index) => {
     if (roles.positionField === undefined || !isPlainObject(entry)) return clone(entry);
     // Spread rewrites an existing key in place, so an existing `order` keeps

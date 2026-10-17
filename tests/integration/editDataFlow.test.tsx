@@ -52,7 +52,7 @@ describe('editing data mid-run', () => {
    * to "Edit data" still showed the original import order. The text box now
    * reflects the ranking's current order instead of the stale import text.
    */
-  it('opens with the ranking\'s current order, once comparisons have reordered it', () => {
+  it("opens with the ranking's current order, once comparisons have reordered it", () => {
     seedWorkspace();
     render(<DataScreen />);
 
@@ -92,7 +92,9 @@ describe('editing data mid-run', () => {
 
   it('keeps the ranking for entries that did not change', async () => {
     seedWorkspace();
-    const keptIds = openList(listStore).items.slice(0, 2).map((entry) => entry.id);
+    const keptIds = openList(listStore)
+      .items.slice(0, 2)
+      .map((entry) => entry.id);
     const user = userEvent.setup();
     render(<DataScreen />);
 
@@ -102,7 +104,11 @@ describe('editing data mid-run', () => {
     await user.click(await screen.findByRole('button', { name: /apply edits/i }));
     await user.click(screen.getAllByRole('button', { name: /apply edits/i })[0]!);
 
-    expect(openList(listStore).items.slice(0, 2).map((entry) => entry.id)).toEqual(keptIds);
+    expect(
+      openList(listStore)
+        .items.slice(0, 2)
+        .map((entry) => entry.id),
+    ).toEqual(keptIds);
     expect(openList(listStore).comparisonEvents).toHaveLength(1);
     expect(replace).toHaveBeenCalledWith('/rank');
   });

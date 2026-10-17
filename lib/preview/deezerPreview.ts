@@ -108,6 +108,10 @@ export function requestDeezerPreview(id: string, onResolved: (url: string | null
   }
   return () => {
     const current = waiting.get(id);
-    if (current !== undefined) waiting.set(id, current.filter((callback) => callback !== onResolved));
+    if (current !== undefined)
+      waiting.set(
+        id,
+        current.filter((callback) => callback !== onResolved),
+      );
   };
 }

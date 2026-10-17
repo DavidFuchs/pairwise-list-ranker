@@ -1,23 +1,23 @@
-import { useRouter } from "expo-router";
-import { useEffect, useMemo } from "react";
+import { useRouter } from 'expo-router';
+import { useEffect, useMemo } from 'react';
 
-import { ComparisonDeck } from "@/components/comparison/ComparisonDeck";
-import { AppShell } from "@/components/layout/AppShell";
-import { ListSwitcher } from "@/components/layout/ListSwitcher";
-import { PageNav } from "@/components/layout/PageNav";
-import { PreviewPane } from "@/components/preview/PreviewPane";
-import type { OpenOutcome } from "@/components/preview/SessionControls";
-import { Button } from "@/components/ui/Button";
-import { cardLayout, EMPTY_LAYOUT } from "@/lib/renderers";
-import { downloadText, pickTextFile } from "@/lib/browser/exportActions";
-import { downloadName, exportFilename, slugify } from "@/lib/export/filenames";
+import { ComparisonDeck } from '@/components/comparison/ComparisonDeck';
+import { AppShell } from '@/components/layout/AppShell';
+import { ListSwitcher } from '@/components/layout/ListSwitcher';
+import { PageNav } from '@/components/layout/PageNav';
+import { PreviewPane } from '@/components/preview/PreviewPane';
+import type { OpenOutcome } from '@/components/preview/SessionControls';
+import { Button } from '@/components/ui/Button';
+import { cardLayout, EMPTY_LAYOUT } from '@/lib/renderers';
+import { downloadText, pickTextFile } from '@/lib/browser/exportActions';
+import { downloadName, exportFilename, slugify } from '@/lib/export/filenames';
 import {
   buildSessionFile,
   confirmOpenSession,
   describeSession,
   hasDecisions,
   readSavedFile,
-} from "@/lib/session/sessionFile";
+} from '@/lib/session/sessionFile';
 import {
   selectAvailableTabs,
   selectContextLine,
@@ -28,12 +28,12 @@ import {
   selectRemovedCount,
   selectStability,
   selectWorkspaceView,
-} from "@/lib/state/selectors";
-import { activeList } from "@/lib/state/lists";
-import { listStore, useListStore } from "@/lib/state/useListStore";
-import type { ListItem } from "@/types/list";
-import type { ComparisonEvent } from "@/types/ranking";
-import type { DataSource, SourceFormat } from "@/types/source";
+} from '@/lib/state/selectors';
+import { activeList } from '@/lib/state/lists';
+import { listStore, useListStore } from '@/lib/state/useListStore';
+import type { ListItem } from '@/types/list';
+import type { ComparisonEvent } from '@/types/ranking';
+import type { DataSource, SourceFormat } from '@/types/source';
 
 /** Shared empties, so the view cache recognises "nothing loaded" between renders. */
 const NO_ITEMS: ListItem[] = [];
@@ -45,10 +45,10 @@ const NO_EVENTS: ComparisonEvent[] = [];
  */
 function openSavedFile(text: string): OpenOutcome {
   const saved = readSavedFile(text);
-  if (saved.type === "unreadable") return { message: saved.reason };
-  if (saved.type === "other") return { message: "That is not a session file from this app." };
+  if (saved.type === 'unreadable') return { message: saved.reason };
+  if (saved.type === 'other') return { message: 'That is not a session file from this app.' };
 
-  if (saved.type === "progress") {
+  if (saved.type === 'progress') {
     const result = listStore.getState().loadProgress(saved.file);
     const skipped = result.unmatchedEvents + result.unmatchedRemoved;
     return {
@@ -74,9 +74,7 @@ export default function RankScreen() {
   const workspace = useListStore((state) => state.workspace);
   const previewTab = useListStore((state) => state.previewTab);
   const hydrated = useListStore((state) => state.hydrated);
-  const persistenceAvailable = useListStore(
-    (state) => state.persistenceAvailable,
-  );
+  const persistenceAvailable = useListStore((state) => state.persistenceAvailable);
   const saveOutcome = useListStore((state) => state.saveOutcome);
   const canUndo = useListStore((state) => state.undoStack.length > 0);
   const roles = useListStore((state) =>
@@ -93,7 +91,7 @@ export default function RankScreen() {
 
   // Landing here with nothing to rank means a stale link or a cleared browser.
   useEffect(() => {
-    if (hydrated && workspace === null) router.replace("/");
+    if (hydrated && workspace === null) router.replace('/');
   }, [hydrated, workspace, router]);
 
   const list = workspace === null ? null : activeList(workspace);
@@ -103,15 +101,11 @@ export default function RankScreen() {
   const view = selectWorkspaceView(items, comparisonEvents, alreadyRanked);
   const progress = selectProgress(items, comparisonEvents, alreadyRanked);
   const stability = selectStability(view.ranking, comparisonEvents);
-  const format: SourceFormat =
-    previewTab === "ranked" ? (workspace?.source.format ?? "list") : previewTab;
+  const format: SourceFormat = previewTab === 'ranked' ? (workspace?.source.format ?? 'list') : previewTab;
   // Serializing a large document is the slowest thing this screen does, and
   // it only changes when the data or the tab does.
   const exportText = useMemo(
-    () =>
-      previewTab === "ranked"
-        ? ""
-        : selectExportText(workspace, format),
+    () => (previewTab === 'ranked' ? '' : selectExportText(workspace, format)),
     [previewTab, workspace, format],
   );
 
@@ -119,11 +113,11 @@ export default function RankScreen() {
   // renders without localStorage, so the answer does not exist sooner.
   const saveWarning = !hydrated
     ? undefined
-    : saveOutcome === "too-large"
-      ? "Too large to save in this browser"
+    : saveOutcome === 'too-large'
+      ? 'Too large to save in this browser'
       : persistenceAvailable
         ? undefined
-        : "Not saved: this browser is not keeping data";
+        : 'Not saved: this browser is not keeping data';
 
   // Kept while the roles are, so the ranked rows can reuse what they drew.
   const layout = useMemo(() => (roles === undefined ? EMPTY_LAYOUT : cardLayout(roles)), [roles]);
@@ -145,20 +139,18 @@ export default function RankScreen() {
     const { roles, alreadyRanked } = selectListConfig(workspace, path);
     // Derived, not chosen: leaving it unmarked is what lets a later change to
     // the document defaults still reach this list.
-    listStore
-      .getState()
-      .switchList({
-        source,
-        roles,
-        alreadyRanked,
-        configuredExplicitly: false,
-      });
+    listStore.getState().switchList({
+      source,
+      roles,
+      alreadyRanked,
+      configuredExplicitly: false,
+    });
   }
 
   /** Changes a list's fields or its order, on the screen that owns those. */
   function configureList(path: string[]) {
     listStore.getState().requestListSwitch(path);
-    router.replace("/");
+    router.replace('/');
   }
 
   return (
@@ -176,7 +168,7 @@ export default function RankScreen() {
       }
       onReset={() => {
         listStore.getState().reset();
-        router.replace("/");
+        router.replace('/');
       }}
       stage={
         <>
@@ -186,7 +178,7 @@ export default function RankScreen() {
               accessibilityLabel="Edit data"
               variant="secondary"
               size="sm"
-              onPress={() => router.replace("/")}
+              onPress={() => router.replace('/')}
             />
           </PageNav>
           <ComparisonDeck
@@ -197,13 +189,7 @@ export default function RankScreen() {
             stability={stability}
             onOutcome={(outcome) => {
               if (view.pair === null) return;
-              listStore
-                .getState()
-                .recordComparison(
-                  view.pair.left.id,
-                  view.pair.right.id,
-                  outcome,
-                );
+              listStore.getState().recordComparison(view.pair.left.id, view.pair.right.id, outcome);
             }}
             onDelete={(itemId) => listStore.getState().removeItem(itemId)}
           />
@@ -220,21 +206,19 @@ export default function RankScreen() {
           filename={exportFilename(downloadName(workspace.source), format)}
           format={format}
           removedCount={selectRemovedCount(items)}
-          onReorder={(itemId, nextOrder) =>
-            listStore.getState().reorderItem(itemId, nextOrder)
-          }
+          onReorder={(itemId, nextOrder) => listStore.getState().reorderItem(itemId, nextOrder)}
           sessionFile={{
             onSave: () => {
               const session = listStore.getState().snapshot();
-              if (session === null) return "Nothing to save yet";
+              if (session === null) return 'Nothing to save yet';
               const file = buildSessionFile(session, new Date().toISOString());
               const name = `${slugify(downloadName(workspace.source))}-session.json`;
-              return downloadText(name, JSON.stringify(file, null, 2), "application/json")
+              return downloadText(name, JSON.stringify(file, null, 2), 'application/json')
                 ? `Saved ${name}`
-                : "Download unavailable";
+                : 'Download unavailable';
             },
             onOpen: async () => {
-              const text = await pickTextFile("application/json,.json");
+              const text = await pickTextFile('application/json,.json');
               if (text === null) return null;
               return openSavedFile(text);
             },

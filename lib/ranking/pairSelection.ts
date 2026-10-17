@@ -115,10 +115,7 @@ export function scorePair(left: RankingState, right: RankingState, history: Pair
     met === 0 ? 0 : ALREADY_MET_PENALTY + REPEAT_PENALTY / (1 + (since ?? Number.MAX_SAFE_INTEGER));
 
   return (
-    PROXIMITY_WEIGHT * proximity +
-    EXPOSURE_WEIGHT * exposure +
-    UNCERTAINTY_WEIGHT * uncertainty -
-    repeat
+    PROXIMITY_WEIGHT * proximity + EXPOSURE_WEIGHT * exposure + UNCERTAINTY_WEIGHT * uncertainty - repeat
   );
 }
 

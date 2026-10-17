@@ -1,7 +1,7 @@
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View } from 'react-native';
 
-import { describeCoverage } from "@/lib/state/selectors";
-import { colors } from "@/lib/theme";
+import { describeCoverage } from '@/lib/state/selectors';
+import { colors } from '@/lib/theme';
 
 export interface ProgressMeterProps {
   /** 1 is the estimate, not the maximum; above it the bar plates itself gold. */
@@ -32,15 +32,8 @@ const HEIGHT = 4;
  * a fresh ranked import reads as a full bar of hatching, and every comparison
  * turns a little of it solid.
  */
-export function ProgressMeter({
-  coverage,
-  earnedCoverage,
-  accessibilityLabel,
-}: ProgressMeterProps) {
-  const { filled, claimed, surplus, valueText } = describeCoverage(
-    coverage,
-    earnedCoverage,
-  );
+export function ProgressMeter({ coverage, earnedCoverage, accessibilityLabel }: ProgressMeterProps) {
+  const { filled, claimed, surplus, valueText } = describeCoverage(coverage, earnedCoverage);
   const decorative = accessibilityLabel === undefined;
 
   return (
@@ -48,31 +41,22 @@ export function ProgressMeter({
       style={styles.track}
       // A valuenow above valuemax is not a valid progressbar, so the surplus
       // travels in valuetext instead of breaking the contract.
-      role={decorative ? undefined : "progressbar"}
+      role={decorative ? undefined : 'progressbar'}
       aria-valuenow={decorative ? undefined : filled}
       aria-valuemin={decorative ? undefined : 0}
       aria-valuemax={decorative ? undefined : 100}
       aria-valuetext={decorative ? undefined : valueText}
       aria-label={accessibilityLabel}
     >
-      <View
-        style={[styles.fill, { width: `${filled - claimed}%` }]}
-        dataSet={{ fill: "meter" }}
-      />
+      <View style={[styles.fill, { width: `${filled - claimed}%` }]} dataSet={{ fill: 'meter' }} />
       {claimed > 0 && (
         <View
-          style={[
-            styles.claimed,
-            { left: `${filled - claimed}%`, width: `${claimed}%` },
-          ]}
-          dataSet={{ fill: "claimed" }}
+          style={[styles.claimed, { left: `${filled - claimed}%`, width: `${claimed}%` }]}
+          dataSet={{ fill: 'claimed' }}
         />
       )}
       {surplus > 0 && (
-        <View
-          style={[styles.surplus, { width: `${surplus}%` }]}
-          dataSet={{ fill: "surplus" }}
-        />
+        <View style={[styles.surplus, { width: `${surplus}%` }]} dataSet={{ fill: 'surplus' }} />
       )}
     </View>
   );
@@ -83,16 +67,16 @@ const styles = StyleSheet.create({
     height: HEIGHT,
     borderRadius: 999,
     backgroundColor: colors.surfaceMuted,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   fill: { height: HEIGHT, borderRadius: 999, backgroundColor: colors.accent },
   // Sits at the far end of the accent run, where the earned part stops. The
   // hatching itself is a data-fill rule, since a repeating gradient has no
   // React Native style equivalent.
-  claimed: { position: "absolute", top: 0, height: HEIGHT, borderRadius: 999 },
+  claimed: { position: 'absolute', top: 0, height: HEIGHT, borderRadius: 999 },
   // Sits on top of the full accent run rather than beside it.
   surplus: {
-    position: "absolute",
+    position: 'absolute',
     left: 0,
     top: 0,
     height: HEIGHT,

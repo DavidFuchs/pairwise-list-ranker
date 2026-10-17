@@ -27,7 +27,12 @@ function detect(): boolean {
     context.fillText('\u{1F1FA}\u{1F1F8}', 0, 0);
     const pixels = context.getImageData(0, 0, 32, 32).data;
     for (let index = 0; index < pixels.length; index += 4) {
-      const [red, green, blue, alpha] = [pixels[index]!, pixels[index + 1]!, pixels[index + 2]!, pixels[index + 3]!];
+      const [red, green, blue, alpha] = [
+        pixels[index]!,
+        pixels[index + 1]!,
+        pixels[index + 2]!,
+        pixels[index + 3]!,
+      ];
       if (alpha > 0 && (red !== green || green !== blue)) return true;
     }
     return false;

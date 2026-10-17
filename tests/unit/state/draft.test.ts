@@ -64,7 +64,10 @@ describe('buildDraftSeed', () => {
   it('opens on the ranked order and remembers every known list', () => {
     const seed = buildDraftSeed({ workspace: workspaceOf([movies, actors]), pendingSwitchPath: ['actors'] })!;
 
-    expect(JSON.parse(seed.rawText).movies.map((movie: { title: string }) => movie.title)).toEqual(['Arrival', 'Alien']);
+    expect(JSON.parse(seed.rawText).movies.map((movie: { title: string }) => movie.title)).toEqual([
+      'Arrival',
+      'Alien',
+    ]);
     expect(seed.knownLists).toEqual({ movies: false, actors: true });
     expect(seed.arrayPath).toEqual(['movies']);
     expect(seed.initialSelectedPath).toEqual(['actors']);

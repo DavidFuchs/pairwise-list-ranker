@@ -15,7 +15,14 @@ function row(id: string, rating: number, rank: number): RankedItem<ListItem> {
 }
 
 function event(left: string, right: string, outcome: ComparisonEvent['outcome'] = 'left'): ComparisonEvent {
-  return { id: `${left}${right}`, listId: 'l', leftItemId: left, rightItemId: right, outcome, createdAt: NOW };
+  return {
+    id: `${left}${right}`,
+    listId: 'l',
+    leftItemId: left,
+    rightItemId: right,
+    outcome,
+    createdAt: NOW,
+  };
 }
 
 describe('selectStability', () => {

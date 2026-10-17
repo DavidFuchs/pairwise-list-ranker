@@ -11,7 +11,14 @@ const movies = {
   alreadyRanked: false,
   configuredExplicitly: true,
   items: [
-    { id: 'item-1', listId: 'movies-1', value: { title: 'Alien' }, active: true, createdAt: NOW, updatedAt: NOW },
+    {
+      id: 'item-1',
+      listId: 'movies-1',
+      value: { title: 'Alien' },
+      active: true,
+      createdAt: NOW,
+      updatedAt: NOW,
+    },
   ],
   comparisonEvents: [],
   createdAt: NOW,

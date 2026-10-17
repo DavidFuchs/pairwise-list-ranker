@@ -374,7 +374,7 @@ html, body { background-color: var(--canvas); }
 }
 `;
 
-export const THEME_STORAGE_KEY = "pairwise-list-ranker:theme";
+export const THEME_STORAGE_KEY = 'pairwise-list-ranker:theme';
 
 /**
  * Runs before first paint: promotes a saved preference to `data-theme` so the

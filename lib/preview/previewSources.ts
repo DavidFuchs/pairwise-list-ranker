@@ -15,10 +15,11 @@ export interface FoundPreview {
 
 export const sourceKey = (source: PreviewSource) => `${source.provider}:${source.id}`;
 
-const LOOKUPS: Record<PreviewProvider, (id: string, onResolved: (url: string | null) => void) => () => void> = {
-  apple: requestApplePreview,
-  deezer: requestDeezerPreview,
-};
+const LOOKUPS: Record<PreviewProvider, (id: string, onResolved: (url: string | null) => void) => () => void> =
+  {
+    apple: requestApplePreview,
+    deezer: requestDeezerPreview,
+  };
 
 function parseKey(key: string): PreviewSource {
   const at = key.indexOf(':');

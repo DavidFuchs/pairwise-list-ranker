@@ -101,9 +101,7 @@ export function ApplySummary({ diff, settings, onCancel, onConfirm }: ApplySumma
       )}
 
       {diff.removed.length > 0 && (
-        <Text style={styles.line}>
-          {`${diff.removed.length} ${plural(diff.removed.length)} removed`}
-        </Text>
+        <Text style={styles.line}>{`${diff.removed.length} ${plural(diff.removed.length)} removed`}</Text>
       )}
 
       {settingsLines(settings).map((line) => (
@@ -116,24 +114,14 @@ export function ApplySummary({ diff, settings, onCancel, onConfirm }: ApplySumma
 
       <View style={styles.actions}>
         <Button label="Cancel" accessibilityLabel="Cancel" variant="ghost" onPress={onCancel} />
-        <Button
-          label="Apply edits"
-          accessibilityLabel="Apply edits"
-          variant="primary"
-          onPress={onConfirm}
-        />
+        <Button label="Apply edits" accessibilityLabel="Apply edits" variant="primary" onPress={onConfirm} />
       </View>
     </View>
   );
 }
 
 /** The one line about what happens to the comparisons already recorded. */
-function note(
-  diff: ImportDiff,
-  settings: SettingsDiff,
-  dataChanged: boolean,
-  reseeded: boolean,
-): string {
+function note(diff: ImportDiff, settings: SettingsDiff, dataChanged: boolean, reseeded: boolean): string {
   if (!dataChanged && !settings.changed) {
     return 'Nothing changed - applying will leave the list as it is.';
   }

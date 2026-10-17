@@ -21,7 +21,13 @@ describe('ItemCard', () => {
   });
 
   it('labels an object item with the chosen sort field', () => {
-    render(<ItemCard item={item({ title: 'Arrival', year: 2016 })} side="left" layout={cardLayout({ labelField: 'title' })} />);
+    render(
+      <ItemCard
+        item={item({ title: 'Arrival', year: 2016 })}
+        side="left"
+        layout={cardLayout({ labelField: 'title' })}
+      />,
+    );
 
     expect(screen.getByText('Arrival')).toBeDefined();
   });
@@ -30,7 +36,12 @@ describe('ItemCard', () => {
     render(
       <ItemCard
         layout={cardLayout({ labelField: 'title', summaryFields: ['genre', 'director', 'note'] })}
-        item={item({ title: 'Arrival', year: 2016, genre: 'Sci-fi', note: 'a very long note that would never fit a chip' })}
+        item={item({
+          title: 'Arrival',
+          year: 2016,
+          genre: 'Sci-fi',
+          note: 'a very long note that would never fit a chip',
+        })}
         side="left"
       />,
     );
@@ -214,7 +225,13 @@ describe('summary chips and details', () => {
   const film = { title: 'Arrival', year: 2016, director: 'Denis Villeneuve' };
 
   it('shows chosen fields as chips while details are closed', () => {
-    render(<ItemCard item={item(film)} side="left" layout={cardLayout({ labelField: 'title', summaryFields: ['year'] })} />);
+    render(
+      <ItemCard
+        item={item(film)}
+        side="left"
+        layout={cardLayout({ labelField: 'title', summaryFields: ['year'] })}
+      />,
+    );
 
     expect(screen.getByText('year: 2016')).toBeDefined();
   });
@@ -222,7 +239,11 @@ describe('summary chips and details', () => {
   it('draws a link field as a link that opens in a new tab', () => {
     render(
       <ItemCard
-        layout={cardLayout({ labelField: 'title', summaryFields: ['site'], fieldRenderers: { site: 'link' } })}
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['site'],
+          fieldRenderers: { site: 'link' },
+        })}
         item={item({ ...film, site: 'https://example.com/arrival' })}
         side="left"
       />,
@@ -238,7 +259,11 @@ describe('summary chips and details', () => {
     const onChoose = vi.fn();
     render(
       <ItemCard
-        layout={cardLayout({ labelField: 'title', summaryFields: ['site'], fieldRenderers: { site: 'link' } })}
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['site'],
+          fieldRenderers: { site: 'link' },
+        })}
         item={item({ ...film, site: 'https://example.com/arrival' })}
         side="left"
         onChoose={onChoose}
@@ -255,7 +280,11 @@ describe('summary chips and details', () => {
   it('pictures an image field beside the title', () => {
     render(
       <ItemCard
-        layout={cardLayout({ labelField: 'title', summaryFields: ['poster'], fieldRenderers: { poster: 'image' } })}
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['poster'],
+          fieldRenderers: { poster: 'image' },
+        })}
         item={item({ ...film, poster: 'https://example.com/arrival.jpg' })}
         side="left"
       />,
@@ -267,7 +296,11 @@ describe('summary chips and details', () => {
   it('draws a rating as stars against its scale', () => {
     render(
       <ItemCard
-        layout={cardLayout({ labelField: 'title', summaryFields: ['score'], fieldRenderers: { score: 'stars-10' } })}
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['score'],
+          fieldRenderers: { score: 'stars-10' },
+        })}
         item={item({ ...film, score: 9.2 })}
         side="left"
       />,
@@ -277,11 +310,27 @@ describe('summary chips and details', () => {
 
   it('leaves out a false badge and names a true one', () => {
     const { rerender } = render(
-      <ItemCard item={item({ ...film, explicit: false })} side="left" layout={cardLayout({ labelField: 'title', summaryFields: ['explicit'], fieldRenderers: { explicit: 'badge' } })} />,
+      <ItemCard
+        item={item({ ...film, explicit: false })}
+        side="left"
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['explicit'],
+          fieldRenderers: { explicit: 'badge' },
+        })}
+      />,
     );
     expect(screen.queryByText(/explicit/)).toBeNull();
     rerender(
-      <ItemCard item={item({ ...film, explicit: true })} side="left" layout={cardLayout({ labelField: 'title', summaryFields: ['explicit'], fieldRenderers: { explicit: 'badge' } })} />,
+      <ItemCard
+        item={item({ ...film, explicit: true })}
+        side="left"
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['explicit'],
+          fieldRenderers: { explicit: 'badge' },
+        })}
+      />,
     );
     expect(screen.getByText('explicit')).toBeDefined();
   });
@@ -289,7 +338,11 @@ describe('summary chips and details', () => {
   it('pictures a YouTube video by its thumbnail, opening the video', () => {
     render(
       <ItemCard
-        layout={cardLayout({ labelField: 'title', summaryFields: ['trailer'], fieldRenderers: { trailer: 'youtube' } })}
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['trailer'],
+          fieldRenderers: { trailer: 'youtube' },
+        })}
         item={item({ ...film, trailer: 'https://youtu.be/dQw4w9WgXcQ' })}
         side="left"
       />,
@@ -308,8 +361,16 @@ describe('ItemCard picture slot and new lines', () => {
     const user = userEvent.setup();
     render(
       <ItemCard
-        layout={cardLayout({ labelField: 'title', summaryFields: ['cover', 'shots'], fieldRenderers: { cover: 'image', shots: 'image-gallery' } })}
-        item={item({ ...game, cover: 'https://example.com/cover.jpg', shots: ['https://example.com/1.png', 'https://example.com/2.png'] })}
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['cover', 'shots'],
+          fieldRenderers: { cover: 'image', shots: 'image-gallery' },
+        })}
+        item={item({
+          ...game,
+          cover: 'https://example.com/cover.jpg',
+          shots: ['https://example.com/1.png', 'https://example.com/2.png'],
+        })}
         side="left"
         onChoose={onChoose}
       />,
@@ -327,7 +388,15 @@ describe('ItemCard picture slot and new lines', () => {
 
   it('shows one picture without a pager', () => {
     render(
-      <ItemCard item={item(game)} side="left" layout={cardLayout({ labelField: 'title', summaryFields: ['steam'], fieldRenderers: { steam: 'steam-header' } })} />,
+      <ItemCard
+        item={item(game)}
+        side="left"
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['steam'],
+          fieldRenderers: { steam: 'steam-header' },
+        })}
+      />,
     );
     expect(screen.queryByRole('button', { name: /picture of Portal/ })).toBeNull();
     expect(screen.getByRole('link', { name: 'Open Portal on Steam' }).getAttribute('href')).toBe(
@@ -338,7 +407,14 @@ describe('ItemCard picture slot and new lines', () => {
   it('draws pills, a swatch, a flag, money and a map link', () => {
     render(
       <ItemCard
-        item={item({ title: 'Office', priority: 'High', colour: '#336699', country: 'CA', rent: 2400, address: '100 Queen St W' })}
+        item={item({
+          title: 'Office',
+          priority: 'High',
+          colour: '#336699',
+          country: 'CA',
+          rent: 2400,
+          address: '100 Queen St W',
+        })}
         side="left"
         layout={cardLayout({
           labelField: 'title',
@@ -357,7 +433,9 @@ describe('ItemCard picture slot and new lines', () => {
     expect(screen.getByRole('img', { name: '#336699' })).toBeDefined();
     expect(screen.getByText(/🇨🇦/)).toBeDefined();
     expect(screen.getByText(/2,400/)).toBeDefined();
-    expect(screen.getByRole('link', { name: /100 Queen St W/ }).getAttribute('href')).toContain('google.com/maps');
+    expect(screen.getByRole('link', { name: /100 Queen St W/ }).getAttribute('href')).toContain(
+      'google.com/maps',
+    );
   });
 
   it('folds long text behind a toggle that does not choose the card', async () => {
@@ -365,7 +443,11 @@ describe('ItemCard picture slot and new lines', () => {
     const user = userEvent.setup();
     render(
       <ItemCard
-        layout={cardLayout({ labelField: 'title', summaryFields: ['notes'], fieldRenderers: { notes: 'long-text' } })}
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['notes'],
+          fieldRenderers: { notes: 'long-text' },
+        })}
         item={item({ title: 'Plan', notes: 'word '.repeat(60) })}
         side="left"
         onChoose={onChoose}

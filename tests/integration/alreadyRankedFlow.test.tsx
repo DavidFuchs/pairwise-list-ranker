@@ -168,11 +168,9 @@ describe('marking a list as already ranked', () => {
     }
 
     const { selectProgress, selectRanking } = await import('@/lib/state/selectors');
-    const before = selectRanking(
-      openList(listStore).items,
-      openList(listStore).comparisonEvents,
-      false,
-    ).map((entry) => entry.item.id);
+    const before = selectRanking(openList(listStore).items, openList(listStore).comparisonEvents, false).map(
+      (entry) => entry.item.id,
+    );
     const coverageBefore = selectProgress(
       openList(listStore).items,
       openList(listStore).comparisonEvents,

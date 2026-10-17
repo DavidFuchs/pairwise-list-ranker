@@ -15,14 +15,7 @@ import type { ActivePair } from '@/lib/state/selectors';
 import { selectCurrentPair, selectRanking } from '@/lib/state/selectors';
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent, ComparisonOutcome, RankedItem } from '@/types/ranking';
-import type {
-  DataSource,
-  FieldRoles,
-  ListConfig,
-  PreviewTab,
-  RankedList,
-  Workspace,
-} from '@/types/source';
+import type { DataSource, FieldRoles, ListConfig, PreviewTab, RankedList, Workspace } from '@/types/source';
 
 export interface ListStoreOptions {
   storage?: WorkspaceStorage;
@@ -37,9 +30,7 @@ export interface ListStoreOptions {
 }
 
 /** One step the user can take back. */
-export type UndoEntry =
-  | { kind: 'comparison'; eventIds: string[] }
-  | { kind: 'remove'; itemId: string };
+export type UndoEntry = { kind: 'comparison'; eventIds: string[] } | { kind: 'remove'; itemId: string };
 
 const MAX_UNDO = 200;
 
@@ -491,7 +482,11 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
             { undoStack },
           );
         } else {
-          commitList(workspace, { ...list, items: setItemActive(list.items, entry.itemId, true) }, { undoStack });
+          commitList(
+            workspace,
+            { ...list, items: setItemActive(list.items, entry.itemId, true) },
+            { undoStack },
+          );
         }
       },
 

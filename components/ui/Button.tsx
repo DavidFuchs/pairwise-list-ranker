@@ -4,13 +4,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { useReducedMotion } from '@/lib/hooks/useReducedMotion';
 import { colors, fonts, motion, radius, space } from '@/lib/theme';
 
-export type ButtonVariant =
-  | 'primary'
-  | 'emphasis'
-  | 'secondary'
-  | 'ghost'
-  | 'danger'
-  | 'dangerStrong';
+export type ButtonVariant = 'primary' | 'emphasis' | 'secondary' | 'ghost' | 'danger' | 'dangerStrong';
 
 export interface ButtonProps {
   label: string;
@@ -61,9 +55,7 @@ export function Button({
         style,
       ]}
     >
-      <Text style={[styles.label, size === 'sm' ? styles.labelSm : null, labelStyles[variant]]}>
-        {label}
-      </Text>
+      <Text style={[styles.label, size === 'sm' ? styles.labelSm : null, labelStyles[variant]]}>{label}</Text>
     </Pressable>
   );
 }

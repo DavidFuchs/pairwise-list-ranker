@@ -222,7 +222,7 @@ describe('useSourceDraft', () => {
    * when revisited - not "no particular order" just because the seed's
    * arrayPath points at a different list.
    */
-  it('defaults a known candidate to its real alreadyRanked answer, not the seeded list\'s', () => {
+  it("defaults a known candidate to its real alreadyRanked answer, not the seeded list's", () => {
     const { result } = renderHook(() =>
       useSourceDraft({
         rawText: NESTED,
@@ -239,7 +239,7 @@ describe('useSourceDraft', () => {
     expect(result.current.alreadyRanked).toBe(true);
   });
 
-  it('lets an explicit choice override a known candidate\'s remembered answer', () => {
+  it("lets an explicit choice override a known candidate's remembered answer", () => {
     const { result } = renderHook(() =>
       useSourceDraft({
         rawText: NESTED,

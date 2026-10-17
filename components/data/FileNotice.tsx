@@ -4,9 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { colors, fonts, radius, space } from '@/lib/theme';
 
 /** Something to say about a file just opened, or a question to ask before using it. */
-export type FileNoticeState =
-  | { message: string }
-  | { confirm: string; onConfirm: () => void };
+export type FileNoticeState = { message: string } | { confirm: string; onConfirm: () => void };
 
 export interface FileNoticeProps {
   notice: FileNoticeState;
@@ -18,7 +16,9 @@ export function FileNotice({ notice, onDismiss }: FileNoticeProps) {
   const asking = 'confirm' in notice;
   return (
     <View style={[styles.notice, asking && styles.asking]} accessibilityRole="alert">
-      <Text style={[styles.text, asking && styles.askingText]}>{asking ? notice.confirm : notice.message}</Text>
+      <Text style={[styles.text, asking && styles.askingText]}>
+        {asking ? notice.confirm : notice.message}
+      </Text>
       <View style={styles.actions}>
         {asking ? (
           <>

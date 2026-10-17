@@ -94,9 +94,7 @@ describe('switching between lists in the same document', () => {
     seedWorkspace();
     render(<DataScreen />);
 
-    expect(
-      await screen.findByRole('progressbar', { name: /ranking progress for movies/i }),
-    ).toBeDefined();
+    expect(await screen.findByRole('progressbar', { name: /ranking progress for movies/i })).toBeDefined();
   });
 });
 

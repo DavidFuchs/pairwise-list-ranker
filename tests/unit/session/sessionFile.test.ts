@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { createWorkspaceStorage } from '@/lib/persistence/workspaceStorage';
 import type { StorageLike } from '@/lib/persistence/workspaceStorage';
 import { buildProgressFile } from '@/lib/progress/progressFile';
-import { buildSessionFile, describeSession, readSavedFile, SESSION_FILE_KIND } from '@/lib/session/sessionFile';
+import {
+  buildSessionFile,
+  describeSession,
+  readSavedFile,
+  SESSION_FILE_KIND,
+} from '@/lib/session/sessionFile';
 import { createListStore } from '@/lib/state/useListStore';
 import type { DataSource } from '@/types/source';
 import { openList } from '@/tests/helpers/lists';
@@ -73,7 +78,9 @@ describe('session files', () => {
 
     expect(after.workspace).toEqual(before.workspace);
     expect(after.previewTab).toBe('json');
-    expect(after.ranking().map((entry) => entry.item.id)).toEqual(before.ranking().map((entry) => entry.item.id));
+    expect(after.ranking().map((entry) => entry.item.id)).toEqual(
+      before.ranking().map((entry) => entry.item.id),
+    );
     expect(openList(target).roles.fieldRenderers).toEqual({ year: 'compact' });
     expect(openList(target).alreadyRanked).toBe(true);
     expect(saved.savedAt).toBe('2026-10-16T12:00:00.000Z');
@@ -92,7 +99,10 @@ describe('session files', () => {
     const saved = readSavedFile(text);
     if (saved.type !== 'session') throw new Error('expected a session');
     expect(saved.session.workspace.source.arrayPath).toEqual(['books']);
-    expect(Object.values(saved.session.workspace.lists).map((list) => list.arrayPath)).toEqual([['movies'], ['books']]);
+    expect(Object.values(saved.session.workspace.lists).map((list) => list.arrayPath)).toEqual([
+      ['movies'],
+      ['books'],
+    ]);
     expect(saved.session.workspace.lists.movies!.comparisonEvents).toHaveLength(2);
   });
 
@@ -104,7 +114,12 @@ describe('session files', () => {
 
   it('recognises a progress file from before sessions', () => {
     const store = workedStore();
-    const progress = buildProgressFile(openList(store).items, openList(store).comparisonEvents, ['movies'], '');
+    const progress = buildProgressFile(
+      openList(store).items,
+      openList(store).comparisonEvents,
+      ['movies'],
+      '',
+    );
     expect(readSavedFile(JSON.stringify(progress)).type).toBe('progress');
   });
 

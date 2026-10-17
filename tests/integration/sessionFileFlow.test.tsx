@@ -84,13 +84,17 @@ describe('session files', () => {
 
     await chooseFile(SONGS_TEXT);
 
-    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Your list' })).toHaveProperty('value', SONGS_TEXT));
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: 'Your list' })).toHaveProperty('value', SONGS_TEXT),
+    );
     expect(replace).not.toHaveBeenCalledWith('/rank');
   });
 
   it('asks before a session replaces a list with decisions behind it', async () => {
     const text = savedSessionText();
-    listStore.getState().startRanking({ source: { ...songs, document: ['A', 'B'], format: 'list' }, roles: {} });
+    listStore
+      .getState()
+      .startRanking({ source: { ...songs, document: ['A', 'B'], format: 'list' }, roles: {} });
     const [a, b] = openList(listStore).items;
     listStore.getState().recordComparison(a!.id, b!.id, 'left');
     listStore.getState().markResumed();

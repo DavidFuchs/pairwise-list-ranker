@@ -7,9 +7,32 @@ import { FieldPicker } from '@/components/data/FieldPicker';
 import type { FieldRoles } from '@/types/source';
 
 const songs = [
-  { title: 'Cold Heart', artist: 'Elton John', year: 2021, apple_music_id: '1578986673', tags: ['pop'], url: 'https://music.example/a', art: 'https://img.example/a.jpg' },
-  { title: 'A Bar Song', artist: 'Shaboozey', year: 2024, apple_music_id: '1737085899', tags: ['country'], url: 'https://music.example/b', art: 'https://img.example/b.png' },
-  { title: 'Mary On A Cross', artist: 'Ghost', year: 2019, apple_music_id: '1744433354', url: 'https://music.example/c', art: 'https://img.example/c.webp' },
+  {
+    title: 'Cold Heart',
+    artist: 'Elton John',
+    year: 2021,
+    apple_music_id: '1578986673',
+    tags: ['pop'],
+    url: 'https://music.example/a',
+    art: 'https://img.example/a.jpg',
+  },
+  {
+    title: 'A Bar Song',
+    artist: 'Shaboozey',
+    year: 2024,
+    apple_music_id: '1737085899',
+    tags: ['country'],
+    url: 'https://music.example/b',
+    art: 'https://img.example/b.png',
+  },
+  {
+    title: 'Mary On A Cross',
+    artist: 'Ghost',
+    year: 2019,
+    apple_music_id: '1744433354',
+    url: 'https://music.example/c',
+    art: 'https://img.example/c.webp',
+  },
 ];
 
 function setup(roles: FieldRoles) {
@@ -43,18 +66,26 @@ describe('FieldPicker', () => {
     const { onChange, user } = setup({ labelField: 'title', summaryFields: ['artist', 'year'] });
     await user.click(screen.getByRole('button', { name: 'Label items by artist' }));
     // A detail that becomes the title leaves the details.
-    expect(onChange).toHaveBeenCalledWith({ labelField: 'artist', summaryFields: ['year'], fieldRenderers: undefined });
+    expect(onChange).toHaveBeenCalledWith({
+      labelField: 'artist',
+      summaryFields: ['year'],
+      fieldRenderers: undefined,
+    });
   });
 
   it('marks the title and gives it no checkbox', () => {
     setup({ labelField: 'title' });
-    expect(screen.getByRole('button', { name: 'Label items by title' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Label items by title' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
     expect(screen.queryByRole('checkbox', { name: 'Show title on cards' })).toBeNull();
   });
 
   it('does not offer fields that cannot be a title as one, but can still show them', () => {
     setup({ labelField: 'title' });
-    expect(screen.getByRole('button', { name: 'Label items by tags' }).getAttribute('aria-disabled')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Label items by tags' }).getAttribute('aria-disabled')).toBe(
+      'true',
+    );
     expect(checkbox('tags').getAttribute('aria-disabled')).not.toBe('true');
   });
 
@@ -93,11 +124,15 @@ describe('FieldPicker', () => {
     expect(screen.getByRole('button', { name: 'Move tags down' }).getAttribute('aria-disabled')).toBe('true');
 
     await user.click(screen.getByRole('button', { name: 'Move year up' }));
-    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ summaryFields: ['year', 'artist', 'tags'] }));
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ summaryFields: ['year', 'artist', 'tags'] }),
+    );
 
     // Controlled: still rendering the original order.
     await user.click(screen.getByRole('button', { name: 'Move year down' }));
-    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ summaryFields: ['artist', 'tags', 'year'] }));
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ summaryFields: ['artist', 'tags', 'year'] }),
+    );
   });
 
   it('keeps a renderer with its field when the field moves', async () => {
@@ -142,7 +177,10 @@ describe('FieldPicker', () => {
   });
 
   it('takes as many details as there are fields', async () => {
-    const { onChange, user } = setup({ labelField: 'title', summaryFields: ['artist', 'year', 'apple_music_id', 'tags', 'url'] });
+    const { onChange, user } = setup({
+      labelField: 'title',
+      summaryFields: ['artist', 'year', 'apple_music_id', 'tags', 'url'],
+    });
     expect(checkbox('art').getAttribute('aria-disabled')).not.toBe('true');
     await user.click(checkbox('art'));
     expect(onChange).toHaveBeenLastCalledWith(
@@ -166,11 +204,18 @@ describe('FieldPicker', () => {
     expect(screen.getByRole('radio', { name: 'Show score as Bar out of 100' })).toBeDefined();
 
     await user.click(screen.getByRole('radio', { name: 'Show score as Stars out of 10' }));
-    expect(onChange).toHaveBeenCalledWith({ labelField: 'title', summaryFields: ['score'], fieldRenderers: { score: 'stars-10' } });
+    expect(onChange).toHaveBeenCalledWith({
+      labelField: 'title',
+      summaryFields: ['score'],
+      fieldRenderers: { score: 'stars-10' },
+    });
   });
 
   it('marks the scale in use', async () => {
-    const rated = [{ title: 'A', score: 4 }, { title: 'B', score: 3 }];
+    const rated = [
+      { title: 'A', score: 4 },
+      { title: 'B', score: 3 },
+    ];
     render(
       <FieldPicker
         objects={rated}
@@ -179,8 +224,12 @@ describe('FieldPicker', () => {
       />,
     );
     await userEvent.setup().click(screen.getByRole('button', { name: 'Choose how score is drawn' }));
-    expect(screen.getByRole('radio', { name: 'Show score as Bar out of 5' }).getAttribute('aria-checked')).toBe('true');
-    expect(screen.getByRole('radio', { name: 'Show score as Stars out of 5' }).getAttribute('aria-checked')).toBe('false');
+    expect(
+      screen.getByRole('radio', { name: 'Show score as Bar out of 5' }).getAttribute('aria-checked'),
+    ).toBe('true');
+    expect(
+      screen.getByRole('radio', { name: 'Show score as Stars out of 5' }).getAttribute('aria-checked'),
+    ).toBe('false');
   });
 
   it('previews new renderers with the field’s own values', () => {
@@ -218,7 +267,11 @@ describe('FieldPicker', () => {
   });
 
   it('opens a link field from its cell without changing the field', async () => {
-    const { onChange, user } = setup({ labelField: 'title', summaryFields: ['url'], fieldRenderers: { url: 'link' } });
+    const { onChange, user } = setup({
+      labelField: 'title',
+      summaryFields: ['url'],
+      fieldRenderers: { url: 'link' },
+    });
     const link = screen.getByRole('link');
     expect(link.getAttribute('href')).toBe('https://music.example/a');
     link.addEventListener('click', (event) => event.preventDefault());
@@ -239,7 +292,11 @@ describe('FieldPicker', () => {
 
   it('previews an image field as pictures', () => {
     setup({ labelField: 'title', summaryFields: ['art'], fieldRenderers: { art: 'image' } });
-    for (const url of ['https://img.example/a.jpg', 'https://img.example/b.png', 'https://img.example/c.webp']) {
+    for (const url of [
+      'https://img.example/a.jpg',
+      'https://img.example/b.png',
+      'https://img.example/c.webp',
+    ]) {
       expect(screen.getByRole('img', { name: url })).toBeDefined();
     }
   });
@@ -251,23 +308,38 @@ describe('FieldPicker', () => {
   });
 
   it('plays the first sample from the cell once a clip is found', async () => {
-    const found = songs.map((song, index) => ({ ...song, apple_music_id: index === 0 ? FOUND_ID : song.apple_music_id }));
+    const found = songs.map((song, index) => ({
+      ...song,
+      apple_music_id: index === 0 ? FOUND_ID : song.apple_music_id,
+    }));
     render(
       <FieldPicker
         objects={found}
-        roles={{ labelField: 'title', summaryFields: ['apple_music_id'], fieldRenderers: { apple_music_id: 'apple-music-preview' } }}
+        roles={{
+          labelField: 'title',
+          summaryFields: ['apple_music_id'],
+          fieldRenderers: { apple_music_id: 'apple-music-preview' },
+        }}
         onChange={vi.fn()}
       />,
     );
-    const play = await waitFor(() => screen.getByRole('button', { name: 'Play preview of apple_music_id sample' }));
-    expect(within(screen.getByRole('button', { name: 'Label items by apple_music_id' })).queryByRole('button')).toBeNull();
+    const play = await waitFor(() =>
+      screen.getByRole('button', { name: 'Play preview of apple_music_id sample' }),
+    );
+    expect(
+      within(screen.getByRole('button', { name: 'Label items by apple_music_id' })).queryByRole('button'),
+    ).toBeNull();
     expect(play).toBeDefined();
   });
 });
 
 describe('caveats', () => {
   const games = (headers: unknown[]) => headers.map((header, index) => ({ title: `Game ${index}`, header }));
-  const roles: FieldRoles = { labelField: 'title', summaryFields: ['header'], fieldRenderers: { header: 'steam-header' } };
+  const roles: FieldRoles = {
+    labelField: 'title',
+    summaryFields: ['header'],
+    fieldRenderers: { header: 'steam-header' },
+  };
 
   it('warns under a Steam field of app ids', () => {
     render(<FieldPicker objects={games([620, 400])} roles={roles} onChange={vi.fn()} />);
@@ -276,7 +348,8 @@ describe('caveats', () => {
   });
 
   it('says nothing once the field holds banner addresses', () => {
-    const banner = (id: number) => `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${id}/ab12/header.jpg`;
+    const banner = (id: number) =>
+      `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${id}/ab12/header.jpg`;
     render(<FieldPicker objects={games([banner(620), banner(400)])} roles={roles} onChange={vi.fn()} />);
 
     expect(screen.queryByText(/app id can't find it/i)).toBeNull();

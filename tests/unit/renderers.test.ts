@@ -107,7 +107,10 @@ describe('layoutSummary', () => {
 
   it('keeps each line with its renderer', () => {
     expect(
-      layoutSummary({ summaryFields: ['score', 'genres'], fieldRenderers: { score: 'stars-10', genres: 'tags' } }).renderers,
+      layoutSummary({
+        summaryFields: ['score', 'genres'],
+        fieldRenderers: { score: 'stars-10', genres: 'tags' },
+      }).renderers,
     ).toEqual({ score: 'stars-10', genres: 'tags' });
   });
 
@@ -181,7 +184,9 @@ describe('new renderers', () => {
       expect(youtubeId(url)).toBe('dQw4w9WgXcQ');
     }
     expect(offered(['https://www.youtube.com/@channel'])).not.toContain('youtube');
-    expect(picturesOf('https://youtu.be/dQw4w9WgXcQ', 'youtube')[0]?.uri).toBe('https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg');
+    expect(picturesOf('https://youtu.be/dQw4w9WgXcQ', 'youtube')[0]?.uri).toBe(
+      'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+    );
   });
 
   it('offers tags for lists of words or numbers, empty ones included', () => {
@@ -226,7 +231,11 @@ describe('new renderers', () => {
     expect(rating?.variants?.map((entry) => entry.label)).toEqual(['10', '100']);
     expect(rating?.variantPrompt).toBe('out of');
     expect(rating?.id).toBe('stars-10');
-    expect(rendererOptionsFor([0.4, 0.9]).find((option) => option.label === 'Bar')?.variants?.map((entry) => entry.id)).toEqual(['bar-1', 'bar-5', 'bar-10', 'bar-100']);
+    expect(
+      rendererOptionsFor([0.4, 0.9])
+        .find((option) => option.label === 'Bar')
+        ?.variants?.map((entry) => entry.id),
+    ).toEqual(['bar-1', 'bar-5', 'bar-10', 'bar-100']);
     expect(rendererOptionsFor([-1, 3]).find((option) => option.label === 'Stars')).toBeUndefined();
     expect(rendererOptionsFor([250]).find((option) => option.label === 'Stars')).toBeUndefined();
   });
@@ -286,9 +295,13 @@ describe('picture and play-button renderers', () => {
   });
 
   it('offers a gallery for lists of images, single images among them', () => {
-    expect(offered([['https://example.com/a.png', 'https://example.com/b.jpg'], 'https://example.com/c.png'])).toContain('image-gallery');
+    expect(
+      offered([['https://example.com/a.png', 'https://example.com/b.jpg'], 'https://example.com/c.png']),
+    ).toContain('image-gallery');
     expect(offered(['https://example.com/a.png'])).not.toContain('image-gallery');
-    expect(offered([['https://example.com/a.png', 'https://example.com/page']])).not.toContain('image-gallery');
+    expect(offered([['https://example.com/a.png', 'https://example.com/page']])).not.toContain(
+      'image-gallery',
+    );
   });
 
   it('reads Steam app ids and store addresses, picturing the banner and opening the store', () => {
@@ -297,7 +310,9 @@ describe('picture and play-button renderers', () => {
     expect(steamAppId('Portal 2')).toBeUndefined();
     expect(offered([620, '1245620'])).toContain('steam-header');
     const [banner] = picturesOf(620, 'steam-header');
-    expect(banner?.uri).toBe('https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/620/header.jpg');
+    expect(banner?.uri).toBe(
+      'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/620/header.jpg',
+    );
     expect(banner?.href).toBe('https://store.steampowered.com/app/620');
 
     // Newer games keep their banner behind a hashed folder: the address
@@ -342,15 +357,32 @@ describe('line renderers', () => {
   });
 
   it('offers pills for a dozen or more categories, as long as they repeat', () => {
-    const genres = ['Pop', 'Rock', 'Metal', 'Country', 'Jazz', 'Blues', 'Folk', 'Soul', 'Funk', 'Reggae', 'Punk', 'Hip-Hop'];
+    const genres = [
+      'Pop',
+      'Rock',
+      'Metal',
+      'Country',
+      'Jazz',
+      'Blues',
+      'Folk',
+      'Soul',
+      'Funk',
+      'Reggae',
+      'Punk',
+      'Hip-Hop',
+    ];
     expect(offered([...genres, ...genres])).toContain('pills');
     expect(offered(Array.from({ length: 60 }, (_, index) => `Genre ${index % 30}`))).not.toContain('pills');
   });
 
   it('offers pills for a field named like a category, even before its values repeat', () => {
-    expect(rendererOptionsFor(['Pop', 'Rock', 'Metal'], 'genre').map((option) => option.id)).toContain('pills');
+    expect(rendererOptionsFor(['Pop', 'Rock', 'Metal'], 'genre').map((option) => option.id)).toContain(
+      'pills',
+    );
     expect(rendererOptionsFor(['Open', 'Closed'], 'Status').map((option) => option.id)).toContain('pills');
-    expect(rendererOptionsFor(['Arrival', 'Heat', 'Alien'], 'title').map((option) => option.id)).not.toContain('pills');
+    expect(
+      rendererOptionsFor(['Arrival', 'Heat', 'Alien'], 'title').map((option) => option.id),
+    ).not.toContain('pills');
   });
 
   it('colours a pill by its word alone, and priorities by what they mean', () => {
@@ -374,10 +406,16 @@ describe('line renderers', () => {
     expect(coordinates('43.65, -79.38')).toEqual([43.65, -79.38]);
     expect(coordinates([120, 10])).toBeUndefined();
     expect(offered([{ lat: 1, lng: 2 }])).toContain('location');
-    expect(rendererOptionsFor(['100 Queen St W, Toronto'], 'address').map((option) => option.id)).toContain('location');
+    expect(rendererOptionsFor(['100 Queen St W, Toronto'], 'address').map((option) => option.id)).toContain(
+      'location',
+    );
     expect(rendererOptionsFor(['Arrival'], 'title').map((option) => option.id)).not.toContain('location');
-    expect(mapUrl('100 Queen St W')).toBe('https://www.google.com/maps/search/?api=1&query=100%20Queen%20St%20W');
-    expect(mapUrl({ lat: 43.65, lng: -79.38 })).toBe('https://www.google.com/maps/search/?api=1&query=43.65%2C-79.38');
+    expect(mapUrl('100 Queen St W')).toBe(
+      'https://www.google.com/maps/search/?api=1&query=100%20Queen%20St%20W',
+    );
+    expect(mapUrl({ lat: 43.65, lng: -79.38 })).toBe(
+      'https://www.google.com/maps/search/?api=1&query=43.65%2C-79.38',
+    );
   });
 
   it('offers flags for real two-letter country codes only', () => {
@@ -393,7 +431,14 @@ describe('line renderers', () => {
   });
 
   it('offers a colour swatch for CSS colours', () => {
-    for (const color of ['#fff', '#FFAA00', '#ffaa0080', 'rgb(255, 0, 0)', 'rgba(255 0 0 / 50%)', 'hsl(120deg 50% 50%)']) {
+    for (const color of [
+      '#fff',
+      '#FFAA00',
+      '#ffaa0080',
+      'rgb(255, 0, 0)',
+      'rgba(255 0 0 / 50%)',
+      'hsl(120deg 50% 50%)',
+    ]) {
       expect(isColor(color)).toBe(true);
     }
     expect(isColor('red')).toBe(false);
@@ -404,11 +449,14 @@ describe('line renderers', () => {
 
 describe('renderer caveats', () => {
   const context = { field: 'this', earlier: [], later: [], drawsFlags: true };
-  const banner = 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2950790/0123abcd/header.jpg';
+  const banner =
+    'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2950790/0123abcd/header.jpg';
 
   it('warns about Steam app ids, but not about banner addresses', () => {
     expect(rendererCaveat('steam-header', [620, banner], context)?.tone).toBe('warning');
-    expect(rendererCaveat('steam-header', ['https://store.steampowered.com/app/620/'], context)).toBeDefined();
+    expect(
+      rendererCaveat('steam-header', ['https://store.steampowered.com/app/620/'], context),
+    ).toBeDefined();
     expect(rendererCaveat('steam-header', [banner, undefined], context)).toBeUndefined();
   });
 
@@ -420,11 +468,14 @@ describe('renderer caveats', () => {
   it('suggests a second preview only when there is no other to fall back to', () => {
     expect(rendererCaveat('apple-music-preview', ['1'], context)).toBeDefined();
     expect(
-      rendererCaveat('apple-music-preview', ['1'], { ...context, later: [{ field: 'deezer', renderer: 'deezer-preview' }] })
-        ?.text,
+      rendererCaveat('apple-music-preview', ['1'], {
+        ...context,
+        later: [{ field: 'deezer', renderer: 'deezer-preview' }],
+      })?.text,
     ).not.toMatch(/not every track/i);
     expect(
-      rendererCaveat('deezer-preview', ['1'], { ...context, later: [{ field: 'art', renderer: 'image' }] })?.text,
+      rendererCaveat('deezer-preview', ['1'], { ...context, later: [{ field: 'art', renderer: 'image' }] })
+        ?.text,
     ).toMatch(/not every track/i);
   });
 
@@ -460,7 +511,10 @@ describe('renderer caveats', () => {
     for (const renderer of ['image', 'image-gallery', 'youtube', 'steam-header'] as const) {
       const caveat = rendererCaveat(renderer, ['https://img.example/a.jpg'], { ...context, earlier, later });
       expect(caveat?.text, renderer).toMatch(/share the spot beside the title/i);
-      expect(caveat?.order?.map((entry) => entry.field), renderer).toEqual(['poster', 'this', 'stills']);
+      expect(
+        caveat?.order?.map((entry) => entry.field),
+        renderer,
+      ).toEqual(['poster', 'this', 'stills']);
     }
     const first = rendererCaveat('image', ['https://img.example/a.jpg'], { ...context, later: earlier });
     expect(first?.order?.map((entry) => entry.field)).toEqual(['this', 'poster']);

@@ -80,9 +80,9 @@ describe('FoundPanel', () => {
   it('enables the call to action when everything is resolved', () => {
     setup();
 
-    expect(
-      screen.getByRole('button', { name: /start ranking/i }).getAttribute('aria-disabled'),
-    ).not.toBe('true');
+    expect(screen.getByRole('button', { name: /start ranking/i }).getAttribute('aria-disabled')).not.toBe(
+      'true',
+    );
   });
 
   it('submits', async () => {
@@ -96,9 +96,7 @@ describe('FoundPanel', () => {
   it('blocks when no label is chosen', () => {
     setup({ roles: {} });
 
-    expect(
-      screen.getByRole('button', { name: /start ranking/i }).getAttribute('aria-disabled'),
-    ).toBe('true');
+    expect(screen.getByRole('button', { name: /start ranking/i }).getAttribute('aria-disabled')).toBe('true');
   });
 
   it('asks for a title when none is set', () => {
@@ -133,18 +131,14 @@ describe('FoundPanel', () => {
     setup();
 
     expect(
-      screen
-        .getByRole('radio', { name: /the list is in no particular order/i })
-        .getAttribute('aria-checked'),
+      screen.getByRole('radio', { name: /the list is in no particular order/i }).getAttribute('aria-checked'),
     ).toBe('true');
   });
 
   it('reports choosing an already-ranked order', async () => {
     const { onAlreadyRankedChange, user } = setup();
 
-    await user.click(
-      screen.getByRole('radio', { name: /the list is already ranked, best to worst/i }),
-    );
+    await user.click(screen.getByRole('radio', { name: /the list is already ranked, best to worst/i }));
 
     expect(onAlreadyRankedChange).toHaveBeenCalledWith(true);
   });
@@ -171,9 +165,7 @@ describe('FoundPanel', () => {
     expect(screen.getByText(/nothing yet/i)).toBeDefined();
     expect(screen.getByText(/to get started/i)).toBeDefined();
     expect(screen.queryByText(/0 items/i)).toBeNull();
-    expect(
-      screen.getByRole('button', { name: /start ranking/i }).getAttribute('aria-disabled'),
-    ).toBe('true');
+    expect(screen.getByRole('button', { name: /start ranking/i }).getAttribute('aria-disabled')).toBe('true');
   });
 
   it('counts a single item without saying "1 items"', () => {
@@ -208,9 +200,9 @@ describe('FoundPanel default-for-every-list control', () => {
     setup({ isDefault: true });
 
     expect(screen.getByText(/these are the default/i)).toBeDefined();
-    expect(
-      screen.getByRole('button', { name: /set as default/i }).getAttribute('aria-disabled'),
-    ).toBe('true');
+    expect(screen.getByRole('button', { name: /set as default/i }).getAttribute('aria-disabled')).toBe(
+      'true',
+    );
   });
 
   it('asks nothing when the document holds a single list', () => {

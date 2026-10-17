@@ -26,17 +26,12 @@ const OVERSCAN = 8;
 const ASSUMED_VIEWPORT = 600;
 const ROW_PITCH = ROW_HEIGHT + space.xs;
 
-
 /**
  * The ranking, and the one place it can be arranged by hand. A manual move is
  * recorded as a placement in the comparison history: the item lands exactly
  * where it was dropped, nothing else moves, and nothing is discarded.
  */
-export function RankedListPreview({
-  ranking,
-  layout = EMPTY_LAYOUT,
-  onReorder,
-}: RankedListPreviewProps) {
+export function RankedListPreview({ ranking, layout = EMPTY_LAYOUT, onReorder }: RankedListPreviewProps) {
   const orderedIds = useMemo(() => ranking.map((entry) => entry.item.id), [ranking]);
   /**
    * Nothing moves until the drop. The rows hold still and a line marks the gap
@@ -49,14 +44,9 @@ export function RankedListPreview({
   const [viewportHeight, setViewportHeight] = useState(ASSUMED_VIEWPORT);
 
   const virtual = orderedIds.length > VIRTUALIZE_ABOVE;
-  const windowStart = virtual
-    ? Math.max(0, Math.floor(scrollTop / ROW_PITCH) - OVERSCAN)
-    : 0;
+  const windowStart = virtual ? Math.max(0, Math.floor(scrollTop / ROW_PITCH) - OVERSCAN) : 0;
   const windowEnd = virtual
-    ? Math.min(
-        orderedIds.length,
-        Math.ceil((scrollTop + viewportHeight) / ROW_PITCH) + OVERSCAN,
-      )
+    ? Math.min(orderedIds.length, Math.ceil((scrollTop + viewportHeight) / ROW_PITCH) + OVERSCAN)
     : orderedIds.length;
 
   const byId = useMemo(() => new Map(ranking.map((entry) => [entry.item.id, entry])), [ranking]);
@@ -168,31 +158,31 @@ export function RankedListPreview({
             },
           ]}
         >
-        {orderedIds.slice(windowStart, windowEnd).map((id, offset) => {
-          const index = windowStart + offset;
-          const entry = byId.get(id);
-          if (entry === undefined) return null;
-          const content = rowContent(entry.item, layout);
+          {orderedIds.slice(windowStart, windowEnd).map((id, offset) => {
+            const index = windowStart + offset;
+            const entry = byId.get(id);
+            if (entry === undefined) return null;
+            const content = rowContent(entry.item, layout);
 
-          return (
-            <RankedRow
-              key={id}
-              id={id}
-              rank={index + 1}
-              label={content.label}
-              meta={content.meta}
-              previewSources={content.previewSources}
-              showImage={layout.pictureFields.length > 0}
-              imageValue={content.imageValue}
-              rating={entry.state.rating}
-              dragging={dragging?.id === id}
-              insertBefore={insertionGap === index}
-              insertAfter={insertionGap === orderedIds.length && index === orderedIds.length - 1}
-              onGrab={handleGrab}
-              onKeyMove={handleKeyMove}
-            />
-          );
-        })}
+            return (
+              <RankedRow
+                key={id}
+                id={id}
+                rank={index + 1}
+                label={content.label}
+                meta={content.meta}
+                previewSources={content.previewSources}
+                showImage={layout.pictureFields.length > 0}
+                imageValue={content.imageValue}
+                rating={entry.state.rating}
+                dragging={dragging?.id === id}
+                insertBefore={insertionGap === index}
+                insertAfter={insertionGap === orderedIds.length && index === orderedIds.length - 1}
+                onGrab={handleGrab}
+                onKeyMove={handleKeyMove}
+              />
+            );
+          })}
         </View>
       </ScrollView>
     </View>
@@ -237,10 +227,7 @@ function rowContent(item: ListItem, layout: CardLayout): RowContent {
  * The ticked fields as one line, each read the way its renderer draws it on
  * the cards - a row is a single line of text, so stars become `★ 9.2/10`.
  */
-function metaFor(
-  item: ListItem,
-  { plainFields, renderers }: CardLayout,
-): string | null {
+function metaFor(item: ListItem, { plainFields, renderers }: CardLayout): string | null {
   if (plainFields.length === 0) return null;
   const parts = plainFields.flatMap((field) => {
     const renderer = renderers[field];

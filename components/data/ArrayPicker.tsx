@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from 'react-native';
 
-import { ListOptionRow } from "@/components/data/ListOptionRow";
-import type { ArrayCandidate } from "@/lib/import/arrayCandidates";
-import { pathKey } from "@/lib/import/paths";
-import type { CoverageReading } from "@/lib/state/selectors";
-import { colors, fonts, space } from "@/lib/theme";
+import { ListOptionRow } from '@/components/data/ListOptionRow';
+import type { ArrayCandidate } from '@/lib/import/arrayCandidates';
+import { pathKey } from '@/lib/import/paths';
+import type { CoverageReading } from '@/lib/state/selectors';
+import { colors, fonts, space } from '@/lib/theme';
 
 export interface ArrayPickerProps {
   candidates: ArrayCandidate[];
@@ -35,11 +35,7 @@ export function ArrayPicker({
   const selectedKey = value === null ? null : pathKey(value);
 
   return (
-    <View
-      style={styles.group}
-      role="radiogroup"
-      aria-label="Which list to rank"
-    >
+    <View style={styles.group} role="radiogroup" aria-label="Which list to rank">
       <Text style={styles.heading}>Rank which list?</Text>
 
       {candidates.map((candidate) => {
@@ -58,9 +54,8 @@ export function ArrayPicker({
       })}
 
       <Text style={styles.hint}>
-        You can rank each list separately and switch between them anytime - on
-        the ranking screen, click the list name in the top-left corner. Nothing
-        is lost when you switch.
+        You can rank each list separately and switch between them anytime - on the ranking screen, click the
+        list name in the top-left corner. Nothing is lost when you switch.
       </Text>
     </View>
   );
@@ -71,7 +66,7 @@ const styles = StyleSheet.create({
   heading: {
     fontFamily: fonts.heading,
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: '600',
     color: colors.textPrimary,
   },
   hint: {

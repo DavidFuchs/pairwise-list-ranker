@@ -30,7 +30,15 @@ const STAR_COUNT = 5;
  * star by star because a single glyph only clips, where a cut row of them
  * would wrap or end in an ellipsis.
  */
-export function StarRating({ value, scale, size = 14 }: { value: number; scale: RatingScale; size?: number }) {
+export function StarRating({
+  value,
+  scale,
+  size = 14,
+}: {
+  value: number;
+  scale: RatingScale;
+  size?: number;
+}) {
   const lit = (ratingFraction(value, scale) ?? 0) * STAR_COUNT;
   const glyphStyle = { fontSize: size, lineHeight: size + 2 };
   return (
@@ -98,13 +106,19 @@ const RatingView: LineView = ({ value, renderer, fieldKey }) => {
   return (
     <View style={styles.row}>
       {fieldKey}
-      {isRating(renderer, 'stars') ? <StarRating value={value} scale={scale} /> : <RatingBar value={value} scale={scale} />}
+      {isRating(renderer, 'stars') ? (
+        <StarRating value={value} scale={scale} />
+      ) : (
+        <RatingBar value={value} scale={scale} />
+      )}
     </View>
   );
 };
 
 const LinkView: LineView = ({ field, value, withKey, textStyle }) =>
-  isLink(value) ? <FieldLink url={value} prefix={withKey ? `${field}:` : undefined} textStyle={textStyle} /> : undefined;
+  isLink(value) ? (
+    <FieldLink url={value} prefix={withKey ? `${field}:` : undefined} textStyle={textStyle} />
+  ) : undefined;
 
 /** Line renderers that draw more than text. Any other renderer reads as its formatted text. */
 const VIEWS: Partial<Record<FixedRenderer, LineView>> = {
@@ -154,7 +168,11 @@ const VIEWS: Partial<Record<FixedRenderer, LineView>> = {
     isColor(value) ? (
       <View style={styles.row}>
         {fieldKey}
-        <View style={[styles.swatch, { backgroundColor: value.trim() }]} role="img" aria-label={value.trim()} />
+        <View
+          style={[styles.swatch, { backgroundColor: value.trim() }]}
+          role="img"
+          aria-label={value.trim()}
+        />
         <Text style={[textStyle, styles.swatchText]}>{value.trim()}</Text>
       </View>
     ) : undefined,
@@ -162,10 +180,19 @@ const VIEWS: Partial<Record<FixedRenderer, LineView>> = {
     const text = locationText(value);
     const url = mapUrl(value);
     if (text === undefined || url === undefined) return undefined;
-    return <FieldLink url={url} text={`📍 ${text}`} prefix={withKey ? `${field}:` : undefined} textStyle={textStyle} />;
+    return (
+      <FieldLink
+        url={url}
+        text={`📍 ${text}`}
+        prefix={withKey ? `${field}:` : undefined}
+        textStyle={textStyle}
+      />
+    );
   },
   'long-text': ({ field, value, withKey, textStyle }) =>
-    typeof value === 'string' ? <LongText field={field} value={value} withKey={withKey} textStyle={textStyle} /> : undefined,
+    typeof value === 'string' ? (
+      <LongText field={field} value={value} withKey={withKey} textStyle={textStyle} />
+    ) : undefined,
   link: LinkView,
   image: LinkView,
   youtube: LinkView,

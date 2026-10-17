@@ -54,7 +54,12 @@ export function useComparisonShortcuts({
     const handler = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) return;
 
-      if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'z') {
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        !event.altKey &&
+        !event.shiftKey &&
+        event.key.toLowerCase() === 'z'
+      ) {
         if (armed || onUndo === undefined) return;
         event.preventDefault();
         onUndo();
@@ -112,17 +117,7 @@ export function useComparisonShortcuts({
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [
-    onChoose,
-    onSkip,
-    onArmDelete,
-    onConfirmDelete,
-    onCancelDelete,
-    onUndo,
-    armed,
-    sideRequested,
-    enabled,
-  ]);
+  }, [onChoose, onSkip, onArmDelete, onConfirmDelete, onCancelDelete, onUndo, armed, sideRequested, enabled]);
 
   return { awaitingSide, clearAwaitingSide: useCallback(() => setSideRequested(false), []) };
 }

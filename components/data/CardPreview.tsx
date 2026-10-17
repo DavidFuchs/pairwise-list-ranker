@@ -113,14 +113,12 @@ export function CardPreview({ objects, roles, fill = false }: CardPreviewProps) 
                 aria-hidden={!shown}
                 onLayout={(event) => {
                   const { height } = event.nativeEvent.layout;
-                  setHeights((current) => (current[slot] === height ? current : { ...current, [slot]: height }));
+                  setHeights((current) =>
+                    current[slot] === height ? current : { ...current, [slot]: height },
+                  );
                 }}
               >
-                <ItemCard
-                  item={previewItem(objects[at]!, at)}
-                  side="left"
-                  layout={layout}
-                />
+                <ItemCard item={previewItem(objects[at]!, at)} side="left" layout={layout} />
               </View>
             );
           })}
@@ -140,7 +138,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   panelFill: { flex: 1, minHeight: 0 },
-  header: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
+  header: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.sm,
+  },
   heading: { gap: 2, flexShrink: 1 },
   title: { fontFamily: fonts.heading, fontSize: 15, fontWeight: '600', color: colors.textPrimary },
   subtitle: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
@@ -155,7 +159,13 @@ const styles = StyleSheet.create({
   },
   stepButton: { width: 30, height: 28, alignItems: 'center', justifyContent: 'center' },
   stepGlyph: { fontFamily: fonts.body, fontSize: 16, color: colors.textSecondary },
-  count: { minWidth: 56, textAlign: 'center', fontFamily: fonts.mono, fontSize: 11, color: colors.textSecondary },
+  count: {
+    minWidth: 56,
+    textAlign: 'center',
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
   cards: { gap: space.md },
   // The height left in the panel, whatever the cards inside would ask for,
   // widened by the lift room so the clip falls outside a hovered card.

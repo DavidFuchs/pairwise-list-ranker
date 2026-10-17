@@ -42,9 +42,7 @@ describe('findArrayCandidates', () => {
   it('treats a bare array document as the only candidate, with an empty path', () => {
     const { candidates } = findArrayCandidates(['Alien', 'Arrival']);
 
-    expect(candidates).toEqual([
-      { path: [], count: 2, entryKind: 'scalar', samples: ['Alien', 'Arrival'] },
-    ]);
+    expect(candidates).toEqual([{ path: [], count: 2, entryKind: 'scalar', samples: ['Alien', 'Arrival'] }]);
   });
 
   // Too short to rank, but still the list the user meant. describeReadiness

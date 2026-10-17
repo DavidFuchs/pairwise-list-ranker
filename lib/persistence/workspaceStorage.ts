@@ -42,9 +42,7 @@ export function defaultBackend(): StorageLike | null {
   }
 }
 
-export function createWorkspaceStorage(
-  backend: StorageLike | null = defaultBackend(),
-): WorkspaceStorage {
+export function createWorkspaceStorage(backend: StorageLike | null = defaultBackend()): WorkspaceStorage {
   const available = backend !== null && probe(backend);
 
   return {

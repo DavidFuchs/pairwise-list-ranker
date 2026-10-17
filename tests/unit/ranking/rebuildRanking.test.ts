@@ -57,21 +57,14 @@ describe('rebuildRanking', () => {
   });
 
   it('puts the winner of a comparison above the loser', () => {
-    const ranked = rebuildRanking(
-      [item('a'), item('b')],
-      [event('a', 'b', 'right', 1)],
-    );
+    const ranked = rebuildRanking([item('a'), item('b')], [event('a', 'b', 'right', 1)]);
 
     expect(ids(ranked)).toEqual(['b', 'a']);
   });
 
   it('replays events in timestamp order rather than array order', () => {
     const items = [item('a'), item('b'), item('c')];
-    const cycle = [
-      event('a', 'b', 'left', 1),
-      event('b', 'c', 'left', 2),
-      event('c', 'a', 'left', 3),
-    ];
+    const cycle = [event('a', 'b', 'left', 1), event('b', 'c', 'left', 2), event('c', 'a', 'left', 3)];
 
     const inOrder = rebuildRanking(items, cycle);
     const shuffled = rebuildRanking(items, [cycle[2]!, cycle[0]!, cycle[1]!]);
@@ -100,10 +93,7 @@ describe('rebuildRanking', () => {
     // 'a' is dropped between 'b' and 'c': it loses to the neighbour above and
     // beats the one below. 'd' is untouched. The ids sort against the recorded
     // order, the way two random UUIDs do half the time.
-    const recorded = [
-      sameTick('zzz', 'a', 'b', 'right'),
-      sameTick('aaa', 'a', 'c', 'left'),
-    ];
+    const recorded = [sameTick('zzz', 'a', 'b', 'right'), sameTick('aaa', 'a', 'c', 'left')];
 
     // 'a' landed above 'c', so it must also stay above the bystander it started
     // above. Replaying backwards drops it below 'd' instead.
@@ -133,10 +123,7 @@ describe('rebuildRanking', () => {
   });
 
   it('keeps the rating a survivor earned against an item that was later deleted', () => {
-    const ranked = rebuildRanking(
-      [item('a'), item('b', { active: false })],
-      [event('a', 'b', 'left', 1)],
-    );
+    const ranked = rebuildRanking([item('a'), item('b', { active: false })], [event('a', 'b', 'left', 1)]);
 
     expect(ids(ranked)).toEqual(['a']);
     expect(ranked[0]?.state.rating).toBeGreaterThan(INITIAL_RATING);
@@ -251,11 +238,7 @@ describe('the order items arrived in', () => {
   it('shows an unranked list in the order it was imported', () => {
     const items = unranked(['Tacos', 'Ramen', 'Curry']);
 
-    expect(rebuildRanking(items, []).map((entry) => entry.item.value)).toEqual([
-      'Tacos',
-      'Ramen',
-      'Curry',
-    ]);
+    expect(rebuildRanking(items, []).map((entry) => entry.item.value)).toEqual(['Tacos', 'Ramen', 'Curry']);
   });
 
   it('does not fall back to sorting by id', () => {

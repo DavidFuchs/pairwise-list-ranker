@@ -271,7 +271,8 @@ function tally(wins: HeadToHead, event: ComparisonEvent): void {
   if (event.outcome === 'skip') return;
   // A placement ranks the item above the one it was placed over, and below
   // the one it was placed under, which is what a tie should then remember.
-  const leftWon = event.outcome === 'left' || event.outcome === 'left_strong' || event.outcome === 'place_above';
+  const leftWon =
+    event.outcome === 'left' || event.outcome === 'left_strong' || event.outcome === 'place_above';
   const winner = leftWon ? event.leftItemId : event.rightItemId;
   const loser = leftWon ? event.rightItemId : event.leftItemId;
 

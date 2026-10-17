@@ -1,14 +1,6 @@
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import {
-  Modal as RNModal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Modal as RNModal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { HowItWorksModal } from '@/components/layout/HowItWorksModal';
 import { SPLIT_DIVIDER_WIDTH, SplitDivider } from '@/components/layout/SplitDivider';
@@ -248,13 +240,21 @@ export function AppShell({
         onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
       >
         <View
-          style={[styles.body, layout === 'split' && styles.bodySplit, layout === 'stacked' && styles.bodyStacked]}
+          style={[
+            styles.body,
+            layout === 'split' && styles.bodySplit,
+            layout === 'stacked' && styles.bodyStacked,
+          ]}
           onLayout={(event) => setBodyWidth(event.nativeEvent.layout.width)}
         >
           {rail != null && <View style={[styles.rail, layout === 'split' && styles.railSplit]}>{rail}</View>}
 
           <View
-            style={[styles.stage, layout === 'split' && styles.stageSplit, layout === 'stacked' && styles.stageStacked]}
+            style={[
+              styles.stage,
+              layout === 'split' && styles.stageSplit,
+              layout === 'stacked' && styles.stageStacked,
+            ]}
             role="main"
           >
             {stage}
@@ -283,7 +283,9 @@ export function AppShell({
               layout === 'split' && [
                 styles.previewSplit,
                 { width: sidebarWidth },
-                viewportHeight !== null && { height: Math.max(PREVIEW_MIN_HEIGHT, viewportHeight - space.lg * 2) },
+                viewportHeight !== null && {
+                  height: Math.max(PREVIEW_MIN_HEIGHT, viewportHeight - space.lg * 2),
+                },
               ],
               layout === 'stacked' && styles.previewStacked,
             ]}

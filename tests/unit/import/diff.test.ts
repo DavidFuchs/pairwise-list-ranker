@@ -67,10 +67,7 @@ describe('diffImport', () => {
   });
 
   it('reports new entries', () => {
-    const diff = diffImport(
-      [item('a', { title: 'Alien' })],
-      [{ title: 'Alien' }, { title: 'Solaris' }],
-    );
+    const diff = diffImport([item('a', { title: 'Alien' })], [{ title: 'Alien' }, { title: 'Solaris' }]);
 
     expect(diff.added).toEqual([{ title: 'Solaris' }]);
   });
@@ -83,10 +80,7 @@ describe('diffImport', () => {
   });
 
   it('treats an edited field as a removal plus an addition', () => {
-    const diff = diffImport(
-      [item('a', { title: 'Alien', year: 1979 })],
-      [{ title: 'Alien', year: 1980 }],
-    );
+    const diff = diffImport([item('a', { title: 'Alien', year: 1979 })], [{ title: 'Alien', year: 1980 }]);
 
     expect(diff.kept).toEqual([]);
     expect(diff.removed.map((entry) => entry.id)).toEqual(['a']);

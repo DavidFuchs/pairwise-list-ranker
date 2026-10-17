@@ -365,7 +365,10 @@ function ratingFamily(kind: 'stars' | 'bar', label: string, hint: string): Rende
     variantPrompt: 'out of',
     owns: (renderer) => isRating(renderer, kind),
     variantsFor: (values) =>
-      fittingScales(values).map((scale) => ({ id: `${kind}-${scale}` as FieldRenderer, label: String(scale) })),
+      fittingScales(values).map((scale) => ({
+        id: `${kind}-${scale}` as FieldRenderer,
+        label: String(scale),
+      })),
     format: (value, renderer) => {
       const scale = ratingScale(renderer);
       if (scale === undefined || !isNumber(value)) return undefined;

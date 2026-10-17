@@ -46,7 +46,9 @@ export function PreviewButton({ sources, label, compact = false, placeholder = n
       style={[styles.button, compact ? styles.compact : styles.labelled, playing && styles.active]}
     >
       <Text style={[styles.glyph, playing && styles.glyphActive]}>{playing ? '■' : '▶'}</Text>
-      {!compact && <Text style={[styles.text, playing && styles.glyphActive]}>{playing ? 'Stop' : 'Preview'}</Text>}
+      {!compact && (
+        <Text style={[styles.text, playing && styles.glyphActive]}>{playing ? 'Stop' : 'Preview'}</Text>
+      )}
     </Pressable>
   );
 }

@@ -30,9 +30,7 @@ const MAX_SAMPLES = 3;
 
 /** How one field appears on a card: its title, a detail drawn some way, or not at all. */
 type FieldStyle =
-  | { kind: 'title' }
-  | { kind: 'detail'; renderer: FieldRenderer | undefined }
-  | { kind: 'hidden' };
+  { kind: 'title' } | { kind: 'detail'; renderer: FieldRenderer | undefined } | { kind: 'hidden' };
 
 export interface FieldPickerProps {
   objects: ComplexItemValue[];
@@ -80,7 +78,9 @@ function StylePreview({ style, samples, field }: { style: FieldStyle; samples: S
   if (slotOf(renderer) === 'picture') {
     // A gallery's first value alone can fill the row, so pictures are counted, not values.
     const pictures = samples
-      .flatMap((sample) => picturesOf(sample.raw, renderer).map((picture) => ({ picture, label: sample.text })))
+      .flatMap((sample) =>
+        picturesOf(sample.raw, renderer).map((picture) => ({ picture, label: sample.text })),
+      )
       .slice(0, MAX_SAMPLES);
     return (
       <View style={styles.thumbs}>
@@ -102,7 +102,13 @@ function StylePreview({ style, samples, field }: { style: FieldStyle; samples: S
     return (
       <View style={[styles.thumbs, styles.wrap]}>
         {samples.map((sample) => (
-          <FieldValue key={sample.text} field={field} value={sample.raw} renderer={renderer} textStyle={styles.samples} />
+          <FieldValue
+            key={sample.text}
+            field={field}
+            value={sample.raw}
+            renderer={renderer}
+            textStyle={styles.samples}
+          />
         ))}
       </View>
     );
@@ -124,7 +130,8 @@ function StylePreview({ style, samples, field }: { style: FieldStyle; samples: S
   // Drawn rather than written: one value shows the look better than three crowd it.
   if (renderer === 'tags' || renderer === 'badge' || ratingScale(renderer) !== undefined) {
     // A badge shows nothing for false, so the preview looks for a true one.
-    const sample = renderer === 'badge' ? (samples.find((entry) => entry.raw === true) ?? samples[0]) : samples[0];
+    const sample =
+      renderer === 'badge' ? (samples.find((entry) => entry.raw === true) ?? samples[0]) : samples[0];
     if (sample === undefined) return null;
     if (renderer === 'badge' && sample.raw !== true) {
       return <Text style={[styles.samples, styles.samplesHidden]}>Never true, so never shown</Text>;
@@ -245,7 +252,10 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
       new Map(
         schema.fields.map((field) => {
           const values = valuesOf(objects, field.field);
-          return [field.field, { values, samples: samplesOf(values), options: rendererOptionsFor(values, field.field) }];
+          return [
+            field.field,
+            { values, samples: samplesOf(values), options: rendererOptionsFor(values, field.field) },
+          ];
         }),
       ),
     [objects, schema],
@@ -264,12 +274,17 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
     );
   }
 
-  const commit = (labelField: string | undefined, summaryFields: string[], renderers: FieldRoles['fieldRenderers']) =>
+  const commit = (
+    labelField: string | undefined,
+    summaryFields: string[],
+    renderers: FieldRoles['fieldRenderers'],
+  ) =>
     onChange({
       ...roles,
       labelField,
       // Emptying a selection is a choice of its own; only never having chosen stays absent.
-      summaryFields: summaryFields.length === 0 && roles.summaryFields === undefined ? undefined : summaryFields,
+      summaryFields:
+        summaryFields.length === 0 && roles.summaryFields === undefined ? undefined : summaryFields,
       fieldRenderers: cleanRenderers(renderers, summaryFields),
     });
 
@@ -341,7 +356,9 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
               role="checkbox"
               accessibilityLabel={`Show ${field.field} on cards`}
               aria-checked={isShown}
-              onPress={() => apply(field.field, isShown ? { kind: 'hidden' } : { kind: 'detail', renderer: undefined })}
+              onPress={() =>
+                apply(field.field, isShown ? { kind: 'hidden' } : { kind: 'detail', renderer: undefined })
+              }
               style={styles.lead}
             >
               <View style={[styles.box, isShown && styles.boxChecked]}>
@@ -389,7 +406,9 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
           {plays && (
             <View style={styles.play}>
               <PreviewButton
-                sources={[previewSourceOf(samples[0]?.raw, rendererOf(current))].flatMap((source) => source ?? [])}
+                sources={[previewSourceOf(samples[0]?.raw, rendererOf(current))].flatMap(
+                  (source) => source ?? [],
+                )}
                 label={`${field.field} sample`}
                 compact
                 placeholder={<PreviewButtonPlaceholder />}
@@ -428,20 +447,26 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
               onPress={() => setOpenField(open ? null : field.field)}
               style={[styles.side, isShown && styles.sideSelected, open && styles.sideOpen]}
             >
-              <Text style={[styles.glyph, styles.chevron, isShown && styles.fieldSelected]}>{open ? '▴' : '▾'}</Text>
+              <Text style={[styles.glyph, styles.chevron, isShown && styles.fieldSelected]}>
+                {open ? '▴' : '▾'}
+              </Text>
             </Pressable>
           )}
         </View>
 
         {caveat !== undefined && (
           <View style={styles.caveat}>
-            <Text style={[styles.caveatText, caveat.tone === 'warning' && styles.caveatWarning]}>{caveat.text}</Text>
+            <Text style={[styles.caveatText, caveat.tone === 'warning' && styles.caveatWarning]}>
+              {caveat.text}
+            </Text>
             {caveat.order !== undefined && (
               <View role="list">
                 {caveat.order.map((entry, index) => (
                   <Text key={entry.field} role="listitem" style={styles.caveatText}>
                     {`${index + 1}. `}
-                    <Text style={entry.current ? styles.caveatCurrent : styles.caveatField}>{entry.field}</Text>
+                    <Text style={entry.current ? styles.caveatCurrent : styles.caveatField}>
+                      {entry.field}
+                    </Text>
                     {entry.current ? ' (this field)' : ''}
                   </Text>
                 ))}
@@ -467,9 +492,7 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
               />
             ))}
             {!isShown && (
-              <Text style={styles.choiceHint}>
-                Choosing one also adds this field to the cards.
-              </Text>
+              <Text style={styles.choiceHint}>Choosing one also adds this field to the cards.</Text>
             )}
           </View>
         )}
@@ -481,7 +504,8 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
     <View style={styles.group}>
       <Text style={styles.heading}>Fields</Text>
       <Text style={styles.prompt}>
-        Tap a field to make it the title. Tick any others to show under it, and use the arrows to set their order.
+        Tap a field to make it the title. Tick any others to show under it, and use the arrows to set their
+        order.
       </Text>
 
       {onCard.length > 0 && (
@@ -639,7 +663,13 @@ const styles = StyleSheet.create({
   scaleActive: { borderColor: colors.accentSoftBorder, backgroundColor: colors.accentSoft },
   scaleText: { fontFamily: fonts.mono, fontSize: 11, color: colors.textSecondary },
   choiceActive: { borderColor: colors.accentSoftBorder, backgroundColor: colors.accentSoft },
-  choiceName: { flexShrink: 0, fontFamily: fonts.body, fontSize: 13, fontWeight: '600', color: colors.textPrimary },
+  choiceName: {
+    flexShrink: 0,
+    fontFamily: fonts.body,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
   choiceHint: { flexShrink: 1, fontFamily: fonts.body, fontSize: 11, color: colors.textFaint },
   disabled: { opacity: 0.45 },
 });

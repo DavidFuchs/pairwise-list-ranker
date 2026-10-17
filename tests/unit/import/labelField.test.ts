@@ -64,28 +64,34 @@ describe('collectLabelFieldCandidates', () => {
   it('includes fields that only later items introduce', () => {
     const uneven = [{ title: 'Arrival' }, { title: 'Alien', tagline: 'In space...' }];
 
-    expect(collectLabelFieldCandidates(uneven).map((entry) => entry.field)).toEqual([
-      'title',
-      'tagline',
-    ]);
+    expect(collectLabelFieldCandidates(uneven).map((entry) => entry.field)).toEqual(['title', 'tagline']);
   });
 });
 
 describe('preferredLabelField', () => {
   it('picks the first field', () => {
-    const both = [{ name: 'a', title: 'b' }, { name: 'c', title: 'd' }];
+    const both = [
+      { name: 'a', title: 'b' },
+      { name: 'c', title: 'd' },
+    ];
 
     expect(preferredLabelField(collectLabelFieldCandidates(both))).toBe('name');
   });
 
   it('picks the first field even when it is a number', () => {
-    const numeric = [{ year: 2016, rank: 1 }, { year: 1979, rank: 2 }];
+    const numeric = [
+      { year: 2016, rank: 1 },
+      { year: 1979, rank: 2 },
+    ];
 
     expect(preferredLabelField(collectLabelFieldCandidates(numeric))).toBe('year');
   });
 
   it('skips fields that cannot be a title', () => {
-    const nested = [{ cast: ['Adams'], title: 'Arrival' }, { cast: ['Weaver'], title: 'Alien' }];
+    const nested = [
+      { cast: ['Adams'], title: 'Arrival' },
+      { cast: ['Weaver'], title: 'Alien' },
+    ];
 
     expect(preferredLabelField(collectLabelFieldCandidates(nested))).toBe('title');
   });
@@ -113,12 +119,7 @@ describe('describeObjectSchema', () => {
   it('describes every field, including ones that cannot be labels', () => {
     const schema = describeObjectSchema(films);
 
-    expect(schema.fields.map((entry) => entry.field)).toEqual([
-      'title',
-      'year',
-      'director',
-      'cast',
-    ]);
+    expect(schema.fields.map((entry) => entry.field)).toEqual(['title', 'year', 'director', 'cast']);
   });
 
   it('records the types seen for each field', () => {

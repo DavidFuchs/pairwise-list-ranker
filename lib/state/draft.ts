@@ -19,7 +19,9 @@ import type { FieldRoles, Workspace } from '@/types/source';
  * order, not the order it was imported in. Editing your data should show what
  * ranking made of it, the same way the export tabs already do.
  */
-export function buildDraftSeed(state: Pick<ListState, 'workspace' | 'pendingSwitchPath'>): SourceDraftSeed | undefined {
+export function buildDraftSeed(
+  state: Pick<ListState, 'workspace' | 'pendingSwitchPath'>,
+): SourceDraftSeed | undefined {
   const { workspace } = state;
   if (workspace === null) return undefined;
   const open = activeList(workspace);

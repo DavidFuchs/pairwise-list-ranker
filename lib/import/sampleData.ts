@@ -141,7 +141,8 @@ export const SAMPLE_SONGS: SampleSong[] = [
     isrc: 'DE1AA2100002',
     apple_music_id: '1586116964',
     deezer_id: '1513103652',
-    apple_music_url: 'https://music.apple.com/ca/album/always-on-my-mind-feat-till-lindemann/1586116957?i=1586116964',
+    apple_music_url:
+      'https://music.apple.com/ca/album/always-on-my-mind-feat-till-lindemann/1586116957?i=1586116964',
     artwork_url:
       'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/9e/b9/35/9eb935ea-01dd-ae2a-79df-aa71ab31a4dc/886449464579.jpg/300x300bb.jpg',
   },
@@ -520,7 +521,8 @@ export const SAMPLE_MOVIES: SampleMovie[] = [
     best_picture: false,
     synopsis:
       "In 1805, Captain Jack Aubrey drives his British frigate around Cape Horn after a faster, better-armed French warship, testing his crew and his friendship with the ship's surgeon.",
-    poster_url: 'https://upload.wikimedia.org/wikipedia/en/b/bf/Master_and_Commander-The_Far_Side_of_the_World_poster.png',
+    poster_url:
+      'https://upload.wikimedia.org/wikipedia/en/b/bf/Master_and_Commander-The_Far_Side_of_the_World_poster.png',
     trailer: 'https://www.youtube.com/watch?v=tHTHCNYiiHk',
     cast_photos: [
       'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Russell_Crowe_on_the_Green_Carpet_at_the_2025_Zurich_Film_Festival_06_%28cropped%29.jpg/250px-Russell_Crowe_on_the_Green_Carpet_at_the_2025_Zurich_Film_Festival_06_%28cropped%29.jpg',
@@ -646,7 +648,8 @@ export const SAMPLE_GAMES: SampleGame[] = [
     title: 'IRON NEST: Heavy Turret Simulator',
     year: 2026,
     steam_app_id: 2950790,
-    steam_header: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2950790/e6c9e990560078611472e5dab98e79a405ed33f4/header.jpg?t=1791834023',
+    steam_header:
+      'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2950790/e6c9e990560078611472e5dab98e79a405ed33f4/header.jpg?t=1791834023',
     screenshots: [
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2950790/be3e941061112698ad333230e045b1be84e32235/ss_be3e941061112698ad333230e045b1be84e32235.600x338.jpg?t=1791834023',
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2950790/40d186452e7d1baf038ea858719f73f8542539e8/ss_40d186452e7d1baf038ea858719f73f8542539e8.600x338.jpg?t=1791834023',
@@ -670,7 +673,8 @@ export const SAMPLE_GAMES: SampleGame[] = [
     title: 'Blue Prince',
     year: 2025,
     steam_app_id: 1569580,
-    steam_header: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1569580/879ac248a3b548a6bbc32771b950756378e7e922/header.jpg?t=1783605097',
+    steam_header:
+      'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1569580/879ac248a3b548a6bbc32771b950756378e7e922/header.jpg?t=1783605097',
     screenshots: [
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1569580/ss_7f4511e2454604568f545436f36674451fed6353.600x338.jpg?t=1783605097',
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1569580/ss_d04f2e766f538d3680b28574ec97f06b3274aafc.600x338.jpg?t=1783605097',
@@ -694,7 +698,8 @@ export const SAMPLE_GAMES: SampleGame[] = [
     title: 'Satisfactory',
     year: 2024,
     steam_app_id: 526870,
-    steam_header: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/526870/header.jpg?t=1791192059',
+    steam_header:
+      'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/526870/header.jpg?t=1791192059',
     screenshots: [
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/526870/ss_9083ccf8fbb22c4068a6e233e3de343f815f9dc1.600x338.jpg?t=1791192059',
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/526870/ss_6f456011887f970dc230af5e1720065ca3430aae.600x338.jpg?t=1791192059',
@@ -718,7 +723,8 @@ export const SAMPLE_GAMES: SampleGame[] = [
     title: 'Dredge',
     year: 2023,
     steam_app_id: 1562430,
-    steam_header: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1562430/header.jpg?t=1780479732',
+    steam_header:
+      'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1562430/header.jpg?t=1780479732',
     screenshots: [
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1562430/ss_70f88014423ed93eaa111c0d0daca2c500f76908.600x338.jpg?t=1780479732',
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1562430/ss_d4d4b14c5cd071307e27b4e9737f23f28b096248.600x338.jpg?t=1780479732',
@@ -741,7 +747,8 @@ export const SAMPLE_GAMES: SampleGame[] = [
     title: 'Warhammer 40,000: Darktide',
     year: 2022,
     steam_app_id: 1361210,
-    steam_header: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1361210/6f8919b0183f24d271650c6dca958fb91edd5849/header_alt_assets_20.jpg?t=1790691939',
+    steam_header:
+      'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1361210/6f8919b0183f24d271650c6dca958fb91edd5849/header_alt_assets_20.jpg?t=1790691939',
     screenshots: [
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1361210/ss_e5bfe858d549cb4c488f9f755587496deca96082.600x338.jpg?t=1790691939',
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1361210/ss_623eb17524442b7a908511fb46fef3366609dbd3.600x338.jpg?t=1790691939',
@@ -764,7 +771,8 @@ export const SAMPLE_GAMES: SampleGame[] = [
     title: 'Valheim',
     year: 2021,
     steam_app_id: 892970,
-    steam_header: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/892970/1888731b59362fca6c026cdbafa3dfffd45c3146/header_alt_assets_6.jpg?t=1791544831',
+    steam_header:
+      'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/892970/1888731b59362fca6c026cdbafa3dfffd45c3146/header_alt_assets_6.jpg?t=1791544831',
     screenshots: [
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/892970/5a31353178f635b67f0c8720ebb8a1a95b637276/ss_5a31353178f635b67f0c8720ebb8a1a95b637276.600x338.jpg?t=1791544831',
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/892970/bc7c361dab1780543a3ceca50c8fba831e5bc8db/ss_bc7c361dab1780543a3ceca50c8fba831e5bc8db.600x338.jpg?t=1791544831',
@@ -788,7 +796,8 @@ export const SAMPLE_GAMES: SampleGame[] = [
     title: 'Factorio',
     year: 2020,
     steam_app_id: 427520,
-    steam_header: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/427520/ab9a2df0a77caebde20dc45adc021de8cdcf7cc5/header.jpg?t=1787348817',
+    steam_header:
+      'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/427520/ab9a2df0a77caebde20dc45adc021de8cdcf7cc5/header.jpg?t=1787348817',
     screenshots: [
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/427520/ss_36e4d8e5540805f5ed492d24d784ed9ba661752b.600x338.jpg?t=1787348817',
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/427520/ss_171f398a8e347fad650a9c1b6c3b77c612781510.600x338.jpg?t=1787348817',
@@ -812,7 +821,8 @@ export const SAMPLE_GAMES: SampleGame[] = [
     title: 'Subnautica',
     year: 2018,
     steam_app_id: 264710,
-    steam_header: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/264710/header.jpg?t=1777456112',
+    steam_header:
+      'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/264710/header.jpg?t=1777456112',
     screenshots: [
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/264710/ss_e182b6b20bb797500f9f63c561586d920d44e37c.600x338.jpg?t=1777456112',
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/264710/ss_970a13f246e33e0df26d93baf9f8e975732adb4b.600x338.jpg?t=1777456112',
@@ -836,7 +846,8 @@ export const SAMPLE_GAMES: SampleGame[] = [
     title: 'PUBG: BATTLEGROUNDS',
     year: 2017,
     steam_app_id: 578080,
-    steam_header: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/578080/841ea38bc58cabb70aef65365cf50bc2d79329d9/header.jpg?t=1786493086',
+    steam_header:
+      'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/578080/841ea38bc58cabb70aef65365cf50bc2d79329d9/header.jpg?t=1786493086',
     screenshots: [
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/578080/c16e2f2d122cae77a1cbaca19263df0f2d2214fa/ss_c16e2f2d122cae77a1cbaca19263df0f2d2214fa.600x338.jpg?t=1786493086',
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/578080/aa1c51a9b45c88e770b443d8d3cd28f3024b0760/ss_aa1c51a9b45c88e770b443d8d3cd28f3024b0760.600x338.jpg?t=1786493086',
@@ -859,7 +870,8 @@ export const SAMPLE_GAMES: SampleGame[] = [
     title: 'Quern - Undying Thoughts',
     year: 2016,
     steam_app_id: 512790,
-    steam_header: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/512790/header.jpg?t=1790011335',
+    steam_header:
+      'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/512790/header.jpg?t=1790011335',
     screenshots: [
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/512790/ss_6037890506925794e580ad15cbe0a13d9fd8ac6e.600x338.jpg?t=1790011335',
       'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/512790/ss_6b831fc33fc070997c7390f33aa81505e6b30cd2.600x338.jpg?t=1790011335',

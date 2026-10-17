@@ -52,8 +52,7 @@ export function diffImport(
 
   const removed = pool.filter((item) => !claimed.has(item.id));
   const keptComparisons = events.filter(
-    (event) =>
-      event.outcome !== 'skip' && claimed.has(event.leftItemId) && claimed.has(event.rightItemId),
+    (event) => event.outcome !== 'skip' && claimed.has(event.leftItemId) && claimed.has(event.rightItemId),
   ).length;
 
   // Same items, different sequence: a real change, and one the user cannot see
@@ -99,18 +98,13 @@ function fieldChange(from: string | undefined, to: string | undefined): FieldCha
 
 export function diffSettings(previous: ListConfig, next: ListConfig): SettingsDiff {
   const order =
-    previous.alreadyRanked === next.alreadyRanked
-      ? 'unchanged'
-      : next.alreadyRanked
-        ? 'seeded'
-        : 'flattened';
+    previous.alreadyRanked === next.alreadyRanked ? 'unchanged' : next.alreadyRanked ? 'seeded' : 'flattened';
   const label = fieldChange(previous.roles.labelField, next.roles.labelField);
   const before = previous.roles.summaryFields ?? [];
   const after = next.roles.summaryFields ?? [];
   const sameRenderers =
     JSON.stringify(previous.roles.fieldRenderers ?? {}) === JSON.stringify(next.roles.fieldRenderers ?? {});
-  const summary =
-    before.join('\u0000') === after.join('\u0000') && sameRenderers ? null : { to: after };
+  const summary = before.join('\u0000') === after.join('\u0000') && sameRenderers ? null : { to: after };
   const writeBack = fieldChange(previous.roles.positionField, next.roles.positionField);
 
   return {

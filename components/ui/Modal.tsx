@@ -18,11 +18,7 @@ export interface ModalProps {
 export function Modal({ visible, onClose, title, children }: ModalProps) {
   return (
     <RNModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable
-        style={styles.backdrop}
-        accessibilityLabel="Close"
-        onPress={onClose}
-      >
+      <Pressable style={styles.backdrop} accessibilityLabel="Close" onPress={onClose}>
         <Pressable
           style={styles.card}
           dataSet={{ surface: 'panel' }}

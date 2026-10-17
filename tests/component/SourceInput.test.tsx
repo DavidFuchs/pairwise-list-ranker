@@ -31,9 +31,7 @@ describe('SourceInput', () => {
   it('shows the text it was given', () => {
     setup({ value: 'Alien\nArrival' });
 
-    expect((screen.getByLabelText(/your list/i) as HTMLTextAreaElement).value).toBe(
-      'Alien\nArrival',
-    );
+    expect((screen.getByLabelText(/your list/i) as HTMLTextAreaElement).value).toBe('Alien\nArrival');
   });
 
   it('names the format it detected', () => {

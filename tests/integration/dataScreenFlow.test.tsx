@@ -52,9 +52,9 @@ describe('the data screen', () => {
     await user.click(screen.getByRole('radio', { name: /rank the list at movies/i }));
 
     // The first field titles the cards by default; any other is a tap away.
-    expect(
-      screen.getByRole('button', { name: /label items by title/i }).getAttribute('aria-pressed'),
-    ).toBe('true');
+    expect(screen.getByRole('button', { name: /label items by title/i }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
   });
 
   it('keeps the whole document, not only the ranked array', async () => {
@@ -137,9 +137,13 @@ describe('the samples', () => {
 
     await user.click(screen.getByRole('button', { name: /load the songs sample/i }));
 
-    expect(screen.getByRole('button', { name: 'Label items by song_name' }).getAttribute('aria-pressed')).toBe('true');
+    expect(
+      screen.getByRole('button', { name: 'Label items by song_name' }).getAttribute('aria-pressed'),
+    ).toBe('true');
     for (const field of ['artwork_url', 'apple_music_id', 'duration_sec', 'explicit']) {
-      expect(screen.getByRole('checkbox', { name: `Show ${field} on cards` }).getAttribute('aria-checked')).toBe('true');
+      expect(
+        screen.getByRole('checkbox', { name: `Show ${field} on cards` }).getAttribute('aria-checked'),
+      ).toBe('true');
     }
 
     await user.click(screen.getByRole('button', { name: /start ranking/i }));
@@ -153,7 +157,9 @@ describe('the samples', () => {
 
     await user.click(screen.getByRole('button', { name: /load the movies sample/i }));
 
-    expect(screen.getByRole('button', { name: 'Label items by title' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Label items by title' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
     expect(screen.getByText('Read as YAML.')).toBeDefined();
 
     await user.click(screen.getByRole('button', { name: /start ranking/i }));

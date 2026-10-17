@@ -24,14 +24,7 @@ const MARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><p
 const MARK_MASK = `url("data:image/svg+xml,${encodeURIComponent(MARK_SVG)}")`;
 
 export function GitHubIcon({ color = `var(--github-ink, ${colors.textFaint})` }: GitHubIconProps) {
-  return (
-    <View
-      style={[
-        styles.icon,
-        { backgroundColor: color, maskImage: MARK_MASK } as ViewStyle,
-      ]}
-    />
-  );
+  return <View style={[styles.icon, { backgroundColor: color, maskImage: MARK_MASK } as ViewStyle]} />;
 }
 
 const SIZE = 18;

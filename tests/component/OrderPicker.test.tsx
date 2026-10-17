@@ -27,9 +27,7 @@ describe('OrderPicker', () => {
     render(<OrderPicker value itemCount={4} onChange={vi.fn()} />);
 
     expect(screen.getByRole('radio', { name: RANKED }).getAttribute('aria-checked')).toBe('true');
-    expect(screen.getByRole('radio', { name: UNORDERED }).getAttribute('aria-checked')).toBe(
-      'false',
-    );
+    expect(screen.getByRole('radio', { name: UNORDERED }).getAttribute('aria-checked')).toBe('false');
   });
 
   it('reports choosing an already-ranked list', async () => {

@@ -24,10 +24,7 @@ function item(id: string, overrides: Partial<ListItem> = {}): ListItem {
 
 function statesFor(entries: Record<string, Partial<RankingState>>): RankingStates {
   return new Map(
-    Object.entries(entries).map(([id, overrides]) => [
-      id,
-      { ...createRankingState(id), ...overrides },
-    ]),
+    Object.entries(entries).map(([id, overrides]) => [id, { ...createRankingState(id), ...overrides }]),
   );
 }
 
@@ -114,10 +111,7 @@ describe('selectNextPair', () => {
       c: { comparisons: 5 },
     });
 
-    expect(pairIds(selectNextPair(items, states, [event('a', 'b', 'skip', 1)]))).not.toEqual([
-      'a',
-      'b',
-    ]);
+    expect(pairIds(selectNextPair(items, states, [event('a', 'b', 'skip', 1)]))).not.toEqual(['a', 'b']);
   });
 
   it('avoids repeating the pair that was just compared', () => {

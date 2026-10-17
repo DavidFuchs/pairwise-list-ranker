@@ -67,7 +67,11 @@ describe('Apple Music preview on a card', () => {
 
     render(
       <ItemCard
-        layout={cardLayout({ labelField: 'title', summaryFields: ['artist', 'apple_music_id'], fieldRenderers: { apple_music_id: 'apple-music-preview' } })}
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['artist', 'apple_music_id'],
+          fieldRenderers: { apple_music_id: 'apple-music-preview' },
+        })}
         item={song('1001')}
         side="left"
         onChoose={onChoose}
@@ -90,7 +94,11 @@ describe('Apple Music preview on a card', () => {
 
     render(
       <ItemCard
-        layout={cardLayout({ labelField: 'title', summaryFields: ['artist', 'apple_music_id'], fieldRenderers: { apple_music_id: 'apple-music-preview' } })}
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['artist', 'apple_music_id'],
+          fieldRenderers: { apple_music_id: 'apple-music-preview' },
+        })}
         item={song('2002')}
         side="left"
       />,
@@ -108,13 +116,22 @@ describe('Apple Music preview on a card', () => {
       'fetch',
       vi.fn(async (url: string) => {
         const country = new URL(url).searchParams.get('country');
-        const results = country === 'us' ? [{ trackId: 3003, previewUrl: 'https://audio.example/3003.m4a' }] : [];
+        const results =
+          country === 'us' ? [{ trackId: 3003, previewUrl: 'https://audio.example/3003.m4a' }] : [];
         return { ok: true, json: async () => ({ results }) };
       }),
     );
 
     render(
-      <ItemCard item={song('3003')} side="left" layout={cardLayout({ labelField: 'title', summaryFields: ['apple_music_id'], fieldRenderers: { apple_music_id: 'apple-music-preview' } })} />,
+      <ItemCard
+        item={song('3003')}
+        side="left"
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['apple_music_id'],
+          fieldRenderers: { apple_music_id: 'apple-music-preview' },
+        })}
+      />,
     );
 
     expect(await screen.findByRole('button', { name: 'Play preview of Song' })).toBeDefined();

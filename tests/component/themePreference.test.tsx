@@ -70,9 +70,9 @@ describe('ThemeToggle', () => {
   it('starts on system when the visitor has no preference', () => {
     render(<ThemeToggle />);
 
-    expect(
-      screen.getByRole('button', { name: /match system theme/i }).getAttribute('aria-pressed'),
-    ).toBe('true');
+    expect(screen.getByRole('button', { name: /match system theme/i }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
   });
 
   it('switches the document to dark when asked', async () => {
@@ -82,9 +82,9 @@ describe('ThemeToggle', () => {
     await user.click(screen.getByRole('button', { name: /use the dark theme/i }));
 
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-    expect(
-      screen.getByRole('button', { name: /use the dark theme/i }).getAttribute('aria-pressed'),
-    ).toBe('true');
+    expect(screen.getByRole('button', { name: /use the dark theme/i }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
   });
 
   it('shows the stored preference once it has mounted', () => {
@@ -92,9 +92,9 @@ describe('ThemeToggle', () => {
 
     render(<ThemeToggle />);
 
-    expect(
-      screen.getByRole('button', { name: /use the light theme/i }).getAttribute('aria-pressed'),
-    ).toBe('true');
+    expect(screen.getByRole('button', { name: /use the light theme/i }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
   });
 
   it('returns to following the system', async () => {

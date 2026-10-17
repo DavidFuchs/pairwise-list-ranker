@@ -1,27 +1,27 @@
-import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import { ApplySummary } from "@/components/data/ApplySummary";
-import { CardPreview } from "@/components/data/CardPreview";
-import { FileNotice } from "@/components/data/FileNotice";
-import type { FileNoticeState } from "@/components/data/FileNotice";
-import { FoundPanel } from "@/components/data/FoundPanel";
-import { SourceInput } from "@/components/data/SourceInput";
-import { AppShell } from "@/components/layout/AppShell";
-import { PageNav } from "@/components/layout/PageNav";
-import { Button } from "@/components/ui/Button";
-import { useSourceDraft } from "@/lib/hooks/useSourceDraft";
-import { diffImport, diffSettings } from "@/lib/import/diff";
-import { pathKey, samePath } from "@/lib/import/paths";
-import { isPlainObject } from "@/lib/import/shape";
-import type { ImportDiff, SettingsDiff } from "@/lib/import/diff";
-import { buildDraftSeed, selectConfigLines, selectRankedCoverages } from "@/lib/state/draft";
-import { activeList } from "@/lib/state/lists";
-import { selectRanking } from "@/lib/state/selectors";
-import { confirmOpenSession, hasDecisions, readSavedFile } from "@/lib/session/sessionFile";
-import { listStore, useListStore } from "@/lib/state/useListStore";
-import { space } from "@/lib/theme";
+import { ApplySummary } from '@/components/data/ApplySummary';
+import { CardPreview } from '@/components/data/CardPreview';
+import { FileNotice } from '@/components/data/FileNotice';
+import type { FileNoticeState } from '@/components/data/FileNotice';
+import { FoundPanel } from '@/components/data/FoundPanel';
+import { SourceInput } from '@/components/data/SourceInput';
+import { AppShell } from '@/components/layout/AppShell';
+import { PageNav } from '@/components/layout/PageNav';
+import { Button } from '@/components/ui/Button';
+import { useSourceDraft } from '@/lib/hooks/useSourceDraft';
+import { diffImport, diffSettings } from '@/lib/import/diff';
+import { pathKey, samePath } from '@/lib/import/paths';
+import { isPlainObject } from '@/lib/import/shape';
+import type { ImportDiff, SettingsDiff } from '@/lib/import/diff';
+import { buildDraftSeed, selectConfigLines, selectRankedCoverages } from '@/lib/state/draft';
+import { activeList } from '@/lib/state/lists';
+import { selectRanking } from '@/lib/state/selectors';
+import { confirmOpenSession, hasDecisions, readSavedFile } from '@/lib/session/sessionFile';
+import { listStore, useListStore } from '@/lib/state/useListStore';
+import { space } from '@/lib/theme';
 
 /** The narrowest the card preview gets beside the editor. */
 const PREVIEW_MIN_WIDTH = 400;
@@ -58,20 +58,20 @@ export default function DataScreen() {
    */
   function openFile(text: string) {
     const saved = readSavedFile(text);
-    if (saved.type === "other") {
+    if (saved.type === 'other') {
       setFileNotice(null);
       setPending(null);
       draft.setRawText(text);
       return;
     }
-    if (saved.type === "unreadable") {
+    if (saved.type === 'unreadable') {
       setFileNotice({ message: saved.reason });
       return;
     }
-    if (saved.type === "progress") {
+    if (saved.type === 'progress') {
       setFileNotice({
         message:
-          "That is a progress file: it holds your decisions, but not the list. Put your list in and start ranking, then open the file there with Open session.",
+          'That is a progress file: it holds your decisions, but not the list. Put your list in and start ranking, then open the file there with Open session.',
       });
       return;
     }
@@ -79,7 +79,7 @@ export default function DataScreen() {
     const open = () => {
       setFileNotice(null);
       listStore.getState().loadSession(saved.session);
-      router.replace("/rank");
+      router.replace('/rank');
     };
     if (hasDecisions(listStore.getState().workspace)) {
       setFileNotice({ confirm: confirmOpenSession(saved.session), onConfirm: open });
@@ -100,21 +100,16 @@ export default function DataScreen() {
   useEffect(() => {
     if (!hydrated || resumed) return;
     listStore.getState().markResumed();
-    if (workspace !== null) router.replace("/rank");
+    if (workspace !== null) router.replace('/rank');
   }, [hydrated, resumed, workspace, router]);
 
   const editing = workspace !== null;
   // Only objects have fields to set up, so only they get a card preview.
-  const previewObjects = useMemo(
-    () =>
-      draft.entries.filter(isPlainObject),
-    [draft.entries],
-  );
+  const previewObjects = useMemo(() => draft.entries.filter(isPlainObject), [draft.entries]);
   // An empty box isn't a parse error, so neither panel should treat it as one.
-  const rawTextIsBlank = draft.rawText.trim() === "";
+  const rawTextIsBlank = draft.rawText.trim() === '';
   const showPreview = pending === null && !rawTextIsBlank && previewObjects.length > 0;
-  const sideBySide =
-    showPreview && workWidth >= EDITOR_MIN_WIDTH + PREVIEW_MIN_WIDTH + space.lg;
+  const sideBySide = showPreview && workWidth >= EDITOR_MIN_WIDTH + PREVIEW_MIN_WIDTH + space.lg;
   // A third of the area beside it, so cards read about as wide as one of a
   // pair on the rank screen, and never narrower than the minimum.
   const previewWidth = Math.max(PREVIEW_MIN_WIDTH, Math.round(workWidth / 3));
@@ -132,12 +127,10 @@ export default function DataScreen() {
   // sends draft.alreadyRanked (the list's real, safe answer), never this
   // cosmetic guess, so an already-ranked-by-comparisons list is never
   // silently reseeded from scratch.
-  const selectedPathKey =
-    draft.selectedPath === null ? null : pathKey(draft.selectedPath);
+  const selectedPathKey = draft.selectedPath === null ? null : pathKey(draft.selectedPath);
   // Only lists with a reading at all are in the map, so having one is itself
   // the "already has a ranking percent" test.
-  const selectedCoverage =
-    selectedPathKey === null ? undefined : rankedCoverages[selectedPathKey];
+  const selectedCoverage = selectedPathKey === null ? undefined : rankedCoverages[selectedPathKey];
   const orderPickerValue = draft.alreadyRankedIsExplicit
     ? draft.alreadyRanked
     : selectedCoverage !== undefined;
@@ -178,7 +171,7 @@ export default function DataScreen() {
         roles: draft.roles,
         alreadyRanked: draft.alreadyRanked,
       });
-      router.replace("/rank");
+      router.replace('/rank');
       return;
     }
 
@@ -189,14 +182,12 @@ export default function DataScreen() {
     // destructive - each list's ranking is kept and restored when you come
     // back to it - so it applies immediately instead of asking to confirm.
     if (!samePath(previousPath, source.arrayPath)) {
-      listStore
-        .getState()
-        .switchList({
-          source,
-          roles: draft.roles,
-          alreadyRanked: draft.alreadyRanked,
-        });
-      router.replace("/rank");
+      listStore.getState().switchList({
+        source,
+        roles: draft.roles,
+        alreadyRanked: draft.alreadyRanked,
+      });
+      router.replace('/rank');
       return;
     }
 
@@ -224,15 +215,13 @@ export default function DataScreen() {
   function handleConfirm() {
     const source = draft.toSource();
     if (source === null) return;
-    listStore
-      .getState()
-      .applyEdits({
-        source,
-        roles: draft.roles,
-        alreadyRanked: draft.alreadyRanked,
-      });
+    listStore.getState().applyEdits({
+      source,
+      roles: draft.roles,
+      alreadyRanked: draft.alreadyRanked,
+    });
     setPending(null);
-    router.replace("/rank");
+    router.replace('/rank');
   }
 
   return (
@@ -247,7 +236,7 @@ export default function DataScreen() {
                 accessibilityLabel="Back to ranking"
                 variant="secondary"
                 size="sm"
-                onPress={() => router.replace("/rank")}
+                onPress={() => router.replace('/rank')}
               />
             </PageNav>
           )}
@@ -270,7 +259,7 @@ export default function DataScreen() {
                 setFileNotice(null);
                 // Detected, not pinned: a format tab left on Plain list
                 // would otherwise misread the sample.
-                draft.setOverride("auto");
+                draft.setOverride('auto');
                 // Each sample arrives set up to show the renderers off.
                 draft.loadPreset(sample.text, sample.path, sample.roles);
               }}
@@ -292,24 +281,14 @@ export default function DataScreen() {
       preview={
         pending === null ? (
           <FoundPanel
-            analysis={
-              rawTextIsBlank
-                ? { ...draft.analysis, issues: [] }
-                : draft.analysis
-            }
+            analysis={rawTextIsBlank ? { ...draft.analysis, issues: [] } : draft.analysis}
             selectedPath={draft.selectedPath}
             roles={draft.roles}
             alreadyRanked={orderPickerValue}
             isDefault={settingsAreDefault}
             entries={draft.entries}
             isBlank={rawTextIsBlank}
-            ctaLabel={
-              isSwitchingList
-                ? "Switch list"
-                : editing
-                  ? "Apply edits"
-                  : "Start ranking"
-            }
+            ctaLabel={isSwitchingList ? 'Switch list' : editing ? 'Apply edits' : 'Start ranking'}
             rankedCoverages={rankedCoverages}
             configLines={configLines}
             onSelectPath={draft.selectPath}
@@ -320,12 +299,10 @@ export default function DataScreen() {
             onSetAsDefault={
               editing
                 ? () =>
-                    listStore
-                      .getState()
-                      .setListDefaults({
-                        roles: draft.roles,
-                        alreadyRanked: orderPickerValue,
-                      })
+                    listStore.getState().setListDefaults({
+                      roles: draft.roles,
+                      alreadyRanked: orderPickerValue,
+                    })
                 : undefined
             }
             onSubmit={handleSubmit}
@@ -346,7 +323,7 @@ export default function DataScreen() {
 const styles = StyleSheet.create({
   // Fills the stage below the page nav, so the editor can take the height.
   work: { flex: 1, gap: space.lg },
-  workRow: { flexDirection: "row" },
+  workRow: { flexDirection: 'row' },
   // As tall as the editor, so it can show as many cards as that height fits.
   previewBeside: { flexShrink: 0 },
 });

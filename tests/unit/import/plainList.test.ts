@@ -21,11 +21,7 @@ describe('parsePlainList', () => {
   });
 
   it('strips en dashes, em dashes, and blockquote markers', () => {
-    expect(parsePlainList('– Alien\n- Arrival\n> Solaris')).toEqual([
-      'Alien',
-      'Arrival',
-      'Solaris',
-    ]);
+    expect(parsePlainList('– Alien\n- Arrival\n> Solaris')).toEqual(['Alien', 'Arrival', 'Solaris']);
   });
 
   it('strips numbered markers in every common style', () => {
@@ -46,17 +42,11 @@ describe('parsePlainList', () => {
   });
 
   it('keeps a leading dash that is part of the text', () => {
-    expect(parsePlainList('-40 below zero\n-fatal error')).toEqual([
-      '-40 below zero',
-      '-fatal error',
-    ]);
+    expect(parsePlainList('-40 below zero\n-fatal error')).toEqual(['-40 below zero', '-fatal error']);
   });
 
   it('keeps a number that is part of the text', () => {
-    expect(parsePlainList('1984\n2001: A Space Odyssey')).toEqual([
-      '1984',
-      '2001: A Space Odyssey',
-    ]);
+    expect(parsePlainList('1984\n2001: A Space Odyssey')).toEqual(['1984', '2001: A Space Odyssey']);
   });
 
   it('reads an indented list the same as a flat one', () => {

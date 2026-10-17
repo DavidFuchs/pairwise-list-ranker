@@ -7,13 +7,7 @@
  * contest, so it moves only the item that was moved.
  */
 export type ComparisonOutcome =
-  | 'left'
-  | 'right'
-  | 'left_strong'
-  | 'right_strong'
-  | 'skip'
-  | 'place_below'
-  | 'place_above';
+  'left' | 'right' | 'left_strong' | 'right_strong' | 'skip' | 'place_below' | 'place_above';
 
 export interface RankingState {
   itemId: string;

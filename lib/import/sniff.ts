@@ -62,9 +62,7 @@ function parseJsonSource(source: string): ParseResult<unknown> {
 
     return {
       ok: false,
-      issues: [
-        { path: '', message: `Invalid JSON: ${message}`, ...(line === undefined ? {} : { line }) },
-      ],
+      issues: [{ path: '', message: `Invalid JSON: ${message}`, ...(line === undefined ? {} : { line }) }],
     };
   }
 }

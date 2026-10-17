@@ -51,7 +51,9 @@ export function readSavedFile(text: string): SavedFile {
 
   if (kind === PROGRESS_FILE_KIND) {
     const parsed = parseProgressFile(text);
-    return parsed.ok ? { type: 'progress', file: parsed.file } : { type: 'unreadable', reason: parsed.reason };
+    return parsed.ok
+      ? { type: 'progress', file: parsed.file }
+      : { type: 'unreadable', reason: parsed.reason };
   }
   if (kind !== SESSION_FILE_KIND) return { type: 'other' };
 
@@ -60,7 +62,8 @@ export function readSavedFile(text: string): SavedFile {
     return { type: 'unreadable', reason: 'That session was saved by a different version of this app.' };
   }
   const session = parseWorkspaceSnapshot(file.session);
-  if (session === null) return { type: 'unreadable', reason: 'That session file is damaged and cannot be opened.' };
+  if (session === null)
+    return { type: 'unreadable', reason: 'That session file is damaged and cannot be opened.' };
   return { type: 'session', session, savedAt: typeof file.savedAt === 'string' ? file.savedAt : '' };
 }
 

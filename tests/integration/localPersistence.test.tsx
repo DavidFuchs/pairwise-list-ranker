@@ -55,11 +55,7 @@ describe('local persistence', () => {
 
     render(<RankScreen />);
 
-    expect(openList(listStore).items.map((item) => item.value)).toEqual([
-      'Tacos',
-      'Ramen',
-      'Curry',
-    ]);
+    expect(openList(listStore).items.map((item) => item.value)).toEqual(['Tacos', 'Ramen', 'Curry']);
     // Lists have no name to restore; the ranked rows are the proof.
     expect(screen.getAllByRole('listitem').length).toBe(3);
   });

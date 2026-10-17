@@ -151,10 +151,16 @@ export function rendererNote(renderer: FieldRenderer): string {
  * card. Null when the renderer draws nothing for this value (a false badge).
  * A value the renderer cannot read falls back to its plain text.
  */
-export function formatValue(value: unknown, renderer: FieldRenderer | undefined, field: string): string | null {
-  if (value === undefined || value === null || value === '' || renderer === undefined) return summaryText(value);
+export function formatValue(
+  value: unknown,
+  renderer: FieldRenderer | undefined,
+  field: string,
+): string | null {
+  if (value === undefined || value === null || value === '' || renderer === undefined)
+    return summaryText(value);
   const family = familyOf(renderer);
-  const text = family !== undefined ? family.format(value, renderer) : definitionOf(renderer)?.format?.(value, field);
+  const text =
+    family !== undefined ? family.format(value, renderer) : definitionOf(renderer)?.format?.(value, field);
   return text === undefined ? summaryText(value) : text;
 }
 
@@ -164,7 +170,10 @@ export function picturesOf(value: unknown, renderer: FieldRenderer | undefined):
 }
 
 /** The clip a value names, for a play-button renderer. */
-export function previewSourceOf(value: unknown, renderer: FieldRenderer | undefined): PreviewSource | undefined {
+export function previewSourceOf(
+  value: unknown,
+  renderer: FieldRenderer | undefined,
+): PreviewSource | undefined {
   return definitionOf(renderer)?.preview?.(value);
 }
 
@@ -222,7 +231,12 @@ export interface CardLayout extends SummaryLayout {
 }
 
 /** Nothing chosen: a title and nothing else. */
-export const EMPTY_LAYOUT: CardLayout = { plainFields: [], renderers: {}, pictureFields: [], mediaFields: [] };
+export const EMPTY_LAYOUT: CardLayout = {
+  plainFields: [],
+  renderers: {},
+  pictureFields: [],
+  mediaFields: [],
+};
 
 /** The card a list's roles describe, worked out once and handed down whole. */
 export function cardLayout(roles: FieldRoles): CardLayout {

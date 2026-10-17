@@ -117,9 +117,7 @@ export function ItemCard({
         // (delete, confirm/cancel, "Much better"), and a <button> can't
         // legally contain another <button> on web.
         accessibilityLabel={
-          canChoose
-            ? `Choose ${label}`
-            : `${side === 'left' ? 'Left' : 'Right'} option: ${label}`
+          canChoose ? `Choose ${label}` : `${side === 'left' ? 'Left' : 'Right'} option: ${label}`
         }
         // Disabled only while a choice is held back by a pending delete. A
         // card with nothing to choose (a preview) is not disabled, which
@@ -134,120 +132,121 @@ export function ItemCard({
           canChoose && pressed && styles.pressed,
         ]}
       >
-      {/*
+        {/*
         The title leads the card. Which side it is on is self-evident from
         where it sits, so nothing precedes it.
       */}
-      {canChoose && (
-        <View style={styles.hintBar}>
-          <Text style={styles.hint}>Click to choose</Text>
-        </View>
-      )}
-
-      <View style={styles.headline}>
-        {hasPicture && (
-          <FieldGallery key={item.id} pictures={pictures} size={IMAGE_SIZE} label={label} />
-        )}
-        <View style={styles.headlineBody}>
-          <View style={styles.topRow}>
-            <Text style={styles.title} numberOfLines={4}>
-              {label}
-            </Text>
-
-            {sources.length > 0 && <PreviewButton sources={sources} label={label} compact />}
+        {canChoose && (
+          <View style={styles.hintBar}>
+            <Text style={styles.hint}>Click to choose</Text>
           </View>
+        )}
 
-          {/* The fields the user chose stay through the details: they are the
+        <View style={styles.headline}>
+          {hasPicture && <FieldGallery key={item.id} pictures={pictures} size={IMAGE_SIZE} label={label} />}
+          <View style={styles.headlineBody}>
+            <View style={styles.topRow}>
+              <Text style={styles.title} numberOfLines={4}>
+                {label}
+              </Text>
+
+              {sources.length > 0 && <PreviewButton sources={sources} label={label} compact />}
+            </View>
+
+            {/* The fields the user chose stay through the details: they are the
               part asked to always be seen. */}
-          {chips.length > 0 && (
-            <View style={styles.chipColumn}>
-              {chips.map((field) => (
-                <View key={field} style={[styles.chip, renderers[field] === 'long-text' && styles.chipBlock]}>
-                  <FieldValue
-                    field={field}
-                    value={raw(field)}
-                    renderer={renderers[field]}
-                    withKey
-                    textStyle={styles.chipText}
-                  />
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-      </View>
-
-      {expanded && detailFields.length > 0 && isComplexItemValue(item.value) && (
-        <View style={styles.detailsBlock}>
-          <ObjectDrilldown value={item.value} omitField={labelField} />
-        </View>
-      )}
-
-      {interactive && (
-        <View style={styles.footer}>
-          {pendingDelete ? (
-            <View
-              ref={confirmRef}
-              accessibilityRole="alert"
-              // Focusable only to receive focus from the code above: it is
-              // a prompt, not a stop on the tab route.
-              tabIndex={-1}
-              style={styles.confirm}
-            >
-              <Text style={styles.confirmText}>{`Remove "${label}" from the list?`}</Text>
-              <View style={styles.confirmActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Keep ${label}`}
-                  onPress={(event) => {
-                    event.stopPropagation();
-                    onCancelDelete?.();
-                  }}
-                  style={styles.confirmCancel}
-                >
-                  <Text style={styles.confirmCancelText}>Keep</Text>
-                  <Text style={styles.confirmKey}>Esc</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Confirm deleting ${label}`}
-                  onPress={(event) => {
-                    event.stopPropagation();
-                    onConfirmDelete?.();
-                  }}
-                  style={styles.confirmDelete}
-                >
-                  <Text style={styles.confirmDeleteText}>Remove</Text>
-                  <Text style={[styles.confirmKey, styles.confirmDeleteKey]}>Enter</Text>
-                </Pressable>
+            {chips.length > 0 && (
+              <View style={styles.chipColumn}>
+                {chips.map((field) => (
+                  <View
+                    key={field}
+                    style={[styles.chip, renderers[field] === 'long-text' && styles.chipBlock]}
+                  >
+                    <FieldValue
+                      field={field}
+                      value={raw(field)}
+                      renderer={renderers[field]}
+                      withKey
+                      textStyle={styles.chipText}
+                    />
+                  </View>
+                ))}
               </View>
-            </View>
-          ) : (
-            <View style={styles.actions}>
-              {/* Bottom left, away from the play button at the top and the
+            )}
+          </View>
+        </View>
+
+        {expanded && detailFields.length > 0 && isComplexItemValue(item.value) && (
+          <View style={styles.detailsBlock}>
+            <ObjectDrilldown value={item.value} omitField={labelField} />
+          </View>
+        )}
+
+        {interactive && (
+          <View style={styles.footer}>
+            {pendingDelete ? (
+              <View
+                ref={confirmRef}
+                accessibilityRole="alert"
+                // Focusable only to receive focus from the code above: it is
+                // a prompt, not a stop on the tab route.
+                tabIndex={-1}
+                style={styles.confirm}
+              >
+                <Text style={styles.confirmText}>{`Remove "${label}" from the list?`}</Text>
+                <View style={styles.confirmActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Keep ${label}`}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      onCancelDelete?.();
+                    }}
+                    style={styles.confirmCancel}
+                  >
+                    <Text style={styles.confirmCancelText}>Keep</Text>
+                    <Text style={styles.confirmKey}>Esc</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Confirm deleting ${label}`}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      onConfirmDelete?.();
+                    }}
+                    style={styles.confirmDelete}
+                  >
+                    <Text style={styles.confirmDeleteText}>Remove</Text>
+                    <Text style={[styles.confirmKey, styles.confirmDeleteKey]}>Enter</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.actions}>
+                {/* Bottom left, away from the play button at the top and the
                   strong choice on the right, so neither is ever a slip away
                   from removing the item. */}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Delete ${label}`}
-                onPress={(event) => {
-                  event.stopPropagation();
-                  onRequestDelete?.();
-                }}
-                ref={removeRef}
-                dataSet={{ remove: 'card' }}
-                style={styles.removeButton}
-              >
-                <TrashIcon />
-              </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete ${label}`}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    onRequestDelete?.();
+                  }}
+                  ref={removeRef}
+                  dataSet={{ remove: 'card' }}
+                  style={styles.removeButton}
+                >
+                  <TrashIcon />
+                </Pressable>
 
-              {onChooseStrong !== undefined && (
-                <StrongChoiceButton label={label} onPress={onChooseStrong} />
-              )}
-            </View>
-          )}
-        </View>
-      )}
+                {onChooseStrong !== undefined && (
+                  <StrongChoiceButton label={label} onPress={onChooseStrong} />
+                )}
+              </View>
+            )}
+          </View>
+        )}
       </Pressable>
     </Animated.View>
   );
@@ -406,7 +405,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     backgroundColor: colors.danger,
   },
-  confirmDeleteText: { fontFamily: fonts.body, fontSize: 12, fontWeight: '600', color: 'var(--danger-on-fill)' },
+  confirmDeleteText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'var(--danger-on-fill)',
+  },
   /**
    * The delete is the one action here that can be reached two ways - the
    * trash can and D then L or R - so the keys that answer it are written on

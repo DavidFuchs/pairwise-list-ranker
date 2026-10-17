@@ -1,18 +1,18 @@
-import { useMemo } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useMemo } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { ArrayPicker } from "@/components/data/ArrayPicker";
-import { FieldPicker } from "@/components/data/FieldPicker";
-import { OrderPicker } from "@/components/data/OrderPicker";
-import { PositionPicker } from "@/components/data/PositionPicker";
-import { Button } from "@/components/ui/Button";
-import type { SourceAnalysis } from "@/lib/import/analyze";
-import { detectPositionFields } from "@/lib/import/positionField";
-import { isPlainObject } from "@/lib/import/shape";
-import { describeReadiness } from "@/lib/import/readiness";
-import type { CoverageReading } from "@/lib/state/selectors";
-import { colors, fonts, radius, space, typeScale } from "@/lib/theme";
-import type { FieldRoles } from "@/types/source";
+import { ArrayPicker } from '@/components/data/ArrayPicker';
+import { FieldPicker } from '@/components/data/FieldPicker';
+import { OrderPicker } from '@/components/data/OrderPicker';
+import { PositionPicker } from '@/components/data/PositionPicker';
+import { Button } from '@/components/ui/Button';
+import type { SourceAnalysis } from '@/lib/import/analyze';
+import { detectPositionFields } from '@/lib/import/positionField';
+import { isPlainObject } from '@/lib/import/shape';
+import { describeReadiness } from '@/lib/import/readiness';
+import type { CoverageReading } from '@/lib/state/selectors';
+import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
+import type { FieldRoles } from '@/types/source';
 
 export interface FoundPanelProps {
   analysis: SourceAnalysis;
@@ -76,15 +76,15 @@ export function FoundPanel({
   });
 
   return (
-    <View style={styles.panel} dataSet={{ surface: "panel" }}>
+    <View style={styles.panel} dataSet={{ surface: 'panel' }}>
       <View style={styles.header}>
         <Text style={styles.title}>What we found</Text>
         <Text style={styles.subtitle}>
           {isBlank
-            ? "Nothing yet"
+            ? 'Nothing yet'
             : entries.length > 0 || analysis.candidates.length <= 1
-              ? countOf(entries.length, "item")
-              : countOf(analysis.candidates.length, "list")}
+              ? countOf(entries.length, 'item')
+              : countOf(analysis.candidates.length, 'list')}
         </Text>
       </View>
 
@@ -97,19 +97,9 @@ export function FoundPanel({
           configLines={configLines}
         />
 
-        <OrderPicker
-          value={alreadyRanked}
-          itemCount={entries.length}
-          onChange={onAlreadyRankedChange}
-        />
+        <OrderPicker value={alreadyRanked} itemCount={entries.length} onChange={onAlreadyRankedChange} />
 
-        {objects.length > 0 && (
-          <FieldPicker
-            objects={objects}
-            roles={roles}
-            onChange={onRolesChange}
-          />
-        )}
+        {objects.length > 0 && <FieldPicker objects={objects} roles={roles} onChange={onRolesChange} />}
 
         <PositionPicker
           candidates={detectPositionFields(entries)}
@@ -145,16 +135,14 @@ export function FoundPanel({
             />
             <Text style={styles.defaultsHint}>
               {isDefault
-                ? "These are the default. Lists you have not set up yourself follow them, here and in the list switcher."
-                : "Lists you have not set up yourself follow these settings, here and in the list switcher."}
+                ? 'These are the default. Lists you have not set up yourself follow them, here and in the list switcher.'
+                : 'Lists you have not set up yourself follow these settings, here and in the list switcher.'}
             </Text>
           </View>
         )}
       </ScrollView>
 
-      {readiness.reason !== undefined && (
-        <Text style={styles.reason}>{readiness.reason}</Text>
-      )}
+      {readiness.reason !== undefined && <Text style={styles.reason}>{readiness.reason}</Text>}
 
       <Button
         label={ctaLabel}
@@ -168,7 +156,7 @@ export function FoundPanel({
 }
 
 const styles = StyleSheet.create({
-  defaults: { flexDirection: "row", alignItems: "center", gap: space.md },
+  defaults: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   defaultsHint: {
     flex: 1,
     fontFamily: fonts.body,
@@ -194,7 +182,7 @@ const styles = StyleSheet.create({
   title: {
     ...typeScale.sectionTitle,
     fontFamily: fonts.heading,
-    fontWeight: "600",
+    fontWeight: '600',
     color: colors.textPrimary,
   },
   subtitle: {
@@ -213,5 +201,5 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: colors.textSecondary,
   },
-  cta: { alignSelf: "stretch" },
+  cta: { alignSelf: 'stretch' },
 });

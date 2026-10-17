@@ -102,16 +102,14 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
   const [chosenPath, setChosenPath] = useState<string[] | null>(
     seed?.initialSelectedPath ?? seed?.arrayPath ?? null,
   );
-  const [alreadyRankedOverride, setAlreadyRankedOverride] =
-    useState<AlreadyRankedOverride | null>(null);
+  const [alreadyRankedOverride, setAlreadyRankedOverride] = useState<AlreadyRankedOverride | null>(null);
   const [rolesOverride, setRolesOverride] = useState<RolesOverride>({});
 
   const analysis = useMemo(() => analyzeSource(rawText, override), [rawText, override]);
 
   const selectedPath = useMemo(() => {
     const stillOffered =
-      chosenPath !== null &&
-      analysis.candidates.some((candidate) => samePath(candidate.path, chosenPath));
+      chosenPath !== null && analysis.candidates.some((candidate) => samePath(candidate.path, chosenPath));
     if (stillOffered) return chosenPath;
     return analysis.candidates.length === 1 ? (analysis.candidates[0]?.path ?? null) : null;
   }, [analysis, chosenPath]);

@@ -63,12 +63,17 @@ export function steamAppId(value: unknown): string | undefined {
 
 /** A Deezer track id, as a number or a track page address. */
 export function deezerTrackId(value: unknown): string | undefined {
-  return catalogueId(value) ?? (typeof value === 'string' ? DEEZER_PATTERN.exec(value.trim())?.[1] : undefined);
+  return (
+    catalogueId(value) ?? (typeof value === 'string' ? DEEZER_PATTERN.exec(value.trim())?.[1] : undefined)
+  );
 }
 
 /** A link shortened to read on a chip: the host and path, without the scheme. */
 export function linkText(url: string): string {
-  return url.trim().replace(/^https?:\/\//i, '').replace(/\/$/, '');
+  return url
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/$/, '');
 }
 
 /** The year, month and day of an ISO date, when it names a real one. */
@@ -104,7 +109,8 @@ const PILL_MAX_VALUES = 24;
 const PILL_MAX_LENGTH = 32;
 
 /** Field names that say their text is a category, so it can be drawn as pills before its values repeat. */
-const CATEGORY_FIELD = /genre|category|categories|type|kind|status|priority|tier|class|group|level|stage|state|severity|platform|cuisine|style|mood|format/i;
+const CATEGORY_FIELD =
+  /genre|category|categories|type|kind|status|priority|tier|class|group|level|stage|state|severity|platform|cuisine|style|mood|format/i;
 
 /** The colours a pill is drawn in. Each is a family of theme tokens. */
 export const PILL_TONES = ['red', 'amber', 'green', 'teal', 'blue', 'violet', 'pink', 'slate'] as const;
@@ -145,7 +151,11 @@ export function pillTone(value: string): PillTone {
 }
 
 export function isPillList(values: unknown[], field: string | undefined): boolean {
-  if (!values.every((value) => typeof value === 'string' && value.trim() !== '' && value.trim().length <= PILL_MAX_LENGTH)) {
+  if (
+    !values.every(
+      (value) => typeof value === 'string' && value.trim() !== '' && value.trim().length <= PILL_MAX_LENGTH,
+    )
+  ) {
     return false;
   }
   const distinct = new Set((values as string[]).map(pillKey)).size;
@@ -171,7 +181,8 @@ export function oneLine(value: string): string {
 const COORDINATE_TEXT = /^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/;
 
 /** Field names that say their text is a place, so an address can be offered a map. */
-export const PLACE_FIELD = /address|location|city|place|venue|where|destination|town|neighbou?rhood|park|landmark|spot|map/i;
+export const PLACE_FIELD =
+  /address|location|city|place|venue|where|destination|town|neighbou?rhood|park|landmark|spot|map/i;
 
 /** Latitude and longitude, from {lat, lng}, [lat, lng] or "lat, lng". */
 export function coordinates(value: unknown): [number, number] | undefined {
@@ -205,7 +216,9 @@ export function locationText(value: unknown): string | undefined {
 export function mapUrl(value: unknown): string | undefined {
   const pair = coordinates(value);
   const query = pair !== undefined ? pair.join(',') : locationText(value);
-  return query === undefined ? undefined : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  return query === undefined
+    ? undefined
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
 /* Flags. */
@@ -324,7 +337,12 @@ export function durationText(seconds: number): string {
 
 /** A calendar day in the reader's own format. Read as a day, not an instant, so no time zone moves it. */
 export function dateText([year, month, day]: [number, number, number]): string {
-  dateFormat ??= new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
+  dateFormat ??= new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
   return dateFormat.format(Date.UTC(year, month - 1, day));
 }
 

@@ -1,19 +1,19 @@
 /** @vitest-environment jsdom */
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 
-import { ComparisonDeck } from "@/components/comparison/ComparisonDeck";
-import { SourceInput } from "@/components/data/SourceInput";
-import { AppShell } from "@/components/layout/AppShell";
-import { PreviewPane } from "@/components/preview/PreviewPane";
-import type { ListItem } from "@/types/list";
+import { ComparisonDeck } from '@/components/comparison/ComparisonDeck';
+import { SourceInput } from '@/components/data/SourceInput';
+import { AppShell } from '@/components/layout/AppShell';
+import { PreviewPane } from '@/components/preview/PreviewPane';
+import type { ListItem } from '@/types/list';
 
-const NOW = "2026-08-15T12:00:00.000Z";
+const NOW = '2026-08-15T12:00:00.000Z';
 
-function item(id: string, value: ListItem["value"]): ListItem {
+function item(id: string, value: ListItem['value']): ListItem {
   return {
     id,
-    listId: "list-1",
+    listId: 'list-1',
     value,
     active: true,
     createdAt: NOW,
@@ -21,10 +21,10 @@ function item(id: string, value: ListItem["value"]): ListItem {
   };
 }
 
-const pair = { left: item("item-1", "Tacos"), right: item("item-2", "Ramen") };
+const pair = { left: item('item-1', 'Tacos'), right: item('item-2', 'Ramen') };
 
-describe("landmarks", () => {
-  it("marks the header, the working area, and the preview", () => {
+describe('landmarks', () => {
+  it('marks the header, the working area, and the preview', () => {
     render(
       <AppShell
         listName="Dinners"
@@ -35,14 +35,14 @@ describe("landmarks", () => {
       />,
     );
 
-    expect(screen.getByRole("banner")).toBeDefined();
-    expect(screen.getByRole("main")).toBeDefined();
-    expect(screen.getByRole("complementary")).toBeDefined();
+    expect(screen.getByRole('banner')).toBeDefined();
+    expect(screen.getByRole('main')).toBeDefined();
+    expect(screen.getByRole('complementary')).toBeDefined();
   });
 });
 
-describe("comparison stage announcements", () => {
-  it("announces the pair on offer politely", () => {
+describe('comparison stage announcements', () => {
+  it('announces the pair on offer politely', () => {
     render(
       <ComparisonDeck
         pair={pair}
@@ -59,12 +59,10 @@ describe("comparison stage announcements", () => {
     );
 
     const live = screen.getByText(/comparing tacos and ramen/i);
-    expect(live.closest("[aria-live]")?.getAttribute("aria-live")).toBe(
-      "polite",
-    );
+    expect(live.closest('[aria-live]')?.getAttribute('aria-live')).toBe('polite');
   });
 
-  it("names the progress meter rather than leaving a bare bar", () => {
+  it('names the progress meter rather than leaving a bare bar', () => {
     render(
       <ComparisonDeck
         pair={pair}
@@ -80,18 +78,16 @@ describe("comparison stage announcements", () => {
       />,
     );
 
-    expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe(
-      "40",
-    );
+    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('40');
   });
 });
 
-describe("preview pane", () => {
-  it("labels the ranked list for screen readers", () => {
+describe('preview pane', () => {
+  it('labels the ranked list for screen readers', () => {
     render(
       <PreviewPane
         tab="ranked"
-        tabs={["ranked", "yaml"]}
+        tabs={['ranked', 'yaml']}
         ranking={[]}
         exportText=""
         filename="list.yaml"
@@ -105,11 +101,11 @@ describe("preview pane", () => {
     expect(screen.getByLabelText(/current ranking/i)).toBeDefined();
   });
 
-  it("labels the exported text region for screen readers", () => {
+  it('labels the exported text region for screen readers', () => {
     render(
       <PreviewPane
         tab="yaml"
-        tabs={["ranked", "yaml"]}
+        tabs={['ranked', 'yaml']}
         ranking={[]}
         exportText="movies: []"
         filename="list.yaml"
@@ -124,8 +120,8 @@ describe("preview pane", () => {
   });
 });
 
-describe("source input", () => {
-  it("announces parse problems as an alert", () => {
+describe('source input', () => {
+  it('announces parse problems as an alert', () => {
     render(
       <SourceInput
         value="{ broken"
@@ -133,10 +129,10 @@ describe("source input", () => {
         override="json"
         onOverrideChange={vi.fn()}
         format="json"
-        issues={[{ path: "", message: "Invalid JSON", line: 1 }]}
+        issues={[{ path: '', message: 'Invalid JSON', line: 1 }]}
       />,
     );
 
-    expect(screen.getByRole("alert")).toBeDefined();
+    expect(screen.getByRole('alert')).toBeDefined();
   });
 });

@@ -4,7 +4,15 @@ import { replayComparisons } from '@/lib/ranking/rebuildRanking';
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent, ComparisonOutcome } from '@/types/ranking';
 
-const OUTCOMES: ComparisonOutcome[] = ['left', 'right', 'left_strong', 'right_strong', 'skip', 'place_below', 'place_above'];
+const OUTCOMES: ComparisonOutcome[] = [
+  'left',
+  'right',
+  'left_strong',
+  'right_strong',
+  'skip',
+  'place_below',
+  'place_above',
+];
 
 function makeItems(count: number): ListItem[] {
   return Array.from({ length: count }, (_, index) => ({

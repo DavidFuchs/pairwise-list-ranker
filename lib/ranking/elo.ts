@@ -64,11 +64,7 @@ export function expectedScore(rating: number, opponentRating: number): number {
 
 export function kFactorFor(state: RankingState, strong: boolean): number {
   const provisional = state.comparisons < PROVISIONAL_COMPARISONS;
-  return (
-    BASE_K_FACTOR *
-    (provisional ? PROVISIONAL_K_MULTIPLIER : 1) *
-    (strong ? STRONG_WIN_MULTIPLIER : 1)
-  );
+  return BASE_K_FACTOR * (provisional ? PROVISIONAL_K_MULTIPLIER : 1) * (strong ? STRONG_WIN_MULTIPLIER : 1);
 }
 
 export interface ComparisonUpdate {

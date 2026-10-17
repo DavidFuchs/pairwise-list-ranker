@@ -110,7 +110,11 @@ describe('applyEdits', () => {
 
     store.getState().applyEdits({ source: edited, roles: { labelField: 'title' } });
 
-    expect(openList(store).items.slice(0, 2).map((item) => item.id)).toEqual(before);
+    expect(
+      openList(store)
+        .items.slice(0, 2)
+        .map((item) => item.id),
+    ).toEqual(before);
     expect(openList(store).comparisonEvents).toHaveLength(1);
   });
 
@@ -148,9 +152,7 @@ describe('applyEdits', () => {
       document: { owner: 'someone else', movies: [{ title: 'Alien' }, { title: 'Arrival' }] },
     };
 
-    store
-      .getState()
-      .applyEdits({ source: edited, roles: { labelField: 'title', positionField: 'order' } });
+    store.getState().applyEdits({ source: edited, roles: { labelField: 'title', positionField: 'order' } });
 
     expect(store.getState().workspace?.source.document).toEqual(edited.document);
     expect(openList(store).roles.positionField).toBe('order');
@@ -165,10 +167,12 @@ describe('applyEdits', () => {
 
     store.getState().applyEdits({ source: edited, roles: { labelField: 'title' } });
 
-    expect(store.getState().ranking().map((entry) => entry.item.value)).toEqual([
-      { title: 'Aliens' },
-      { title: 'Arrival' },
-    ]);
+    expect(
+      store
+        .getState()
+        .ranking()
+        .map((entry) => entry.item.value),
+    ).toEqual([{ title: 'Aliens' }, { title: 'Arrival' }]);
   });
 
   it('applies a reorder of the very same entries', () => {
@@ -179,10 +183,11 @@ describe('applyEdits', () => {
 
     store.getState().applyEdits({ source: edited, roles: { labelField: 'title' } });
 
-    expect(openList(store).items.filter((item) => item.active).map((item) => item.value)).toEqual([
-      { title: 'Arrival' },
-      { title: 'Alien' },
-    ]);
+    expect(
+      openList(store)
+        .items.filter((item) => item.active)
+        .map((item) => item.value),
+    ).toEqual([{ title: 'Arrival' }, { title: 'Alien' }]);
   });
 
   it('keeps deactivated items so their comparisons still resolve', () => {
@@ -212,9 +217,7 @@ describe('applyEdits', () => {
   });
 
   it('updates alreadyRanked when the caller specifies it', () => {
-    store
-      .getState()
-      .applyEdits({ source: nested, roles: { labelField: 'title' }, alreadyRanked: true });
+    store.getState().applyEdits({ source: nested, roles: { labelField: 'title' }, alreadyRanked: true });
 
     expect(openList(store).alreadyRanked).toBe(true);
   });
@@ -364,7 +367,6 @@ describe('resume', () => {
   });
 });
 
-
 const triple: DataSource = {
   format: 'yaml',
   document: {
@@ -383,10 +385,7 @@ describe('reorderItem', () => {
   });
 
   function idFor(title: string): string {
-    return (
-      openList(store)
-        .items.find((item) => (item.value as { title: string }).title === title)?.id ?? ''
-    );
+    return openList(store).items.find((item) => (item.value as { title: string }).title === title)?.id ?? '';
   }
 
   it('records one placement under the item now above it', () => {
@@ -448,11 +447,12 @@ describe('reorderItem', () => {
 
     store.getState().reorderItem(aliens, [alien, aliens, arrival]);
 
-    expect(store.getState().ranking().map((entry) => (entry.item.value as { title: string }).title)).toEqual([
-      'Alien',
-      'Aliens',
-      'Arrival',
-    ]);
+    expect(
+      store
+        .getState()
+        .ranking()
+        .map((entry) => (entry.item.value as { title: string }).title),
+    ).toEqual(['Alien', 'Aliens', 'Arrival']);
   });
 
   it('does not set alreadyRanked', () => {

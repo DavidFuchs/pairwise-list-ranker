@@ -59,52 +59,49 @@ function QuickStart({ onOpenGuide }: { onOpenGuide: () => void }) {
     <>
       <Section title="What this is">
         <Text style={styles.body}>
-          Pairwise takes a list of things - books, ideas, candidates, anything - and puts it in
-          order by asking simple one-on-one questions, instead of making you sort the whole list
-          at once.
+          Pairwise takes a list of things - books, ideas, candidates, anything - and puts it in order by
+          asking simple one-on-one questions, instead of making you sort the whole list at once.
         </Text>
       </Section>
 
       <Section title="Pick a side">
         <Text style={styles.body}>
           Each round shows two items, just like this. Choose the one you prefer, or mark it{' '}
-          <Text style={styles.emphasis}>“Much better”</Text> when it isn&apos;t close.
-          Can&apos;t compare them fairly? Skip the pair and move on to the next one. To take an
-          item out of the list altogether, use the trash can at the bottom left of its card.
+          <Text style={styles.emphasis}>“Much better”</Text> when it isn&apos;t close. Can&apos;t compare them
+          fairly? Skip the pair and move on to the next one. To take an item out of the list altogether, use
+          the trash can at the bottom left of its card.
         </Text>
         <ChooseSideDiagram />
       </Section>
 
       <Section title="What the progress bar means">
         <Text style={styles.body}>
-          It is an estimate, not a finish line. The bar weighs the choices you have made against
-          how many a list this size usually takes to settle - so it tracks how sure the order is
-          getting, not how much work is left. The ranking is worth reading long before the bar
-          fills, and carrying on past it is not wasted effort: the meter plates itself gold and
-          keeps counting, because every further comparison still sharpens the order. Skipped pairs
-          do not count toward it, since a skip tells the app nothing, and removing an item changes
-          the estimate, so the number can shift.
+          It is an estimate, not a finish line. The bar weighs the choices you have made against how many a
+          list this size usually takes to settle - so it tracks how sure the order is getting, not how much
+          work is left. The ranking is worth reading long before the bar fills, and carrying on past it is not
+          wasted effort: the meter plates itself gold and keeps counting, because every further comparison
+          still sharpens the order. Skipped pairs do not count toward it, since a skip tells the app nothing,
+          and removing an item changes the estimate, so the number can shift.
         </Text>
         <ProgressDiagram />
       </Section>
 
       <Section title="How the ranking is built">
         <Text style={styles.body}>
-          Every item starts even - unless you told it the list was already ranked best to worst,
-          in which case it starts from that order instead, so comparisons refine it rather than
-          rebuild it from scratch. Each choice you make nudges the winner&apos;s rating up and the
-          loser&apos;s down - a bit more for a “Much better” pick. Rather than comparing every
-          possible pair, the app keeps choosing whichever pair is most likely to sharpen the
-          order: usually two items with close ratings that haven&apos;t faced off yet. The ranking
-          updates after every answer, so you can stop as soon as it looks right.
+          Every item starts even - unless you told it the list was already ranked best to worst, in which case
+          it starts from that order instead, so comparisons refine it rather than rebuild it from scratch.
+          Each choice you make nudges the winner&apos;s rating up and the loser&apos;s down - a bit more for a
+          “Much better” pick. Rather than comparing every possible pair, the app keeps choosing whichever pair
+          is most likely to sharpen the order: usually two items with close ratings that haven&apos;t faced
+          off yet. The ranking updates after every answer, so you can stop as soon as it looks right.
         </Text>
         <RatingShiftDiagram />
       </Section>
 
       <Section title="There is more">
         <Text style={styles.body}>
-          Choosing what each card shows, drawing fields as links, pictures, star ratings and more,
-          moving items by hand, keyboard shortcuts, and saving a session to carry on later are all covered in the{' '}
+          Choosing what each card shows, drawing fields as links, pictures, star ratings and more, moving
+          items by hand, keyboard shortcuts, and saving a session to carry on later are all covered in the{' '}
           <Text accessibilityRole="link" onPress={onOpenGuide} style={styles.guideLink}>
             full guide
           </Text>
@@ -189,15 +186,7 @@ function RatingShiftDiagram() {
   );
 }
 
-function RatingRow({
-  label,
-  after,
-  direction,
-}: {
-  label: string;
-  after: number;
-  direction: 'up' | 'down';
-}) {
+function RatingRow({ label, after, direction }: { label: string; after: number; direction: 'up' | 'down' }) {
   return (
     <View style={styles.ratingRow}>
       <Text style={styles.ratingLabel}>{label}</Text>

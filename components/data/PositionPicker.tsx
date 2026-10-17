@@ -20,7 +20,8 @@ export function PositionPicker({ candidates, value, onChange }: PositionPickerPr
     <View style={styles.group} role="radiogroup" aria-label="Where to write the new order">
       <Text style={styles.heading}>Write the new order into</Text>
       <Text style={styles.hint}>
-        Optional. The order of the list carries the ranking either way, but you can explicitly write the order into a field of your choice.
+        Optional. The order of the list carries the ranking either way, but you can explicitly write the order
+        into a field of your choice.
       </Text>
 
       <View style={styles.options}>
@@ -46,9 +47,7 @@ export function PositionPicker({ candidates, value, onChange }: PositionPickerPr
               onPress={() => onChange(candidate.field)}
               style={[styles.option, selected && styles.optionSelected]}
             >
-              <Text style={[styles.field, selected && styles.fieldSelected]}>
-                {candidate.field}
-              </Text>
+              <Text style={[styles.field, selected && styles.fieldSelected]}>{candidate.field}</Text>
             </Pressable>
           );
         })}

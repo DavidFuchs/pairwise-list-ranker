@@ -1,17 +1,17 @@
-import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { cardFlexBasis, ItemCard } from "@/components/comparison/ItemCard";
-import { ProgressMeter } from "@/components/ui/ProgressMeter";
-import { useComparisonShortcuts } from "@/lib/hooks/useComparisonShortcuts";
-import { describeCoverage, describeStability, selectItemLabel } from "@/lib/state/selectors";
-import type { ActivePair, StabilityReading } from "@/lib/state/selectors";
-import { EMPTY_LAYOUT } from "@/lib/renderers";
-import type { CardLayout } from "@/lib/renderers";
-import { colors, fonts, radius, space, typeScale } from "@/lib/theme";
-import { isComplexItemValue } from "@/types/list";
-import type { ListItem } from "@/types/list";
-import type { ComparisonOutcome } from "@/types/ranking";
+import { cardFlexBasis, ItemCard } from '@/components/comparison/ItemCard';
+import { ProgressMeter } from '@/components/ui/ProgressMeter';
+import { useComparisonShortcuts } from '@/lib/hooks/useComparisonShortcuts';
+import { describeCoverage, describeStability, selectItemLabel } from '@/lib/state/selectors';
+import type { ActivePair, StabilityReading } from '@/lib/state/selectors';
+import { EMPTY_LAYOUT } from '@/lib/renderers';
+import type { CardLayout } from '@/lib/renderers';
+import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
+import { isComplexItemValue } from '@/types/list';
+import type { ListItem } from '@/types/list';
+import type { ComparisonOutcome } from '@/types/ranking';
 
 export interface DeckProgress {
   activeItems: number;
@@ -61,7 +61,7 @@ export function ComparisonDeck({
   onUndo,
   stability,
 }: ComparisonDeckProps) {
-  const [armed, setArmed] = useState<"left" | "right" | null>(null);
+  const [armed, setArmed] = useState<'left' | 'right' | null>(null);
   // Details belong to the pair: seeing one item's fields against the other's
   // summary is not a comparison. One switch shows or hides both.
   const [showDetails, setShowDetails] = useState(false);
@@ -84,7 +84,7 @@ export function ComparisonDeck({
   const confirmDelete = useCallback(() => {
     setArmed((side) => {
       if (side !== null && pair !== null) {
-        onDelete(side === "left" ? pair.left.id : pair.right.id);
+        onDelete(side === 'left' ? pair.left.id : pair.right.id);
       }
       return null;
     });
@@ -94,11 +94,10 @@ export function ComparisonDeck({
     enabled: pair !== null,
     armed: armed !== null,
     onChoose: useCallback(
-      (side, strong) =>
-        emit(strong ? (`${side}_strong` as ComparisonOutcome) : side),
+      (side, strong) => emit(strong ? (`${side}_strong` as ComparisonOutcome) : side),
       [emit],
     ),
-    onSkip: useCallback(() => emit("skip"), [emit]),
+    onSkip: useCallback(() => emit('skip'), [emit]),
     onArmDelete: useCallback((side) => setArmed(side), []),
     onConfirmDelete: confirmDelete,
     onCancelDelete: useCallback(() => setArmed(null), []),
@@ -124,13 +123,9 @@ export function ComparisonDeck({
     );
   }
 
-  const { label: percentLabel, note: coverageNote } = describeCoverage(
-    progress.coverage,
-  );
+  const { label: percentLabel, note: coverageNote } = describeCoverage(progress.coverage);
   // Nothing to toggle when the items are bare strings.
-  const hasDetails = [pair.left, pair.right].some((item) =>
-    hasDetailFields(item, layout.labelField),
-  );
+  const hasDetails = [pair.left, pair.right].some((item) => hasDetailFields(item, layout.labelField));
 
   return (
     <View style={styles.stage}>
@@ -150,30 +145,23 @@ export function ComparisonDeck({
           accessibilityLabel="Ranking progress"
         />
         {/* Neutral, not gold: the surplus colour belongs to the meter alone. */}
-        {coverageNote !== null && (
-          <Text style={styles.coverageNote}>{coverageNote}</Text>
-        )}
-        {stability !== undefined && (
-          <Text style={styles.coverageNote}>{describeStability(stability)}</Text>
-        )}
+        {coverageNote !== null && <Text style={styles.coverageNote}>{coverageNote}</Text>}
+        {stability !== undefined && <Text style={styles.coverageNote}>{describeStability(stability)}</Text>}
       </View>
 
       {/* Wraps to stacked cards on narrow screens via plain flex-wrap; a width
           measurement on the row decides whether the gutter should present as a
           vertical divider or a full-width horizontal break. */}
-      <View
-        style={styles.cards}
-        onLayout={(event) => setCardsWidth(event.nativeEvent.layout.width)}
-      >
+      <View style={styles.cards} onLayout={(event) => setCardsWidth(event.nativeEvent.layout.width)}>
         <ItemCard
           item={pair.left}
           side="left"
           layout={layout}
           expanded={showDetails}
-          pendingDelete={armed === "left"}
-          onChoose={() => choose("left")}
-          onChooseStrong={() => choose("left_strong")}
-          onRequestDelete={() => setArmed("left")}
+          pendingDelete={armed === 'left'}
+          onChoose={() => choose('left')}
+          onChooseStrong={() => choose('left_strong')}
+          onRequestDelete={() => setArmed('left')}
           onConfirmDelete={confirmDelete}
           onCancelDelete={() => setArmed(null)}
         />
@@ -188,10 +176,10 @@ export function ComparisonDeck({
           side="right"
           layout={layout}
           expanded={showDetails}
-          pendingDelete={armed === "right"}
-          onChoose={() => choose("right")}
-          onChooseStrong={() => choose("right_strong")}
-          onRequestDelete={() => setArmed("right")}
+          pendingDelete={armed === 'right'}
+          onChoose={() => choose('right')}
+          onChooseStrong={() => choose('right_strong')}
+          onRequestDelete={() => setArmed('right')}
           onConfirmDelete={confirmDelete}
           onCancelDelete={() => setArmed(null)}
         />
@@ -207,9 +195,7 @@ export function ComparisonDeck({
               onPress={() => setShowDetails((open) => !open)}
               style={styles.detailsToggle}
             >
-              <Text style={styles.detailsToggleText}>
-                {showDetails ? "Hide details" : "Show details"}
-              </Text>
+              <Text style={styles.detailsToggleText}>{showDetails ? 'Hide details' : 'Show details'}</Text>
             </Pressable>
           )}
 
@@ -230,7 +216,7 @@ export function ComparisonDeck({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Skip this pair"
-            onPress={() => choose("skip")}
+            onPress={() => choose('skip')}
             style={styles.skip}
           >
             <Text style={styles.skipText}>Skip this pair</Text>
@@ -250,24 +236,20 @@ export function ComparisonDeck({
  * is a dead end, and a confirmation whose keys are unstated is another.
  */
 function shortcutLine(awaitingSide: boolean, armed: boolean): string {
-  if (armed) return "Enter removes · Esc keeps";
-  if (awaitingSide)
-    return "Removing: press L or R for a side · any other key cancels";
-  return "Arrow keys choose · shift + arrow for much better · S skips · D then L or R removes · Ctrl/Cmd+Z undoes";
+  if (armed) return 'Enter removes · Esc keeps';
+  if (awaitingSide) return 'Removing: press L or R for a side · any other key cancels';
+  return 'Arrow keys choose · shift + arrow for much better · S skips · D then L or R removes · Ctrl/Cmd+Z undoes';
 }
 
 /** Whether an item carries anything beyond the field that titles its card. */
-function hasDetailFields(
-  item: ListItem,
-  sortField: string | undefined,
-): boolean {
+function hasDetailFields(item: ListItem, sortField: string | undefined): boolean {
   if (!isComplexItemValue(item.value)) return false;
   return Object.keys(item.value).some((key) => key !== sortField);
 }
 
 function Notice({ title, body }: { title: string; body: string }) {
   return (
-    <View style={styles.notice} dataSet={{ surface: "panel" }}>
+    <View style={styles.notice} dataSet={{ surface: 'panel' }}>
       <Text style={styles.noticeTitle}>{title}</Text>
       <Text style={styles.noticeBody}>{body}</Text>
     </View>
@@ -276,7 +258,7 @@ function Notice({ title, body }: { title: string; body: string }) {
 
 const styles = StyleSheet.create({
   stage: { gap: space.lg },
-  trayActions: { flexDirection: "row", alignItems: "center", gap: space.sm },
+  trayActions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   detailsToggle: {
     paddingVertical: space.xs,
     paddingHorizontal: space.md,
@@ -292,8 +274,8 @@ const styles = StyleSheet.create({
   },
   gutter: {
     minWidth: INLINE_GUTTER_MIN_WIDTH,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: space.sm,
     paddingHorizontal: space.xs,
   },
@@ -301,8 +283,8 @@ const styles = StyleSheet.create({
   // to read as a horizontal break rather than a vertical rule left dangling
   // beside the top card.
   gutterStacked: {
-    flexDirection: "row",
-    width: "100%",
+    flexDirection: 'row',
+    width: '100%',
     minWidth: 0,
     paddingHorizontal: 0,
     paddingVertical: space.sm,
@@ -327,9 +309,9 @@ const styles = StyleSheet.create({
   },
   statusStrip: { gap: space.sm },
   statusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   status: {
     fontFamily: fonts.mono,
@@ -350,21 +332,21 @@ const styles = StyleSheet.create({
   },
   // Present for screen readers and announcements, but not visually.
   announcement: {
-    position: "absolute",
+    position: 'absolute',
     width: 1,
     height: 1,
-    overflow: "hidden",
+    overflow: 'hidden',
     opacity: 0,
   },
   cards: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "stretch",
-    justifyContent: "center",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'stretch',
+    justifyContent: 'center',
     gap: space.md,
   },
   tray: {
-    alignItems: "center",
+    alignItems: 'center',
     gap: space.xs,
     paddingTop: space.xs,
   },
@@ -378,14 +360,14 @@ const styles = StyleSheet.create({
   skipText: {
     fontFamily: fonts.body,
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: '600',
     color: colors.textSecondary,
   },
   shortcuts: {
     fontFamily: fonts.mono,
     fontSize: 11,
     lineHeight: 16,
-    textAlign: "center",
+    textAlign: 'center',
     color: colors.textFaint,
   },
   notice: {
@@ -393,14 +375,14 @@ const styles = StyleSheet.create({
     padding: space.xl,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderStyle: "dashed",
+    borderStyle: 'dashed',
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
   noticeTitle: {
     ...typeScale.sectionTitle,
     fontFamily: fonts.heading,
-    fontWeight: "600",
+    fontWeight: '600',
     color: colors.textPrimary,
   },
   noticeBody: {

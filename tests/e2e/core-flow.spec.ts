@@ -42,15 +42,10 @@ test.beforeEach(async ({ page }) => {
 
 test('first run asks for data before anything else', async ({ page }) => {
   await expect(page.getByLabel('Your list')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Start ranking' })).toHaveAttribute(
-    'aria-disabled',
-    'true',
-  );
+  await expect(page.getByRole('button', { name: 'Start ranking' })).toHaveAttribute('aria-disabled', 'true');
 });
 
-test('dragging a file anywhere on the page shows a drop overlay and imports on release', async ({
-  page,
-}) => {
+test('dragging a file anywhere on the page shows a drop overlay and imports on release', async ({ page }) => {
   // No <input type=file> equivalent for a raw OS drag, so the drag is
   // simulated the way a browser's own DragEvent carries files: a DataTransfer
   // holding a File, dispatched on the page body - far from the "Choose a
@@ -114,7 +109,10 @@ test('ranks a plain list and exports it', async ({ page }) => {
   await page.getByRole('button', { name: 'Start ranking' }).click();
 
   await expect(page.getByLabel(/^Choose /).first()).toBeVisible();
-  await page.getByLabel(/^Choose /).first().click();
+  await page
+    .getByLabel(/^Choose /)
+    .first()
+    .click();
 
   await page.getByRole('tab', { name: 'Plain list' }).click();
   await expect(page.getByLabel('list export')).toContainText('Tacos');
@@ -151,7 +149,10 @@ test('resumes after a reload, then can start over', async ({ page }) => {
 test('edits the data mid-run and keeps the rankings', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
-  await page.getByLabel(/^Choose /).first().click();
+  await page
+    .getByLabel(/^Choose /)
+    .first()
+    .click();
 
   await page.getByRole('button', { name: 'Edit data' }).click();
   await enterData(page, `${DINNERS}\nUdon`);
@@ -166,7 +167,10 @@ test('chooses by clicking anywhere on a card', async ({ page }) => {
   await page.getByRole('button', { name: 'Start ranking' }).click();
 
   await expect(page.getByText(/^0 comparisons ·/)).toBeVisible();
-  await page.getByLabel(/^Choose /).first().click();
+  await page
+    .getByLabel(/^Choose /)
+    .first()
+    .click();
 
   await expect(page.getByText(/^1 comparisons ·/)).toBeVisible();
 });
@@ -182,7 +186,10 @@ test('pressing a control inside a card does not cast a vote', async ({ page }) =
 
   await expect(page.getByText(/^0 comparisons ·/)).toBeVisible();
   // The delete control is the remaining control nested inside the press area.
-  await page.getByRole('button', { name: /^Delete / }).first().click();
+  await page
+    .getByRole('button', { name: /^Delete / })
+    .first()
+    .click();
 
   await expect(page.getByRole('button', { name: /^Confirm deleting / })).toBeVisible();
   await expect(page.getByText(/^0 comparisons ·/)).toBeVisible();
@@ -216,7 +223,10 @@ test('much better records a strong win in one click', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
 
-  await page.getByRole('button', { name: /is much better$/ }).first().click();
+  await page
+    .getByRole('button', { name: /is much better$/ })
+    .first()
+    .click();
 
   await expect(page.getByText(/^1 comparisons ·/)).toBeVisible();
 });
@@ -226,32 +236,44 @@ test('choice cards return to one row after rotating back to landscape', async ({
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
 
-  await expect.poll(async () => {
-    const { firstY, secondY } = await chooseCardRows(page);
-    return Math.abs(firstY - secondY) < 4;
-  }).toBe(true);
+  await expect
+    .poll(async () => {
+      const { firstY, secondY } = await chooseCardRows(page);
+      return Math.abs(firstY - secondY) < 4;
+    })
+    .toBe(true);
 
   await page.setViewportSize({ width: 834, height: 1194 });
-  await expect.poll(async () => {
-    const { firstY, secondY } = await chooseCardRows(page);
-    return Math.abs(firstY - secondY) >= 4;
-  }).toBe(true);
+  await expect
+    .poll(async () => {
+      const { firstY, secondY } = await chooseCardRows(page);
+      return Math.abs(firstY - secondY) >= 4;
+    })
+    .toBe(true);
 
   await page.setViewportSize({ width: 1194, height: 834 });
-  await expect.poll(async () => {
-    const { firstY, secondY } = await chooseCardRows(page);
-    return Math.abs(firstY - secondY) < 4;
-  }).toBe(true);
+  await expect
+    .poll(async () => {
+      const { firstY, secondY } = await chooseCardRows(page);
+      return Math.abs(firstY - secondY) < 4;
+    })
+    .toBe(true);
 });
 
 test('reordering by hand adds to the comparisons instead of discarding them', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
-  await page.getByLabel(/^Choose /).first().click();
+  await page
+    .getByLabel(/^Choose /)
+    .first()
+    .click();
   await expect(page.getByText(/^1 comparisons ·/)).toBeVisible();
 
   // Keyboard reordering is the same commit path as a drop, and is stable to drive.
-  await page.getByRole('button', { name: /^Reorder / }).first().focus();
+  await page
+    .getByRole('button', { name: /^Reorder / })
+    .first()
+    .focus();
   await page.keyboard.press('Alt+ArrowDown');
 
   // The move is recorded as one placement beside its new neighbour, so the

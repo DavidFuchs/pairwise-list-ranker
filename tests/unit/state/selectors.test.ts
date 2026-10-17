@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 
 import {
   describeCoverage,
@@ -13,18 +13,18 @@ import {
   selectRanking,
   selectRemovedCount,
   selectWorkspaceView,
-} from "@/lib/state/selectors";
-import type { ListItem } from "@/types/list";
-import type { ComparisonEvent } from "@/types/ranking";
-import { pathKey } from "@/lib/import/paths";
-import { activeList, withList } from "@/lib/state/lists";
-import type { DataSource, ListConfig, RankedList, Workspace } from "@/types/source";
+} from '@/lib/state/selectors';
+import type { ListItem } from '@/types/list';
+import type { ComparisonEvent } from '@/types/ranking';
+import { pathKey } from '@/lib/import/paths';
+import { activeList, withList } from '@/lib/state/lists';
+import type { DataSource, ListConfig, RankedList, Workspace } from '@/types/source';
 
-const NOW = "2026-08-15T12:00:00.000Z";
+const NOW = '2026-08-15T12:00:00.000Z';
 
 function rankedList(arrayPath: string[], overrides: Partial<RankedList> = {}): RankedList {
   return {
-    id: `list-${arrayPath.join("-") || "root"}`,
+    id: `list-${arrayPath.join('-') || 'root'}`,
     arrayPath,
     roles: {},
     alreadyRanked: false,
@@ -41,7 +41,7 @@ function rankedList(arrayPath: string[], overrides: Partial<RankedList> = {}): R
 function workspaceWith(
   source: DataSource,
   lists: RankedList[],
-  listDefaults: ListConfig = { roles: { labelField: "title" }, alreadyRanked: false },
+  listDefaults: ListConfig = { roles: { labelField: 'title' }, alreadyRanked: false },
 ): Workspace {
   return {
     source,
@@ -59,20 +59,20 @@ function withOpen(workspace: Workspace, changes: Partial<RankedList>): Workspace
 
 const workspace = workspaceWith(
   {
-    format: "yaml",
+    format: 'yaml',
     document: {
-      owner: "david",
-      movies: [{ title: "Alien" }, { title: "Arrival" }],
+      owner: 'david',
+      movies: [{ title: 'Alien' }, { title: 'Arrival' }],
     },
-    arrayPath: ["movies"],
+    arrayPath: ['movies'],
   },
-  [rankedList(["movies"], { roles: { labelField: "title" } })],
+  [rankedList(['movies'], { roles: { labelField: 'title' } })],
 );
 
-function item(id: string, value: ListItem["value"], active = true): ListItem {
+function item(id: string, value: ListItem['value'], active = true): ListItem {
   return {
     id,
-    listId: "list-1",
+    listId: 'list-1',
     value,
     active,
     createdAt: NOW,
@@ -80,32 +80,28 @@ function item(id: string, value: ListItem["value"], active = true): ListItem {
   };
 }
 
-const items = [
-  item("item-1", "Tacos"),
-  item("item-2", "Ramen"),
-  item("item-3", "Curry"),
-];
+const items = [item('item-1', 'Tacos'), item('item-2', 'Ramen'), item('item-3', 'Curry')];
 
 const bWins: ComparisonEvent[] = [
   {
-    id: "event-1",
-    listId: "list-1",
-    leftItemId: "item-1",
-    rightItemId: "item-2",
-    outcome: "right",
+    id: 'event-1',
+    listId: 'list-1',
+    leftItemId: 'item-1',
+    rightItemId: 'item-2',
+    outcome: 'right',
     createdAt: NOW,
   },
 ];
 
-describe("selectWorkspaceView", () => {
-  it("reuses the previous result when nothing changed", () => {
+describe('selectWorkspaceView', () => {
+  it('reuses the previous result when nothing changed', () => {
     const first = selectWorkspaceView(items, bWins);
     const second = selectWorkspaceView(items, bWins);
 
     expect(second).toBe(first);
   });
 
-  it("recomputes when the history changes", () => {
+  it('recomputes when the history changes', () => {
     const first = selectWorkspaceView(items, []);
     const second = selectWorkspaceView(items, bWins);
 
@@ -114,12 +110,12 @@ describe("selectWorkspaceView", () => {
 
   it("keeps the active list's result while another list is ranked", () => {
     const first = selectWorkspaceView(items, bWins);
-    selectWorkspaceView([item("item-9", "Pho"), item("item-8", "Udon")], []);
+    selectWorkspaceView([item('item-9', 'Pho'), item('item-8', 'Udon')], []);
 
     expect(selectWorkspaceView(items, bWins)).toBe(first);
   });
 
-  it("keeps ranked and unranked readings of the same arrays apart", () => {
+  it('keeps ranked and unranked readings of the same arrays apart', () => {
     const unranked = selectWorkspaceView(items, []);
     const ranked = selectWorkspaceView(items, [], true);
 
@@ -128,103 +124,92 @@ describe("selectWorkspaceView", () => {
   });
 });
 
-describe("selectListOptions", () => {
-  const movies = [
-    { ...item("m-1", { title: "Alien" }) },
-    { ...item("m-2", { title: "Arrival" }) },
-  ];
-  const movieWin: ComparisonEvent[] = [
-    { ...bWins[0]!, leftItemId: "m-1", rightItemId: "m-2" },
-  ];
+describe('selectListOptions', () => {
+  const movies = [{ ...item('m-1', { title: 'Alien' }) }, { ...item('m-2', { title: 'Arrival' }) }];
+  const movieWin: ComparisonEvent[] = [{ ...bWins[0]!, leftItemId: 'm-1', rightItemId: 'm-2' }];
   const twoLists = workspaceWith(
     {
-      format: "yaml",
+      format: 'yaml',
       document: {
-        movies: [{ title: "Alien" }, { title: "Arrival" }],
-        actors: [{ name: "Weaver" }, { name: "Adams" }],
+        movies: [{ title: 'Alien' }, { title: 'Arrival' }],
+        actors: [{ name: 'Weaver' }, { name: 'Adams' }],
       },
-      arrayPath: ["movies"],
+      arrayPath: ['movies'],
     },
-    [rankedList(["movies"], { roles: { labelField: "title" }, items: movies })],
+    [rankedList(['movies'], { roles: { labelField: 'title' }, items: movies })],
   );
 
   it("offers every list with its setup, and the open list's progress", () => {
     const options = selectListOptions(withOpen(twoLists, { comparisonEvents: movieWin }));
 
-    expect(options.map((option) => option.path)).toEqual([["movies"], ["actors"]]);
-    expect(options[0]!.configLine).toBe("shown by title");
+    expect(options.map((option) => option.path)).toEqual([['movies'], ['actors']]);
+    expect(options[0]!.configLine).toBe('shown by title');
     expect(options[0]!.coverage?.coverage).toBeGreaterThan(0);
     expect(options[1]!.coverage).toBeUndefined();
   });
 
-  it("works out a list never opened once, however the open list changes", () => {
+  it('works out a list never opened once, however the open list changes', () => {
     const before = selectListOptions(twoLists);
     const after = selectListOptions(withOpen(twoLists, { comparisonEvents: movieWin }));
 
-    expect(after[1]!.configLine).toBe("shown by name");
-    expect(selectListConfig(withOpen(twoLists, {}), ["actors"])).toBe(selectListConfig(twoLists, ["actors"]));
+    expect(after[1]!.configLine).toBe('shown by name');
+    expect(selectListConfig(withOpen(twoLists, {}), ['actors'])).toBe(selectListConfig(twoLists, ['actors']));
     expect(before[0]!.coverage).toBeUndefined();
     expect(after[0]!.coverage).toBeDefined();
   });
 });
 
-describe("selectProgress", () => {
+describe('selectProgress', () => {
   /** n * log2(n) for three items is ~4.75, so five rated comparisons pass it. */
-  function comparisons(
-    count: number,
-    outcome: ComparisonEvent["outcome"] = "left",
-  ) {
+  function comparisons(count: number, outcome: ComparisonEvent['outcome'] = 'left') {
     return Array.from({ length: count }, (_, index) => ({
       id: `event-${index}`,
-      listId: "list-1",
-      leftItemId: "item-1",
-      rightItemId: "item-2",
+      listId: 'list-1',
+      leftItemId: 'item-1',
+      rightItemId: 'item-2',
       outcome,
       createdAt: NOW,
     })) satisfies ComparisonEvent[];
   }
 
-  it("counts active items and rated comparisons", () => {
+  it('counts active items and rated comparisons', () => {
     const progress = selectProgress(items, comparisons(2));
 
     expect(progress.activeItems).toBe(3);
     expect(progress.comparisons).toBe(2);
   });
 
-  it("leaves skips out of the count, because they say nothing about the order", () => {
-    const progress = selectProgress(items, [
-      ...comparisons(2),
-      ...comparisons(1, "skip"),
-    ]);
+  it('leaves skips out of the count, because they say nothing about the order', () => {
+    const progress = selectProgress(items, [...comparisons(2), ...comparisons(1, 'skip')]);
 
     expect(progress.comparisons).toBe(2);
     expect(progress.skips).toBe(1);
   });
 
-  it("passes 1 once the estimate is beaten, so surplus work still registers", () => {
+  it('passes 1 once the estimate is beaten, so surplus work still registers', () => {
     const progress = selectProgress(items, comparisons(10));
 
     expect(progress.coverage).toBeGreaterThan(1);
   });
 
-  it("keeps climbing with every comparison past the estimate", () => {
+  it('keeps climbing with every comparison past the estimate', () => {
     const at10 = selectProgress(items, comparisons(10)).coverage;
     const at12 = selectProgress(items, comparisons(12)).coverage;
 
     expect(at12).toBeGreaterThan(at10);
   });
 
-  it("is zero when there is nothing to rank", () => {
+  it('is zero when there is nothing to rank', () => {
     expect(selectProgress([items[0]!], []).coverage).toBe(0);
   });
 
-  it("starts an already-ranked list at full coverage with no comparisons yet", () => {
+  it('starts an already-ranked list at full coverage with no comparisons yet', () => {
     const progress = selectProgress(items, [], true);
 
     expect(progress.coverage).toBe(1);
   });
 
-  it("climbs past full coverage as an already-ranked list gets compared further", () => {
+  it('climbs past full coverage as an already-ranked list gets compared further', () => {
     const at0 = selectProgress(items, [], true).coverage;
     const at2 = selectProgress(items, comparisons(2), true).coverage;
 
@@ -232,45 +217,45 @@ describe("selectProgress", () => {
     expect(at0).toBe(1);
   });
 
-  it("does not credit coverage for being already ranked when there is nothing to rank", () => {
+  it('does not credit coverage for being already ranked when there is nothing to rank', () => {
     expect(selectProgress([items[0]!], [], true).coverage).toBe(0);
   });
 });
 
-describe("describeCoverage", () => {
-  it("reads as a plain percentage below the estimate", () => {
+describe('describeCoverage', () => {
+  it('reads as a plain percentage below the estimate', () => {
     const shown = describeCoverage(0.52);
 
-    expect(shown.label).toBe("52%");
+    expect(shown.label).toBe('52%');
     expect(shown.filled).toBe(52);
     expect(shown.surplus).toBe(0);
   });
 
-  it("splits the bar into a full accent run and a gold surplus past the estimate", () => {
+  it('splits the bar into a full accent run and a gold surplus past the estimate', () => {
     const shown = describeCoverage(1.38);
 
-    expect(shown.label).toBe("138%");
+    expect(shown.label).toBe('138%');
     expect(shown.filled).toBe(100);
     expect(shown.surplus).toBe(38);
   });
 
-  it("caps the number once the plating is complete, rather than climbing forever", () => {
-    expect(describeCoverage(2).label).toBe("200%");
-    expect(describeCoverage(2.4).label).toBe("200%+");
-    expect(describeCoverage(37).label).toBe("200%+");
+  it('caps the number once the plating is complete, rather than climbing forever', () => {
+    expect(describeCoverage(2).label).toBe('200%');
+    expect(describeCoverage(2.4).label).toBe('200%+');
+    expect(describeCoverage(37).label).toBe('200%+');
   });
 
-  it("keeps the plating full once capped", () => {
+  it('keeps the plating full once capped', () => {
     expect(describeCoverage(2.4).surplus).toBe(100);
     expect(describeCoverage(37).surplus).toBe(100);
   });
 
-  it("says nothing extra while the estimate is still ahead", () => {
+  it('says nothing extra while the estimate is still ahead', () => {
     expect(describeCoverage(0.52).note).toBeNull();
     expect(describeCoverage(0.99).note).toBeNull();
   });
 
-  it("tells the user the order is usable, and that carrying on still helps", () => {
+  it('tells the user the order is usable, and that carrying on still helps', () => {
     const note = describeCoverage(1).note;
 
     expect(note).toMatch(/sorted/i);
@@ -279,14 +264,10 @@ describe("describeCoverage", () => {
     expect(describeCoverage(37).note).toBe(note);
   });
 
-  it("says the surplus out loud for screen readers", () => {
-    expect(describeCoverage(0.52).valueText).toBe("52%");
-    expect(describeCoverage(1.38).valueText).toMatch(
-      /138%.*past the estimate/i,
-    );
-    expect(describeCoverage(37).valueText).toMatch(
-      /over 200%.*past the estimate/i,
-    );
+  it('says the surplus out loud for screen readers', () => {
+    expect(describeCoverage(0.52).valueText).toBe('52%');
+    expect(describeCoverage(1.38).valueText).toMatch(/138%.*past the estimate/i);
+    expect(describeCoverage(37).valueText).toMatch(/over 200%.*past the estimate/i);
   });
 });
 
@@ -296,8 +277,8 @@ describe("describeCoverage", () => {
  * part comparisons have actually paid for. The claim converts to earned as the
  * work lands, rather than the two being indistinguishable.
  */
-describe("describeCoverage with a claimed run", () => {
-  it("marks the whole run as claimed for a ranked import nobody has compared yet", () => {
+describe('describeCoverage with a claimed run', () => {
+  it('marks the whole run as claimed for a ranked import nobody has compared yet', () => {
     const shown = describeCoverage(1, 0);
 
     expect(shown.filled).toBe(100);
@@ -305,7 +286,7 @@ describe("describeCoverage with a claimed run", () => {
     expect(shown.surplus).toBe(0);
   });
 
-  it("converts the claim to earned as comparisons land", () => {
+  it('converts the claim to earned as comparisons land', () => {
     const shown = describeCoverage(1.5, 0.5);
 
     expect(shown.filled).toBe(100);
@@ -313,23 +294,21 @@ describe("describeCoverage with a claimed run", () => {
     expect(shown.surplus).toBe(50);
   });
 
-  it("leaves nothing claimed once comparisons alone cover the estimate", () => {
+  it('leaves nothing claimed once comparisons alone cover the estimate', () => {
     expect(describeCoverage(2, 1).claimed).toBe(0);
   });
 
-  it("claims nothing on a list whose progress is all earned", () => {
+  it('claims nothing on a list whose progress is all earned', () => {
     expect(describeCoverage(0.52).claimed).toBe(0);
     expect(describeCoverage(0.52, 0.52).claimed).toBe(0);
     expect(describeCoverage(1.38, 1.38).claimed).toBe(0);
   });
 
-  it("tells screen readers the run is credited rather than earned", () => {
-    expect(describeCoverage(1, 0).valueText).toMatch(
-      /credited to the order you imported/i,
-    );
+  it('tells screen readers the run is credited rather than earned', () => {
+    expect(describeCoverage(1, 0).valueText).toMatch(/credited to the order you imported/i);
   });
 
-  it("quantifies the credit once part of the run has been earned", () => {
+  it('quantifies the credit once part of the run has been earned', () => {
     const valueText = describeCoverage(1.5, 0.5).valueText;
 
     expect(valueText).toMatch(/150%/);
@@ -337,13 +316,13 @@ describe("describeCoverage with a claimed run", () => {
     expect(valueText).toMatch(/50% .*credited to the order you imported/i);
   });
 
-  it("drops the credit from the readout once it has all been earned", () => {
+  it('drops the credit from the readout once it has all been earned', () => {
     expect(describeCoverage(2, 1).valueText).not.toMatch(/credited/i);
   });
 });
 
-describe("selectProgress earned coverage", () => {
-  it("reports the comparisons-only reading beside the credited one", () => {
+describe('selectProgress earned coverage', () => {
+  it('reports the comparisons-only reading beside the credited one', () => {
     const ranked = selectProgress(items, bWins, true);
 
     expect(ranked.coverage).toBeGreaterThan(1);
@@ -352,41 +331,35 @@ describe("selectProgress earned coverage", () => {
     expect(ranked.earnedCoverage).toBeCloseTo(ranked.coverage - 1);
   });
 
-  it("matches the coverage exactly when there is no credit to strip", () => {
+  it('matches the coverage exactly when there is no credit to strip', () => {
     const plain = selectProgress(items, bWins, false);
 
     expect(plain.earnedCoverage).toBe(plain.coverage);
   });
 });
 
-describe("selectRanking", () => {
-  it("orders items by the comparison history", () => {
+describe('selectRanking', () => {
+  it('orders items by the comparison history', () => {
     // Ramen won, so Tacos drops below the item that has not been compared yet.
-    expect(selectRanking(items, bWins).map((entry) => entry.item.id)).toEqual([
-      "item-2",
-      "item-3",
-      "item-1",
-    ]);
+    expect(selectRanking(items, bWins).map((entry) => entry.item.id)).toEqual(['item-2', 'item-3', 'item-1']);
   });
 
-  it("leaves out deleted items", () => {
-    const withDeleted = [items[0]!, item("item-2", "Ramen", false), items[2]!];
+  it('leaves out deleted items', () => {
+    const withDeleted = [items[0]!, item('item-2', 'Ramen', false), items[2]!];
 
-    expect(
-      selectRanking(withDeleted, []).map((entry) => entry.item.id),
-    ).toEqual(["item-1", "item-3"]);
+    expect(selectRanking(withDeleted, []).map((entry) => entry.item.id)).toEqual(['item-1', 'item-3']);
   });
 
-  it("seeds ratings from the given order when the list is already ranked", () => {
+  it('seeds ratings from the given order when the list is already ranked', () => {
     const view = selectWorkspaceView(items, [], true);
 
-    expect(view.states.get("item-1")!.rating).toBeGreaterThan(1500);
-    expect(view.states.get("item-3")!.rating).toBeLessThan(1500);
+    expect(view.states.get('item-1')!.rating).toBeGreaterThan(1500);
+    expect(view.states.get('item-3')!.rating).toBeLessThan(1500);
   });
 });
 
-describe("selectCurrentPair", () => {
-  it("offers two different active items", () => {
+describe('selectCurrentPair', () => {
+  it('offers two different active items', () => {
     const pair = selectCurrentPair(items, []);
 
     expect(pair).not.toBeNull();
@@ -394,220 +367,201 @@ describe("selectCurrentPair", () => {
     expect(pair?.left.active).toBe(true);
   });
 
-  it("offers nothing when a single item is left", () => {
+  it('offers nothing when a single item is left', () => {
     expect(selectCurrentPair([items[0]!], [])).toBeNull();
   });
 });
 
-describe("selectExportText", () => {
-  it("serializes the user document with the ranking applied", () => {
-    const objects = [
-      item("item-1", { title: "Alien" }),
-      item("item-2", { title: "Arrival" }),
-    ];
+describe('selectExportText', () => {
+  it('serializes the user document with the ranking applied', () => {
+    const objects = [item('item-1', { title: 'Alien' }), item('item-2', { title: 'Arrival' })];
 
-    expect(selectExportText(withOpen(workspace, { items: objects }), "yaml")).toContain(
-      "owner: david",
-    );
+    expect(selectExportText(withOpen(workspace, { items: objects }), 'yaml')).toContain('owner: david');
   });
 
-  it("is empty with no workspace", () => {
-    expect(selectExportText(null, "yaml")).toBe("");
+  it('is empty with no workspace', () => {
+    expect(selectExportText(null, 'yaml')).toBe('');
   });
 });
 
-describe("selectRemovedCount", () => {
-  it("counts only the deactivated items", () => {
-    expect(selectRemovedCount([item("a", "x"), item("b", "y", false)])).toBe(1);
+describe('selectRemovedCount', () => {
+  it('counts only the deactivated items', () => {
+    expect(selectRemovedCount([item('a', 'x'), item('b', 'y', false)])).toBe(1);
   });
 });
 
-describe("selectContextLine", () => {
-  it("names the array and the label field", () => {
-    expect(selectContextLine(workspace)).toBe("movies · shown by title");
+describe('selectContextLine', () => {
+  it('names the array and the label field', () => {
+    expect(selectContextLine(workspace)).toBe('movies · shown by title');
   });
 
-  it("mentions the position field when there is one", () => {
+  it('mentions the position field when there is one', () => {
     const withOrder = withOpen(workspace, {
-      roles: { labelField: "title", positionField: "order" },
+      roles: { labelField: 'title', positionField: 'order' },
     });
 
-    expect(selectContextLine(withOrder)).toBe(
-      "movies · shown by title · order written back",
-    );
+    expect(selectContextLine(withOrder)).toBe('movies · shown by title · order written back');
   });
 
-  it("mentions already-ranked status when set", () => {
+  it('mentions already-ranked status when set', () => {
     const ranked = withOpen(workspace, { alreadyRanked: true });
 
-    expect(selectContextLine(ranked)).toBe(
-      "movies · shown by title · already ranked",
-    );
+    expect(selectContextLine(ranked)).toBe('movies · shown by title · already ranked');
   });
 
-  it("names a bare list plainly", () => {
-    const bare = workspaceWith({ format: "list", document: ["a"], arrayPath: [] }, [rankedList([])]);
+  it('names a bare list plainly', () => {
+    const bare = workspaceWith({ format: 'list', document: ['a'], arrayPath: [] }, [rankedList([])]);
 
-    expect(selectContextLine(bare)).toBe("the list");
+    expect(selectContextLine(bare)).toBe('the list');
   });
 
-  it("is empty with no workspace", () => {
-    expect(selectContextLine(null)).toBe("");
+  it('is empty with no workspace', () => {
+    expect(selectContextLine(null)).toBe('');
   });
 });
 
-describe("selectAvailableTabs", () => {
-  it("offers ranked plus the text formats for a structured source", () => {
-    expect(selectAvailableTabs(workspace)).toEqual(["ranked", "yaml", "json"]);
+describe('selectAvailableTabs', () => {
+  it('offers ranked plus the text formats for a structured source', () => {
+    expect(selectAvailableTabs(workspace)).toEqual(['ranked', 'yaml', 'json']);
   });
 
-  it("offers the plain list tab for a plain list source", () => {
-    const bare = workspaceWith({ format: "list", document: ["a"], arrayPath: [] }, [rankedList([])]);
+  it('offers the plain list tab for a plain list source', () => {
+    const bare = workspaceWith({ format: 'list', document: ['a'], arrayPath: [] }, [rankedList([])]);
 
-    expect(selectAvailableTabs(bare)).toEqual([
-      "ranked",
-      "list",
-      "yaml",
-      "json",
-    ]);
+    expect(selectAvailableTabs(bare)).toEqual(['ranked', 'list', 'yaml', 'json']);
   });
 
-  it("offers only the ranked tab with no workspace", () => {
-    expect(selectAvailableTabs(null)).toEqual(["ranked"]);
+  it('offers only the ranked tab with no workspace', () => {
+    expect(selectAvailableTabs(null)).toEqual(['ranked']);
   });
 });
 
-describe("describeRoles", () => {
-  it("names the label field", () => {
-    expect(describeRoles({ labelField: "title" }, false)).toBe(
-      "shown by title",
+describe('describeRoles', () => {
+  it('names the label field', () => {
+    expect(describeRoles({ labelField: 'title' }, false)).toBe('shown by title');
+  });
+
+  it('mentions the position field when there is one', () => {
+    expect(describeRoles({ labelField: 'title', positionField: 'order' }, false)).toBe(
+      'shown by title · order written back',
     );
   });
 
-  it("mentions the position field when there is one", () => {
-    expect(
-      describeRoles({ labelField: "title", positionField: "order" }, false),
-    ).toBe("shown by title · order written back");
+  it('mentions already-ranked status when set', () => {
+    expect(describeRoles({ labelField: 'title' }, true)).toBe('shown by title · already ranked');
   });
 
-  it("mentions already-ranked status when set", () => {
-    expect(describeRoles({ labelField: "title" }, true)).toBe(
-      "shown by title · already ranked",
-    );
-  });
-
-  it("says nothing about a plain list that is in no particular order", () => {
-    expect(describeRoles({}, false)).toBe("");
+  it('says nothing about a plain list that is in no particular order', () => {
+    expect(describeRoles({}, false)).toBe('');
   });
 });
 
-describe("selectListConfig", () => {
+describe('selectListConfig', () => {
   const document = {
-    movies: [{ title: "Alien" }, { title: "Arrival" }],
-    actors: [{ name: "Weaver" }, { name: "Adams" }],
+    movies: [{ title: 'Alien' }, { title: 'Arrival' }],
+    actors: [{ name: 'Weaver' }, { name: 'Adams' }],
   };
-  const openMovies = rankedList(["movies"], { roles: { labelField: "title" }, alreadyRanked: true });
-  const multiList = workspaceWith(
-    { format: "yaml", document, arrayPath: ["movies"] },
-    [openMovies],
-    { roles: { labelField: "title" }, alreadyRanked: true },
-  );
-  const setUpActors = rankedList(["actors"], { roles: { labelField: "name" } });
+  const openMovies = rankedList(['movies'], { roles: { labelField: 'title' }, alreadyRanked: true });
+  const multiList = workspaceWith({ format: 'yaml', document, arrayPath: ['movies'] }, [openMovies], {
+    roles: { labelField: 'title' },
+    alreadyRanked: true,
+  });
+  const setUpActors = rankedList(['actors'], { roles: { labelField: 'name' } });
 
-  it("reports the open list its own configuration", () => {
-    expect(selectListConfig(multiList, ["movies"])).toEqual({
-      roles: { labelField: "title" },
+  it('reports the open list its own configuration', () => {
+    expect(selectListConfig(multiList, ['movies'])).toEqual({
+      roles: { labelField: 'title' },
       alreadyRanked: true,
     });
   });
 
-  it("reports a list set up by hand the configuration it was set up with", () => {
-    expect(selectListConfig(withList(multiList, setUpActors), ["actors"])).toEqual({
-      roles: { labelField: "name" },
+  it('reports a list set up by hand the configuration it was set up with', () => {
+    expect(selectListConfig(withList(multiList, setUpActors), ['actors'])).toEqual({
+      roles: { labelField: 'name' },
       alreadyRanked: false,
     });
   });
 
-  it("takes the order answer for an unconfigured list from the document defaults", () => {
+  it('takes the order answer for an unconfigured list from the document defaults', () => {
     const defaultNotRanked = {
       ...multiList,
-      listDefaults: { roles: { labelField: "title" }, alreadyRanked: false },
+      listDefaults: { roles: { labelField: 'title' }, alreadyRanked: false },
     };
 
-    expect(selectListConfig(defaultNotRanked, ["actors"]).alreadyRanked).toBe(false);
+    expect(selectListConfig(defaultNotRanked, ['actors']).alreadyRanked).toBe(false);
   });
 
-  it("falls back to the target list own label field when the default one is absent", () => {
-    expect(selectListConfig(multiList, ["actors"]).roles).toEqual({
-      labelField: "name",
+  it('falls back to the target list own label field when the default one is absent', () => {
+    expect(selectListConfig(multiList, ['actors']).roles).toEqual({
+      labelField: 'name',
     });
   });
 
-  it("keeps the default label field when the target list carries it too", () => {
+  it('keeps the default label field when the target list carries it too', () => {
     const shared = workspaceWith(
       {
-        format: "yaml",
+        format: 'yaml',
         document: {
-          movies: [{ title: "Alien" }, { title: "Arrival" }],
-          books: [{ title: "Dune" }, { title: "Ubik" }],
+          movies: [{ title: 'Alien' }, { title: 'Arrival' }],
+          books: [{ title: 'Dune' }, { title: 'Ubik' }],
         },
-        arrayPath: ["movies"],
+        arrayPath: ['movies'],
       },
       [openMovies],
       multiList.listDefaults,
     );
 
-    expect(selectListConfig(shared, ["books"]).roles).toEqual({
-      labelField: "title",
+    expect(selectListConfig(shared, ['books']).roles).toEqual({
+      labelField: 'title',
     });
   });
 
-  it("takes an unconfigured list from the defaults, not from whatever list is open", () => {
+  it('takes an unconfigured list from the defaults, not from whatever list is open', () => {
     const onYear = workspaceWith(
       {
-        format: "yaml",
+        format: 'yaml',
         document: {
-          movies: [{ title: "Alien", year: 1979 }],
-          books: [{ title: "Dune", year: 1965 }],
+          movies: [{ title: 'Alien', year: 1979 }],
+          books: [{ title: 'Dune', year: 1965 }],
         },
-        arrayPath: ["movies"],
+        arrayPath: ['movies'],
       },
-      [rankedList(["movies"], { roles: { labelField: "year" } })],
-      { roles: { labelField: "title" }, alreadyRanked: true },
+      [rankedList(['movies'], { roles: { labelField: 'year' } })],
+      { roles: { labelField: 'title' }, alreadyRanked: true },
     );
 
-    expect(selectListConfig(onYear, ["books"])).toEqual({
-      roles: { labelField: "title" },
+    expect(selectListConfig(onYear, ['books'])).toEqual({
+      roles: { labelField: 'title' },
       alreadyRanked: true,
     });
   });
 
-  it("re-derives a list left earlier that was never set up by hand", () => {
-    const inherited = rankedList(["actors"], {
-      roles: { labelField: "name" },
+  it('re-derives a list left earlier that was never set up by hand', () => {
+    const inherited = rankedList(['actors'], {
+      roles: { labelField: 'name' },
       configuredExplicitly: false,
     });
     const defaults = workspaceWith(
       {
-        format: "yaml",
+        format: 'yaml',
         document: {
-          movies: [{ title: "Alien" }],
-          actors: [{ name: "Weaver", nickname: "Ripley" }],
+          movies: [{ title: 'Alien' }],
+          actors: [{ name: 'Weaver', nickname: 'Ripley' }],
         },
-        arrayPath: ["movies"],
+        arrayPath: ['movies'],
       },
       [openMovies, inherited],
-      { roles: { labelField: "nickname" }, alreadyRanked: true },
+      { roles: { labelField: 'nickname' }, alreadyRanked: true },
     );
 
-    expect(selectListConfig(defaults, ["actors"])).toEqual({
-      roles: { labelField: "nickname" },
+    expect(selectListConfig(defaults, ['actors'])).toEqual({
+      roles: { labelField: 'nickname' },
       alreadyRanked: true,
     });
   });
 
-  it("has nothing to inherit with no workspace", () => {
-    expect(selectListConfig(null, ["movies"])).toEqual({
+  it('has nothing to inherit with no workspace', () => {
+    expect(selectListConfig(null, ['movies'])).toEqual({
       roles: {},
       alreadyRanked: false,
     });

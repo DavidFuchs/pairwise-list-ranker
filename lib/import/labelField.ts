@@ -56,9 +56,7 @@ export function collectLabelFieldCandidates(values: ComplexItemValue[]): LabelFi
   const candidates: LabelFieldCandidate[] = [];
 
   for (const field of fieldOrder(values)) {
-    const present = values
-      .map((value) => value[field])
-      .filter((entry) => scalarType(entry) !== null);
+    const present = values.map((value) => value[field]).filter((entry) => scalarType(entry) !== null);
 
     if (present.length === 0) continue;
 
@@ -87,10 +85,7 @@ export function preferredLabelField(candidates: LabelFieldCandidate[]): string |
 }
 
 /** Whether a chosen field still labels at least one item. */
-export function isUsableLabelField(
-  field: string | undefined,
-  candidates: LabelFieldCandidate[],
-): boolean {
+export function isUsableLabelField(field: string | undefined, candidates: LabelFieldCandidate[]): boolean {
   if (field === undefined) return false;
   return candidates.some((candidate) => candidate.field === field && candidate.coverage > 0);
 }

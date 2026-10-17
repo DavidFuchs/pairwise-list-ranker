@@ -15,7 +15,12 @@ function item(id: string, value: ListItem['value'], active = true): ListItem {
   return { id, listId: 'l', value, active, createdAt: NOW, updatedAt: NOW };
 }
 
-function event(id: string, left: string, right: string, outcome: ComparisonEvent['outcome']): ComparisonEvent {
+function event(
+  id: string,
+  left: string,
+  right: string,
+  outcome: ComparisonEvent['outcome'],
+): ComparisonEvent {
   return { id, listId: 'l', leftItemId: left, rightItemId: right, outcome, createdAt: NOW };
 }
 

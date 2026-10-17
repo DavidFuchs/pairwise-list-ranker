@@ -33,9 +33,10 @@ function track(value: Animated.Value): number[] {
   return seen;
 }
 
-const settle = () => act(async () => {
-  await new Promise((resolve) => setTimeout(resolve, 400));
-});
+const settle = () =>
+  act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  });
 
 describe('useFlipAnimation', () => {
   it('emits nothing on first render', () => {

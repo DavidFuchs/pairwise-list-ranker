@@ -31,8 +31,9 @@ export function resolveRoles(entries: unknown[], previous: FieldRoles = {}): Fie
   // and never duplicates the title. Nothing is chosen for the user: a card
   // shows only its title until fields are ticked.
   const present = new Set(objects.flatMap((object) => Object.keys(object)));
-  const summaryFields = [...new Set(previous.summaryFields ?? [])]
-    .filter((field) => present.has(field) && field !== labelField);
+  const summaryFields = [...new Set(previous.summaryFields ?? [])].filter(
+    (field) => present.has(field) && field !== labelField,
+  );
 
   const fieldRenderers = cleanRenderers(previous.fieldRenderers, summaryFields);
 

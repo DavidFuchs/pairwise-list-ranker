@@ -182,20 +182,18 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
     body: (
       <>
         <P>
-          Paste your list into the box, type it, or drop a file anywhere on the page. A{' '}
-          <B>plain list</B> is one item per line. <B>YAML</B> and <B>JSON</B> can carry more about
-          each item - an artist, a year, a link - and those details can then be shown while you
-          rank.
+          Paste your list into the box, type it, or drop a file anywhere on the page. A <B>plain list</B> is
+          one item per line. <B>YAML</B> and <B>JSON</B> can carry more about each item - an artist, a year, a
+          link - and those details can then be shown while you rank.
         </P>
         <P>
-          The format is detected for you. If it guesses wrong, pick <K>Plain list</K>, <K>YAML</K>{' '}
-          or <K>JSON</K> under the box to read it that way instead. No list handy? The sample buttons
-          above the box load ten songs, movies or Steam games, already set up to show the cards off.
+          The format is detected for you. If it guesses wrong, pick <K>Plain list</K>, <K>YAML</K> or{' '}
+          <K>JSON</K> under the box to read it that way instead. No list handy? The sample buttons above the
+          box load ten songs, movies or Steam games, already set up to show the cards off.
         </P>
         <P>
-          A YAML or JSON document can hold more than one list. When it does, the panel on the right
-          asks which one to rank; the rest of the document is kept exactly as it was and comes back
-          with your export.
+          A YAML or JSON document can hold more than one list. When it does, the panel on the right asks which
+          one to rank; the rest of the document is kept exactly as it was and comes back with your export.
         </P>
       </>
     ),
@@ -205,9 +203,9 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
     summary: 'Start from your existing order, or from scratch.',
     body: (
       <P>
-        Choose <B>Best to worst</B> when your list is already roughly ranked. Every item then
-        starts from the position it has, and your comparisons refine that order rather than
-        rebuilding it. Choose <B>No particular order</B> and every item starts even.
+        Choose <B>Best to worst</B> when your list is already roughly ranked. Every item then starts from the
+        position it has, and your comparisons refine that order rather than rebuilding it. Choose{' '}
+        <B>No particular order</B> and every item starts even.
       </P>
     ),
   },
@@ -217,37 +215,35 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
     body: (
       <>
         <P>
-          For a list of objects, the <B>Fields</B> panel lists every field your items have, each
-          with a few of its values so you can see what it holds. Fields on the cards are grouped at
-          the top, in the order a card shows them.
+          For a list of objects, the <B>Fields</B> panel lists every field your items have, each with a few of
+          its values so you can see what it holds. Fields on the cards are grouped at the top, in the order a
+          card shows them.
         </P>
         <Bullets
           items={[
             <>
-              <B>Title.</B> The first field titles each card to begin with. Tap any other field to
-              make it the title instead. Lists and nested objects cannot be titles. A title is always
-              shown as it is written in your data - it has no other way to be drawn.
+              <B>Title.</B> The first field titles each card to begin with. Tap any other field to make it the
+              title instead. Lists and nested objects cannot be titles. A title is always shown as it is
+              written in your data - it has no other way to be drawn.
             </>,
             <>
-              <B>Details.</B> Tick the box on the left of a field to show it on every card under the
-              title - as many as you like. Nothing is ticked until you tick it. The number in the
-              box is the field&apos;s place on the card.
+              <B>Details.</B> Tick the box on the left of a field to show it on every card under the title -
+              as many as you like. Nothing is ticked until you tick it. The number in the box is the
+              field&apos;s place on the card.
             </>,
             <>
-              <B>Order.</B> Use the <K>▲</K> <K>▼</K> arrows on a ticked field to move it up or down
-              the card.
+              <B>Order.</B> Use the <K>▲</K> <K>▼</K> arrows on a ticked field to move it up or down the card.
             </>,
             <>
-              <B>How it is drawn.</B> Where a field can be drawn more than one way, the <K>▾</K>{' '}
-              button on its right opens the choices, each previewed with your own values. The cell
-              then shows what you chose. See <B>Ways to draw a field</B>.
+              <B>How it is drawn.</B> Where a field can be drawn more than one way, the <K>▾</K> button on its
+              right opens the choices, each previewed with your own values. The cell then shows what you
+              chose. See <B>Ways to draw a field</B>.
             </>,
           ]}
         />
         <P>
-          A count like <Text style={styles.warning}>9 of 12</Text> means only some items have that
-          field. Cards for the others show a dash in its place, so the two cards in a pair always
-          line up.
+          A count like <Text style={styles.warning}>9 of 12</Text> means only some items have that field.
+          Cards for the others show a dash in its place, so the two cards in a pair always line up.
         </P>
       </>
     ),
@@ -258,10 +254,9 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
     body: (
       <>
         <P>
-          Each way is offered only when every value the field holds suits it - a field where even
-          one value is not a web address is never offered as a link. The ranked list shows each row
-          as one line, so there the visual ones are written out instead: stars read{' '}
-          <K>★ 9.2/10</K>, tags read as a list.
+          Each way is offered only when every value the field holds suits it - a field where even one value is
+          not a web address is never offered as a link. The ranked list shows each row as one line, so there
+          the visual ones are written out instead: stars read <K>★ 9.2/10</K>, tags read as a list.
         </P>
 
         <Text style={styles.group}>Text and numbers</Text>
@@ -275,107 +270,165 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
         <Renderer
           name="Date and Year only"
           offered="Offered when every value is a date written year first: 2024-04-12, with or without a time."
-          example={<FieldValue field="released" value="2024-04-12" renderer="date" withKey textStyle={styles.exampleText} />}
+          example={
+            <FieldValue
+              field="released"
+              value="2024-04-12"
+              renderer="date"
+              withKey
+              textStyle={styles.exampleText}
+            />
+          }
         >
-          <B>Date</B> writes it the way dates are written where you are. <B>Year only</B> keeps just
-          the year - often all a comparison needs.
+          <B>Date</B> writes it the way dates are written where you are. <B>Year only</B> keeps just the year
+          - often all a comparison needs.
         </Renderer>
         <Renderer
           name="Duration (seconds)"
           offered="Offered when every value is a whole number of zero or more."
-          example={<FieldValue field="length" value={171} renderer="duration" withKey textStyle={styles.exampleText} />}
+          example={
+            <FieldValue
+              field="length"
+              value={171}
+              renderer="duration"
+              withKey
+              textStyle={styles.exampleText}
+            />
+          }
         >
-          Reads the number as seconds: 171 becomes 2:51, and 3735 becomes 1:02:15. Nothing in a
-          plain number says it is seconds, so only choose it when it is.
+          Reads the number as seconds: 171 becomes 2:51, and 3735 becomes 1:02:15. Nothing in a plain number
+          says it is seconds, so only choose it when it is.
         </Renderer>
         <Renderer
           name="Compact number"
           offered="Offered when every value is a number and at least one reaches 1,000."
-          example={<FieldValue field="plays" value={1534000} renderer="compact" withKey textStyle={styles.exampleText} />}
+          example={
+            <FieldValue
+              field="plays"
+              value={1534000}
+              renderer="compact"
+              withKey
+              textStyle={styles.exampleText}
+            />
+          }
         >
           Shortens large numbers - 1,534,000 becomes 1.5M - for play counts, populations, prices.
         </Renderer>
         <Renderer
           name="Currency"
           offered="Offered when every value is a number. Pick the currency: USD, CAD, EUR, GBP, AUD, JPY, CHF or INR."
-          example={<FieldValue field="rent" value={2400} renderer="currency-CAD" withKey textStyle={styles.exampleText} />}
+          example={
+            <FieldValue
+              field="rent"
+              value={2400}
+              renderer="currency-CAD"
+              withKey
+              textStyle={styles.exampleText}
+            />
+          }
         >
-          Writes the number as money, the way it is written where you are. Whole amounts drop the
-          cents, so a salary reads $120,000 rather than $120,000.00.
+          Writes the number as money, the way it is written where you are. Whole amounts drop the cents, so a
+          salary reads $120,000 rather than $120,000.00.
         </Renderer>
         <Renderer
           name="Long text"
           offered="Offered when every value is text and at least one runs past 80 characters or over more than one line."
           example={<Text style={styles.exampleText}>notes: Close to the park, but…</Text>}
         >
-          Notes, descriptions and pitches. A card shows the first three lines with a <K>More</K>{' '}
-          button for the rest, which never chooses the card. The ranked list keeps it to one line.
+          Notes, descriptions and pitches. A card shows the first three lines with a <K>More</K> button for
+          the rest, which never chooses the card. The ranked list keeps it to one line.
         </Renderer>
 
         <Text style={styles.group}>Lists and yes-or-no</Text>
         <Renderer
           name="Tags"
           offered="Offered when every value is a list of words or numbers."
-          example={<FieldValue field="genres" value={['Pop', 'Disco']} renderer="tags" withKey textStyle={styles.exampleText} />}
+          example={
+            <FieldValue
+              field="genres"
+              value={['Pop', 'Disco']}
+              renderer="tags"
+              withKey
+              textStyle={styles.exampleText}
+            />
+          }
         >
-          Each entry as its own small label, instead of the list written out in brackets. An empty
-          list shows a dash.
+          Each entry as its own small label, instead of the list written out in brackets. An empty list shows
+          a dash.
         </Renderer>
         <Renderer
           name="Pills"
           offered="Offered when every value is a short word or phrase, at most 24 different ones, and they repeat across items - or the field is named like a category, such as genre or status."
           example={<FieldValue field="priority" value="High" renderer="pills" />}
         >
-          A coloured label for categories: priority, status, cuisine, genre. The colour comes from the
-          word itself, so the same word is the same colour on every card. Priorities keep the colours
-          they mean - high and urgent are red, medium amber, low green.
+          A coloured label for categories: priority, status, cuisine, genre. The colour comes from the word
+          itself, so the same word is the same colour on every card. Priorities keep the colours they mean -
+          high and urgent are red, medium amber, low green.
         </Renderer>
         <Renderer
           name="Badge"
           offered="Offered when every value is true or false."
           example={<FieldValue field="explicit" value renderer="badge" />}
         >
-          Shows the field&apos;s name as a label when the value is true, and nothing at all when it
-          is false - quieter than a line saying false on every card.
+          Shows the field&apos;s name as a label when the value is true, and nothing at all when it is false -
+          quieter than a line saying false on every card.
         </Renderer>
 
         <Text style={styles.group}>Places and colours</Text>
         <Renderer
           name="Location"
           offered="Offered when every value is a map position - {lat, lng}, [lat, lng] or 43.65, -79.38 - or is text in a field named like a place: address, city, venue, location…"
-          example={<FieldValue field="address" value="100 Queen St W" renderer="location" withKey textStyle={styles.exampleText} />}
+          example={
+            <FieldValue
+              field="address"
+              value="100 Queen St W"
+              renderer="location"
+              withKey
+              textStyle={styles.exampleText}
+            />
+          }
         >
           The place as a link that opens it on a map in a new tab, without choosing the card.
         </Renderer>
         <Renderer
           name="Flag"
           offered="Offered when every value is a two-letter country code, like CA or jp."
-          example={<FieldValue field="country" value="CA" renderer="flag" withKey textStyle={styles.exampleText} />}
+          example={
+            <FieldValue field="country" value="CA" renderer="flag" withKey textStyle={styles.exampleText} />
+          }
         >
-          The country&apos;s flag and its name in your language. Some systems, Windows among them,
-          draw flags as the two letters instead; the name is always there.
+          The country&apos;s flag and its name in your language. Some systems, Windows among them, draw flags
+          as the two letters instead; the name is always there.
         </Renderer>
         <Renderer
           name="Colour swatch"
           offered="Offered when every value is a colour written as #hex, rgb() or hsl()."
-          example={<FieldValue field="paint" value="#336699" renderer="color-swatch" withKey textStyle={styles.exampleText} />}
+          example={
+            <FieldValue
+              field="paint"
+              value="#336699"
+              renderer="color-swatch"
+              withKey
+              textStyle={styles.exampleText}
+            />
+          }
         >
           A small square of the colour beside its code - for palettes, paints and brand choices.
         </Renderer>
 
         <Text style={styles.group}>Ratings</Text>
         <P>
-          Both ask what the score is <B>out of</B>: 1, 5, 10 or 100. Only scales that every value
-          fits under are offered, so a field with a 9.2 in it is never offered out of 5. Out of 1 and
-          out of 100 read as percentages.
+          Both ask what the score is <B>out of</B>: 1, 5, 10 or 100. Only scales that every value fits under
+          are offered, so a field with a 9.2 in it is never offered out of 5. Out of 1 and out of 100 read as
+          percentages.
         </P>
         <Renderer
           name="Stars"
           offered="Offered when every value is a number of zero or more."
           example={<StarRating value={9.2} scale={10} size={16} />}
         >
-          Always five stars, lit from the left to the score&apos;s share of the scale. 9.2 out of 10
-          lights 92% of the row, so the last star is mostly grey.
+          Always five stars, lit from the left to the score&apos;s share of the scale. 9.2 out of 10 lights
+          92% of the row, so the last star is mostly grey.
         </Renderer>
         <Renderer
           name="Bar"
@@ -389,10 +442,12 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
         <Renderer
           name="Link"
           offered="Offered when every value starts with http:// or https://."
-          example={<FieldLink url="https://example.com/arrival" prefix="site:" textStyle={styles.exampleLink} />}
+          example={
+            <FieldLink url="https://example.com/arrival" prefix="site:" textStyle={styles.exampleLink} />
+          }
         >
-          A link that opens in a new tab. Clicking it never chooses the card. In the ranked list,
-          where a row is something you drag, it reads as plain text.
+          A link that opens in a new tab. Clicking it never chooses the card. In the ranked list, where a row
+          is something you drag, it reads as plain text.
         </Renderer>
         <Renderer
           name="Image"
@@ -404,10 +459,10 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
             </View>
           }
         >
-          A picture to the left of each comparison card&apos;s title, and a small one at the start
-          of each row in the ranked list. Anything after a <K>?</K> or <K>#</K> in the address is
-          ignored, so <K>…/cover.jpg?w=300</K> counts. An item whose picture is missing or will not
-          load keeps an empty frame, so everything still lines up.
+          A picture to the left of each comparison card&apos;s title, and a small one at the start of each row
+          in the ranked list. Anything after a <K>?</K> or <K>#</K> in the address is ignored, so{' '}
+          <K>…/cover.jpg?w=300</K> counts. An item whose picture is missing or will not load keeps an empty
+          frame, so everything still lines up.
         </Renderer>
         <Renderer
           name="Image gallery"
@@ -420,50 +475,50 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
             </View>
           }
         >
-          Several pictures for one item - an apartment&apos;s rooms, a venue from every side. They go
-          in the same place as an image, with arrows under it to page through them.
+          Several pictures for one item - an apartment&apos;s rooms, a venue from every side. They go in the
+          same place as an image, with arrows under it to page through them.
         </Renderer>
         <Renderer
           name="YouTube thumbnail"
           offered="Offered when every value is a YouTube video address - watch, youtu.be, shorts, embed or live."
           example={<FieldImage value={undefined} size={56} label="" />}
         >
-          The video&apos;s own picture, in the same place an image goes, marked with a small play
-          sign. Clicking it on a card opens the video in a new tab, without choosing the card.
+          The video&apos;s own picture, in the same place an image goes, marked with a small play sign.
+          Clicking it on a card opens the video in a new tab, without choosing the card.
         </Renderer>
         <Renderer
           name="Steam header"
           offered="Offered when every value is a Steam app id, like 620, or a store.steampowered.com/app/… address."
           example={<FieldImage value={undefined} size={64} aspect={460 / 215} label="" />}
         >
-          The game&apos;s banner from its Steam store page, kept wide rather than cropped. Clicking it
-          opens the store page. A few newer games keep their banner where it cannot be guessed from the
-          id; those show an empty frame.
+          The game&apos;s banner from its Steam store page, kept wide rather than cropped. Clicking it opens
+          the store page. A few newer games keep their banner where it cannot be guessed from the id; those
+          show an empty frame.
         </Renderer>
         <Renderer
           name="Apple Music preview"
           offered="Offered when every value is text or a number - meant for Apple Music track ids."
           example={<PreviewButtonPlaceholder />}
         >
-          A round play button for a 30-second clip of the track, at the top right of each card, near
-          the end of each ranked row, and on the field itself while you set up. Clips are looked up
-          in Apple Music&apos;s catalogue; a track with no clip simply has no button.
+          A round play button for a 30-second clip of the track, at the top right of each card, near the end
+          of each ranked row, and on the field itself while you set up. Clips are looked up in Apple
+          Music&apos;s catalogue; a track with no clip simply has no button.
         </Renderer>
         <Renderer
           name="Deezer preview"
           offered="Offered when every value is a Deezer track id or a deezer.com/track/… address."
           example={<PreviewButtonPlaceholder />}
         >
-          The same play button, with the clip from Deezer&apos;s catalogue. Track ids from Apple Music
-          and Deezer are both plain numbers, so a field of them is offered both - pick the catalogue
-          the ids came from.
+          The same play button, with the clip from Deezer&apos;s catalogue. Track ids from Apple Music and
+          Deezer are both plain numbers, so a field of them is offered both - pick the catalogue the ids came
+          from.
         </Renderer>
         <P>
-          A card has one picture and one play button, and every field drawn as either feeds them.
-          Pictures from every picture field - images, galleries, thumbnails, banners - join one
-          gallery in the card&apos;s order. Clip fields line up as fallbacks: the button plays from
-          the first in the card&apos;s order that has a clip, so a track missing from Apple Music can
-          still play from Deezer. The ranked list shows each row&apos;s first picture.
+          A card has one picture and one play button, and every field drawn as either feeds them. Pictures
+          from every picture field - images, galleries, thumbnails, banners - join one gallery in the
+          card&apos;s order. Clip fields line up as fallbacks: the button plays from the first in the
+          card&apos;s order that has a clip, so a track missing from Apple Music can still play from Deezer.
+          The ranked list shows each row&apos;s first picture.
         </P>
       </>
     ),
@@ -473,9 +528,9 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
     summary: 'Optional: fill a field with each item’s new position.',
     body: (
       <P>
-        Your export is always in ranked order, so this is optional. If your items have a field for
-        their position - a rank, an order - choose it under <B>Write the new order into</B> and the
-        export rewrites it with 1, 2, 3 and so on, top to bottom.
+        Your export is always in ranked order, so this is optional. If your items have a field for their
+        position - a rank, an order - choose it under <B>Write the new order into</B> and the export rewrites
+        it with 1, 2, 3 and so on, top to bottom.
       </P>
     ),
   },
@@ -487,22 +542,22 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
         <Bullets
           items={[
             <>
-              <B>Choose</B> by clicking anywhere on the card you prefer. <K>Much better</K> counts
-              for more, for when it is not close.
+              <B>Choose</B> by clicking anywhere on the card you prefer. <K>Much better</K> counts for more,
+              for when it is not close.
             </>,
             <>
               <B>Skip this pair</B> when you cannot compare them fairly. A skip records nothing.
             </>,
             <>
-              <B>Remove</B> an item with the trash can at the bottom left of its card, then confirm.
-              It is left out of the ranking and the export.
+              <B>Remove</B> an item with the trash can at the bottom left of its card, then confirm. It is
+              left out of the ranking and the export.
             </>,
             <>
               <B>Undo</B> takes back your last decision.
             </>,
             <>
-              <B>Show details</B> opens every field of both items, for the times the card&apos;s
-              summary is not enough.
+              <B>Show details</B> opens every field of both items, for the times the card&apos;s summary is
+              not enough.
             </>,
           ]}
         />
@@ -516,8 +571,8 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
               <K>S</K> skips the pair.
             </>,
             <>
-              <K>D</K> then <K>L</K> or <K>R</K> removes the left or right item; <K>Enter</K>{' '}
-              confirms and <K>Esc</K> keeps it.
+              <K>D</K> then <K>L</K> or <K>R</K> removes the left or right item; <K>Enter</K> confirms and{' '}
+              <K>Esc</K> keeps it.
             </>,
             <>
               <K>Ctrl</K>/<K>Cmd</K> + <K>Z</K> undoes.
@@ -533,14 +588,14 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
     body: (
       <>
         <P>
-          The <B>Ranked</B> tab beside the cards shows the order as it stands, updated after every
-          answer. The number at the end of each row is the item&apos;s rating.
+          The <B>Ranked</B> tab beside the cards shows the order as it stands, updated after every answer. The
+          number at the end of each row is the item&apos;s rating.
         </P>
         <P>
-          Drag a row by its <K>⠿</K> handle and drop it where the line shows: it goes exactly
-          there, and nothing else moves. It is a starting point, not a pin - later comparisons can
-          still move it. <K>Undo</K> takes a move back. From the keyboard, focus the handle and
-          press <K>Alt</K> + <K>↑</K> or <K>↓</K>.
+          Drag a row by its <K>⠿</K> handle and drop it where the line shows: it goes exactly there, and
+          nothing else moves. It is a starting point, not a pin - later comparisons can still move it.{' '}
+          <K>Undo</K> takes a move back. From the keyboard, focus the handle and press <K>Alt</K> + <K>↑</K>{' '}
+          or <K>↓</K>.
         </P>
       </>
     ),
@@ -551,13 +606,13 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
     body: (
       <>
         <P>
-          When your document holds more than one list, the list name at the top of the ranking
-          screen opens a switcher. Each list keeps its own progress, so you can move between them
-          freely. <K>Configure</K> beside a list takes you back to set up its fields and order.
+          When your document holds more than one list, the list name at the top of the ranking screen opens a
+          switcher. Each list keeps its own progress, so you can move between them freely. <K>Configure</K>{' '}
+          beside a list takes you back to set up its fields and order.
         </P>
         <P>
-          Lists you have not set up yourself follow the document&apos;s defaults. When editing a
-          list, <K>Set as default</K> makes its setup the default for the others.
+          Lists you have not set up yourself follow the document&apos;s defaults. When editing a list,{' '}
+          <K>Set as default</K> makes its setup the default for the others.
         </P>
       </>
     ),
@@ -570,31 +625,30 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
         <Bullets
           items={[
             <>
-              <B>In this browser.</B> Your list and progress are saved here as you go, so a reload
-              loses nothing. The top bar says when this is not possible.
+              <B>In this browser.</B> Your list and progress are saved here as you go, so a reload loses
+              nothing. The top bar says when this is not possible.
             </>,
             <>
-              <B>Exporting.</B> The <K>YAML</K>, <K>JSON</K> or <K>Plain list</K> tab shows your own
-              document with the list put in ranked order and everything else untouched. Copy it or
-              download it. That is your result to use elsewhere; to keep ranking later, save a
-              session instead, since an export holds the order but not the decisions behind it.
+              <B>Exporting.</B> The <K>YAML</K>, <K>JSON</K> or <K>Plain list</K> tab shows your own document
+              with the list put in ranked order and everything else untouched. Copy it or download it. That is
+              your result to use elsewhere; to keep ranking later, save a session instead, since an export
+              holds the order but not the decisions behind it.
             </>,
             <>
-              <B>Session files.</B> <K>Save session</K>, beside the ranked list, puts everything
-              in one file: your document, how every list is set up, and every decision, placement and
-              removal. To carry on - in another browser, or months later - drop that file on the
-              setup screen or choose it with <K>Choose a file</K>, and you are back where you left
-              off. <K>Open session</K> does the same from the ranking screen. Opening one replaces
-              the list you have open, so if that list has decisions behind it, you are asked first.
-              Progress files saved before sessions existed still open, onto the same list.
+              <B>Session files.</B> <K>Save session</K>, beside the ranked list, puts everything in one file:
+              your document, how every list is set up, and every decision, placement and removal. To carry on
+              - in another browser, or months later - drop that file on the setup screen or choose it with{' '}
+              <K>Choose a file</K>, and you are back where you left off. <K>Open session</K> does the same
+              from the ranking screen. Opening one replaces the list you have open, so if that list has
+              decisions behind it, you are asked first. Progress files saved before sessions existed still
+              open, onto the same list.
             </>,
             <>
-              <B>Editing.</B> <K>Edit data</K> returns to the setup screen. You see what your
-              changes will do before they are applied.
+              <B>Editing.</B> <K>Edit data</K> returns to the setup screen. You see what your changes will do
+              before they are applied.
             </>,
             <>
-              <B>Start over</B> clears the list from this browser. Files you exported are not
-              affected.
+              <B>Start over</B> clears the list from this browser. Files you exported are not affected.
             </>,
           ]}
         />
@@ -606,9 +660,9 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
     summary: 'Your data stays in your browser.',
     body: (
       <P>
-        There are no accounts and no server: your list is never uploaded. The only requests that
-        leave your browser are the ones your own data asks for - pictures load from their
-        addresses, and Apple Music previews look up their track ids with Apple.
+        There are no accounts and no server: your list is never uploaded. The only requests that leave your
+        browser are the ones your own data asks for - pictures load from their addresses, and Apple Music
+        previews look up their track ids with Apple.
       </P>
     ),
   },
