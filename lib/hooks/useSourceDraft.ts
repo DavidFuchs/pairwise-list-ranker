@@ -87,7 +87,7 @@ type RolesOverride = Record<string, RolesChoice>;
 interface AlreadyRankedOverride {
   /** The candidate path this choice was made for, so switching lists does not
    *  carry one list's answer onto another. */
-  pathKey: string;
+  pathKey: string | null;
   value: boolean;
 }
 
@@ -121,7 +121,9 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     [analysis, selectedPath],
   );
 
-  const selectedKey = selectedPath === null ? '' : pathKey(selectedPath);
+  // Null with nothing chosen: a document that is itself the list keys as '', so
+  // '' here would hand that list whatever was set while nothing was selected.
+  const selectedKey = selectedPath === null ? null : pathKey(selectedPath);
 
   // Per-path, not a single flag: switching to a list the user has not
   // answered this for must not inherit another list's "already ranked"
@@ -134,7 +136,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     }
     if (selectedPath === null || seed === undefined) return false;
 
-    const known = seed.knownLists?.[selectedKey];
+    const known = selectedKey === null ? undefined : seed.knownLists?.[selectedKey];
     if (known !== undefined) return known;
     if (samePath(selectedPath, seed.arrayPath)) return seed.alreadyRanked;
     return false;
@@ -146,7 +148,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
 
   const setAlreadyRanked = useCallback(
     (value: boolean) => {
-        setAlreadyRankedOverride({ pathKey: selectedKey, value });
+      setAlreadyRankedOverride({ pathKey: selectedKey, value });
     },
     [selectedKey],
   );
@@ -156,7 +158,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
   // a field of the same name - only the list the choice was actually made
   // for gets to keep it.
   const roles = useMemo(() => {
-    const choice = rolesOverride[selectedKey];
+    const choice = selectedKey === null ? undefined : rolesOverride[selectedKey];
 
     const previous =
       choice !== undefined
@@ -204,7 +206,8 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
 
   const setRoles = useCallback(
     (next: FieldRoles) => {
-        setRolesOverride((current) => ({
+      if (selectedKey === null) return;
+      setRolesOverride((current) => ({
         ...current,
         [selectedKey]: {
           labelField: next.labelField,

@@ -5,7 +5,7 @@ import { RankedRow, ROW_HEIGHT } from '@/components/preview/RankedRow';
 import { gapMovesRow, insertIndexForUniform, moveItem, targetIndexForGap } from '@/lib/ranking/reorder';
 import { selectItemLabel } from '@/lib/state/selectors';
 import { EMPTY_LAYOUT, formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
-import type { CardLayout } from '@/lib/renderers';
+import type { CardLayout, PreviewSource } from '@/lib/renderers';
 import { colors, fonts, space } from '@/lib/theme';
 import { fieldOf } from '@/types/list';
 import type { ListItem } from '@/types/list';
@@ -172,23 +172,24 @@ export function RankedListPreview({
           const index = windowStart + offset;
           const entry = byId.get(id);
           if (entry === undefined) return null;
+          const content = rowContent(entry.item, layout);
 
           return (
             <RankedRow
               key={id}
               id={id}
               rank={index + 1}
-              label={selectItemLabel(entry.item, layout.labelField)}
-              meta={metaFor(entry.item, layout)}
-              previewSources={itemPreviewSources((field) => fieldOf(entry.item, field), layout.mediaFields, layout.renderers)}
+              label={content.label}
+              meta={content.meta}
+              previewSources={content.previewSources}
               showImage={layout.pictureFields.length > 0}
-              imageValue={itemPictures((field) => fieldOf(entry.item, field), layout.pictureFields, layout.renderers)[0]?.uri}
+              imageValue={content.imageValue}
               rating={entry.state.rating}
               dragging={dragging?.id === id}
               insertBefore={insertionGap === index}
               insertAfter={insertionGap === orderedIds.length && index === orderedIds.length - 1}
-              onGrab={(pointerY, grip) => handleGrab(id, pointerY, grip)}
-              onKeyMove={(direction) => handleKeyMove(id, direction)}
+              onGrab={handleGrab}
+              onKeyMove={handleKeyMove}
             />
           );
         })}
@@ -196,6 +197,40 @@ export function RankedListPreview({
       </ScrollView>
     </View>
   );
+}
+
+interface RowContent {
+  label: string;
+  meta: string | null;
+  previewSources: PreviewSource[];
+  imageValue: string | undefined;
+}
+
+/**
+ * What a row shows depends only on its item and the layout, and both keep their
+ * identity across clicks, so each row is worked out once per layout rather than
+ * on every render: a drag re-renders the list on each move.
+ */
+const rowContentCache = new WeakMap<CardLayout, WeakMap<ListItem, RowContent>>();
+
+function rowContent(item: ListItem, layout: CardLayout): RowContent {
+  let byItem = rowContentCache.get(layout);
+  if (byItem === undefined) {
+    byItem = new WeakMap();
+    rowContentCache.set(layout, byItem);
+  }
+  let content = byItem.get(item);
+  if (content === undefined) {
+    const read = (field: string) => fieldOf(item, field);
+    content = {
+      label: selectItemLabel(item, layout.labelField),
+      meta: metaFor(item, layout),
+      previewSources: itemPreviewSources(read, layout.mediaFields, layout.renderers),
+      imageValue: itemPictures(read, layout.pictureFields, layout.renderers)[0]?.uri,
+    };
+    byItem.set(item, content);
+  }
+  return content;
 }
 
 /**

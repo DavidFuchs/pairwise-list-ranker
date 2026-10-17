@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ArrayPicker } from "@/components/data/ArrayPicker";
@@ -63,7 +64,8 @@ export function FoundPanel({
   onSetAsDefault,
   onSubmit,
 }: FoundPanelProps) {
-  const objects = entries.filter(isPlainObject);
+  // Kept while the entries are, so the field picker can keep what it worked out.
+  const objects = useMemo(() => entries.filter(isPlainObject), [entries]);
   const readiness = describeReadiness({
     candidates: analysis.candidates,
     selectedPath,

@@ -31,6 +31,19 @@ describe('useSourceDraft', () => {
     expect(result.current.entries).toEqual(['Alien', 'Arrival']);
   });
 
+  it('keeps an order chosen with no list selected off a document that is itself the list', () => {
+    const { result } = renderHook(() => useSourceDraft());
+
+    act(() => result.current.setRawText(NESTED));
+    expect(result.current.selectedPath).toBeNull();
+    act(() => result.current.setAlreadyRanked(true));
+    act(() => result.current.setRawText('Alien\nArrival\n'));
+
+    expect(result.current.selectedPath).toEqual([]);
+    expect(result.current.alreadyRanked).toBe(false);
+    expect(result.current.alreadyRankedIsExplicit).toBe(false);
+  });
+
   it('asks nothing of a plain list', () => {
     const { result } = renderHook(() => useSourceDraft());
 

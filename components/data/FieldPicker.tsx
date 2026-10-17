@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FieldLink } from '@/components/preview/FieldLink';
@@ -237,7 +237,19 @@ function RendererChoice({
  */
 export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
   const [openField, setOpenField] = useState<string | null>(null);
-  const schema = describeObjectSchema(objects);
+  const schema = useMemo(() => describeObjectSchema(objects), [objects]);
+  // Every field's values, samples and renderer choices: a scan of every entry,
+  // so it is done when the entries change rather than on every choice made.
+  const facts = useMemo(
+    () =>
+      new Map(
+        schema.fields.map((field) => {
+          const values = valuesOf(objects, field.field);
+          return [field.field, { values, samples: samplesOf(values), options: rendererOptionsFor(values, field.field) }];
+        }),
+      ),
+    [objects, schema],
+  );
   const title = roles.labelField;
   const shown = roles.summaryFields ?? [];
 
@@ -302,9 +314,7 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
     const isShown = current.kind === 'detail';
     const order = shown.indexOf(field.field) + 1;
     const open = openField === field.field;
-    const values = valuesOf(objects, field.field);
-    const samples = samplesOf(values);
-    const renderers = rendererOptionsFor(values, field.field);
+    const { values, samples, options: renderers } = facts.get(field.field)!;
     const plays = slotOf(rendererOf(current)) === 'media';
     // Only for a field on the card: a hidden one is drawn nowhere.
     const caveat = isShown

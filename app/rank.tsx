@@ -8,7 +8,7 @@ import { PageNav } from "@/components/layout/PageNav";
 import { PreviewPane } from "@/components/preview/PreviewPane";
 import type { OpenOutcome } from "@/components/preview/SessionControls";
 import { Button } from "@/components/ui/Button";
-import { cardLayout } from "@/lib/renderers";
+import { cardLayout, EMPTY_LAYOUT } from "@/lib/renderers";
 import { downloadText, pickTextFile } from "@/lib/browser/exportActions";
 import { downloadName, exportFilename, slugify } from "@/lib/export/filenames";
 import {
@@ -122,8 +122,11 @@ export default function RankScreen() {
         ? undefined
         : "Not saved: this browser is not keeping data";
 
+  // Kept while the roles are, so the ranked rows can reuse what they drew.
+  const roles = workspace?.roles;
+  const layout = useMemo(() => (roles === undefined ? EMPTY_LAYOUT : cardLayout(roles)), [roles]);
+
   if (workspace === null) return null;
-  const layout = cardLayout(workspace.roles);
 
   const listOptions = selectListOptions(workspace, savedLists, items, comparisonEvents);
 

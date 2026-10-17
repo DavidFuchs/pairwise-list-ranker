@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FieldImage } from '@/components/preview/FieldImage';
@@ -28,11 +28,16 @@ export interface RankedRowProps {
   /** Draw the drop indicator above this row, or below it for the last gap. */
   insertBefore?: boolean;
   insertAfter?: boolean;
-  onGrab: (pointerY: number, grip: HTMLElement) => void;
-  onKeyMove: (direction: -1 | 1) => void;
+  /** Take the row's id, so one callback serves every row and a row need not re-render for a new one. */
+  onGrab: (id: string, pointerY: number, grip: HTMLElement) => void;
+  onKeyMove: (id: string, direction: -1 | 1) => void;
 }
 
-export function RankedRow({
+/**
+ * Memoized: a drag re-renders the list on every pointer move, and only the rows
+ * whose drag state or drop line changed need to draw again.
+ */
+export const RankedRow = memo(function RankedRow({
   id,
   rank,
   label,
@@ -66,17 +71,17 @@ export function RankedRow({
         accessibilityLabel={`Reorder ${label}, position ${rank}. Hold alt and press the arrow keys to move it.`}
         onPointerDown={(event) => {
           event.preventDefault();
-          onGrab(event.nativeEvent.clientY, event.currentTarget);
+          onGrab(id, event.nativeEvent.clientY, event.currentTarget);
         }}
         onKeyDown={(event) => {
           if (!event.altKey) return;
           if (event.key === 'ArrowUp') {
             event.preventDefault();
-            onKeyMove(-1);
+            onKeyMove(id, -1);
           }
           if (event.key === 'ArrowDown') {
             event.preventDefault();
-            onKeyMove(1);
+            onKeyMove(id, 1);
           }
         }}
         dataSet={{ grip: 'true' }}
@@ -107,7 +112,7 @@ export function RankedRow({
       <Text style={styles.rating}>{Math.round(rating)}</Text>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   row: {

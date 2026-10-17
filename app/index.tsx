@@ -11,90 +11,21 @@ import { SourceInput } from "@/components/data/SourceInput";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageNav } from "@/components/layout/PageNav";
 import { Button } from "@/components/ui/Button";
-import { buildExport, buildExportDocument } from "@/lib/export/buildExport";
 import { useSourceDraft } from "@/lib/hooks/useSourceDraft";
-import type { SourceDraftSeed } from "@/lib/hooks/useSourceDraft";
 import { diffImport, diffSettings } from "@/lib/import/diff";
 import { pathKey, samePath } from "@/lib/import/paths";
 import { isPlainObject } from "@/lib/import/shape";
 import type { ImportDiff, SettingsDiff } from "@/lib/import/diff";
-import {
-  describeRoles,
-  selectCoverage,
-  selectListConfig,
-  selectRanking,
-} from "@/lib/state/selectors";
-import type { CoverageReading } from "@/lib/state/selectors";
+import { buildDraftSeed, selectConfigLines, selectRankedCoverages } from "@/lib/state/draft";
+import { selectRanking } from "@/lib/state/selectors";
 import { confirmOpenSession, hasDecisions, readSavedFile } from "@/lib/session/sessionFile";
 import { listStore, useListStore } from "@/lib/state/useListStore";
-import type { DataSource } from "@/types/source";
 import { space } from "@/lib/theme";
 
 /** The narrowest the card preview gets beside the editor. */
 const PREVIEW_MIN_WIDTH = 400;
 /** The narrowest the editor gets before the preview moves below it. */
 const EDITOR_MIN_WIDTH = 420;
-
-/**
- * Every list already known this session, for the "already ranked" default -
- * the workspace's own list plus anything parked in savedLists - and the
- * document rewritten so each list's array holds its *current* ranked order,
- * not the order it was imported in. Editing your data should show what
- * ranking made of it, the same way the export tabs already do.
- */
-function buildDraftSeed(): SourceDraftSeed | undefined {
-  const state = listStore.getState();
-  if (state.workspace === null) return undefined;
-
-  const knownLists: Record<string, boolean> = {
-    [pathKey(state.workspace.source.arrayPath)]: state.workspace.alreadyRanked,
-  };
-
-  let document = state.workspace.source.document;
-  for (const list of state.savedLists) {
-    knownLists[pathKey(list.arrayPath)] = list.alreadyRanked;
-    const ranking = selectRanking(
-      list.items,
-      list.comparisonEvents,
-      list.alreadyRanked,
-    );
-    document = buildExportDocument(
-      {
-        format: state.workspace.source.format,
-        rawText: "",
-        document,
-        arrayPath: list.arrayPath,
-      },
-      list.roles,
-      ranking.map((entry) => entry.item.value),
-    );
-  }
-
-  const activeRanking = selectRanking(
-    state.items,
-    state.comparisonEvents,
-    state.workspace.alreadyRanked,
-  );
-  const sourceWithCurrentOrder: DataSource = {
-    ...state.workspace.source,
-    document,
-  };
-  const rawText = buildExport(
-    sourceWithCurrentOrder,
-    state.workspace.roles,
-    activeRanking.map((entry) => entry.item),
-    state.workspace.source.format,
-  );
-
-  return {
-    rawText,
-    arrayPath: state.workspace.source.arrayPath,
-    roles: state.workspace.roles,
-    alreadyRanked: state.workspace.alreadyRanked,
-    knownLists,
-    initialSelectedPath: state.pendingSwitchPath ?? undefined,
-  };
-}
 
 export default function DataScreen() {
   const router = useRouter();
@@ -107,7 +38,7 @@ export default function DataScreen() {
 
   // Read once, on the first render after hydration: re-seeding on every
   // keystroke would fight the user's typing.
-  const seed = useMemo(() => buildDraftSeed(), []);
+  const seed = useMemo(() => buildDraftSeed(listStore.getState()), []);
 
   const draft = useSourceDraft(seed);
   // Both halves of what one press of Apply edits would do: what it does to
@@ -194,25 +125,10 @@ export default function DataScreen() {
     draft.selectedPath !== null &&
     !samePath(workspace.source.arrayPath, draft.selectedPath);
 
-  // Every list that already has a ranking percent earns a meter, whether that
-  // came from real comparisons, from being declared already ranked, or both -
-  // and whether it is the one currently active or one parked in savedLists
-  // while another list is being worked on.
-  const rankedCoverages = useMemo(() => {
-    const coverages: Record<string, CoverageReading> = {};
-
-    for (const list of savedLists) {
-      const coverage = selectCoverage(list.items, list.comparisonEvents, list.alreadyRanked);
-      if (coverage !== undefined) coverages[pathKey(list.arrayPath)] = coverage;
-    }
-
-    if (workspace !== null) {
-      const coverage = selectCoverage(items, comparisonEvents, workspace.alreadyRanked);
-      if (coverage !== undefined) coverages[pathKey(workspace.source.arrayPath)] = coverage;
-    }
-
-    return coverages;
-  }, [savedLists, workspace, items, comparisonEvents]);
+  const rankedCoverages = useMemo(
+    () => selectRankedCoverages(workspace, savedLists, items, comparisonEvents),
+    [savedLists, workspace, items, comparisonEvents],
+  );
 
   // The order control shows "best to worst" whenever the selected list
   // already has a ranking percent, even if that came from real comparisons
@@ -235,48 +151,29 @@ export default function DataScreen() {
   // hand follows, which decides both halves of the Set as default control.
   const settingsAreDefault =
     workspace !== null &&
-    workspace.listDefaults.alreadyRanked === orderPickerValue &&
-    workspace.listDefaults.roles.labelField === draft.roles.labelField &&
-    workspace.listDefaults.roles.positionField === draft.roles.positionField &&
-    (workspace.listDefaults.roles.summaryFields ?? []).join('\u0000') ===
-      (draft.roles.summaryFields ?? []).join('\u0000') &&
-    JSON.stringify(workspace.listDefaults.roles.fieldRenderers ?? {}) ===
-      JSON.stringify(draft.roles.fieldRenderers ?? {});
+    !diffSettings(workspace.listDefaults, { roles: draft.roles, alreadyRanked: orderPickerValue }).changed;
 
-  // What each list would be ranked with, shown on its row the same way the
-  // toolbar's switcher shows it. The list being edited follows the controls
-  // below instead of what is saved, so its row never contradicts the answers
-  // visible on the same screen.
-  const configLines = useMemo(() => {
-    const lines: Record<string, string> = {};
-    const scope =
-      workspace === null
-        ? null
-        : {
-            ...workspace,
-            source: { ...workspace.source, document: draft.analysis.document },
-          };
-
-    for (const candidate of draft.analysis.candidates) {
-      const key = pathKey(candidate.path);
-      const config = selectListConfig(scope, savedLists, candidate.path);
-      lines[key] = describeRoles(config.roles, config.alreadyRanked);
-    }
-
-    if (selectedPathKey !== null) {
-      lines[selectedPathKey] = describeRoles(draft.roles, orderPickerValue);
-    }
-
-    return lines;
-  }, [
-    workspace,
-    savedLists,
-    draft.analysis.document,
-    draft.analysis.candidates,
-    draft.roles,
-    selectedPathKey,
-    orderPickerValue,
-  ]);
+  const configLines = useMemo(
+    () =>
+      selectConfigLines(
+        workspace,
+        savedLists,
+        draft.analysis.document,
+        draft.analysis.candidates,
+        draft.selectedPath === null
+          ? null
+          : { path: draft.selectedPath, roles: draft.roles, alreadyRanked: orderPickerValue },
+      ),
+    [
+      workspace,
+      savedLists,
+      draft.analysis.document,
+      draft.analysis.candidates,
+      draft.selectedPath,
+      draft.roles,
+      orderPickerValue,
+    ],
+  );
 
   function handleSubmit() {
     const source = draft.toSource();
