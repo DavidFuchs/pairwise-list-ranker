@@ -54,6 +54,15 @@ function inlineLayoutMinWidth(hasPicture: boolean): number {
 }
 
 /**
+ * Whether a pair this wide stacks, and so draws its cards compact. Exported
+ * for the setup screen, whose stage is as wide as this one will be, so its
+ * card preview can draw the cards the ranking screen will.
+ */
+export function pairStacks(width: number, hasPicture: boolean): boolean {
+  return width < inlineLayoutMinWidth(hasPicture);
+}
+
+/**
  * The comparison stage. Each card owns the actions for its own item - choose,
  * much better, remove - so there is no detached bank of buttons to map back
  * onto the two options. Only Skip, which belongs to the pair rather than to
@@ -96,7 +105,7 @@ export function ComparisonDeck({
   const [tallest, setTallest] = useState<{ key: string; height: number }>({ key: '', height: 0 });
   const cardsMinHeight = tallest.key === heightKey ? tallest.height : 0;
   const hasPicture = layout.pictureFields.length > 0;
-  const stacked = cardsWidth !== null && cardsWidth < inlineLayoutMinWidth(hasPicture);
+  const stacked = cardsWidth !== null && pairStacks(cardsWidth, hasPicture);
 
   const emit = useCallback(
     (outcome: ComparisonOutcome) => {
@@ -199,7 +208,7 @@ export function ComparisonDeck({
           side="left"
           layout={layout}
           expanded={showDetails}
-          compact={stacked && !showDetails}
+          compact={stacked}
           pendingDelete={armed === 'left'}
           onChoose={() => choose('left')}
           onChooseStrong={() => choose('left_strong')}
@@ -218,7 +227,7 @@ export function ComparisonDeck({
           side="right"
           layout={layout}
           expanded={showDetails}
-          compact={stacked && !showDetails}
+          compact={stacked}
           pendingDelete={armed === 'right'}
           onChoose={() => choose('right')}
           onChooseStrong={() => choose('right_strong')}

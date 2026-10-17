@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ApplySummary } from '@/components/data/ApplySummary';
+import { pairStacks } from '@/components/comparison/ComparisonDeck';
 import { CardPreview } from '@/components/data/CardPreview';
 import { FileNotice } from '@/components/data/FileNotice';
 import type { FileNoticeState } from '@/components/data/FileNotice';
@@ -25,6 +26,7 @@ import { activeList } from '@/lib/state/lists';
 import { selectRanking } from '@/lib/state/selectors';
 import { confirmOpenSession, hasDecisions, readSavedFile } from '@/lib/session/sessionFile';
 import { listStore, useListStore } from '@/lib/state/useListStore';
+import { cardLayout } from '@/lib/renderers';
 import type { ItemValue } from '@/types/list';
 import { space } from '@/lib/theme';
 
@@ -139,7 +141,13 @@ export default function DataScreen() {
   // Held from the start on a wide screen, as a placeholder until there is a
   // list, so the editor does not narrow the moment one arrives.
   const showPreview = pending === null && (rawTextIsBlank ? wide : previewEntries.length > 0);
-  const sideBySide = showPreview && wide;
+  // The ranking screen's stage is as wide as this one, so whether its pair
+  // will stack, and draw compact cards, can be told from here. A compact
+  // card spans the stage there, so its preview spans it here, under the
+  // editor rather than beside it.
+  const compactCards =
+    workWidth > 0 && pairStacks(workWidth, cardLayout(draft.roles).pictureFields.length > 0);
+  const sideBySide = showPreview && wide && !compactCards;
   // A third of the area beside it, so cards read about as wide as one of a
   // pair on the rank screen, and never narrower than the minimum.
   const previewWidth = Math.max(PREVIEW_MIN_WIDTH, Math.round(workWidth / 3));
@@ -333,6 +341,7 @@ export default function DataScreen() {
                     entries={rawTextIsBlank ? [] : previewEntries}
                     roles={draft.roles}
                     fill={sideBySide}
+                    compact={compactCards}
                   />
                 </View>
               )}

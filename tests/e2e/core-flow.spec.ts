@@ -557,19 +557,49 @@ test('the controls under the cards never move up from one pair to the next', asy
   }
 });
 
-test('on a phone, a whole decision fits on one screen', async ({ page }) => {
+test('on a phone, a stacked card shows every chosen field', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  // The sample shows a dozen fields, more than two cards can hold on one
+  // screen, and the preview says so before ranking starts.
+  await expect(page.getByText(/^Some pairs will not fit on this screen together/)).toBeVisible();
   await page.getByRole('button', { name: 'Start ranking' }).click();
 
-  const cards = page.getByLabel(/^Choose /);
-  await expect(cards.first()).toBeVisible();
-  await expect(cards.nth(1)).toBeInViewport({ ratio: 1 });
-  await expect(page.getByRole('button', { name: 'Skip this pair' })).toBeInViewport({ ratio: 1 });
+  const card = page.getByLabel(/^Choose /).first();
+  await expect(card.getByText('Rotten tomatoes:')).toBeVisible();
+  await expect(card.getByText('IMDB URL:')).toBeVisible();
+});
 
-  // Details are a tap away, and bring back every field the card set aside.
-  await page.getByRole('switch', { name: 'Show details on both cards' }).click();
-  await expect(cards.first().getByText('Rotten tomatoes:')).toBeVisible();
+test('the card preview draws the cards the ranking screen will', async ({ browser }) => {
+  const pictureWidth = (scope: ReturnType<Page['locator']>) =>
+    scope
+      .locator('img')
+      .first()
+      .evaluate((img) => Math.round(img.getBoundingClientRect().width));
+
+  for (const [width, height] of [
+    [1440, 900],
+    [1180, 820],
+    [1024, 768],
+    [820, 1180],
+    [390, 844],
+  ] as const) {
+    // A fresh browser each time, so no saved list sends the page to ranking.
+    const context = await browser.newContext({ viewport: { width, height } });
+    const page = await context.newPage();
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Load the movies sample' }).click();
+    const preview = page.locator('[data-surface="card"]').first();
+    await expect(preview.locator('img').first()).toBeVisible();
+    const previewed = await pictureWidth(preview);
+
+    await page.getByRole('button', { name: 'Start ranking' }).click();
+    const card = page.getByLabel(/^Choose /).first();
+    await expect(card.locator('img').first()).toBeVisible();
+    expect(await pictureWidth(card), `picture size at ${width} x ${height}`).toBe(previewed);
+
+    await context.close();
+  }
 });
 
 test('a field name stays on one line beside a long link', async ({ page }) => {

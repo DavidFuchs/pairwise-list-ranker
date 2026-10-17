@@ -122,6 +122,17 @@ around "or" tightens, and the GitHub link and header divider give way below
 card started more than a screen down. Show details brings every field back.
 An end-to-end test holds the one-screen fit.
 
+Revised: dropping chosen fields broke the setup screen's card preview, which
+promises the cards as they will look. A compact card now keeps every chosen
+field, as pills that wrap under the picture and title, and changes only sizes.
+The preview draws compact cards whenever the ranking screen will (its stage is
+as wide), and when two of the tallest would not fit the window together, it
+says so under its heading and suggests fewer fields. One fit is no longer
+guaranteed: with the movies sample's dozen fields a phone scrolls between the
+two cards, and the preview says that before ranking starts. End-to-end tests
+check that the preview and the ranking screen draw the same card at five
+window sizes.
+
 ### 3. The setup screen's main button is out of reach
 
 On a phone, the editor, card preview and "What we found" panel stack, which

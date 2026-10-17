@@ -19,8 +19,13 @@ import type { ListItem } from '@/types/list';
 const IMAGE_SIZE = 112;
 /** The picture on a compact card, small enough that two cards share a phone screen. */
 const COMPACT_IMAGE_SIZE = 72;
-/** The chosen fields a compact card shows; the rest wait behind Show details. */
-const COMPACT_FIELDS = 2;
+/** The row of a card's own actions: the trash can and Much better. */
+const ACTIONS_MIN_HEIGHT = 40;
+/**
+ * What a card on the ranking screen adds under its content for those actions,
+ * rule and spacing included, which a preview card leaves out.
+ */
+export const CARD_ACTIONS_HEIGHT = space.md * 2 + 1 + ACTIONS_MIN_HEIGHT;
 
 export interface ItemCardProps {
   item: ListItem;
@@ -34,9 +39,10 @@ export interface ItemCardProps {
    */
   expanded?: boolean;
   /**
-   * For a phone, where the pair stacks: a smaller picture, a shorter title and
-   * only the first few chosen fields, so both cards fit on one screen and a
-   * decision never needs a scroll. Show details brings back the rest.
+   * For wherever the pair stacks: a smaller picture and title, and the chosen
+   * fields wrapped side by side under them rather than a line each, so both
+   * cards fit on one screen. Every chosen field still shows: the setup screen
+   * previews these cards, and a card that drops fields would not match it.
    */
   compact?: boolean;
   /** The heading level of the card's title, under whatever heading holds the card. */
@@ -114,13 +120,30 @@ export function ItemCard({
   // Only the fields the user ticked, and every one of them, so both cards of a
   // pair show the same keys and an item without one says so instead of
   // silently dropping it. A false badge is the one line meant to say nothing.
-  const allChips = plainFields.filter((field) => formatValue(raw(field), renderers[field], field) !== null);
-  const chips = compact ? allChips.slice(0, COMPACT_FIELDS) : allChips;
+  const chips = plainFields.filter((field) => formatValue(raw(field), renderers[field], field) !== null);
   const pictures = itemPictures(raw, pictureFields, renderers);
   const sources = itemPreviewSources(raw, mediaFields, renderers);
   const hasPicture = pictureFields.length > 0;
   const interactive = onChoose !== undefined;
   const canChoose = interactive && !pendingDelete;
+
+  // The fields the user chose stay through the details: they are the part
+  // asked to always be seen.
+  const fieldChips = chips.length > 0 && (
+    <View style={compact ? styles.chipRow : styles.chipColumn}>
+      {chips.map((field) => (
+        <View key={field} style={[styles.chip, renderers[field] === 'long-text' && styles.chipBlock]}>
+          <FieldValue
+            field={field}
+            value={raw(field)}
+            renderer={renderers[field]}
+            withKey
+            textStyle={styles.chipText}
+          />
+        </View>
+      ))}
+    </View>
+  );
 
   return (
     <Animated.View
@@ -174,7 +197,7 @@ export function ItemCard({
             <View style={styles.topRow}>
               <Text
                 style={[styles.title, compact && styles.titleCompact]}
-                numberOfLines={compact ? 2 : 4}
+                numberOfLines={4}
                 role="heading"
                 aria-level={titleLevel}
               >
@@ -184,28 +207,13 @@ export function ItemCard({
               {sources.length > 0 && <PreviewButton sources={sources} label={label} compact />}
             </View>
 
-            {/* The fields the user chose stay through the details: they are the
-              part asked to always be seen. */}
-            {chips.length > 0 && (
-              <View style={styles.chipColumn}>
-                {chips.map((field) => (
-                  <View
-                    key={field}
-                    style={[styles.chip, renderers[field] === 'long-text' && styles.chipBlock]}
-                  >
-                    <FieldValue
-                      field={field}
-                      value={raw(field)}
-                      renderer={renderers[field]}
-                      withKey
-                      textStyle={styles.chipText}
-                    />
-                  </View>
-                ))}
-              </View>
-            )}
+            {!compact && fieldChips}
           </View>
         </View>
+
+        {/* Under the picture as well as the title: on a narrow card that
+          width is what keeps the fields from running long. */}
+        {compact && fieldChips}
 
         {expanded && detailFields.length > 0 && isComplexItemValue(item.value) && (
           <View style={styles.detailsBlock}>
@@ -358,6 +366,9 @@ const styles = StyleSheet.create({
   headlineBody: { flex: 1, minWidth: 0, gap: space.md },
   // Chosen fields each get a line, so both cards of a pair line up row for row.
   chipColumn: { flexDirection: 'column', alignItems: 'flex-start', gap: space.xs },
+  // A compact card trades that line-up for height: the fields run on as wrapping
+  // pills, each its own pill so where one field ends stays plain.
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: space.xs },
   chip: {
     maxWidth: '100%',
     paddingVertical: 4,
@@ -365,8 +376,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.surfaceMuted,
   },
-  // Prose does not fit a pill: it reads as a block with softer corners.
-  chipBlock: { alignSelf: 'stretch', borderRadius: radius.sm, paddingVertical: 6 },
+  // Prose does not fit a pill: it reads as a block with softer corners, on a
+  // line of its own among wrapping pills too.
+  chipBlock: { alignSelf: 'stretch', width: '100%', borderRadius: radius.sm, paddingVertical: 6 },
   chipText: {
     fontFamily: fonts.body,
     fontSize: 12,
@@ -388,7 +400,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: space.sm,
-    minHeight: 40,
+    minHeight: ACTIONS_MIN_HEIGHT,
   },
   // Above everything it describes, set like the app's other small labels.
   hintBar: {

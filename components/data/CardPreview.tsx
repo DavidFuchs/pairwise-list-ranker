@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { ItemCard } from '@/components/comparison/ItemCard';
+import { CARD_ACTIONS_HEIGHT, ItemCard } from '@/components/comparison/ItemCard';
 import { cardLayout } from '@/lib/renderers';
 import { colors, fonts, radius, space } from '@/lib/theme';
 import type { ItemValue, ListItem } from '@/types/list';
@@ -17,6 +17,14 @@ const MAX_FILL_CARDS = 12;
  */
 const LIFT_ROOM = { top: space.sm, side: space.lg, bottom: space.lg };
 
+/**
+ * What the ranking screen keeps in view besides a stacked pair's cards: the
+ * header above them (its phone height, two rows, so a note is early rather
+ * than late), the "or" between them and the Undo and Skip row under them, as
+ * measured there.
+ */
+const STACKED_PAIR_CHROME = 110 + 23 + 59;
+
 export interface CardPreviewProps {
   /** The list's entries: objects show their chosen fields, plain items their text. */
   entries: ItemValue[];
@@ -26,6 +34,8 @@ export interface CardPreviewProps {
    * Without it, the panel shows one card at its own height.
    */
   fill?: boolean;
+  /** Draws the compact cards a stacked pair uses; see ItemCard. */
+  compact?: boolean;
 }
 
 /** A stand-in item: the card only reads the value, and the id drives its fade-in. */
@@ -38,7 +48,8 @@ function previewItem(value: ItemValue, index: number): ListItem {
  * they stand. Stepping through the entries shows how an item missing a field,
  * or with a longer title, comes out before any ranking starts.
  */
-export function CardPreview({ entries, roles, fill = false }: CardPreviewProps) {
+export function CardPreview({ entries, roles, fill = false, compact = false }: CardPreviewProps) {
+  const { height: windowHeight } = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const [areaHeight, setAreaHeight] = useState<number | null>(null);
   const [heights, setHeights] = useState<Record<number, number>>({});
@@ -67,7 +78,9 @@ export function CardPreview({ entries, roles, fill = false }: CardPreviewProps) 
 
   // Every card is drawn and measured, but only those that fit whole are seen:
   // a card cut off at the bottom would misrepresent the card it previews.
-  const drawn = fill ? Math.min(entries.length, MAX_FILL_CARDS) : 1;
+  // Compact cards are measured too, out of sight, to tell whether two of them
+  // will fit the ranking screen together.
+  const drawn = fill || compact ? Math.min(entries.length, MAX_FILL_CARDS) : 1;
   // Where each card ends, from the heights of those above it: a view reports
   // when its size changes, not when a taller card above pushes it down.
   const bottomOf = (slot: number) => {
@@ -78,7 +91,17 @@ export function CardPreview({ entries, roles, fill = false }: CardPreviewProps) 
   const fits = (slot: number) =>
     slot === 0 || (areaHeight !== null && bottomOf(slot) <= areaHeight - LIFT_ROOM.top - LIFT_ROOM.bottom);
   let visible = 0;
-  while (visible < drawn && fits(visible)) visible += 1;
+  if (fill) while (visible < drawn && fits(visible)) visible += 1;
+  else visible = 1;
+
+  // The two tallest cards measured, with the actions a ranking card adds. A
+  // stacked pair taller than the window means scrolling between the two
+  // options, which is worth knowing while the fields can still change.
+  const tallest = Array.from({ length: drawn }, (_, slot) => heights[slot] ?? 0)
+    .sort((a, b) => b - a)
+    .slice(0, 2);
+  const pairHeight = tallest.reduce((sum, height) => sum + height + CARD_ACTIONS_HEIGHT, 0);
+  const tooTall = compact && drawn > 1 && pairHeight + STACKED_PAIR_CHROME > windowHeight;
 
   const range = visible > 1 ? `${start + 1}-${((start + visible - 1) % entries.length) + 1}` : `${start + 1}`;
 
@@ -90,6 +113,12 @@ export function CardPreview({ entries, roles, fill = false }: CardPreviewProps) 
             Card previews
           </Text>
           <Text style={styles.subtitle}>How each item will look while you rank.</Text>
+          {tooTall && (
+            <Text style={styles.tall}>
+              Some pairs will not fit on this screen together, so you will scroll to compare them. Fewer
+              fields keep both cards in view.
+            </Text>
+          )}
         </View>
         {entries.length > visible && (
           <View style={styles.stepper}>
@@ -128,7 +157,7 @@ export function CardPreview({ entries, roles, fill = false }: CardPreviewProps) 
             return (
               <View
                 key={slot}
-                style={[styles.card, !shown && styles.cardHidden]}
+                style={[styles.card, !shown && styles.cardHidden, !shown && !fill && styles.cardMeasured]}
                 aria-hidden={!shown}
                 onLayout={(event) => {
                   const { height } = event.nativeEvent.layout;
@@ -137,7 +166,13 @@ export function CardPreview({ entries, roles, fill = false }: CardPreviewProps) 
                   );
                 }}
               >
-                <ItemCard item={previewItem(entries[at]!, at)} side="left" layout={layout} titleLevel={3} />
+                <ItemCard
+                  item={previewItem(entries[at]!, at)}
+                  side="left"
+                  layout={layout}
+                  compact={compact}
+                  titleLevel={3}
+                />
               </View>
             );
           })}
@@ -179,6 +214,13 @@ const styles = StyleSheet.create({
   heading: { gap: 2, flexShrink: 1 },
   title: { fontFamily: fonts.heading, fontSize: 15, fontWeight: '600', color: colors.textPrimary },
   subtitle: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
+  tall: {
+    marginTop: space.xs,
+    fontFamily: fonts.body,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.warningText,
+  },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -214,4 +256,6 @@ const styles = StyleSheet.create({
   // As wide as the panel: the screen sizes the panel to match a card of a pair.
   card: { flexDirection: 'row' },
   cardHidden: { opacity: 0, pointerEvents: 'none' },
+  // Measured at the shown card's width without taking room below it.
+  cardMeasured: { position: 'absolute', top: 0, left: 0, right: 0 },
 });

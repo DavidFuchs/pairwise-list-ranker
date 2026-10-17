@@ -52,6 +52,28 @@ describe('ItemCard', () => {
     expect(screen.queryByText(/year/)).toBeNull();
   });
 
+  it('keeps every chosen field on a compact card, as the preview shows it', () => {
+    render(
+      <ItemCard
+        compact
+        layout={cardLayout({ labelField: 'title', summaryFields: ['genre', 'director', 'year', 'note'] })}
+        item={item({
+          title: 'Arrival',
+          year: 2016,
+          genre: 'Sci-fi',
+          director: 'Denis Villeneuve',
+          note: 'Quiet',
+        })}
+        side="left"
+      />,
+    );
+
+    expect(screen.getByText('Genre: Sci-fi')).toBeDefined();
+    expect(screen.getByText('Director: Denis Villeneuve')).toBeDefined();
+    expect(screen.getByText('Year: 2016')).toBeDefined();
+    expect(screen.getByText('Note: Quiet')).toBeDefined();
+  });
+
   it('shows only the title until fields are chosen', () => {
     render(
       <ItemCard
