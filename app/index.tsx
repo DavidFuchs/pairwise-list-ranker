@@ -7,6 +7,7 @@ import { CardPreview } from '@/components/data/CardPreview';
 import { FileNotice } from '@/components/data/FileNotice';
 import type { FileNoticeState } from '@/components/data/FileNotice';
 import { FoundPanel } from '@/components/data/FoundPanel';
+import { StartCta } from '@/components/data/StartCta';
 import { SourceInput } from '@/components/data/SourceInput';
 import { AppShell } from '@/components/layout/AppShell';
 import { PageNav } from '@/components/layout/PageNav';
@@ -14,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { useSourceDraft } from '@/lib/hooks/useSourceDraft';
 import { diffImport, diffSettings } from '@/lib/import/diff';
 import { pathKey, samePath } from '@/lib/import/paths';
+import { describeReadiness } from '@/lib/import/readiness';
 import { isPlainObject } from '@/lib/import/shape';
 import type { ImportDiff, SettingsDiff } from '@/lib/import/diff';
 import { buildDraftSeed, selectConfigLines, selectRankedCoverages } from '@/lib/state/draft';
@@ -154,6 +156,19 @@ export default function DataScreen() {
     ],
   );
 
+  // An empty box is not a parse error, so it reports no issues.
+  const foundAnalysis = rawTextIsBlank ? { ...draft.analysis, issues: [] } : draft.analysis;
+  const ctaLabel = isSwitchingList ? 'Switch list' : editing ? 'Apply edits' : 'Start ranking';
+  // The same readiness FoundPanel shows, for the docked copy of its button.
+  const readiness = describeReadiness({
+    candidates: foundAnalysis.candidates,
+    selectedPath: draft.selectedPath,
+    entries: draft.entries,
+    roles: draft.roles,
+    hasIssues: foundAnalysis.issues.length > 0,
+    isBlank: rawTextIsBlank,
+  });
+
   function handleSubmit() {
     const source = draft.toSource();
     if (source === null) return;
@@ -220,6 +235,17 @@ export default function DataScreen() {
   return (
     <AppShell
       onFileDrop={openFile}
+      // Reviewing an edit has its own buttons; the dock is for getting there.
+      dock={
+        pending === null ? (
+          <StartCta
+            label={ctaLabel}
+            reason={readiness.reason}
+            ready={readiness.ready}
+            onSubmit={handleSubmit}
+          />
+        ) : undefined
+      }
       stage={
         <>
           {editing && (
@@ -274,14 +300,14 @@ export default function DataScreen() {
       preview={
         pending === null ? (
           <FoundPanel
-            analysis={rawTextIsBlank ? { ...draft.analysis, issues: [] } : draft.analysis}
+            analysis={foundAnalysis}
             selectedPath={draft.selectedPath}
             roles={draft.roles}
             alreadyRanked={orderPickerValue}
             isDefault={settingsAreDefault}
             entries={draft.entries}
             isBlank={rawTextIsBlank}
-            ctaLabel={isSwitchingList ? 'Switch list' : editing ? 'Apply edits' : 'Start ranking'}
+            ctaLabel={ctaLabel}
             rankedCoverages={rankedCoverages}
             configLines={configLines}
             onSelectPath={draft.selectPath}

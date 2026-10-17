@@ -34,7 +34,7 @@ It falls short in three places:
 |---|------|------|----------|--------|
 | 1 | Stop the page scrolling sideways on phones | Phone | High | Done |
 | 2 | Make comparing work on a phone screen | Phone | High | Done |
-| 3 | Keep the setup screen's main button in reach on phones | Phone | High | Open |
+| 3 | Keep the setup screen's main button in reach on phones | Phone | High | Done |
 | 4 | Make Start over say what is lost, offer to save, and disarm itself | Trust | High | Done |
 | 5 | Keep the controls still from one pair to the next | Speed | High | Done |
 | 6 | Fit the ranking screen in a desktop window | Speed | Medium | Open |
@@ -50,6 +50,7 @@ It falls short in three places:
 | 16 | Keep rating bars inside narrow cards | Polish | Low | Open |
 | 17 | Match the Start over prompt's spoken names to its labels | Accessibility | Low | Done |
 | 18 | Calmer placement for Start over | Trust | Low | Open |
+| 19 | Stop the setup panel scrolling inside the page on phones | Phone | Medium | Open |
 
 Suggested order: 1 and 4 first (small, and one is a bug), then 5, 7 and 2,
 which matter most to how the app feels, then the rest.
@@ -115,6 +116,22 @@ puts Start ranking (or Apply) around 2,400px down the page.
 
 Fix: pin the main action to the bottom of the screen on narrow widths, with the
 readiness line ("Paste, type, or drop your list...") above it.
+
+Done: once the columns stack, the shell holds a dock under the scrolling page,
+and the data screen puts its button and readiness line there (`StartCta`). The
+panel leaves out its own copy while docked. A CSS `position: fixed` was tried
+first and does not work: the scroll view's content has a transform, which pins
+fixed elements to it rather than to the window.
+
+### 19. The setup panel scrolls inside the page
+
+Found while fixing 3. On a phone, the "What we found" panel keeps the fixed
+height it has as a desktop sidebar and scrolls inside itself, so the page
+scrolls and so does a box within it. On a touch screen it is easy to scroll
+the wrong one, and the panel's last settings sit behind its own scroll.
+
+Fix: once the columns stack, let the panel take the height of its content and
+scroll with the page.
 
 ## Trust
 

@@ -455,3 +455,18 @@ test('on a phone, a whole decision fits on one screen', async ({ page }) => {
   await page.getByRole('switch', { name: 'Show details on both cards' }).click();
   await expect(cards.first().getByText('rotten_tomatoes:')).toBeVisible();
 });
+
+test('on a phone, the setup screen keeps its main button on screen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+
+  const start = page.getByRole('button', { name: 'Start ranking' });
+  await expect(start).toHaveCount(1);
+  await expect(start).toBeInViewport({ ratio: 1 });
+
+  await page.mouse.wheel(0, 3000);
+  await expect(start).toBeInViewport({ ratio: 1 });
+
+  await start.click();
+  await expect(page).toHaveURL(/\/rank$/);
+});

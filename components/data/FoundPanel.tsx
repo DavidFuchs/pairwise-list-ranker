@@ -5,6 +5,8 @@ import { ArrayPicker } from '@/components/data/ArrayPicker';
 import { FieldPicker } from '@/components/data/FieldPicker';
 import { OrderPicker } from '@/components/data/OrderPicker';
 import { PositionPicker } from '@/components/data/PositionPicker';
+import { StartCta } from '@/components/data/StartCta';
+import { useShellDocking } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import type { SourceAnalysis } from '@/lib/import/analyze';
 import { detectPositionFields } from '@/lib/import/positionField';
@@ -66,6 +68,7 @@ export function FoundPanel({
 }: FoundPanelProps) {
   // Kept while the entries are, so the field picker can keep what it worked out.
   const objects = useMemo(() => entries.filter(isPlainObject), [entries]);
+  const docked = useShellDocking();
   const readiness = describeReadiness({
     candidates: analysis.candidates,
     selectedPath,
@@ -142,15 +145,10 @@ export function FoundPanel({
         )}
       </ScrollView>
 
-      {readiness.reason !== undefined && <Text style={styles.reason}>{readiness.reason}</Text>}
-
-      <Button
-        label={ctaLabel}
-        variant="primary"
-        disabled={!readiness.ready}
-        onPress={onSubmit}
-        style={styles.cta}
-      />
+      {/* On a phone the shell docks this at the bottom of the window instead. */}
+      {!docked && (
+        <StartCta label={ctaLabel} reason={readiness.reason} ready={readiness.ready} onSubmit={onSubmit} />
+      )}
     </View>
   );
 }
@@ -191,15 +189,4 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   warning: { fontFamily: fonts.body, fontSize: 12, color: colors.warningText },
-  // Plain text, like every other hint here. A sunken fill inside a hairline
-  // border is this app's word for "you can interact with this" - it is the
-  // editor, the format tabs, and every picker option - so a read-only message
-  // wearing it reads as a field to type in, especially above a submit button.
-  reason: {
-    fontFamily: fonts.body,
-    fontSize: 13,
-    lineHeight: 18,
-    color: colors.textSecondary,
-  },
-  cta: { alignSelf: 'stretch' },
 });

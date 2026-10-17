@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Modal as RNModal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { HowItWorksModal } from '@/components/layout/HowItWorksModal';
@@ -47,6 +47,23 @@ export interface AppShellProps {
    * nothing to import into, e.g. the rank screen.
    */
   onFileDrop?: (text: string) => void;
+  /**
+   * Held at the bottom of the window, under the scrolling page, once the
+   * columns stack: there the sidebar's own action would sit below everything
+   * else, several screens down. Components inside can check useShellDocking
+   * to leave out their copy.
+   */
+  dock?: ReactNode;
+}
+
+/**
+ * True while the shell is showing its dock, so whatever the dock holds can
+ * leave out its own copy of it. Outside a shell, nothing is docked.
+ */
+const DockingContext = createContext(false);
+
+export function useShellDocking(): boolean {
+  return useContext(DockingContext);
 }
 
 /** The stage never gets narrower than this while the sidebar sits beside it. */
@@ -75,6 +92,7 @@ export function AppShell({
   stage,
   preview,
   onFileDrop,
+  dock,
 }: AppShellProps) {
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [resetSaveNote, setResetSaveNote] = useState<string | null>(null);
@@ -193,183 +211,198 @@ export function AppShell({
     };
   }, [onFileDrop]);
 
-  return (
-    <View style={styles.root} dataSet={{ surface: 'canvas' }}>
-      <View
-        style={styles.header}
-        role="banner"
-        dataSet={confirmingReset ? { resetPrompt: 'true' } : undefined}
-      >
-        <View style={styles.brand}>
-          <Text style={styles.wordmark}>Pairwise</Text>
-          {listSwitcher ??
-            (listName !== undefined && (
-              <Text style={styles.listName} numberOfLines={1}>
-                {listName}
-              </Text>
-            ))}
-        </View>
+  const docking = dock != null && layout === 'stacked';
 
-        <View style={styles.headerActions}>
-          {saveWarning !== undefined && (
-            <Text role="status" style={styles.saveWarning}>
-              {saveWarning}
-            </Text>
-          )}
-          <Button
-            label="How it works"
-            accessibilityLabel="How this app works"
-            variant="ghost"
-            size="sm"
-            onPress={() => setHowItWorksOpen(true)}
-          />
-          <ThemeToggle />
-          {onReset !== undefined && <View style={styles.headerDivider} dataSet={{ wideOnly: 'true' }} />}
-          {onReset === undefined ? null : confirmingReset ? (
-            <>
-              <Button
-                label="Keep this list"
-                variant="ghost"
-                size="sm"
-                onPress={() => {
-                  setConfirmingReset(false);
-                  setResetSaveNote(null);
-                }}
-              />
+  return (
+    <DockingContext.Provider value={docking}>
+      <View style={styles.root} dataSet={{ surface: 'canvas' }}>
+        <View
+          style={styles.header}
+          role="banner"
+          dataSet={confirmingReset ? { resetPrompt: 'true' } : undefined}
+        >
+          <View style={styles.brand}>
+            <Text style={styles.wordmark}>Pairwise</Text>
+            {listSwitcher ??
+              (listName !== undefined && (
+                <Text style={styles.listName} numberOfLines={1}>
+                  {listName}
+                </Text>
+              ))}
+          </View>
+
+          <View style={styles.headerActions}>
+            {saveWarning !== undefined && (
+              <Text role="status" style={styles.saveWarning}>
+                {saveWarning}
+              </Text>
+            )}
+            <Button
+              label="How it works"
+              accessibilityLabel="How this app works"
+              variant="ghost"
+              size="sm"
+              onPress={() => setHowItWorksOpen(true)}
+            />
+            <ThemeToggle />
+            {onReset !== undefined && <View style={styles.headerDivider} dataSet={{ wideOnly: 'true' }} />}
+            {onReset === undefined ? null : confirmingReset ? (
+              <>
+                <Button
+                  label="Keep this list"
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => {
+                    setConfirmingReset(false);
+                    setResetSaveNote(null);
+                  }}
+                />
+                <Button
+                  label="Start over"
+                  accessibilityLabel="Confirm start over"
+                  variant="dangerStrong"
+                  size="sm"
+                  onPress={() => {
+                    setConfirmingReset(false);
+                    setResetSaveNote(null);
+                    onReset();
+                  }}
+                />
+              </>
+            ) : (
               <Button
                 label="Start over"
-                accessibilityLabel="Confirm start over"
-                variant="dangerStrong"
+                accessibilityLabel="Start over"
+                variant="danger"
                 size="sm"
-                onPress={() => {
-                  setConfirmingReset(false);
-                  setResetSaveNote(null);
-                  onReset();
+                onPress={() => setConfirmingReset(true)}
+              />
+            )}
+            <Pressable
+              href={REPO_URL}
+              hrefAttrs={{ target: '_blank', rel: 'noopener noreferrer' }}
+              accessibilityRole="link"
+              accessibilityLabel="View source on GitHub"
+              dataSet={{ github: 'true', wideOnly: 'true' }}
+              style={styles.githubLink}
+            >
+              <GitHubIcon />
+            </Pressable>
+          </View>
+        </View>
+
+        {confirmingReset && (
+          <View style={styles.resetPrompt} dataSet={{ resetPrompt: 'true' }} role="alert">
+            <Text style={styles.resetWarning}>
+              {resetCost === undefined ? '' : `${resetCost} `}
+              This clears the list held in this browser. Files you already exported are untouched.
+            </Text>
+            {onSaveBeforeReset !== undefined && resetCost !== undefined && (
+              <View style={styles.resetSave}>
+                <Button
+                  label="Save session first"
+                  variant="secondary"
+                  size="sm"
+                  onPress={() => setResetSaveNote(onSaveBeforeReset())}
+                />
+                {resetSaveNote !== null && <Text style={styles.resetNote}>{resetSaveNote}</Text>}
+              </View>
+            )}
+          </View>
+        )}
+
+        <HowItWorksModal visible={howItWorksOpen} onClose={() => setHowItWorksOpen(false)} />
+
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollBody}
+          onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
+        >
+          <View
+            style={[
+              styles.body,
+              layout === 'split' && styles.bodySplit,
+              layout === 'stacked' && styles.bodyStacked,
+            ]}
+            onLayout={(event) => setBodyWidth(event.nativeEvent.layout.width)}
+          >
+            {rail != null && (
+              <View style={[styles.rail, layout === 'split' && styles.railSplit]}>{rail}</View>
+            )}
+
+            <View
+              style={[
+                styles.stage,
+                layout === 'split' && styles.stageSplit,
+                layout === 'stacked' && styles.stageStacked,
+              ]}
+              role="main"
+            >
+              {stage}
+            </View>
+
+            {layout === 'split' && (
+              <SplitDivider
+                width={sidebarWidth}
+                min={SIDEBAR_MIN_WIDTH}
+                max={maxSidebarWidth}
+                onResize={setDraggingSidebarWidth}
+                onCommit={(width) => {
+                  setDraggingSidebarWidth(null);
+                  saveSidebarWidth(width);
+                }}
+                onReset={() => {
+                  setDraggingSidebarWidth(null);
+                  saveSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
                 }}
               />
-            </>
-          ) : (
-            <Button
-              label="Start over"
-              accessibilityLabel="Start over"
-              variant="danger"
-              size="sm"
-              onPress={() => setConfirmingReset(true)}
-            />
-          )}
-          <Pressable
-            href={REPO_URL}
-            hrefAttrs={{ target: '_blank', rel: 'noopener noreferrer' }}
-            accessibilityRole="link"
-            accessibilityLabel="View source on GitHub"
-            dataSet={{ github: 'true', wideOnly: 'true' }}
-            style={styles.githubLink}
-          >
-            <GitHubIcon />
-          </Pressable>
-        </View>
+            )}
+
+            <View
+              style={[
+                styles.preview,
+                layout === 'split' && [
+                  styles.previewSplit,
+                  { width: sidebarWidth },
+                  viewportHeight !== null && {
+                    height: Math.max(PREVIEW_MIN_HEIGHT, viewportHeight - space.lg * 2),
+                  },
+                ],
+                layout === 'stacked' && styles.previewStacked,
+              ]}
+              role="complementary"
+            >
+              {preview}
+            </View>
+          </View>
+        </ScrollView>
+
+        {docking && <View style={styles.dock}>{dock}</View>}
+
+        {onFileDrop !== undefined && (
+          <RNModal visible={fileDragActive} transparent animationType="none" onRequestClose={() => {}}>
+            <View style={styles.dropOverlay} pointerEvents="none">
+              <View style={styles.dropCard}>
+                <Text style={styles.dropTitle}>Drop to import</Text>
+                <Text style={styles.dropSubtitle}>Release anywhere on the page</Text>
+              </View>
+            </View>
+          </RNModal>
+        )}
       </View>
-
-      {confirmingReset && (
-        <View style={styles.resetPrompt} dataSet={{ resetPrompt: 'true' }} role="alert">
-          <Text style={styles.resetWarning}>
-            {resetCost === undefined ? '' : `${resetCost} `}
-            This clears the list held in this browser. Files you already exported are untouched.
-          </Text>
-          {onSaveBeforeReset !== undefined && resetCost !== undefined && (
-            <View style={styles.resetSave}>
-              <Button
-                label="Save session first"
-                variant="secondary"
-                size="sm"
-                onPress={() => setResetSaveNote(onSaveBeforeReset())}
-              />
-              {resetSaveNote !== null && <Text style={styles.resetNote}>{resetSaveNote}</Text>}
-            </View>
-          )}
-        </View>
-      )}
-
-      <HowItWorksModal visible={howItWorksOpen} onClose={() => setHowItWorksOpen(false)} />
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollBody}
-        onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
-      >
-        <View
-          style={[
-            styles.body,
-            layout === 'split' && styles.bodySplit,
-            layout === 'stacked' && styles.bodyStacked,
-          ]}
-          onLayout={(event) => setBodyWidth(event.nativeEvent.layout.width)}
-        >
-          {rail != null && <View style={[styles.rail, layout === 'split' && styles.railSplit]}>{rail}</View>}
-
-          <View
-            style={[
-              styles.stage,
-              layout === 'split' && styles.stageSplit,
-              layout === 'stacked' && styles.stageStacked,
-            ]}
-            role="main"
-          >
-            {stage}
-          </View>
-
-          {layout === 'split' && (
-            <SplitDivider
-              width={sidebarWidth}
-              min={SIDEBAR_MIN_WIDTH}
-              max={maxSidebarWidth}
-              onResize={setDraggingSidebarWidth}
-              onCommit={(width) => {
-                setDraggingSidebarWidth(null);
-                saveSidebarWidth(width);
-              }}
-              onReset={() => {
-                setDraggingSidebarWidth(null);
-                saveSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
-              }}
-            />
-          )}
-
-          <View
-            style={[
-              styles.preview,
-              layout === 'split' && [
-                styles.previewSplit,
-                { width: sidebarWidth },
-                viewportHeight !== null && {
-                  height: Math.max(PREVIEW_MIN_HEIGHT, viewportHeight - space.lg * 2),
-                },
-              ],
-              layout === 'stacked' && styles.previewStacked,
-            ]}
-            role="complementary"
-          >
-            {preview}
-          </View>
-        </View>
-      </ScrollView>
-
-      {onFileDrop !== undefined && (
-        <RNModal visible={fileDragActive} transparent animationType="none" onRequestClose={() => {}}>
-          <View style={styles.dropOverlay} pointerEvents="none">
-            <View style={styles.dropCard}>
-              <Text style={styles.dropTitle}>Drop to import</Text>
-              <Text style={styles.dropSubtitle}>Release anywhere on the page</Text>
-            </View>
-          </View>
-        </RNModal>
-      )}
-    </View>
+    </DockingContext.Provider>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
+  dock: {
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+  },
   header: {
     flexDirection: 'row',
     flexWrap: 'wrap',
