@@ -1,4 +1,4 @@
-import { parseWorkspaceSnapshot } from '@/lib/persistence/workspaceSnapshot';
+import { compactSnapshot, parseWorkspaceSnapshot } from '@/lib/persistence/workspaceSnapshot';
 import type { WorkspaceSnapshot } from '@/lib/persistence/workspaceSnapshot';
 
 export const WORKSPACE_STORAGE_KEY = 'pairwise-list-ranker:workspace:v2';
@@ -8,8 +8,8 @@ export const LEGACY_STORAGE_KEYS = ['pairwise-list-ranker:workspace:v1'] as cons
 
 /**
  * Below the usual 5MB localStorage budget, with room for the browser's own
- * overhead. We now store the raw text and the parsed document, so a very large
- * import can realistically reach this.
+ * overhead. The document is stored once, with items pointing into it, so this
+ * is roughly the size of the imported data plus the comparison history.
  */
 export const MAX_SNAPSHOT_BYTES = 4_000_000;
 
@@ -71,7 +71,7 @@ export function createWorkspaceStorage(backend: StorageLike | null = defaultBack
     save(snapshot: WorkspaceSnapshot) {
       if (!available || backend === null) return 'unavailable';
 
-      const serialized = JSON.stringify(snapshot);
+      const serialized = JSON.stringify(compactSnapshot(snapshot));
       // Checking first keeps a previous good save intact rather than letting a
       // quota error replace it with nothing.
       if (serialized.length > MAX_SNAPSHOT_BYTES) return 'too-large';

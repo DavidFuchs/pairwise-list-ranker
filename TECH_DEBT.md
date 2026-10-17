@@ -16,7 +16,7 @@ about how many places one change has to touch.
 | 1 | Memoize the list switcher's options on the rank screen | Performance | S | Done |
 | 2 | Replay comparisons incrementally; cheaper placements | Performance | M | Done |
 | 3 | Replace the single-slot selector cache with a keyed one | Performance | S | Done |
-| 4 | Stop persisting each entry two or three times | Performance | M | Partly done |
+| 4 | Stop persisting each entry two or three times | Performance | M | Done |
 | 5 | Cache `Intl` formatters | Performance | S | Done |
 | 6 | Cut needless re-renders (rows, cards, field picker) | Performance | S-M | Done |
 | 7 | One registry entry per field renderer | Modifiability | M | Done |
@@ -101,9 +101,20 @@ references into the document is the larger half and belongs with task 8.
 
 Done, the first half: `rawText` turned out never to be read (the data screen
 writes its text back out from the document), so it is gone from `DataSource`
-altogether, not just from storage. Still open: each item's `value` repeats its
-entry from the document. Dropping it means rebuilding items from the document
-on load, including the ones an edit removed, which are no longer in it.
+altogether, not just from storage.
+
+Done, the second half: `compactSnapshot` writes each item as `entry`, the index
+of an equal entry in its list's part of the document, instead of repeating its
+`value`. It tries the item's own position first and falls back to matching by
+value, since edits move entries. An item the document no longer holds, such as
+one an edit removed, keeps its `value` inline. Reading fills values back in from
+the document and rejects an `entry` that is out of range. Both the browser save
+and session files go through it, at snapshot version 5.
+
+The saving is the size of every item's value: on 300 entries of about 230
+characters, a save went from 181k to 112k characters. It also fixed a bug: the
+old item check accepted only text or objects, so a ranked list of numbers or
+true/false values failed to load and the whole save was dropped on reload.
 
 ### 5. Cache `Intl` formatters
 

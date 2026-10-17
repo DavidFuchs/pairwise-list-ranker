@@ -1,5 +1,9 @@
-import { parseWorkspaceSnapshot, WORKSPACE_VERSION } from '@/lib/persistence/workspaceSnapshot';
-import type { WorkspaceSnapshot } from '@/lib/persistence/workspaceSnapshot';
+import {
+  compactSnapshot,
+  parseWorkspaceSnapshot,
+  WORKSPACE_VERSION,
+} from '@/lib/persistence/workspaceSnapshot';
+import type { StoredSnapshot, WorkspaceSnapshot } from '@/lib/persistence/workspaceSnapshot';
 import { activeList, allLists } from '@/lib/state/lists';
 import type { Workspace } from '@/types/source';
 
@@ -16,11 +20,16 @@ export interface SessionFile {
   kind: typeof SESSION_FILE_KIND;
   version: typeof SESSION_FILE_VERSION;
   savedAt: string;
-  session: WorkspaceSnapshot;
+  session: StoredSnapshot;
 }
 
 export function buildSessionFile(session: WorkspaceSnapshot, savedAt: string): SessionFile {
-  return { kind: SESSION_FILE_KIND, version: SESSION_FILE_VERSION, savedAt, session };
+  return {
+    kind: SESSION_FILE_KIND,
+    version: SESSION_FILE_VERSION,
+    savedAt,
+    session: compactSnapshot(session),
+  };
 }
 
 /** What a chosen or dropped file turned out to be. */
