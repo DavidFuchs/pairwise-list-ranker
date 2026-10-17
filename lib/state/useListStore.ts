@@ -2,8 +2,6 @@ import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
 
-import { applyProgressFile } from '@/lib/progress/progressFile';
-import type { ProgressFile } from '@/lib/progress/progressFile';
 import { entriesAtPath } from '@/lib/import/arrayCandidates';
 import { diffImport } from '@/lib/import/diff';
 import { WORKSPACE_VERSION } from '@/lib/persistence/workspaceSnapshot';
@@ -33,14 +31,6 @@ export interface ListStoreOptions {
 export type UndoEntry = { kind: 'comparison'; eventIds: string[] } | { kind: 'remove'; itemId: string };
 
 const MAX_UNDO = 200;
-
-/** What loading a progress file did, for the status line. */
-export interface ProgressLoadResult {
-  matchedEvents: number;
-  unmatchedEvents: number;
-  removed: number;
-  unmatchedRemoved: number;
-}
 
 /** What the data screen hands over when the user commits their choices. */
 export interface StartInput {
@@ -103,8 +93,6 @@ export interface ListState {
   removeItem(itemId: string): void;
   /** Takes back the last comparison, reorder or removal. */
   undo(): void;
-  /** Replaces this list's comparisons, and adds the removals, from a saved progress file. */
-  loadProgress(file: ProgressFile): ProgressLoadResult;
   /** The whole session as it stands, for a session file; null with nothing loaded. */
   snapshot(): WorkspaceSnapshot | null;
   /** Replaces everything with a saved session, ready to carry on ranking. */
@@ -488,39 +476,6 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
             { undoStack },
           );
         }
-      },
-
-      loadProgress(file: ProgressFile): ProgressLoadResult {
-        const open = current();
-        if (open === null) {
-          return { matchedEvents: 0, unmatchedEvents: 0, removed: 0, unmatchedRemoved: 0 };
-        }
-        const { workspace, list } = open;
-
-        const applied = applyProgressFile(file, list.items, list.id, createId);
-        const removed = new Set(applied.removedIds);
-        const timestamp = now();
-
-        commitList(
-          workspace,
-          {
-            ...list,
-            comparisonEvents: applied.events,
-            // Removals only ever add: an item inactive here may have been
-            // dropped by an edit of the document, and is not the file's to revive.
-            items: list.items.map((item) =>
-              item.active && removed.has(item.id) ? { ...item, active: false, updatedAt: timestamp } : item,
-            ),
-          },
-          { undoStack: [] },
-        );
-
-        return {
-          matchedEvents: applied.matchedEvents,
-          unmatchedEvents: applied.unmatchedEvents,
-          removed: applied.removedIds.length,
-          unmatchedRemoved: applied.unmatchedRemoved,
-        };
       },
 
       snapshot() {

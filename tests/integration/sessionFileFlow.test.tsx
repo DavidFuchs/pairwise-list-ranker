@@ -5,7 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DataScreen from '@/app/index';
 import RankScreen from '@/app/rank';
-import { buildProgressFile } from '@/lib/progress/progressFile';
 import { buildSessionFile } from '@/lib/session/sessionFile';
 import { listStore } from '@/lib/state/useListStore';
 import type { DataSource } from '@/types/source';
@@ -110,15 +109,13 @@ describe('session files', () => {
     expect(replace).toHaveBeenCalledWith('/rank');
   });
 
-  it('explains a progress file dropped on the setup screen instead of importing it', async () => {
-    listStore.getState().startRanking({ source: songs, roles: { labelField: 'title' } });
-    const progress = JSON.stringify(buildProgressFile(openList(listStore).items, [], [], ''));
-    listStore.getState().reset();
+  it('refuses an older file of its own on the setup screen instead of importing it', async () => {
     render(<DataScreen />);
 
-    await chooseFile(progress);
+    // A progress file, as versions before session files wrote them.
+    await chooseFile(JSON.stringify({ kind: 'pairwise-list-ranker-progress', version: 1, events: [] }));
 
-    expect(await screen.findByText(/That is a progress file/)).toBeDefined();
+    expect(await screen.findByText(/from an older version of this app/)).toBeDefined();
     expect(screen.getByRole('textbox', { name: 'Your list' })).toHaveProperty('value', '');
   });
 

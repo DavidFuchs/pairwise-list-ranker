@@ -54,7 +54,7 @@ export default function DataScreen() {
 
   /**
    * A chosen or dropped file is either one of this app's own - a session to
-   * pick up where it left off, or an old progress file - or a list to import.
+   * pick up where it left off - or a list to import.
    */
   function openFile(text: string) {
     const saved = readSavedFile(text);
@@ -66,13 +66,6 @@ export default function DataScreen() {
     }
     if (saved.type === 'unreadable') {
       setFileNotice({ message: saved.reason });
-      return;
-    }
-    if (saved.type === 'progress') {
-      setFileNotice({
-        message:
-          'That is a progress file: it holds your decisions, but not the list. Put your list in and start ranking, then open the file there with Open session.',
-      });
       return;
     }
 

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { createWorkspaceStorage } from '@/lib/persistence/workspaceStorage';
 import type { StorageLike } from '@/lib/persistence/workspaceStorage';
-import { buildProgressFile } from '@/lib/progress/progressFile';
 import {
   buildSessionFile,
   describeSession,
@@ -112,15 +111,14 @@ describe('session files', () => {
     expect(readSavedFile('Alien\nArrival')).toEqual({ type: 'other' });
   });
 
-  it('recognises a progress file from before sessions', () => {
-    const store = workedStore();
-    const progress = buildProgressFile(
-      openList(store).items,
-      openList(store).comparisonEvents,
-      ['movies'],
-      '',
-    );
-    expect(readSavedFile(JSON.stringify(progress)).type).toBe('progress');
+  it('refuses an older file of its own rather than reading it as a list', () => {
+    // A progress file, as versions before session files wrote them.
+    expect(
+      readSavedFile(JSON.stringify({ kind: 'pairwise-list-ranker-progress', version: 1, events: [] })),
+    ).toEqual({
+      type: 'unreadable',
+      reason: 'That file is from an older version of this app and cannot be opened.',
+    });
   });
 
   it('refuses a session from another version, and says so', () => {

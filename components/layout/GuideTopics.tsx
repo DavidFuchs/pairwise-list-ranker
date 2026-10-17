@@ -640,8 +640,7 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
               - in another browser, or months later - drop that file on the setup screen or choose it with{' '}
               <K>Choose a file</K>, and you are back where you left off. <K>Open session</K> does the same
               from the ranking screen. Opening one replaces the list you have open, so if that list has
-              decisions behind it, you are asked first. Progress files saved before sessions existed still
-              open, onto the same list.
+              decisions behind it, you are asked first.
             </>,
             <>
               <B>Editing.</B> <K>Edit data</K> returns to the setup screen. You see what your changes will do

@@ -40,24 +40,13 @@ const NO_ITEMS: ListItem[] = [];
 const NO_EVENTS: ComparisonEvent[] = [];
 
 /**
- * Opens a session file, or a progress file from before sessions existed. A
- * session replaces everything, so with decisions on the line it asks first.
+ * Opens a session file. A session replaces everything, so with decisions on
+ * the line it asks first.
  */
 function openSavedFile(text: string): OpenOutcome {
   const saved = readSavedFile(text);
   if (saved.type === 'unreadable') return { message: saved.reason };
   if (saved.type === 'other') return { message: 'That is not a session file from this app.' };
-
-  if (saved.type === 'progress') {
-    const result = listStore.getState().loadProgress(saved.file);
-    const skipped = result.unmatchedEvents + result.unmatchedRemoved;
-    return {
-      message:
-        skipped === 0
-          ? `Loaded ${result.matchedEvents} comparisons from a progress file.`
-          : `Loaded ${result.matchedEvents} comparisons from a progress file. ${skipped} did not match an item in this list (edited or removed since the save).`,
-    };
-  }
 
   const summary = describeSession(saved.session);
   const apply = () => {

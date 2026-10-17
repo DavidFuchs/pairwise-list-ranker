@@ -49,7 +49,7 @@ function gmOut(...args) {
 
 const work = mkdtempSync(join(tmpdir(), 'pwlr-icons-'));
 try {
-  const [iconW, iconH] = gmOut('identify', '-format', '%w %h', iconPath).trim().split(' ').map(Number);
+  const iconW = Number(gmOut('identify', '-format', '%w', iconPath).trim());
 
   // Sample the icon's own background from a patch near the top edge, well
   // clear of its rounded corners.

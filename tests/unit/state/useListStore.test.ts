@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { StorageLike } from '@/lib/persistence/workspaceStorage';
 import { WORKSPACE_STORAGE_KEY, createWorkspaceStorage } from '@/lib/persistence/workspaceStorage';
-import { buildProgressFile } from '@/lib/progress/progressFile';
 import { createListStore } from '@/lib/state/useListStore';
 import type { DataSource } from '@/types/source';
 import { listAtPath, openList } from '@/tests/helpers/lists';
@@ -674,29 +673,6 @@ describe('undo', () => {
     const store = started();
     store.getState().undo();
     expect(openList(store).comparisonEvents).toHaveLength(0);
-  });
-});
-
-describe('loadProgress', () => {
-  it('replaces comparisons with those in the file, matched by item value', () => {
-    const store = makeStore();
-    store.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
-    const [a, b] = openList(store).items;
-    store.getState().recordComparison(a!.id, b!.id, 'right_strong');
-    const file = buildProgressFile(
-      openList(store).items,
-      openList(store).comparisonEvents,
-      ['movies'],
-      '2026-08-16T00:00:00.000Z',
-    );
-
-    const fresh = makeStore();
-    fresh.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
-    const result = fresh.getState().loadProgress(file);
-
-    expect(result.matchedEvents).toBe(1);
-    expect(openList(fresh).comparisonEvents[0]).toMatchObject({ outcome: 'right_strong' });
-    expect(fresh.getState().ranking()[0]!.item.value).toEqual({ title: 'Arrival' });
   });
 });
 
