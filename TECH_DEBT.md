@@ -30,6 +30,10 @@ about how many places one change has to touch.
 | 15 | Give "no list chosen" its own key in the draft hook | Correctness | S | Done |
 | 16 | Fix the two end-to-end tests that already fail on `main` | Tests | S | Done |
 | 17 | Replace raw NUL bytes in source with `\u0000` | Readability | S | Done |
+| 18 | Make the test scripts run on Windows | Tooling | S | Done |
+| 19 | Check out LF everywhere with `.gitattributes` | Tooling | S | Done |
+| 20 | Add format and end-to-end checks to CI | Tooling | S | Done |
+| 21 | Remove the pre-session progress-file format | Modifiability | S | Done |
 
 Suggested order: the small items first, then 7 and 12 (both done), then 2, and finally 8
 together with 4, since both change the snapshot format and can share one
@@ -269,3 +273,33 @@ failed because the app had moved on and the tests had not:
   rather than two comparisons (see `reorderItem`), so it expects 2.
 
 All 19 now pass.
+
+## Tooling follow-ups
+
+### 18. Test scripts on Windows
+
+`npm test` set `NODE_OPTIONS=...` inline, which only a Unix shell understands,
+so it failed on Windows. The flag (which keeps Node 25's own `localStorage` out
+of the jsdom tests) now goes to vitest's workers through `test.execArgv`.
+
+### 19. Line endings
+
+The repo stored LF, but `core.autocrlf` checked out CRLF, so every commit warned
+and Prettier needed `endOfLine: auto`. `.gitattributes` now pins `eol=lf` for
+text and marks images binary.
+
+### 20. CI
+
+`.github/workflows/ci.yml` already ran lint, typecheck and the tests. It now
+also runs `format:check`, and a separate `e2e` job installs Chromium and runs
+the Playwright suite against the static build. Not yet run on the Forgejo
+runner: if its image cannot install browsers as root, that one step will need
+a Playwright container image instead.
+
+### 21. Progress files
+
+Session files replaced the old progress files, which the app had stopped
+writing but could still read. With no legacy users to keep, the module, the
+store's `loadProgress` and the screens' branches are gone. A file of any older
+kind this app wrote is refused with a message instead of being imported as a
+list.
