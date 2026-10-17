@@ -149,7 +149,18 @@ const styles = StyleSheet.create({
     borderRadius: 1,
     backgroundColor: colors.accent,
   },
-  grip: { paddingHorizontal: space.xs, paddingVertical: space.xs },
+  // The full height of the row and wide enough for a fingertip. touchAction is
+  // set here rather than only in the stylesheet: React Native Web gives every
+  // pressable touch-action: manipulation, which would otherwise win and turn a
+  // drag into a page scroll on a touch screen.
+  grip: {
+    alignSelf: 'stretch',
+    width: 36,
+    marginLeft: -space.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    touchAction: 'none',
+  } as object,
   gripGlyph: { fontFamily: fonts.mono, fontSize: 13, color: colors.textFaint },
   position: {
     minWidth: 26,

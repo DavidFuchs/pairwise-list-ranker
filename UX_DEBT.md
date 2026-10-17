@@ -54,7 +54,7 @@ It falls short in three places:
 | 20 | Give every page a title | Accessibility | High | Open |
 | 21 | Mark section titles as headings | Accessibility | High | Open |
 | 22 | Give the choice cards a role screen readers will announce | Accessibility | Medium | Open |
-| 23 | Make dragging a ranked row work with a finger | Phone | High | Open |
+| 23 | Make dragging a ranked row work with a finger | Phone | High | Done |
 | 24 | Refuse files that are not text, and ask before replacing the editor | Trust | High | Open |
 | 25 | Handle a file dropped on the ranking screen | Trust | Medium | Open |
 | 26 | Scroll the ranked list while dragging near its edge | Long lists | Medium | Open |
@@ -415,6 +415,10 @@ touch target.
 
 Fix: set `touchAction: 'none'` in the grip's own style (the sidebar divider
 already does this), and widen its hit area to 44 px.
+
+Done: the grip sets `touchAction: 'none'` in its own style and spans the full
+height of the row, 36 px wide. A touch end-to-end test drags a row with real
+touch input on an emulated iPhone; it fails on the old grip.
 
 ### 24. A non-text file is pasted in as text
 
