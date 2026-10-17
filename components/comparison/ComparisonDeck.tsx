@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { cardFlexBasis, ItemCard } from '@/components/comparison/ItemCard';
@@ -32,6 +33,12 @@ export interface ComparisonDeckProps {
   onUndo?: () => void;
   /** How the order is shaping up, for the status strip. */
   stability?: StabilityReading;
+  /**
+   * Leads the status line, such as the way back to the data screen. On the
+   * line rather than above it, since every row above the cards is one more
+   * thing between a short window and the controls under them.
+   */
+  leading?: ReactNode;
 }
 
 // The inline gutter needs enough room for the vertical rule, the word "or",
@@ -60,6 +67,7 @@ export function ComparisonDeck({
   onDelete,
   onUndo,
   stability,
+  leading,
 }: ComparisonDeckProps) {
   const [armed, setArmed] = useState<'left' | 'right' | null>(null);
   // Details belong to the pair: seeing one item's fields against the other's
@@ -133,10 +141,13 @@ export function ComparisonDeck({
 
   if (pair === null) {
     return (
-      <Notice
-        title="Nothing to compare yet"
-        body="Ranking needs at least two items. Import a list or add items to get started."
-      />
+      <View style={styles.stage}>
+        {leading !== undefined && <View style={styles.statusRow}>{leading}</View>}
+        <Notice
+          title="Nothing to compare yet"
+          body="Ranking needs at least two items. Import a list or add items to get started."
+        />
+      </View>
     );
   }
 
@@ -148,7 +159,8 @@ export function ComparisonDeck({
     <View style={styles.stage}>
       <View style={styles.statusStrip} accessibilityLiveRegion="polite">
         <View style={styles.statusRow}>
-          <Text style={styles.status}>
+          {leading}
+          <Text style={[styles.status, styles.statusGrow]}>
             {`${progress.comparisons} comparisons · ${progress.activeItems} items`}
           </Text>
           <Text style={styles.statusPercent}>{percentLabel}</Text>
@@ -253,7 +265,7 @@ export function ComparisonDeck({
           </Pressable>
         </View>
         <Text style={styles.shortcuts} accessibilityLiveRegion="polite">
-          {shortcutLine(awaitingSide, armed !== null)}
+          {shortcutLine(awaitingSide, armed !== null) ?? <ShortcutKeys />}
         </Text>
       </View>
     </View>
@@ -265,10 +277,34 @@ export function ComparisonDeck({
  * rather than the whole set: a two-step shortcut with an invisible first step
  * is a dead end, and a confirmation whose keys are unstated is another.
  */
-function shortcutLine(awaitingSide: boolean, armed: boolean): string {
+function shortcutLine(awaitingSide: boolean, armed: boolean): string | null {
   if (armed) return 'Enter removes · Esc keeps';
   if (awaitingSide) return 'Removing: press L or R for a side · any other key cancels';
-  return 'Arrow keys choose · shift + arrow for much better · S skips · D then L or R removes · Ctrl/Cmd+Z undoes';
+  return null;
+}
+
+/** The whole set, keys drawn as keys so the line reads as help, not fine print. */
+const SHORTCUTS: [keys: string[], action: string][] = [
+  [['←', '→'], 'choose'],
+  [['Shift'], '+ arrow for much better'],
+  [['S'], 'skips'],
+  [['D'], 'then L or R removes'],
+  [['Ctrl/Cmd', 'Z'], 'undoes'],
+];
+
+function ShortcutKeys() {
+  return SHORTCUTS.map(([keys, action], index) => (
+    <Text key={action}>
+      {index > 0 && <Text style={styles.shortcutSep}>{'  ·  '}</Text>}
+      {keys.map((key, at) => (
+        <Text key={key}>
+          {at > 0 && ' '}
+          <Text style={styles.keycap}>{` ${key} `}</Text>
+        </Text>
+      ))}
+      {` ${action}`}
+    </Text>
+  ));
 }
 
 /** Whether an item carries anything beyond the field that titles its card. */
@@ -342,7 +378,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: space.md,
   },
+  statusGrow: { flex: 1 },
   status: {
     fontFamily: fonts.mono,
     fontSize: 12,
@@ -380,7 +418,6 @@ const styles = StyleSheet.create({
   tray: {
     alignItems: 'center',
     gap: space.xs,
-    paddingTop: space.xs,
   },
   skip: {
     paddingVertical: space.sm,
@@ -397,11 +434,22 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   shortcuts: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    lineHeight: 19,
+    textAlign: 'center',
+    color: colors.textSecondary,
+  },
+  shortcutSep: { color: colors.textFaint },
+  keycap: {
     fontFamily: fonts.mono,
     fontSize: 11,
-    lineHeight: 16,
-    textAlign: 'center',
-    color: colors.textFaint,
+    color: colors.textPrimary,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderBottomWidth: 2,
+    borderRadius: 4,
+    backgroundColor: colors.surface,
   },
   notice: {
     gap: space.sm,

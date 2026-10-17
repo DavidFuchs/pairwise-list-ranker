@@ -37,13 +37,13 @@ It falls short in three places:
 | 3 | Keep the setup screen's main button in reach on phones | Phone | High | Done |
 | 4 | Make Start over say what is lost, offer to save, and disarm itself | Trust | High | Done |
 | 5 | Keep the controls still from one pair to the next | Speed | High | Done |
-| 6 | Fit the ranking screen in a desktop window | Speed | Medium | Open |
+| 6 | Fit the ranking screen in a desktop window | Speed | Medium | Done |
 | 7 | Make taking the result away obvious | Flow | High | Done |
 | 8 | Do not present an order before there is one | Clarity | Medium | Open |
 | 9 | Say what the app does on the first screen | Onboarding | Medium | Open |
 | 10 | Show field names as people would write them | Clarity | Medium | Open |
 | 11 | Say a shared-slot tip once, not under every field | Clarity | Low | Open |
-| 12 | Make the keyboard shortcuts findable | Speed | Medium | Open |
+| 12 | Make the keyboard shortcuts findable | Speed | Medium | Done |
 | 13 | Avoid the layout jump when data first arrives | Polish | Low | Open |
 | 14 | Plainer progress wording | Clarity | Low | Open |
 | 15 | Smooth the theme switch | Polish | Low | Open |
@@ -186,6 +186,13 @@ Fix: reduce what a card shows by default (the samples could pick five or six
 fields, leaving the rest in details), and let the card area scroll inside
 itself rather than the whole page.
 
+Done differently: the cards and the samples stay as they are, since the
+fields on a card are the user's choice. Instead "Edit data" moved onto the
+status line beside the counts, where it had a row to itself, and the tray
+under the cards tightened. At 1440 x 900 the Movies sample no longer scrolls,
+with Skip and the shortcut line on screen. A very tall pair can still push
+past the window; the cards keep what the user chose to show.
+
 ### 12. Keyboard shortcuts are hard to find
 
 The shortcut line ("Arrow keys choose · shift + arrow for much better · S
@@ -195,6 +202,11 @@ way through a long list.
 
 Fix: show the arrow-key hint on the cards themselves (a small "←" and "→"), and
 put the full list behind a "?" shortcut and in the guide.
+
+Done in part: the line is now on screen at desktop size (see 6), in the body
+font rather than faint monospace, with each key drawn as a keycap. The cards
+themselves stay free of keys, a deliberate earlier choice covered by tests
+("title-first cards"). A "?" overlay is still open if wanted.
 
 ## Flow
 

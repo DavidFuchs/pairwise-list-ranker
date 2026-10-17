@@ -4,7 +4,6 @@ import { useEffect, useMemo } from 'react';
 import { ComparisonDeck } from '@/components/comparison/ComparisonDeck';
 import { AppShell } from '@/components/layout/AppShell';
 import { ListSwitcher } from '@/components/layout/ListSwitcher';
-import { PageNav } from '@/components/layout/PageNav';
 import { PreviewPane } from '@/components/preview/PreviewPane';
 import type { OpenOutcome } from '@/components/preview/SessionControls';
 import { Button } from '@/components/ui/Button';
@@ -175,16 +174,16 @@ export default function RankScreen() {
       onSaveBeforeReset={saveSession}
       stage={
         <>
-          <PageNav>
-            <Button
-              label="‹ Edit data"
-              accessibilityLabel="Edit data"
-              variant="secondary"
-              size="sm"
-              onPress={() => router.replace('/')}
-            />
-          </PageNav>
           <ComparisonDeck
+            leading={
+              <Button
+                label="‹ Edit data"
+                accessibilityLabel="Edit data"
+                variant="secondary"
+                size="sm"
+                onPress={() => router.replace('/')}
+              />
+            }
             pair={view.pair}
             progress={progress}
             layout={layout}

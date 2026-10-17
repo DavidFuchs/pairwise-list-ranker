@@ -373,8 +373,11 @@ describe('keyboard shortcuts', () => {
   it('tells the user the shortcuts exist', () => {
     setup();
 
-    expect(screen.getByText(/arrow keys choose/i)).toBeDefined();
-    expect(screen.getByText(/s skips/i)).toBeDefined();
+    // Keys are drawn as keys under the tray, each beside what it does.
+    expect(screen.getByText('←')).toBeDefined();
+    expect(screen.getByText('choose')).toBeDefined();
+    expect(screen.getByText('S')).toBeDefined();
+    expect(screen.getByText('skips')).toBeDefined();
   });
 
   it('says which key finishes the delete it is halfway through', async () => {
@@ -484,8 +487,10 @@ describe('the gutter', () => {
   it('keeps the cards free of keycaps', () => {
     setup();
 
-    expect(screen.queryByText('←')).toBeNull();
-    expect(screen.queryByText('→')).toBeNull();
+    for (const card of screen.getAllByLabelText(/^Choose /)) {
+      expect(within(card).queryByText('←')).toBeNull();
+      expect(within(card).queryByText('→')).toBeNull();
+    }
   });
 });
 

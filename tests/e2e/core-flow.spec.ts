@@ -503,3 +503,12 @@ test('on a phone, the setup screen scrolls as one page', async ({ page }) => {
   );
   expect(scrollers).toBe(1);
 });
+
+test('on a desktop window, the controls under the cards are on screen', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  await expect(page.getByLabel(/^Choose /).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Skip this pair' })).toBeInViewport({ ratio: 1 });
+});
