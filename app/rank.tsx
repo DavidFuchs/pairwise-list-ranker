@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import Head from 'expo-router/head';
 import { useEffect, useMemo } from 'react';
 
 import { ComparisonDeck } from '@/components/comparison/ComparisonDeck';
@@ -29,6 +30,7 @@ import {
   selectStability,
   selectWorkspaceView,
 } from '@/lib/state/selectors';
+import { formatPath } from '@/lib/import/arrayCandidates';
 import { activeList } from '@/lib/state/lists';
 import { listStore, useListStore } from '@/lib/state/useListStore';
 import type { ListItem } from '@/types/list';
@@ -154,74 +156,79 @@ export default function RankScreen() {
   }
 
   return (
-    <AppShell
-      listName={selectContextLine(workspace)}
-      saveWarning={saveWarning}
-      listSwitcher={
-        <ListSwitcher
-          currentPath={workspace.source.arrayPath}
-          caption={selectContextLine(workspace)}
-          options={listOptions}
-          onSelect={switchToList}
-          onConfigure={configureList}
-        />
-      }
-      onReset={() => {
-        listStore.getState().reset();
-        router.replace('/');
-      }}
-      resetCost={describeLostWork(workspace)}
-      onSaveBeforeReset={saveSession}
-      stage={
-        <>
-          <ComparisonDeck
-            leading={
-              <Button
-                label="‹ Edit data"
-                accessibilityLabel="Edit data"
-                variant="secondary"
-                size="sm"
-                onPress={() => router.replace('/')}
-              />
-            }
-            pair={view.pair}
-            progress={progress}
-            layout={layout}
-            onUndo={canUndo ? () => listStore.getState().undo() : undefined}
-            stability={stability}
-            onOutcome={(outcome) => {
-              if (view.pair === null) return;
-              listStore.getState().recordComparison(view.pair.left.id, view.pair.right.id, outcome);
-            }}
-            onDelete={(itemId) => listStore.getState().removeItem(itemId)}
+    <>
+      <Head>
+        <title>{`Pairwise: ranking ${formatPath(workspace.source.arrayPath)}`}</title>
+      </Head>
+      <AppShell
+        listName={selectContextLine(workspace)}
+        saveWarning={saveWarning}
+        listSwitcher={
+          <ListSwitcher
+            currentPath={workspace.source.arrayPath}
+            caption={selectContextLine(workspace)}
+            options={listOptions}
+            onSelect={switchToList}
+            onConfigure={configureList}
           />
-        </>
-      }
-      preview={
-        <PreviewPane
-          tab={previewTab}
-          tabs={selectAvailableTabs(workspace)}
-          onTabChange={(tab) => listStore.getState().setPreviewTab(tab)}
-          ranking={view.ranking}
-          layout={layout}
-          decided={comparisonEvents.length > 0}
-          trustedOrder={alreadyRanked}
-          exportText={exportText}
-          getExportText={() => selectExportText(workspace, format)}
-          filename={exportFilename(downloadName(workspace.source), format)}
-          format={format}
-          removedCount={selectRemovedCount(items)}
-          onReorder={(itemId, nextOrder) => listStore.getState().reorderItem(itemId, nextOrder)}
-          sessionFile={{
-            onSave: saveSession,
-            onOpen: async () => {
-              const text = await pickTextFile('application/json,.json');
-              if (text === null) return null;
-              return openSavedFile(text);
-            },
-          }}
-        />
-      }
-    />
+        }
+        onReset={() => {
+          listStore.getState().reset();
+          router.replace('/');
+        }}
+        resetCost={describeLostWork(workspace)}
+        onSaveBeforeReset={saveSession}
+        stage={
+          <>
+            <ComparisonDeck
+              leading={
+                <Button
+                  label="‹ Edit data"
+                  accessibilityLabel="Edit data"
+                  variant="secondary"
+                  size="sm"
+                  onPress={() => router.replace('/')}
+                />
+              }
+              pair={view.pair}
+              progress={progress}
+              layout={layout}
+              onUndo={canUndo ? () => listStore.getState().undo() : undefined}
+              stability={stability}
+              onOutcome={(outcome) => {
+                if (view.pair === null) return;
+                listStore.getState().recordComparison(view.pair.left.id, view.pair.right.id, outcome);
+              }}
+              onDelete={(itemId) => listStore.getState().removeItem(itemId)}
+            />
+          </>
+        }
+        preview={
+          <PreviewPane
+            tab={previewTab}
+            tabs={selectAvailableTabs(workspace)}
+            onTabChange={(tab) => listStore.getState().setPreviewTab(tab)}
+            ranking={view.ranking}
+            layout={layout}
+            decided={comparisonEvents.length > 0}
+            trustedOrder={alreadyRanked}
+            exportText={exportText}
+            getExportText={() => selectExportText(workspace, format)}
+            filename={exportFilename(downloadName(workspace.source), format)}
+            format={format}
+            removedCount={selectRemovedCount(items)}
+            onReorder={(itemId, nextOrder) => listStore.getState().reorderItem(itemId, nextOrder)}
+            sessionFile={{
+              onSave: saveSession,
+              onOpen: async () => {
+                const text = await pickTextFile('application/json,.json');
+                if (text === null) return null;
+                return openSavedFile(text);
+              },
+            }}
+          />
+        }
+      />
+    </>
   );
 }

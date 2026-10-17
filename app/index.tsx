@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import Head from 'expo-router/head';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -246,113 +247,118 @@ export default function DataScreen() {
   }
 
   return (
-    <AppShell
-      onFileDrop={openFile}
-      // Reviewing an edit has its own buttons; the dock is for getting there.
-      dock={
-        pending === null ? (
-          <StartCta
-            label={ctaLabel}
-            reason={readiness.reason}
-            ready={readiness.ready}
-            onSubmit={handleSubmit}
-          />
-        ) : undefined
-      }
-      stage={
-        <>
-          {editing && (
-            <PageNav>
-              <Button
-                label="Back to ranking ›"
-                accessibilityLabel="Back to ranking"
-                variant="secondary"
-                size="sm"
-                onPress={() => router.replace('/rank')}
-              />
-            </PageNav>
-          )}
-          {/* The preview sits beside the editor while there is room, so the
+    <>
+      <Head>
+        <title>{editing ? 'Pairwise: edit data' : 'Pairwise: add a list'}</title>
+      </Head>
+      <AppShell
+        onFileDrop={openFile}
+        // Reviewing an edit has its own buttons; the dock is for getting there.
+        dock={
+          pending === null ? (
+            <StartCta
+              label={ctaLabel}
+              reason={readiness.reason}
+              ready={readiness.ready}
+              onSubmit={handleSubmit}
+            />
+          ) : undefined
+        }
+        stage={
+          <>
+            {editing && (
+              <PageNav>
+                <Button
+                  label="Back to ranking ›"
+                  accessibilityLabel="Back to ranking"
+                  variant="secondary"
+                  size="sm"
+                  onPress={() => router.replace('/rank')}
+                />
+              </PageNav>
+            )}
+            {/* The preview sits beside the editor while there is room, so the
               card stays in view while the fields are set in the sidebar and
               the editor keeps the column's full height. */}
-          <View
-            style={[styles.work, sideBySide && styles.workRow]}
-            onLayout={(event) => setWorkWidth(event.nativeEvent.layout.width)}
-          >
-            <SourceInput
-              value={draft.rawText}
-              onChange={(text) => {
-                setPending(null);
-                draft.setRawText(text);
-              }}
-              onFile={openFile}
-              onSample={(sample) => {
-                setPending(null);
-                setFileNotice(null);
-                // Detected, not pinned: a format tab left on Plain list
-                // would otherwise misread the sample.
-                draft.setOverride('auto');
-                // Each sample arrives set up to show the renderers off.
-                draft.loadPreset(sample.text, sample.path, sample.roles);
-              }}
-              override={draft.override}
-              onOverrideChange={draft.setOverride}
-              format={draft.analysis.format}
-              issues={rawTextIsBlank ? [] : draft.analysis.issues}
-              availableOverrides={draft.availableOverrides}
+            <View
+              style={[styles.work, sideBySide && styles.workRow]}
+              onLayout={(event) => setWorkWidth(event.nativeEvent.layout.width)}
+            >
+              <SourceInput
+                value={draft.rawText}
+                onChange={(text) => {
+                  setPending(null);
+                  draft.setRawText(text);
+                }}
+                onFile={openFile}
+                onSample={(sample) => {
+                  setPending(null);
+                  setFileNotice(null);
+                  // Detected, not pinned: a format tab left on Plain list
+                  // would otherwise misread the sample.
+                  draft.setOverride('auto');
+                  // Each sample arrives set up to show the renderers off.
+                  draft.loadPreset(sample.text, sample.path, sample.roles);
+                }}
+                override={draft.override}
+                onOverrideChange={draft.setOverride}
+                format={draft.analysis.format}
+                issues={rawTextIsBlank ? [] : draft.analysis.issues}
+                availableOverrides={draft.availableOverrides}
+              />
+              {showPreview && (
+                <View style={sideBySide ? [styles.previewBeside, { width: previewWidth }] : undefined}>
+                  <CardPreview
+                    entries={rawTextIsBlank ? [] : previewEntries}
+                    roles={draft.roles}
+                    fill={sideBySide}
+                  />
+                </View>
+              )}
+            </View>
+            {fileNotice !== null && <FileNotice notice={fileNotice} onDismiss={() => setFileNotice(null)} />}
+          </>
+        }
+        preview={
+          pending === null ? (
+            <FoundPanel
+              analysis={foundAnalysis}
+              selectedPath={draft.selectedPath}
+              roles={draft.roles}
+              alreadyRanked={orderPickerValue}
+              isDefault={settingsAreDefault}
+              entries={draft.entries}
+              isBlank={rawTextIsBlank}
+              ctaLabel={ctaLabel}
+              rankedCoverages={rankedCoverages}
+              configLines={configLines}
+              onSelectPath={draft.selectPath}
+              onRolesChange={draft.setRoles}
+              onAlreadyRankedChange={draft.setAlreadyRanked}
+              // The first list a document gets defines the defaults on its own,
+              // so there is nothing to set until there is one to change.
+              onSetAsDefault={
+                editing
+                  ? () =>
+                      listStore.getState().setListDefaults({
+                        roles: draft.roles,
+                        alreadyRanked: orderPickerValue,
+                      })
+                  : undefined
+              }
+              onSubmit={handleSubmit}
             />
-            {showPreview && (
-              <View style={sideBySide ? [styles.previewBeside, { width: previewWidth }] : undefined}>
-                <CardPreview
-                  entries={rawTextIsBlank ? [] : previewEntries}
-                  roles={draft.roles}
-                  fill={sideBySide}
-                />
-              </View>
-            )}
-          </View>
-          {fileNotice !== null && <FileNotice notice={fileNotice} onDismiss={() => setFileNotice(null)} />}
-        </>
-      }
-      preview={
-        pending === null ? (
-          <FoundPanel
-            analysis={foundAnalysis}
-            selectedPath={draft.selectedPath}
-            roles={draft.roles}
-            alreadyRanked={orderPickerValue}
-            isDefault={settingsAreDefault}
-            entries={draft.entries}
-            isBlank={rawTextIsBlank}
-            ctaLabel={ctaLabel}
-            rankedCoverages={rankedCoverages}
-            configLines={configLines}
-            onSelectPath={draft.selectPath}
-            onRolesChange={draft.setRoles}
-            onAlreadyRankedChange={draft.setAlreadyRanked}
-            // The first list a document gets defines the defaults on its own,
-            // so there is nothing to set until there is one to change.
-            onSetAsDefault={
-              editing
-                ? () =>
-                    listStore.getState().setListDefaults({
-                      roles: draft.roles,
-                      alreadyRanked: orderPickerValue,
-                    })
-                : undefined
-            }
-            onSubmit={handleSubmit}
-          />
-        ) : (
-          <ApplySummary
-            diff={pending.diff}
-            settings={pending.settings}
-            onCancel={() => setPending(null)}
-            onConfirm={handleConfirm}
-          />
-        )
-      }
-    />
+          ) : (
+            <ApplySummary
+              diff={pending.diff}
+              settings={pending.settings}
+              onCancel={() => setPending(null)}
+              onConfirm={handleConfirm}
+            />
+          )
+        }
+      />
+    </>
   );
 }
 

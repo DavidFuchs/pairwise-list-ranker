@@ -17,6 +17,8 @@ export default function Root({ children }: PropsWithChildren) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <meta name="color-scheme" content="light dark" />
+        {/* Named before the app runs; each screen then sets its own title. */}
+        <title>Pairwise</title>
         <meta
           name="description"
           content="Rank any list by comparing two items at a time. Runs entirely in your browser."

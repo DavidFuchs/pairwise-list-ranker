@@ -512,3 +512,14 @@ test('on a desktop window, the controls under the cards are on screen', async ({
   await expect(page.getByLabel(/^Choose /).first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Skip this pair' })).toBeInViewport({ ratio: 1 });
 });
+
+test('every page names itself in the title', async ({ page }) => {
+  await expect(page).toHaveTitle('Pairwise: add a list');
+
+  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+  await expect(page).toHaveTitle('Pairwise: ranking movies');
+
+  await page.getByRole('button', { name: 'Edit data' }).click();
+  await expect(page).toHaveTitle('Pairwise: edit data');
+});

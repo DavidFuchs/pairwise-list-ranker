@@ -51,7 +51,7 @@ It falls short in three places:
 | 17 | Match the Start over prompt's spoken names to its labels | Accessibility | Low | Done |
 | 18 | Calmer placement for Start over | Trust | Low | Done |
 | 19 | Stop the setup panel scrolling inside the page on phones | Phone | Medium | Done |
-| 20 | Give every page a title | Accessibility | High | Open |
+| 20 | Give every page a title | Accessibility | High | Done |
 | 21 | Mark section titles as headings | Accessibility | High | Open |
 | 22 | Give the choice cards a role screen readers will announce | Accessibility | Medium | Open |
 | 23 | Make dragging a ranked row work with a finger | Phone | High | Done |
@@ -384,6 +384,11 @@ Neither page has a `<title>`. The browser tab shows a bare address, and a screen
 reader announces no page name on arrival. The axe scan rates this serious.
 
 Fix: a title per screen, such as "Pairwise: add a list" and "Pairwise: Movies".
+
+Done: "Pairwise: add a list", "Pairwise: edit data" and "Pairwise: ranking
+movies" (named after the list), set with Expo Router's `Head`. The HTML shell
+carries "Pairwise" for the moment before the app runs. An end-to-end test
+checks each.
 
 ### 21. No headings
 
