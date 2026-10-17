@@ -30,38 +30,38 @@ It falls short in three places:
 
 ## Status
 
-| # | Task | Area | Priority | Status |
-|---|------|------|----------|--------|
-| 1 | Stop the page scrolling sideways on phones | Phone | High | Done |
-| 2 | Make comparing work on a phone screen | Phone | High | Done |
-| 3 | Keep the setup screen's main button in reach on phones | Phone | High | Done |
-| 4 | Make Start over say what is lost, offer to save, and disarm itself | Trust | High | Done |
-| 5 | Keep the controls still from one pair to the next | Speed | High | Done |
-| 6 | Fit the ranking screen in a desktop window | Speed | Medium | Done |
-| 7 | Make taking the result away obvious | Flow | High | Done |
-| 8 | Do not present an order before there is one | Clarity | Medium | Done |
-| 9 | Say what the app does on the first screen | Onboarding | Medium | Done |
-| 10 | Show field names as people would write them | Clarity | Medium | Done |
-| 11 | Say a shared-slot tip once, not under every field | Clarity | Low | Done |
-| 12 | Make the keyboard shortcuts findable | Speed | Medium | Done |
-| 13 | Avoid the layout jump when data first arrives | Polish | Low | Done |
-| 14 | Plainer progress wording | Clarity | Low | Done |
-| 15 | Smooth the theme switch | Polish | Low | Done |
-| 16 | Keep rating bars inside narrow cards | Polish | Low | Done |
-| 17 | Match the Start over prompt's spoken names to its labels | Accessibility | Low | Done |
-| 18 | Calmer placement for Start over | Trust | Low | Done |
-| 19 | Stop the setup panel scrolling inside the page on phones | Phone | Medium | Done |
-| 20 | Give every page a title | Accessibility | High | Done |
-| 21 | Mark section titles as headings | Accessibility | High | Done |
-| 22 | Give the choice cards a role screen readers will announce | Accessibility | Medium | Done |
-| 23 | Make dragging a ranked row work with a finger | Phone | High | Done |
-| 24 | Refuse files that are not text, and ask before replacing the editor | Trust | High | Done |
-| 25 | Handle a file dropped on the ranking screen | Trust | Medium | Open |
-| 26 | Scroll the ranked list while dragging near its edge | Long lists | Medium | Open |
-| 27 | Set expectations on long lists | Long lists | Medium | Open |
-| 28 | Drop a unit from a field name its renderer already shows | Clarity | Low | Open |
-| 29 | Keep a field name on one line beside a long link | Polish | Low | Open |
-| 30 | Put all content inside a landmark | Accessibility | Low | Open |
+| #   | Task                                                                | Area          | Priority | Status |
+| --- | ------------------------------------------------------------------- | ------------- | -------- | ------ |
+| 1   | Stop the page scrolling sideways on phones                          | Phone         | High     | Done   |
+| 2   | Make comparing work on a phone screen                               | Phone         | High     | Done   |
+| 3   | Keep the setup screen's main button in reach on phones              | Phone         | High     | Done   |
+| 4   | Make Start over say what is lost, offer to save, and disarm itself  | Trust         | High     | Done   |
+| 5   | Keep the controls still from one pair to the next                   | Speed         | High     | Done   |
+| 6   | Fit the ranking screen in a desktop window                          | Speed         | Medium   | Done   |
+| 7   | Make taking the result away obvious                                 | Flow          | High     | Done   |
+| 8   | Do not present an order before there is one                         | Clarity       | Medium   | Done   |
+| 9   | Say what the app does on the first screen                           | Onboarding    | Medium   | Done   |
+| 10  | Show field names as people would write them                         | Clarity       | Medium   | Done   |
+| 11  | Say a shared-slot tip once, not under every field                   | Clarity       | Low      | Done   |
+| 12  | Make the keyboard shortcuts findable                                | Speed         | Medium   | Done   |
+| 13  | Avoid the layout jump when data first arrives                       | Polish        | Low      | Done   |
+| 14  | Plainer progress wording                                            | Clarity       | Low      | Done   |
+| 15  | Smooth the theme switch                                             | Polish        | Low      | Done   |
+| 16  | Keep rating bars inside narrow cards                                | Polish        | Low      | Done   |
+| 17  | Match the Start over prompt's spoken names to its labels            | Accessibility | Low      | Done   |
+| 18  | Calmer placement for Start over                                     | Trust         | Low      | Done   |
+| 19  | Stop the setup panel scrolling inside the page on phones            | Phone         | Medium   | Done   |
+| 20  | Give every page a title                                             | Accessibility | High     | Done   |
+| 21  | Mark section titles as headings                                     | Accessibility | High     | Done   |
+| 22  | Give the choice cards a role screen readers will announce           | Accessibility | Medium   | Done   |
+| 23  | Make dragging a ranked row work with a finger                       | Phone         | High     | Done   |
+| 24  | Refuse files that are not text, and ask before replacing the editor | Trust         | High     | Done   |
+| 25  | Handle a file dropped on the ranking screen                         | Trust         | Medium   | Open   |
+| 26  | Scroll the ranked list while dragging near its edge                 | Long lists    | Medium   | Open   |
+| 27  | Set expectations on long lists                                      | Long lists    | Medium   | Open   |
+| 28  | Drop a unit from a field name its renderer already shows            | Clarity       | Low      | Open   |
+| 29  | Keep a field name on one line beside a long link                    | Polish        | Low      | Open   |
+| 30  | Put all content inside a landmark                                   | Accessibility | Low      | Open   |
 
 Suggested order: 1 and 4 first (small, and one is a bug), then 5, 7 and 2,
 which matter most to how the app feels, then the rest.
@@ -69,6 +69,7 @@ which matter most to how the app feels, then the rest.
 ## What works well
 
 Worth keeping as the app changes:
+
 - Samples on the first screen, so there is something to rank in one click.
 - The card preview on the data screen, which shows a real card while fields
   are chosen, and the plain-language notes beside each field choice.
@@ -105,6 +106,7 @@ read the other option and back up, which is the opposite of a quick pairwise
 choice.
 
 Fix, roughly in order of effort:
+
 - A compact card on narrow screens: picture, title and the first two or three
   fields, with the rest behind the existing "Show details" switch.
 - A bar fixed to the bottom of the screen with the two choices (and Skip), so
@@ -155,6 +157,7 @@ screen keeps its bounded sidebar, which its windowed list needs.
 Pressing Start over turns the header into Cancel and Confirm, with a banner:
 "This clears the list held in this browser. Files you already exported are
 untouched." Three problems:
+
 - It does not say what will be lost. With 12 comparisons made, the prompt reads
   the same as with none.
 - It does not offer the obvious safety net: save a session first.
