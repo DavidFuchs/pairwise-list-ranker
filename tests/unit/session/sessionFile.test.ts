@@ -111,16 +111,6 @@ describe('session files', () => {
     expect(readSavedFile('Alien\nArrival')).toEqual({ type: 'other' });
   });
 
-  it('refuses an older file of its own rather than reading it as a list', () => {
-    // A progress file, as versions before session files wrote them.
-    expect(
-      readSavedFile(JSON.stringify({ kind: 'pairwise-list-ranker-progress', version: 1, events: [] })),
-    ).toEqual({
-      type: 'unreadable',
-      reason: 'That file is from an older version of this app and cannot be opened.',
-    });
-  });
-
   it('refuses a session from another version, and says so', () => {
     const file = buildSessionFile(workedStore().getState().snapshot()!, '');
     const newer = { ...file, version: 2 };

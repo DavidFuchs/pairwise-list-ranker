@@ -109,16 +109,6 @@ describe('session files', () => {
     expect(replace).toHaveBeenCalledWith('/rank');
   });
 
-  it('refuses an older file of its own on the setup screen instead of importing it', async () => {
-    render(<DataScreen />);
-
-    // A progress file, as versions before session files wrote them.
-    await chooseFile(JSON.stringify({ kind: 'pairwise-list-ranker-progress', version: 1, events: [] }));
-
-    expect(await screen.findByText(/from an older version of this app/)).toBeDefined();
-    expect(screen.getByRole('textbox', { name: 'Your list' })).toHaveProperty('value', '');
-  });
-
   it('saves and reopens a session from the ranking screen', async () => {
     const text = savedSessionText();
     picked.text = text;

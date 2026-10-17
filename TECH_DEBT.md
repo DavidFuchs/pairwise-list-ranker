@@ -33,7 +33,7 @@ about how many places one change has to touch.
 | 18 | Make the test scripts run on Windows | Tooling | S | Done |
 | 19 | Check out LF everywhere with `.gitattributes` | Tooling | S | Done |
 | 20 | Add format and end-to-end checks to CI | Tooling | S | Done |
-| 21 | Remove the pre-session progress-file format | Modifiability | S | Done |
+| 21 | Remove the pre-session file format | Modifiability | S | Done |
 
 Suggested order: the small items first, then 7 and 12 (both done), then 2, and finally 8
 together with 4, since both change the snapshot format and can share one
@@ -296,10 +296,8 @@ the Playwright suite against the static build. Not yet run on the Forgejo
 runner: if its image cannot install browsers as root, that one step will need
 a Playwright container image instead.
 
-### 21. Progress files
+### 21. One saved-file format
 
-Session files replaced the old progress files, which the app had stopped
-writing but could still read. With no legacy users to keep, the module, the
-store's `loadProgress` and the screens' branches are gone. A file of any older
-kind this app wrote is refused with a message instead of being imported as a
-list.
+Session files are the only file the app saves or opens. The format they
+replaced is gone: its module, the store action that loaded it, the screens'
+handling, its tests and every mention of it.

@@ -9,8 +9,7 @@ import type { Workspace } from '@/types/source';
  * placements and removals. It is the same snapshot this browser keeps,
  * labelled so a file can say what it is.
  */
-const APP_FILE_PREFIX = 'pairwise-list-ranker';
-export const SESSION_FILE_KIND = `${APP_FILE_PREFIX}-session`;
+export const SESSION_FILE_KIND = 'pairwise-list-ranker-session';
 export const SESSION_FILE_VERSION = 1;
 
 export interface SessionFile {
@@ -47,12 +46,6 @@ export function readSavedFile(text: string): SavedFile {
   if (typeof json !== 'object' || json === null || Array.isArray(json)) return { type: 'other' };
   const kind = (json as { kind?: unknown }).kind;
 
-  // Every file this app has ever written names itself with this prefix, so an
-  // older kind (the progress files from before sessions) is refused rather
-  // than imported as though it were a list.
-  if (typeof kind === 'string' && kind.startsWith(APP_FILE_PREFIX) && kind !== SESSION_FILE_KIND) {
-    return { type: 'unreadable', reason: 'That file is from an older version of this app and cannot be opened.' };
-  }
   if (kind !== SESSION_FILE_KIND) return { type: 'other' };
 
   const file = json as Partial<SessionFile> & { session?: { version?: unknown } };
