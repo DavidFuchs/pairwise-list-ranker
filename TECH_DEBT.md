@@ -14,7 +14,7 @@ about how many places one change has to touch.
 | # | Task | Area | Effort | Status |
 |---|------|------|--------|--------|
 | 1 | Memoize the list switcher's options on the rank screen | Performance | S | Done |
-| 2 | Replay comparisons incrementally; cheaper placements | Performance | M | Open |
+| 2 | Replay comparisons incrementally; cheaper placements | Performance | M | Done |
 | 3 | Replace the single-slot selector cache with a keyed one | Performance | S | Done |
 | 4 | Stop persisting each entry two or three times | Performance | M | Open |
 | 5 | Cache `Intl` formatters | Performance | S | Done |
@@ -60,6 +60,21 @@ Fix:
   rebuilding both per placement.
 
 The elo and rebuild tests already pin the behaviour this must keep.
+
+Done:
+- `replayComparisons` keeps the last replay per items array. When the history
+  is the cached one with events added to its end, dated no earlier than the
+  last one applied, it carries on from there; anything else replays from the
+  start. Callers get their own copy of the ratings.
+- A replay keeps its head-to-head tally as it goes, so a placement no longer
+  rebuilds it from the whole history.
+- `incrementalReplay.test.ts` checks the result against a fresh replay after
+  every event of a seeded history with every outcome, shared timestamps, a
+  removed item and an unknown one, and after undo, out-of-order and
+  already-ranked changes.
+
+Measured on 500 items, 3,000 comparisons and 150 placements: a click went from
+about 50 ms to about 5 ms, and a full replay from about 60 ms to about 33 ms.
 
 ### 3. Keyed selector cache
 

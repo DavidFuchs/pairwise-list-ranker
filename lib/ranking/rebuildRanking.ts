@@ -22,6 +22,30 @@ export function isPlacement(outcome: ComparisonEvent['outcome']): boolean {
 
 export type RankingStates = Map<string, RankingState>;
 
+/** A replay part way through: the ratings so far, and the head-to-head they came with. */
+interface Replay {
+  states: RankingStates;
+  headToHead: HeadToHead;
+  arrivalIndex: Map<string, number>;
+  /** The latest event time applied, which any event added later must not precede. */
+  lastAt: string | undefined;
+}
+
+interface ReplayCache {
+  alreadyRanked: boolean;
+  /** The history as it was passed in, to recognise one with events added to its end. */
+  events: ComparisonEvent[];
+  replay: Replay;
+}
+
+/**
+ * The last replay of each items array. A comparison only adds an event, so the
+ * next replay can carry on from here instead of starting over; anything else
+ * (an undo, an edit, a loaded file) changes the history or the items, and is
+ * replayed from the start.
+ */
+const replayCache = new WeakMap<ListItem[], ReplayCache>();
+
 /**
  * Replay the comparison history over every known item, deleted ones included:
  * a survivor keeps the rating it earned against an item that was later removed.
@@ -33,32 +57,77 @@ export function replayComparisons(
   events: ComparisonEvent[],
   alreadyRanked = false,
 ): RankingStates {
-  const states: RankingStates = new Map(
-    items.map((item, index) => [
-      item.id,
-      createRankingState(item.id, seedRating(index, items.length, alreadyRanked)),
-    ]),
-  );
+  const cached = replayCache.get(items);
+  const added = cached === undefined ? null : addedEvents(cached, events, alreadyRanked);
 
-  const ordered = [...events].sort(byEventTime);
-  const replayed: ComparisonEvent[] = [];
+  let replay: Replay;
+  if (cached !== undefined && added !== null) {
+    replay = cached.replay;
+    for (const event of added) applyEvent(replay, items, event);
+  } else {
+    replay = startReplay(items, alreadyRanked);
+    for (const event of [...events].sort(byEventTime)) applyEvent(replay, items, event);
+  }
+  replayCache.set(items, { alreadyRanked, events, replay });
 
-  for (const event of ordered) {
-    const left = states.get(event.leftItemId);
-    const right = states.get(event.rightItemId);
-    if (!left || !right) continue;
+  // The cache carries on from its own copy, so the caller's never changes under it.
+  return new Map(replay.states);
+}
 
-    if (isPlacement(event.outcome)) {
-      applyPlacement(items, states, replayed, event);
-    } else {
-      const update = applyComparison(left, right, event.outcome, event.createdAt);
-      states.set(event.leftItemId, update.left);
-      states.set(event.rightItemId, update.right);
-    }
-    replayed.push(event);
+/**
+ * The events added to the end of the cached history, in the order they
+ * replay, or null when the history changed some other way. An event dated
+ * before one already applied would have replayed earlier, so it forces a
+ * replay from the start as well.
+ */
+function addedEvents(
+  cached: ReplayCache,
+  events: ComparisonEvent[],
+  alreadyRanked: boolean,
+): ComparisonEvent[] | null {
+  if (cached.alreadyRanked !== alreadyRanked || events.length < cached.events.length) return null;
+  for (let index = 0; index < cached.events.length; index += 1) {
+    if (events[index] !== cached.events[index]) return null;
   }
 
-  return states;
+  const added = events.slice(cached.events.length);
+  let lastAt = cached.replay.lastAt;
+  for (const event of added) {
+    if (lastAt !== undefined && event.createdAt < lastAt) return null;
+    lastAt = event.createdAt;
+  }
+  return added;
+}
+
+function startReplay(items: ListItem[], alreadyRanked: boolean): Replay {
+  return {
+    states: new Map(
+      items.map((item, index) => [
+        item.id,
+        createRankingState(item.id, seedRating(index, items.length, alreadyRanked)),
+      ]),
+    ),
+    headToHead: new Map(),
+    arrivalIndex: arrivalIndexOf(items),
+    lastAt: undefined,
+  };
+}
+
+function applyEvent(replay: Replay, items: ListItem[], event: ComparisonEvent): void {
+  replay.lastAt = event.createdAt;
+  const { states } = replay;
+  const left = states.get(event.leftItemId);
+  const right = states.get(event.rightItemId);
+  if (!left || !right) return;
+
+  if (isPlacement(event.outcome)) {
+    applyPlacement(items, replay, event);
+  } else {
+    const update = applyComparison(left, right, event.outcome, event.createdAt);
+    states.set(event.leftItemId, update.left);
+    states.set(event.rightItemId, update.right);
+  }
+  tally(replay.headToHead, event);
 }
 
 /**
@@ -71,14 +140,10 @@ export function replayComparisons(
  * no room between them. Then the tied group is spread across a fraction of a
  * point, keeping its own order, so the moved item has a gap to sit in.
  */
-function applyPlacement(
-  items: ListItem[],
-  states: RankingStates,
-  replayed: ComparisonEvent[],
-  event: ComparisonEvent,
-): void {
+function applyPlacement(items: ListItem[], replay: Replay, event: ComparisonEvent): void {
+  const { states } = replay;
   const movedId = event.leftItemId;
-  const order = rankItems(items, states, replayed)
+  const order = orderActive(items, states, replay.headToHead, replay.arrivalIndex)
     .map((entry) => entry.item.id)
     .filter((id) => id !== movedId);
   const anchor = order.indexOf(event.rightItemId);
@@ -130,18 +195,33 @@ export function rankItems(
   states: RankingStates,
   events: ComparisonEvent[],
 ): RankedItem<ListItem>[] {
-  const headToHead = buildHeadToHead(events);
+  return orderActive(items, states, buildHeadToHead(events), arrivalIndexOf(items)).map((entry, index) => ({
+    rank: index + 1,
+    item: entry.item,
+    state: entry.state,
+  }));
+}
 
-  // The order the items arrived in is the user's own order, so it is the last
-  // word on ties. Falling back to the item id would sort an unranked list by
-  // random UUID, which is not an order anyone chose.
-  const arrivalIndex = new Map(items.map((item, index) => [item.id, index]));
+/**
+ * The order the items arrived in is the user's own order, so it is the last
+ * word on ties. Falling back to the item id would sort an unranked list by
+ * random UUID, which is not an order anyone chose.
+ */
+function arrivalIndexOf(items: ListItem[]): Map<string, number> {
+  return new Map(items.map((item, index) => [item.id, index]));
+}
 
+function orderActive(
+  items: ListItem[],
+  states: RankingStates,
+  headToHead: HeadToHead,
+  arrivalIndex: Map<string, number>,
+): { item: ListItem; state: RankingState }[] {
   const active = items
     .filter((item) => item.active)
     .map((item) => ({ item, state: states.get(item.id) ?? createRankingState(item.id) }));
 
-  const sorted = active.sort((a, b) => {
+  return active.sort((a, b) => {
     const ratingGap = b.state.rating - a.state.rating;
     if (Math.abs(ratingGap) > RANK_EPSILON) return ratingGap;
 
@@ -152,8 +232,6 @@ export function rankItems(
 
     return (arrivalIndex.get(a.item.id) ?? 0) - (arrivalIndex.get(b.item.id) ?? 0);
   });
-
-  return sorted.map((entry, index) => ({ rank: index + 1, item: entry.item, state: entry.state }));
 }
 
 /** The displayed ranking: replay history, then order the surviving items. */
@@ -184,21 +262,22 @@ type HeadToHead = Map<string, Map<string, number>>;
 
 function buildHeadToHead(events: ComparisonEvent[]): HeadToHead {
   const wins: HeadToHead = new Map();
-
-  for (const event of events) {
-    if (event.outcome === 'skip') continue;
-    // A placement ranks the item above the one it was placed over, and below
-    // the one it was placed under, which is what a tie should then remember.
-    const leftWon = event.outcome === 'left' || event.outcome === 'left_strong' || event.outcome === 'place_above';
-    const winner = leftWon ? event.leftItemId : event.rightItemId;
-    const loser = leftWon ? event.rightItemId : event.leftItemId;
-
-    const against = wins.get(winner) ?? new Map<string, number>();
-    against.set(loser, (against.get(loser) ?? 0) + 1);
-    wins.set(winner, against);
-  }
-
+  for (const event of events) tally(wins, event);
   return wins;
+}
+
+/** Counts one event's winner over its loser. A skip has neither. */
+function tally(wins: HeadToHead, event: ComparisonEvent): void {
+  if (event.outcome === 'skip') return;
+  // A placement ranks the item above the one it was placed over, and below
+  // the one it was placed under, which is what a tie should then remember.
+  const leftWon = event.outcome === 'left' || event.outcome === 'left_strong' || event.outcome === 'place_above';
+  const winner = leftWon ? event.leftItemId : event.rightItemId;
+  const loser = leftWon ? event.rightItemId : event.leftItemId;
+
+  const against = wins.get(winner) ?? new Map<string, number>();
+  against.set(loser, (against.get(loser) ?? 0) + 1);
+  wins.set(winner, against);
 }
 
 /** Negative when `a` leads the head-to-head, positive when `b` does, 0 when even. */
