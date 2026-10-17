@@ -9,11 +9,11 @@ import { StrongChoiceButton } from '@/components/comparison/StrongChoiceButton';
 import { TrashIcon } from '@/components/ui/TrashIcon';
 import { useReducedMotion } from '@/lib/hooks/useReducedMotion';
 import { selectItemLabel } from '@/lib/state/selectors';
-import { formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
+import { EMPTY_LAYOUT, formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
+import type { CardLayout } from '@/lib/renderers';
 import { colors, fonts, motion, radius, space, typeScale } from '@/lib/theme';
 import { fieldOf, isComplexItemValue } from '@/types/list';
 import type { ListItem } from '@/types/list';
-import type { FieldRenderer } from '@/types/source';
 
 /** The picture beside the title, when a field is drawn as an image. */
 const IMAGE_SIZE = 112;
@@ -21,15 +21,8 @@ const IMAGE_SIZE = 112;
 export interface ItemCardProps {
   item: ListItem;
   side: 'left' | 'right';
-  sortField?: string;
-  /** Fields every card shows as chips, in order, whether or not the item has them. */
-  summaryFields?: string[];
-  /** How each field is drawn, the picture and media fields included; absent is plain text. */
-  renderers?: Record<string, FieldRenderer>;
-  /** Fields pictured beside the title, together, as one gallery in this order. */
-  pictureFields?: string[];
-  /** Fields naming a clip for the play button, tried in this order. */
-  mediaFields?: string[];
+  /** Which fields the card draws, and how; see cardLayout. */
+  layout?: CardLayout;
   /**
    * Details are shown or hidden for the pair, not per card: comparing one
    * item's details against the other's summary is not a comparison anyone
@@ -52,11 +45,7 @@ export interface ItemCardProps {
 export function ItemCard({
   item,
   side,
-  sortField,
-  summaryFields,
-  renderers,
-  pictureFields,
-  mediaFields,
+  layout = EMPTY_LAYOUT,
   expanded = false,
   onChoose,
   onChooseStrong,
@@ -103,17 +92,18 @@ export function ItemCard({
     }
   }, [pendingDelete]);
 
-  const label = selectItemLabel(item, sortField);
+  const { labelField, plainFields, renderers, pictureFields, mediaFields } = layout;
+  const label = selectItemLabel(item, labelField);
   const fields = isComplexItemValue(item.value) ? Object.entries(item.value) : [];
-  const detailFields = fields.filter(([key]) => key !== sortField);
+  const detailFields = fields.filter(([key]) => key !== labelField);
   const raw = (field: string) => fieldOf(item, field);
   // Only the fields the user ticked, and every one of them, so both cards of a
   // pair show the same keys and an item without one says so instead of
   // silently dropping it. A false badge is the one line meant to say nothing.
-  const chips = (summaryFields ?? []).filter((field) => formatValue(raw(field), renderers?.[field], field) !== null);
+  const chips = plainFields.filter((field) => formatValue(raw(field), renderers[field], field) !== null);
   const pictures = itemPictures(raw, pictureFields, renderers);
   const sources = itemPreviewSources(raw, mediaFields, renderers);
-  const hasPicture = (pictureFields ?? []).length > 0;
+  const hasPicture = pictureFields.length > 0;
   const interactive = onChoose !== undefined;
   const canChoose = interactive && !pendingDelete;
 
@@ -172,11 +162,11 @@ export function ItemCard({
           {chips.length > 0 && (
             <View style={styles.chipColumn}>
               {chips.map((field) => (
-                <View key={field} style={[styles.chip, renderers?.[field] === 'long-text' && styles.chipBlock]}>
+                <View key={field} style={[styles.chip, renderers[field] === 'long-text' && styles.chipBlock]}>
                   <FieldValue
                     field={field}
                     value={raw(field)}
-                    renderer={renderers?.[field]}
+                    renderer={renderers[field]}
                     withKey
                     textStyle={styles.chipText}
                   />
@@ -189,7 +179,7 @@ export function ItemCard({
 
       {expanded && detailFields.length > 0 && isComplexItemValue(item.value) && (
         <View style={styles.detailsBlock}>
-          <ObjectDrilldown value={item.value} omitField={sortField} />
+          <ObjectDrilldown value={item.value} omitField={labelField} />
         </View>
       )}
 

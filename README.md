@@ -182,9 +182,10 @@ back to `US`); see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
   resolve to the same shape internally, and export returns the user's own
   document with the ranked array reordered in place, every other key
   untouched.
-- **Renderers** ([lib/renderers.ts](lib/renderers.ts)) are chosen per field
+- **Renderers** ([lib/renderers/](lib/renderers/)) are chosen per field
   and offered only when every value qualifies, so a choice offered is one
-  that draws every item.
+  that draws every item. Each is one entry in
+  [registry.ts](lib/renderers/registry.ts).
 - **State** lives in a Zustand store ([lib/state/](lib/state/)) with an
   optional `localStorage` snapshot. A session file is that same snapshot,
   labelled, so a session moves between browsers whole

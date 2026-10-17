@@ -8,7 +8,7 @@ import { PageNav } from "@/components/layout/PageNav";
 import { PreviewPane } from "@/components/preview/PreviewPane";
 import type { OpenOutcome } from "@/components/preview/SessionControls";
 import { Button } from "@/components/ui/Button";
-import { layoutSummary } from "@/lib/renderers";
+import { cardLayout } from "@/lib/renderers";
 import { downloadText, pickTextFile } from "@/lib/browser/exportActions";
 import { downloadName, exportFilename, slugify } from "@/lib/export/filenames";
 import {
@@ -123,7 +123,7 @@ export default function RankScreen() {
         : "Not saved: this browser is not keeping data";
 
   if (workspace === null) return null;
-  const summary = layoutSummary(workspace.roles);
+  const layout = cardLayout(workspace.roles);
 
   const listOptions = selectListOptions(workspace, savedLists, items, comparisonEvents);
 
@@ -191,11 +191,7 @@ export default function RankScreen() {
           <ComparisonDeck
             pair={view.pair}
             progress={progress}
-            sortField={workspace.roles.labelField}
-            summaryFields={summary.plainFields}
-            renderers={summary.renderers}
-            pictureFields={summary.pictureFields}
-            mediaFields={summary.mediaFields}
+            layout={layout}
             onUndo={canUndo ? () => listStore.getState().undo() : undefined}
             stability={stability}
             onOutcome={(outcome) => {
@@ -218,11 +214,7 @@ export default function RankScreen() {
           tabs={selectAvailableTabs(workspace)}
           onTabChange={(tab) => listStore.getState().setPreviewTab(tab)}
           ranking={view.ranking}
-          labelField={workspace.roles.labelField}
-          summaryFields={summary.plainFields}
-          renderers={summary.renderers}
-          pictureFields={summary.pictureFields}
-          mediaFields={summary.mediaFields}
+          layout={layout}
           exportText={exportText}
           filename={exportFilename(downloadName(workspace.source), format)}
           format={format}

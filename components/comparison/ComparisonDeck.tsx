@@ -6,11 +6,12 @@ import { ProgressMeter } from "@/components/ui/ProgressMeter";
 import { useComparisonShortcuts } from "@/lib/hooks/useComparisonShortcuts";
 import { describeCoverage, describeStability, selectItemLabel } from "@/lib/state/selectors";
 import type { ActivePair, StabilityReading } from "@/lib/state/selectors";
+import { EMPTY_LAYOUT } from "@/lib/renderers";
+import type { CardLayout } from "@/lib/renderers";
 import { colors, fonts, radius, space, typeScale } from "@/lib/theme";
 import { isComplexItemValue } from "@/types/list";
 import type { ListItem } from "@/types/list";
 import type { ComparisonOutcome } from "@/types/ranking";
-import type { FieldRenderer } from "@/types/source";
 
 export interface DeckProgress {
   activeItems: number;
@@ -23,11 +24,8 @@ export interface DeckProgress {
 export interface ComparisonDeckProps {
   pair: ActivePair | null;
   progress: DeckProgress;
-  sortField?: string;
-  summaryFields?: string[];
-  renderers?: Record<string, FieldRenderer>;
-  pictureFields?: string[];
-  mediaFields?: string[];
+  /** Which fields the cards draw, and how; see cardLayout. */
+  layout?: CardLayout;
   onOutcome: (outcome: ComparisonOutcome) => void;
   onDelete: (itemId: string) => void;
   /** Present only while there is something to take back. */
@@ -57,11 +55,7 @@ function inlineLayoutMinWidth(hasPicture: boolean): number {
 export function ComparisonDeck({
   pair,
   progress,
-  sortField,
-  summaryFields,
-  renderers,
-  pictureFields,
-  mediaFields,
+  layout = EMPTY_LAYOUT,
   onOutcome,
   onDelete,
   onUndo,
@@ -76,7 +70,7 @@ export function ComparisonDeck({
   // once a narrow layout makes the gutter span the full row, that full-width
   // gutter keeps the cards stacked even after the viewport widens again.
   const [cardsWidth, setCardsWidth] = useState<number | null>(null);
-  const hasPicture = (pictureFields ?? []).length > 0;
+  const hasPicture = layout.pictureFields.length > 0;
   const stacked = cardsWidth !== null && cardsWidth < inlineLayoutMinWidth(hasPicture);
 
   const emit = useCallback(
@@ -135,7 +129,7 @@ export function ComparisonDeck({
   );
   // Nothing to toggle when the items are bare strings.
   const hasDetails = [pair.left, pair.right].some((item) =>
-    hasDetailFields(item, sortField),
+    hasDetailFields(item, layout.labelField),
   );
 
   return (
@@ -148,7 +142,7 @@ export function ComparisonDeck({
           <Text style={styles.statusPercent}>{percentLabel}</Text>
         </View>
         <Text style={styles.announcement}>
-          {`Comparing ${selectItemLabel(pair.left, sortField)} and ${selectItemLabel(pair.right, sortField)}`}
+          {`Comparing ${selectItemLabel(pair.left, layout.labelField)} and ${selectItemLabel(pair.right, layout.labelField)}`}
         </Text>
         <ProgressMeter
           coverage={progress.coverage}
@@ -174,11 +168,7 @@ export function ComparisonDeck({
         <ItemCard
           item={pair.left}
           side="left"
-          sortField={sortField}
-          summaryFields={summaryFields}
-          renderers={renderers}
-          pictureFields={pictureFields}
-          mediaFields={mediaFields}
+          layout={layout}
           expanded={showDetails}
           pendingDelete={armed === "left"}
           onChoose={() => choose("left")}
@@ -196,11 +186,7 @@ export function ComparisonDeck({
         <ItemCard
           item={pair.right}
           side="right"
-          sortField={sortField}
-          summaryFields={summaryFields}
-          renderers={renderers}
-          pictureFields={pictureFields}
-          mediaFields={mediaFields}
+          layout={layout}
           expanded={showDetails}
           pendingDelete={armed === "right"}
           onChoose={() => choose("right")}

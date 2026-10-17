@@ -4,23 +4,17 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { RankedRow, ROW_HEIGHT } from '@/components/preview/RankedRow';
 import { gapMovesRow, insertIndexForUniform, moveItem, targetIndexForGap } from '@/lib/ranking/reorder';
 import { selectItemLabel } from '@/lib/state/selectors';
-import { formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
+import { EMPTY_LAYOUT, formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
+import type { CardLayout } from '@/lib/renderers';
 import { colors, fonts, space } from '@/lib/theme';
 import { fieldOf } from '@/types/list';
 import type { ListItem } from '@/types/list';
 import type { RankedItem } from '@/types/ranking';
-import type { FieldRenderer } from '@/types/source';
 
 export interface RankedListPreviewProps {
   ranking: RankedItem<ListItem>[];
-  sortField?: string;
-  summaryFields?: string[];
-  /** How each of summaryFields reads; a field absent here is plain text. */
-  renderers?: Record<string, FieldRenderer>;
-  /** Fields pictured at the start of every row; a row shows the first picture they give. */
-  pictureFields?: string[];
-  /** Fields naming a clip for each row's play button, tried in order. */
-  mediaFields?: string[];
+  /** Which fields each row reads, and how; see cardLayout. */
+  layout?: CardLayout;
   onReorder: (itemId: string, nextOrder: string[]) => void;
 }
 
@@ -40,11 +34,7 @@ const ROW_PITCH = ROW_HEIGHT + space.xs;
  */
 export function RankedListPreview({
   ranking,
-  sortField,
-  summaryFields,
-  renderers,
-  pictureFields,
-  mediaFields,
+  layout = EMPTY_LAYOUT,
   onReorder,
 }: RankedListPreviewProps) {
   const orderedIds = useMemo(() => ranking.map((entry) => entry.item.id), [ranking]);
@@ -188,11 +178,11 @@ export function RankedListPreview({
               key={id}
               id={id}
               rank={index + 1}
-              label={selectItemLabel(entry.item, sortField)}
-              meta={metaFor(entry.item, summaryFields, renderers)}
-              previewSources={itemPreviewSources((field) => fieldOf(entry.item, field), mediaFields, renderers)}
-              showImage={(pictureFields ?? []).length > 0}
-              imageValue={itemPictures((field) => fieldOf(entry.item, field), pictureFields, renderers)[0]?.uri}
+              label={selectItemLabel(entry.item, layout.labelField)}
+              meta={metaFor(entry.item, layout)}
+              previewSources={itemPreviewSources((field) => fieldOf(entry.item, field), layout.mediaFields, layout.renderers)}
+              showImage={layout.pictureFields.length > 0}
+              imageValue={itemPictures((field) => fieldOf(entry.item, field), layout.pictureFields, layout.renderers)[0]?.uri}
               rating={entry.state.rating}
               dragging={dragging?.id === id}
               insertBefore={insertionGap === index}
@@ -214,12 +204,11 @@ export function RankedListPreview({
  */
 function metaFor(
   item: ListItem,
-  summaryFields: string[] | undefined,
-  renderers: Record<string, FieldRenderer> | undefined,
+  { plainFields, renderers }: CardLayout,
 ): string | null {
-  if (summaryFields === undefined || summaryFields.length === 0) return null;
-  const parts = summaryFields.flatMap((field) => {
-    const renderer = renderers?.[field];
+  if (plainFields.length === 0) return null;
+  const parts = plainFields.flatMap((field) => {
+    const renderer = renderers[field];
     const text = formatValue(fieldOf(item, field), renderer, field);
     if (text === null) return [];
     // A badge is its own name; anything else is named before its value.

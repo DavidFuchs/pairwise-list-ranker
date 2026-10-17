@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ItemCard } from '@/components/comparison/ItemCard';
+import { cardLayout } from '@/lib/renderers';
 import type { ListItem } from '@/types/list';
 
 const NOW = '2026-08-15T12:00:00.000Z';
@@ -20,7 +21,7 @@ describe('ItemCard', () => {
   });
 
   it('labels an object item with the chosen sort field', () => {
-    render(<ItemCard item={item({ title: 'Arrival', year: 2016 })} side="left" sortField="title" />);
+    render(<ItemCard item={item({ title: 'Arrival', year: 2016 })} side="left" layout={cardLayout({ labelField: 'title' })} />);
 
     expect(screen.getByText('Arrival')).toBeDefined();
   });
@@ -28,10 +29,9 @@ describe('ItemCard', () => {
   it('always shows the chosen summary fields, in order, even when the item lacks one', () => {
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title', summaryFields: ['genre', 'director', 'note'] })}
         item={item({ title: 'Arrival', year: 2016, genre: 'Sci-fi', note: 'a very long note that would never fit a chip' })}
         side="left"
-        sortField="title"
-        summaryFields={['genre', 'director', 'note']}
       />,
     );
 
@@ -44,9 +44,9 @@ describe('ItemCard', () => {
   it('shows only the title until fields are chosen', () => {
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title' })}
         item={item({ title: 'Arrival', year: 2016, director: 'Denis Villeneuve' })}
         side="left"
-        sortField="title"
       />,
     );
 
@@ -57,9 +57,9 @@ describe('ItemCard', () => {
   it('keeps the full object hidden until details are opened', () => {
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title' })}
         item={item({ title: 'Arrival', year: 2016, synopsis: 'Linguist meets heptapods.' })}
         side="left"
-        sortField="title"
       />,
     );
 
@@ -69,9 +69,9 @@ describe('ItemCard', () => {
   it('reveals the remaining fields when the pair opens details', () => {
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title' })}
         item={item({ title: 'Arrival', year: 2016, synopsis: 'Linguist meets heptapods.' })}
         side="left"
-        sortField="title"
         expanded
       />,
     );
@@ -82,9 +82,9 @@ describe('ItemCard', () => {
   it('carries no details control of its own, since the pair owns it', () => {
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title' })}
         item={item({ title: 'Arrival', synopsis: 'Linguist meets heptapods.' })}
         side="left"
-        sortField="title"
       />,
     );
 
@@ -94,9 +94,9 @@ describe('ItemCard', () => {
   it('renders nested structures as readable text', () => {
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title' })}
         item={item({ title: 'Arrival', crew: { director: 'Villeneuve' } })}
         side="left"
-        sortField="title"
         expanded
       />,
     );
@@ -214,7 +214,7 @@ describe('summary chips and details', () => {
   const film = { title: 'Arrival', year: 2016, director: 'Denis Villeneuve' };
 
   it('shows chosen fields as chips while details are closed', () => {
-    render(<ItemCard item={item(film)} side="left" sortField="title" summaryFields={['year']} />);
+    render(<ItemCard item={item(film)} side="left" layout={cardLayout({ labelField: 'title', summaryFields: ['year'] })} />);
 
     expect(screen.getByText('year: 2016')).toBeDefined();
   });
@@ -222,11 +222,9 @@ describe('summary chips and details', () => {
   it('draws a link field as a link that opens in a new tab', () => {
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title', summaryFields: ['site'], fieldRenderers: { site: 'link' } })}
         item={item({ ...film, site: 'https://example.com/arrival' })}
         side="left"
-        sortField="title"
-        summaryFields={['site']}
-        renderers={{ site: 'link' }}
       />,
     );
 
@@ -240,11 +238,9 @@ describe('summary chips and details', () => {
     const onChoose = vi.fn();
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title', summaryFields: ['site'], fieldRenderers: { site: 'link' } })}
         item={item({ ...film, site: 'https://example.com/arrival' })}
         side="left"
-        sortField="title"
-        summaryFields={['site']}
-        renderers={{ site: 'link' }}
         onChoose={onChoose}
       />,
     );
@@ -259,11 +255,9 @@ describe('summary chips and details', () => {
   it('pictures an image field beside the title', () => {
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title', summaryFields: ['poster'], fieldRenderers: { poster: 'image' } })}
         item={item({ ...film, poster: 'https://example.com/arrival.jpg' })}
         side="left"
-        sortField="title"
-        pictureFields={['poster']}
-        renderers={{ poster: 'image' }}
       />,
     );
 
@@ -273,11 +267,9 @@ describe('summary chips and details', () => {
   it('draws a rating as stars against its scale', () => {
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title', summaryFields: ['score'], fieldRenderers: { score: 'stars-10' } })}
         item={item({ ...film, score: 9.2 })}
         side="left"
-        sortField="title"
-        summaryFields={['score']}
-        renderers={{ score: 'stars-10' }}
       />,
     );
     expect(screen.getByRole('img', { name: '9.2/10' })).toBeDefined();
@@ -285,11 +277,11 @@ describe('summary chips and details', () => {
 
   it('leaves out a false badge and names a true one', () => {
     const { rerender } = render(
-      <ItemCard item={item({ ...film, explicit: false })} side="left" sortField="title" summaryFields={['explicit']} renderers={{ explicit: 'badge' }} />,
+      <ItemCard item={item({ ...film, explicit: false })} side="left" layout={cardLayout({ labelField: 'title', summaryFields: ['explicit'], fieldRenderers: { explicit: 'badge' } })} />,
     );
     expect(screen.queryByText(/explicit/)).toBeNull();
     rerender(
-      <ItemCard item={item({ ...film, explicit: true })} side="left" sortField="title" summaryFields={['explicit']} renderers={{ explicit: 'badge' }} />,
+      <ItemCard item={item({ ...film, explicit: true })} side="left" layout={cardLayout({ labelField: 'title', summaryFields: ['explicit'], fieldRenderers: { explicit: 'badge' } })} />,
     );
     expect(screen.getByText('explicit')).toBeDefined();
   });
@@ -297,11 +289,9 @@ describe('summary chips and details', () => {
   it('pictures a YouTube video by its thumbnail, opening the video', () => {
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title', summaryFields: ['trailer'], fieldRenderers: { trailer: 'youtube' } })}
         item={item({ ...film, trailer: 'https://youtu.be/dQw4w9WgXcQ' })}
         side="left"
-        sortField="title"
-        pictureFields={['trailer']}
-        renderers={{ trailer: 'youtube' }}
       />,
     );
     expect(screen.getByRole('link', { name: 'Watch Arrival on YouTube' }).getAttribute('href')).toBe(
@@ -318,11 +308,9 @@ describe('ItemCard picture slot and new lines', () => {
     const user = userEvent.setup();
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title', summaryFields: ['cover', 'shots'], fieldRenderers: { cover: 'image', shots: 'image-gallery' } })}
         item={item({ ...game, cover: 'https://example.com/cover.jpg', shots: ['https://example.com/1.png', 'https://example.com/2.png'] })}
         side="left"
-        sortField="title"
-        pictureFields={['cover', 'shots']}
-        renderers={{ cover: 'image', shots: 'image-gallery' }}
         onChoose={onChoose}
       />,
     );
@@ -339,7 +327,7 @@ describe('ItemCard picture slot and new lines', () => {
 
   it('shows one picture without a pager', () => {
     render(
-      <ItemCard item={item(game)} side="left" sortField="title" pictureFields={['steam']} renderers={{ steam: 'steam-header' }} />,
+      <ItemCard item={item(game)} side="left" layout={cardLayout({ labelField: 'title', summaryFields: ['steam'], fieldRenderers: { steam: 'steam-header' } })} />,
     );
     expect(screen.queryByRole('button', { name: /picture of Portal/ })).toBeNull();
     expect(screen.getByRole('link', { name: 'Open Portal on Steam' }).getAttribute('href')).toBe(
@@ -352,15 +340,17 @@ describe('ItemCard picture slot and new lines', () => {
       <ItemCard
         item={item({ title: 'Office', priority: 'High', colour: '#336699', country: 'CA', rent: 2400, address: '100 Queen St W' })}
         side="left"
-        sortField="title"
-        summaryFields={['priority', 'colour', 'country', 'rent', 'address']}
-        renderers={{
-          priority: 'pills',
-          colour: 'color-swatch',
-          country: 'flag',
-          rent: 'currency-CAD',
-          address: 'location',
-        }}
+        layout={cardLayout({
+          labelField: 'title',
+          summaryFields: ['priority', 'colour', 'country', 'rent', 'address'],
+          fieldRenderers: {
+            priority: 'pills',
+            colour: 'color-swatch',
+            country: 'flag',
+            rent: 'currency-CAD',
+            address: 'location',
+          },
+        })}
       />,
     );
     expect(screen.getByText('High')).toBeDefined();
@@ -375,11 +365,9 @@ describe('ItemCard picture slot and new lines', () => {
     const user = userEvent.setup();
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title', summaryFields: ['notes'], fieldRenderers: { notes: 'long-text' } })}
         item={item({ title: 'Plan', notes: 'word '.repeat(60) })}
         side="left"
-        sortField="title"
-        summaryFields={['notes']}
-        renderers={{ notes: 'long-text' }}
         onChoose={onChoose}
       />,
     );

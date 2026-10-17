@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { ComparisonDeck } from "@/components/comparison/ComparisonDeck";
+import { cardLayout } from "@/lib/renderers";
 import type { ListItem } from "@/types/list";
 
 const NOW = "2026-08-15T12:00:00.000Z";
@@ -544,7 +545,7 @@ describe("details, shared by the pair", () => {
           updatedAt: NOW,
         },
       },
-      sortField: "title",
+      layout: cardLayout({ labelField: "title" }),
     });
   }
 

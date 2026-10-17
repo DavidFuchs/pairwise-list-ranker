@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ItemCard } from '@/components/comparison/ItemCard';
-import type { ItemCardProps } from '@/components/comparison/ItemCard';
+import { cardLayout } from '@/lib/renderers';
 import { isExpired, setDeezerTransport } from '@/lib/preview/deezerPreview';
 import type { ListItem } from '@/types/list';
 
@@ -67,11 +67,9 @@ describe('Apple Music preview on a card', () => {
 
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title', summaryFields: ['artist', 'apple_music_id'], fieldRenderers: { apple_music_id: 'apple-music-preview' } })}
         item={song('1001')}
         side="left"
-        sortField="title"
-        summaryFields={['artist']}
-        mediaFields={['apple_music_id']} renderers={{ apple_music_id: 'apple-music-preview' }}
         onChoose={onChoose}
       />,
     );
@@ -92,11 +90,9 @@ describe('Apple Music preview on a card', () => {
 
     render(
       <ItemCard
+        layout={cardLayout({ labelField: 'title', summaryFields: ['artist', 'apple_music_id'], fieldRenderers: { apple_music_id: 'apple-music-preview' } })}
         item={song('2002')}
         side="left"
-        sortField="title"
-        summaryFields={['artist']}
-        mediaFields={['apple_music_id']} renderers={{ apple_music_id: 'apple-music-preview' }}
       />,
     );
 
@@ -118,7 +114,7 @@ describe('Apple Music preview on a card', () => {
     );
 
     render(
-      <ItemCard item={song('3003')} side="left" sortField="title" mediaFields={['apple_music_id']} renderers={{ apple_music_id: 'apple-music-preview' }} />,
+      <ItemCard item={song('3003')} side="left" layout={cardLayout({ labelField: 'title', summaryFields: ['apple_music_id'], fieldRenderers: { apple_music_id: 'apple-music-preview' } })} />,
     );
 
     expect(await screen.findByRole('button', { name: 'Play preview of Song' })).toBeDefined();
@@ -129,10 +125,11 @@ describe('several clip sources on a card', () => {
   function track(apple: string, deezer: string): ListItem {
     return { ...song(apple), value: { title: 'Song', apple_music_id: apple, deezer_id: deezer } };
   }
-  const both: Pick<ItemCardProps, 'mediaFields' | 'renderers'> = {
-    mediaFields: ['apple_music_id', 'deezer_id'],
-    renderers: { apple_music_id: 'apple-music-preview', deezer_id: 'deezer-preview' },
-  };
+  const both = cardLayout({
+    labelField: 'title',
+    summaryFields: ['apple_music_id', 'deezer_id'],
+    fieldRenderers: { apple_music_id: 'apple-music-preview', deezer_id: 'deezer-preview' },
+  });
 
   it('plays from the first catalogue that has a clip, asking the next only when it has none', async () => {
     mockLookup({});
@@ -143,7 +140,7 @@ describe('several clip sources on a card', () => {
     });
     const user = userEvent.setup();
 
-    render(<ItemCard item={track('4004', '77')} side="left" sortField="title" {...both} />);
+    render(<ItemCard item={track('4004', '77')} side="left" layout={both} />);
 
     await user.click(await screen.findByRole('button', { name: 'Play preview of Song' }));
     expect(asked).toEqual(['https://api.deezer.com/track/77']);
@@ -158,7 +155,7 @@ describe('several clip sources on a card', () => {
       return { preview: 'https://cdn.example/deezer.mp3' };
     });
 
-    render(<ItemCard item={track('5005', '78')} side="left" sortField="title" {...both} />);
+    render(<ItemCard item={track('5005', '78')} side="left" layout={both} />);
 
     expect(await screen.findByRole('button', { name: 'Play preview of Song' })).toBeDefined();
     expect(asked).toEqual([]);
@@ -168,7 +165,7 @@ describe('several clip sources on a card', () => {
     const calls = mockLookup({});
     setDeezerTransport(async () => ({ error: { type: 'DataException' } }));
 
-    render(<ItemCard item={track('6006', '79')} side="left" sortField="title" {...both} />);
+    render(<ItemCard item={track('6006', '79')} side="left" layout={both} />);
 
     await waitFor(() => expect(calls.length).toBe(2));
     await new Promise((resolve) => setTimeout(resolve, 0));

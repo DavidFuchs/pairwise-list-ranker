@@ -19,18 +19,18 @@ about how many places one change has to touch.
 | 4 | Stop persisting each entry two or three times | Performance | M | Open |
 | 5 | Cache `Intl` formatters | Performance | S | Done |
 | 6 | Cut needless re-renders (rows, cards, field picker) | Performance | S-M | Open |
-| 7 | One registry entry per field renderer | Modifiability | M | Open |
+| 7 | One registry entry per field renderer | Modifiability | M | Done |
 | 8 | One model for every list, active or parked | Modifiability | L | Open |
 | 9 | One collision-free path key | Correctness | S | Done |
 | 10 | Remove duplicated helpers and flows | Readability | S | Done |
 | 11 | Move derived state out of the screens | Readability | M | Open |
-| 12 | Pass the card layout as one prop | Modifiability | S | Open |
+| 12 | Pass the card layout as one prop | Modifiability | S | Done |
 | 13 | Small cleanups: stale comments, unused store getters | Readability | S | Done |
 | 14 | Add a formatter so quote style stops drifting | Readability | S | Open |
 | 15 | Give "no list chosen" its own key in the draft hook | Correctness | S | Open |
 | 16 | Fix the two end-to-end tests that already fail on `main` | Tests | S | Done |
 
-Suggested order: the small items first, then 7 and 12, then 2, and finally 8
+Suggested order: the small items first, then 7 and 12 (both done), then 2, and finally 8
 together with 4, since both change the snapshot format and can share one
 version bump and migration.
 
@@ -101,9 +101,19 @@ Adding a renderer means editing `FIELD_RENDERERS`, `SPECIAL_RENDERERS`, the
 `formatValue` switch, the `rendererCaveat` switch, `rendererNote`, `slotOf`,
 `picturesOf` or `previewSourceOf`, and the branches in `FieldValue.tsx`.
 
-Fix: one definition per renderer (`id`, `label`, `hint`, `slot`, `accepts`,
-`format`, and optional `caveat`, `pictures`, `preview`) with a component map
-beside it, splitting the 800-line `lib/renderers.ts` into a folder.
+Fix: `lib/renderers/` is now three files:
+- `values.ts` reads values (links, dates, places, flags, colours, ratings,
+  money) and knows nothing of renderers.
+- `registry.ts` holds one entry per renderer: label, hint, slot, `accepts`,
+  `format`, and optional `note`, `caveat`, `pictures` and `preview`. Ratings
+  and currency are families whose variants are ids of their own. The entries
+  are a `Record` over every non-family id, so a renderer without one does not
+  compile, and `rendererRegistry.test.ts` checks each id has exactly one home.
+- `index.ts` keeps the public API every `@/lib/renderers` import already used.
+
+`FieldValue.tsx` draws from a map of views, one per renderer that draws more
+than text, in place of its if-chain. A new renderer is now its id in
+`FIELD_RENDERERS`, an entry in the registry, and a view only if it needs one.
 
 ### 8. One model for every list
 
@@ -144,8 +154,12 @@ and makes the logic unit-testable.
 
 `sortField`, `summaryFields`, `renderers`, `pictureFields` and `mediaFields`
 travel together through `ComparisonDeck`, `ItemCard`, `PreviewPane` and
-`RankedListPreview`. Passing `layoutSummary`'s result as one `layout` prop makes
-a new slot a one-line change.
+`RankedListPreview`.
+
+Fix: `cardLayout(roles)` builds one `CardLayout` (the title field plus
+`layoutSummary`'s result), and those components take it as a single `layout`
+prop, defaulting to `EMPTY_LAYOUT`. The component tests now build layouts with
+`cardLayout` too, so they describe a card the way a user sets one up.
 
 ### 13. Small cleanups
 

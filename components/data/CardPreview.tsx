@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ItemCard } from '@/components/comparison/ItemCard';
-import { layoutSummary } from '@/lib/renderers';
+import { cardLayout } from '@/lib/renderers';
 import { colors, fonts, radius, space } from '@/lib/theme';
 import type { ComplexItemValue, ListItem } from '@/types/list';
 import type { FieldRoles } from '@/types/source';
@@ -45,7 +45,7 @@ export function CardPreview({ objects, roles, fill = false }: CardPreviewProps) 
 
   // A list edited down to fewer entries keeps the preview on one that exists.
   const start = Math.min(index, objects.length - 1);
-  const summary = layoutSummary(roles);
+  const layout = cardLayout(roles);
   const step = (by: -1 | 1) => setIndex((start + by + objects.length) % objects.length);
 
   // Every card is drawn and measured, but only those that fit whole are seen:
@@ -119,11 +119,7 @@ export function CardPreview({ objects, roles, fill = false }: CardPreviewProps) 
                 <ItemCard
                   item={previewItem(objects[at]!, at)}
                   side="left"
-                  sortField={roles.labelField}
-                  summaryFields={summary.plainFields}
-                  renderers={summary.renderers}
-                  pictureFields={summary.pictureFields}
-                  mediaFields={summary.mediaFields}
+                  layout={layout}
                 />
               </View>
             );

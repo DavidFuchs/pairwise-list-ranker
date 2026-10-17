@@ -1,20 +1,22 @@
 import { useLayoutEffect, useRef, useState } from 'react';
+import type { ReactElement } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { StyleProp, TextStyle } from 'react-native';
 
 import { FieldLink } from '@/components/preview/FieldLink';
 import {
-  pillTone,
   formatValue,
   isColor,
   isLink,
   isRating,
   locationText,
   mapUrl,
+  pillTone,
   ratingFraction,
   ratingScale,
   ratingText,
 } from '@/lib/renderers';
+import type { FixedRenderer } from '@/lib/renderers/registry';
 import { summaryText } from '@/lib/state/summary';
 import { colors, fonts, radius, space } from '@/lib/theme';
 import type { FieldRenderer, RatingScale } from '@/types/source';
@@ -74,33 +76,46 @@ export interface FieldValueProps {
   textStyle?: StyleProp<TextStyle>;
 }
 
+interface ViewProps {
+  field: string;
+  value: unknown;
+  renderer: FieldRenderer;
+  /** The `field:` key to draw before the value, or null without one. */
+  fieldKey: ReactElement | null;
+  withKey: boolean;
+  textStyle?: StyleProp<TextStyle>;
+}
+
 /**
- * One field's value, drawn the way its renderer says. Picture and play-button
- * renderers have places of their own on a card, so they are not drawn here.
- * Returns null when the renderer has nothing to show, like a false badge.
+ * How one renderer draws a line. Undefined when it cannot draw this value,
+ * which then reads as plain text; null when it draws nothing at all.
  */
-export function FieldValue({ field, value, renderer, withKey = false, textStyle }: FieldValueProps) {
-  const key = withKey ? <Text style={textStyle}>{`${field}:`}</Text> : null;
+type LineView = (props: ViewProps) => ReactElement | null | undefined;
+
+const RatingView: LineView = ({ value, renderer, fieldKey }) => {
   const scale = ratingScale(renderer);
+  if (scale === undefined || typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+  return (
+    <View style={styles.row}>
+      {fieldKey}
+      {isRating(renderer, 'stars') ? <StarRating value={value} scale={scale} /> : <RatingBar value={value} scale={scale} />}
+    </View>
+  );
+};
 
-  if (renderer === 'badge') {
-    if (value !== true) return value === false ? null : <Plain field={field} value={value} withKey={withKey} textStyle={textStyle} />;
-    return <Text style={styles.badge}>{field}</Text>;
-  }
+const LinkView: LineView = ({ field, value, withKey, textStyle }) =>
+  isLink(value) ? <FieldLink url={value} prefix={withKey ? `${field}:` : undefined} textStyle={textStyle} /> : undefined;
 
-  if (scale !== undefined && typeof value === 'number' && Number.isFinite(value)) {
-    return (
-      <View style={styles.row}>
-        {key}
-        {isRating(renderer, 'stars') ? <StarRating value={value} scale={scale} /> : <RatingBar value={value} scale={scale} />}
-      </View>
-    );
-  }
-
-  if (renderer === 'tags' && Array.isArray(value)) {
-    return (
+/** Line renderers that draw more than text. Any other renderer reads as its formatted text. */
+const VIEWS: Partial<Record<FixedRenderer, LineView>> = {
+  badge: ({ field, value }) => {
+    if (value === false) return null;
+    return value === true ? <Text style={styles.badge}>{field}</Text> : undefined;
+  },
+  tags: ({ value, fieldKey, textStyle }) =>
+    Array.isArray(value) ? (
       <View style={[styles.row, styles.wrap]}>
-        {key}
+        {fieldKey}
         {value.length === 0 ? (
           <Text style={textStyle}>–</Text>
         ) : (
@@ -111,16 +126,15 @@ export function FieldValue({ field, value, renderer, withKey = false, textStyle 
           ))
         )}
       </View>
-    );
-  }
-
-  if (renderer === 'pills' && typeof value === 'string' && value.trim() !== '') {
+    ) : undefined,
+  pills: ({ value, fieldKey }) => {
+    if (typeof value !== 'string' || value.trim() === '') return undefined;
     const tone = pillTone(value);
     return (
       // Wraps like tags: a narrow card moves the pill under its key rather
       // than crushing it to a column of letters.
       <View style={[styles.row, styles.wrap]}>
-        {key}
+        {fieldKey}
         <Text
           style={[
             styles.pill,
@@ -135,35 +149,46 @@ export function FieldValue({ field, value, renderer, withKey = false, textStyle 
         </Text>
       </View>
     );
-  }
-
-  if (renderer === 'color-swatch' && isColor(value)) {
-    return (
+  },
+  'color-swatch': ({ value, fieldKey, textStyle }) =>
+    isColor(value) ? (
       <View style={styles.row}>
-        {key}
+        {fieldKey}
         <View style={[styles.swatch, { backgroundColor: value.trim() }]} role="img" aria-label={value.trim()} />
         <Text style={[textStyle, styles.swatchText]}>{value.trim()}</Text>
       </View>
-    );
-  }
-
-  if (renderer === 'location') {
+    ) : undefined,
+  location: ({ field, value, withKey, textStyle }) => {
     const text = locationText(value);
     const url = mapUrl(value);
-    if (text !== undefined && url !== undefined) {
-      return <FieldLink url={url} text={`📍 ${text}`} prefix={withKey ? `${field}:` : undefined} textStyle={textStyle} />;
-    }
-  }
+    if (text === undefined || url === undefined) return undefined;
+    return <FieldLink url={url} text={`📍 ${text}`} prefix={withKey ? `${field}:` : undefined} textStyle={textStyle} />;
+  },
+  'long-text': ({ field, value, withKey, textStyle }) =>
+    typeof value === 'string' ? <LongText field={field} value={value} withKey={withKey} textStyle={textStyle} /> : undefined,
+  link: LinkView,
+  image: LinkView,
+  youtube: LinkView,
+};
 
-  if (renderer === 'long-text' && typeof value === 'string') {
-    return <LongText field={field} value={value} withKey={withKey} textStyle={textStyle} />;
-  }
+function viewFor(renderer: FieldRenderer): LineView | undefined {
+  return ratingScale(renderer) !== undefined ? RatingView : VIEWS[renderer as FixedRenderer];
+}
 
-  if ((renderer === 'link' || renderer === 'image' || renderer === 'youtube') && isLink(value)) {
-    return <FieldLink url={value} prefix={withKey ? `${field}:` : undefined} textStyle={textStyle} />;
-  }
-
-  return <Plain field={field} value={value} renderer={renderer} withKey={withKey} textStyle={textStyle} />;
+/**
+ * One field's value, drawn the way its renderer says. Picture and play-button
+ * renderers have places of their own on a card, so they are not drawn here.
+ * Returns null when the renderer has nothing to show, like a false badge.
+ */
+export function FieldValue({ field, value, renderer, withKey = false, textStyle }: FieldValueProps) {
+  const fieldKey = withKey ? <Text style={textStyle}>{`${field}:`}</Text> : null;
+  const view = renderer === undefined ? undefined : viewFor(renderer);
+  const drawn = view?.({ field, value, renderer: renderer!, fieldKey, withKey, textStyle });
+  return drawn === undefined ? (
+    <Plain field={field} value={value} renderer={renderer} withKey={withKey} textStyle={textStyle} />
+  ) : (
+    drawn
+  );
 }
 
 /** Prose shows this many lines before folding behind a More. */

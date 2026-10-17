@@ -6,21 +6,19 @@ import type { SessionControlsProps } from '@/components/preview/SessionControls'
 import { PreviewTabs } from '@/components/preview/PreviewTabs';
 import { RankedListPreview } from '@/components/preview/RankedListPreview';
 import { ReadOnlyCode } from '@/components/preview/ReadOnlyCode';
+import type { CardLayout } from '@/lib/renderers';
 import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
 import type { ListItem } from '@/types/list';
 import type { RankedItem } from '@/types/ranking';
-import type { FieldRenderer, PreviewTab, SourceFormat } from '@/types/source';
+import type { PreviewTab, SourceFormat } from '@/types/source';
 
 export interface PreviewPaneProps {
   tab: PreviewTab;
   tabs: PreviewTab[];
   onTabChange: (tab: PreviewTab) => void;
   ranking: RankedItem<ListItem>[];
-  labelField?: string;
-  summaryFields?: string[];
-  renderers?: Record<string, FieldRenderer>;
-  pictureFields?: string[];
-  mediaFields?: string[];
+  /** Which fields the ranked rows read, and how; see cardLayout. */
+  layout?: CardLayout;
   /** The user's document, ranked and serialized for the active tab. */
   exportText: string;
   filename: string;
@@ -42,11 +40,7 @@ export function PreviewPane({
   tabs,
   onTabChange,
   ranking,
-  labelField,
-  summaryFields,
-  renderers,
-  pictureFields,
-  mediaFields,
+  layout,
   exportText,
   filename,
   format,
@@ -75,7 +69,7 @@ export function PreviewPane({
 
       {tab === 'ranked' ? (
         <View style={styles.body} accessibilityLabel="Current ranking" role="region">
-          <RankedListPreview ranking={ranking} sortField={labelField} summaryFields={summaryFields} renderers={renderers} pictureFields={pictureFields} mediaFields={mediaFields} onReorder={onReorder} />
+          <RankedListPreview ranking={ranking} layout={layout} onReorder={onReorder} />
         </View>
       ) : (
         <View style={styles.body}>

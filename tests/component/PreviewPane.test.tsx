@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PreviewPane } from '@/components/preview/PreviewPane';
+import { cardLayout } from '@/lib/renderers';
 import type { ListItem } from '@/types/list';
 import type { RankedItem } from '@/types/ranking';
 
@@ -37,7 +38,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof PreviewPane>> = {}
     tabs: ['ranked', 'yaml', 'json'],
     onTabChange: vi.fn(),
     ranking: ranked(),
-    labelField: 'title',
+    layout: cardLayout({ labelField: 'title' }),
     exportText: 'movies:\n  - title: Arrival\n',
     filename: 'films-2026-08-16.yaml',
     format: 'yaml',
