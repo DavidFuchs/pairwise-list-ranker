@@ -49,7 +49,7 @@ It falls short in three places:
 | 15 | Smooth the theme switch | Polish | Low | Done |
 | 16 | Keep rating bars inside narrow cards | Polish | Low | Done |
 | 17 | Match the Start over prompt's spoken names to its labels | Accessibility | Low | Done |
-| 18 | Calmer placement for Start over | Trust | Low | Open |
+| 18 | Calmer placement for Start over | Trust | Low | Done |
 | 19 | Stop the setup panel scrolling inside the page on phones | Phone | Medium | Done |
 
 Suggested order: 1 and 4 first (small, and one is a bug), then 5, 7 and 2,
@@ -161,6 +161,9 @@ switch. It is protected by a confirmation, but it is the most prominent button
 in the header for the action people want least.
 
 Fix: a quieter style, or a place in a small overflow menu with session actions.
+
+Done: Start over is a plain header button like "How it works". The red is kept
+for its confirmation, where the list is actually at stake.
 
 ## Speed
 

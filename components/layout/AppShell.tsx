@@ -270,10 +270,12 @@ export function AppShell({
                 />
               </>
             ) : (
+              // Quiet until pressed: the red belongs to the confirmation, where
+              // the list is actually at stake, not to every visit to the page.
               <Button
                 label="Start over"
                 accessibilityLabel="Start over"
-                variant="danger"
+                variant="ghost"
                 size="sm"
                 onPress={() => setConfirmingReset(true)}
               />
