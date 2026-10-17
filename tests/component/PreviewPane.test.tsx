@@ -121,3 +121,24 @@ describe('PreviewPane export', () => {
     expect(screen.getByRole('button', { name: 'Save this session to a file' })).toBeDefined();
   });
 });
+
+describe('PreviewPane before any decision', () => {
+  it('says the order is only the one given, and hides the ratings', () => {
+    setup({ decided: false });
+
+    expect(screen.getByText(/^Not ranked yet: this is the order you gave/)).toBeDefined();
+    expect(screen.queryByText('1500')).toBeNull();
+  });
+
+  it('calls a list marked already ranked the user’s own order', () => {
+    setup({ decided: false, trustedOrder: true });
+
+    expect(screen.getByText(/^Your order, as given/)).toBeDefined();
+  });
+
+  it('shows ratings once there is a decision behind them', () => {
+    setup({ decided: true });
+
+    expect(screen.getAllByText('1500').length).toBeGreaterThan(0);
+  });
+});

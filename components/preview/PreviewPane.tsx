@@ -19,6 +19,13 @@ export interface PreviewPaneProps {
   ranking: RankedItem<ListItem>[];
   /** Which fields the ranked rows read, and how; see cardLayout. */
   layout?: CardLayout;
+  /**
+   * Whether the list has any decision behind it. Until it does, the ranked
+   * view is only the order the list arrived in, and says so.
+   */
+  decided?: boolean;
+  /** True when the user said the list arrived already ranked, so its order is theirs to trust. */
+  trustedOrder?: boolean;
   /** The user's document, ranked and serialized for the active tab. */
   exportText: string;
   /**
@@ -46,6 +53,8 @@ export function PreviewPane({
   onTabChange,
   ranking,
   layout,
+  decided = true,
+  trustedOrder = false,
   exportText,
   getExportText,
   filename,
@@ -59,7 +68,13 @@ export function PreviewPane({
       <View style={styles.header}>
         <Text style={styles.title}>Your data</Text>
         <Text style={styles.subtitle}>
-          {tab === 'ranked' ? 'Drag a row to arrange it' : 'Your document, in the new order'}
+          {tab !== 'ranked'
+            ? 'Your document, in the new order'
+            : decided
+              ? 'Drag a row to arrange it'
+              : trustedOrder
+                ? 'Your order, as given. Choose between pairs to refine it, or drag a row.'
+                : 'Not ranked yet: this is the order you gave. Choose between pairs, or drag a row.'}
         </Text>
       </View>
 
@@ -80,7 +95,7 @@ export function PreviewPane({
 
       {tab === 'ranked' ? (
         <View style={styles.body} accessibilityLabel="Current ranking" role="region">
-          <RankedListPreview ranking={ranking} layout={layout} onReorder={onReorder} />
+          <RankedListPreview ranking={ranking} layout={layout} decided={decided} onReorder={onReorder} />
         </View>
       ) : (
         <View style={styles.body}>

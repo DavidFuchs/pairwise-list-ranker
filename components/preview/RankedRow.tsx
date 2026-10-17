@@ -23,6 +23,8 @@ export interface RankedRowProps {
   showImage?: boolean;
   imageValue?: unknown;
   rating: number;
+  /** False until the list has a decision behind it, when every rating is the same starting guess. */
+  showRating?: boolean;
   /** True while this row is the one being dragged. */
   dragging: boolean;
   /** Draw the drop indicator above this row, or below it for the last gap. */
@@ -46,6 +48,7 @@ export const RankedRow = memo(function RankedRow({
   showImage = false,
   imageValue,
   rating,
+  showRating = true,
   dragging,
   insertBefore = false,
   insertAfter = false,
@@ -109,7 +112,7 @@ export const RankedRow = memo(function RankedRow({
 
       <PreviewButton sources={previewSources} label={label} compact />
 
-      <Text style={styles.rating}>{Math.round(rating)}</Text>
+      {showRating && <Text style={styles.rating}>{Math.round(rating)}</Text>}
     </Animated.View>
   );
 });

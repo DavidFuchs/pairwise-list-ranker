@@ -204,6 +204,8 @@ export default function RankScreen() {
           onTabChange={(tab) => listStore.getState().setPreviewTab(tab)}
           ranking={view.ranking}
           layout={layout}
+          decided={comparisonEvents.length > 0}
+          trustedOrder={alreadyRanked}
           exportText={exportText}
           getExportText={() => selectExportText(workspace, format)}
           filename={exportFilename(downloadName(workspace.source), format)}

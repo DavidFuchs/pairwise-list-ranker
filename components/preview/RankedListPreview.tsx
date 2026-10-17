@@ -15,6 +15,8 @@ export interface RankedListPreviewProps {
   ranking: RankedItem<ListItem>[];
   /** Which fields each row reads, and how; see cardLayout. */
   layout?: CardLayout;
+  /** Whether any decision has been made, so the ratings mean something yet. */
+  decided?: boolean;
   onReorder: (itemId: string, nextOrder: string[]) => void;
 }
 
@@ -31,7 +33,12 @@ const ROW_PITCH = ROW_HEIGHT + space.xs;
  * recorded as a placement in the comparison history: the item lands exactly
  * where it was dropped, nothing else moves, and nothing is discarded.
  */
-export function RankedListPreview({ ranking, layout = EMPTY_LAYOUT, onReorder }: RankedListPreviewProps) {
+export function RankedListPreview({
+  ranking,
+  layout = EMPTY_LAYOUT,
+  decided = true,
+  onReorder,
+}: RankedListPreviewProps) {
   const orderedIds = useMemo(() => ranking.map((entry) => entry.item.id), [ranking]);
   /**
    * Nothing moves until the drop. The rows hold still and a line marks the gap
@@ -175,6 +182,7 @@ export function RankedListPreview({ ranking, layout = EMPTY_LAYOUT, onReorder }:
                 showImage={layout.pictureFields.length > 0}
                 imageValue={content.imageValue}
                 rating={entry.state.rating}
+                showRating={decided}
                 dragging={dragging?.id === id}
                 insertBefore={insertionGap === index}
                 insertAfter={insertionGap === orderedIds.length && index === orderedIds.length - 1}

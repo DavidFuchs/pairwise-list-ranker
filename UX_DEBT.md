@@ -39,7 +39,7 @@ It falls short in three places:
 | 5 | Keep the controls still from one pair to the next | Speed | High | Done |
 | 6 | Fit the ranking screen in a desktop window | Speed | Medium | Done |
 | 7 | Make taking the result away obvious | Flow | High | Done |
-| 8 | Do not present an order before there is one | Clarity | Medium | Open |
+| 8 | Do not present an order before there is one | Clarity | Medium | Done |
 | 9 | Say what the app does on the first screen | Onboarding | Medium | Open |
 | 10 | Show field names as people would write them | Clarity | Medium | Open |
 | 11 | Say a shared-slot tip once, not under every field | Clarity | Low | Open |
@@ -233,6 +233,11 @@ stay on every row afterwards, where they mean little to most people.
 
 Fix: show "Not ranked yet" (or no numbers) until the first comparison, and
 show ratings only on hover or in details.
+
+Done: until the list has a decision, rows show no rating and the sidebar says
+"Not ranked yet: this is the order you gave", or "Your order, as given" for a
+list marked already ranked. Positions stay, since they are what a drag moves.
+Ratings appear with the first decision.
 
 ### 9. The first screen does not say what the app does
 
