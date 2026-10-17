@@ -47,7 +47,7 @@ It falls short in three places:
 | 13 | Avoid the layout jump when data first arrives | Polish | Low | Open |
 | 14 | Plainer progress wording | Clarity | Low | Done |
 | 15 | Smooth the theme switch | Polish | Low | Open |
-| 16 | Keep rating bars inside narrow cards | Polish | Low | Open |
+| 16 | Keep rating bars inside narrow cards | Polish | Low | Done |
 | 17 | Match the Start over prompt's spoken names to its labels | Accessibility | Low | Done |
 | 18 | Calmer placement for Start over | Trust | Low | Open |
 | 19 | Stop the setup panel scrolling inside the page on phones | Phone | Medium | Done |
@@ -316,6 +316,10 @@ On a phone, the `rotten_tomatoes` bar's percentage ("91%") sits outside the
 card edge.
 
 Fix: let the bar shrink, or move the figure under the bar below a width.
+
+Done: a rating's row wraps like tags and pills do, so on a narrow card the bar
+or stars move under the field name. With details open at 390px, nothing runs
+past either card.
 
 ## Accessibility
 

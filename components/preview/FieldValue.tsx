@@ -105,7 +105,9 @@ const RatingView: LineView = ({ value, renderer, fieldKey }) => {
   const scale = ratingScale(renderer);
   if (scale === undefined || typeof value !== 'number' || !Number.isFinite(value)) return undefined;
   return (
-    <View style={styles.row}>
+    // Wraps like tags: on a narrow card the stars or bar move under the key
+    // rather than running past the card's edge.
+    <View style={[styles.row, styles.wrap]}>
       {fieldKey}
       {isRating(renderer, 'stars') ? (
         <StarRating value={value} scale={scale} />
