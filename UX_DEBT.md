@@ -46,7 +46,7 @@ It falls short in three places:
 | 12 | Make the keyboard shortcuts findable | Speed | Medium | Done |
 | 13 | Avoid the layout jump when data first arrives | Polish | Low | Open |
 | 14 | Plainer progress wording | Clarity | Low | Done |
-| 15 | Smooth the theme switch | Polish | Low | Open |
+| 15 | Smooth the theme switch | Polish | Low | Done |
 | 16 | Keep rating bars inside narrow cards | Polish | Low | Done |
 | 17 | Match the Start over prompt's spoken names to its labels | Accessibility | Low | Done |
 | 18 | Calmer placement for Start over | Trust | Low | Open |
@@ -309,6 +309,11 @@ Switching between light and dark briefly shows buttons such as "Edit data" and
 
 Fix: switch theme colours without a transition, or transition background and
 text together.
+
+Done: switching the theme, from the toggle or by the operating system, sets
+`data-theme-switching` on the page for one frame, during which transitions are
+off. Thirty milliseconds after pressing the dark toggle, a button already
+shows its final colour.
 
 ### 16. Rating bars overflow narrow cards
 

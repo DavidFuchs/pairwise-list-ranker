@@ -245,6 +245,13 @@ html, body { background-color: var(--canvas); }
   background-color: var(--danger-soft);
 }
 
+/* Set for a frame while the theme changes, so colours swap rather than fade. */
+[data-theme-switching] *,
+[data-theme-switching] *::before,
+[data-theme-switching] *::after {
+  transition: none !important;
+}
+
 /* Header extras that give way on a phone, so the actions fit on one row. */
 @media (max-width: 479px) {
   [data-wide-only] { display: none !important; }
