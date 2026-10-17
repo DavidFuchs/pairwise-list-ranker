@@ -233,7 +233,7 @@ export function AppShell({
               ))}
           </View>
 
-          <View style={styles.headerActions}>
+          <View style={styles.headerActions} dataSet={{ headerActions: 'true' }}>
             {saveWarning !== undefined && (
               <Text role="status" style={styles.saveWarning}>
                 {saveWarning}

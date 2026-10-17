@@ -252,9 +252,17 @@ html, body { background-color: var(--canvas); }
   transition: none !important;
 }
 
-/* Header extras that give way on a phone, so the actions fit on one row. */
+/*
+ * Header extras that give way on a phone, so the actions fit on one row. The
+ * buttons' side padding narrows too: a wider fallback font (DejaVu Sans on
+ * many Linux systems) otherwise pushes "Start over" onto a row of its own.
+ */
 @media (max-width: 479px) {
   [data-wide-only] { display: none !important; }
+  [data-header-actions] > [role="button"] {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
 }
 
 /*
