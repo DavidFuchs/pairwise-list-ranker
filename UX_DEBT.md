@@ -38,7 +38,7 @@ It falls short in three places:
 | 4 | Make Start over say what is lost, offer to save, and disarm itself | Trust | High | Done |
 | 5 | Keep the controls still from one pair to the next | Speed | High | Done |
 | 6 | Fit the ranking screen in a desktop window | Speed | Medium | Open |
-| 7 | Make taking the result away obvious | Flow | High | Open |
+| 7 | Make taking the result away obvious | Flow | High | Done |
 | 8 | Do not present an order before there is one | Clarity | Medium | Open |
 | 9 | Say what the app does on the first screen | Onboarding | Medium | Open |
 | 10 | Show field names as people would write them | Clarity | Medium | Open |

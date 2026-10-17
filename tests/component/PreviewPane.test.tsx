@@ -97,3 +97,27 @@ describe('PreviewPane', () => {
     expect(onTabChange).toHaveBeenCalledWith('json');
   });
 });
+
+describe('PreviewPane export', () => {
+  it('exports from the ranked view, building the file only when asked', async () => {
+    const getExportText = vi.fn(() => 'movies:\n  - title: Arrival\n');
+    const writeText = vi.fn(() => Promise.resolve());
+    const { user } = setup({ tab: 'ranked', exportText: '', getExportText });
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+
+    expect(screen.getByRole('button', { name: /^Download ranked list/ })).toBeDefined();
+    expect(getExportText).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: /^Copy the ranked/ }));
+
+    expect(getExportText).toHaveBeenCalledTimes(1);
+    expect(writeText).toHaveBeenCalledWith('movies:\n  - title: Arrival\n');
+  });
+
+  it('keeps the session controls, set apart as a way to carry on later', () => {
+    setup({ sessionFile: { onSave: vi.fn(() => ''), onOpen: vi.fn(async () => null) } });
+
+    expect(screen.getByText('Keep working later, here or in another browser')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Save this session to a file' })).toBeDefined();
+  });
+});

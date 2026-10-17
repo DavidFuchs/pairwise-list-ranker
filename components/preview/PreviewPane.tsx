@@ -21,6 +21,11 @@ export interface PreviewPaneProps {
   layout?: CardLayout;
   /** The user's document, ranked and serialized for the active tab. */
   exportText: string;
+  /**
+   * Makes the same text on demand, for exporting from the ranked view, which
+   * does not keep it up to date. Falls back to exportText.
+   */
+  getExportText?: () => string;
   filename: string;
   format: SourceFormat;
   /** Items deleted during comparison, which the export leaves out. */
@@ -42,6 +47,7 @@ export function PreviewPane({
   ranking,
   layout,
   exportText,
+  getExportText,
   filename,
   format,
   removedCount,
@@ -63,9 +69,14 @@ export function PreviewPane({
         </Text>
       )}
 
-      <PreviewTabs tab={tab} tabs={tabs} onChange={onTabChange} />
+      {/* On every tab: taking the result away should never need a detour. */}
+      <ExportToolbar
+        format={format}
+        text={tab === 'ranked' ? (getExportText ?? exportText) : exportText}
+        filename={filename}
+      />
 
-      {sessionFile !== undefined && <SessionControls {...sessionFile} />}
+      <PreviewTabs tab={tab} tabs={tabs} onChange={onTabChange} />
 
       {tab === 'ranked' ? (
         <View style={styles.body} accessibilityLabel="Current ranking" role="region">
@@ -73,8 +84,14 @@ export function PreviewPane({
         </View>
       ) : (
         <View style={styles.body}>
-          <ExportToolbar format={format} text={exportText} filename={filename} />
           <ReadOnlyCode text={exportText} label={`${format} export`} />
+        </View>
+      )}
+
+      {sessionFile !== undefined && (
+        <View style={styles.later}>
+          <Text style={styles.laterLabel}>Keep working later, here or in another browser</Text>
+          <SessionControls {...sessionFile} />
         </View>
       )}
     </View>
@@ -101,4 +118,6 @@ const styles = StyleSheet.create({
   subtitle: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
   removed: { fontFamily: fonts.body, fontSize: 12, color: colors.warningText },
   body: { flex: 1, gap: space.md, minHeight: 260 },
+  later: { gap: space.xs, paddingTop: space.sm, borderTopWidth: 1, borderTopColor: colors.border },
+  laterLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
 });

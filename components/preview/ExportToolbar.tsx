@@ -9,15 +9,24 @@ import type { SourceFormat } from '@/types/source';
 
 export interface ExportToolbarProps {
   format: SourceFormat;
-  text: string;
+  /**
+   * The file's contents, or a way to make them when asked: serializing a large
+   * document on every comparison would be wasted on a view that shows a list.
+   */
+  text: string | (() => string);
   filename: string;
 }
 
 const FEEDBACK_MS = 1800;
 
-/** Copy and download only. Editing happens on the data screen, not here. */
+/**
+ * Taking the result away: the user's own document with the list in its new
+ * order. Download leads, since a file is what most people came for; editing
+ * happens on the data screen, not here.
+ */
 export function ExportToolbar({ format, text, filename }: ExportToolbarProps) {
   const [feedback, setFeedback] = useState<string | null>(null);
+  const contents = () => (typeof text === 'function' ? text() : text);
 
   useEffect(() => {
     if (feedback === null) return;
@@ -29,22 +38,22 @@ export function ExportToolbar({ format, text, filename }: ExportToolbarProps) {
     <View style={styles.container}>
       <View style={styles.actions}>
         <Button
-          label="Copy"
-          accessibilityLabel={`Copy the ${format} to the clipboard`}
-          variant="secondary"
+          label="Download ranked list"
+          accessibilityLabel={`Download ranked list as ${filename}`}
+          variant="primary"
           size="sm"
           onPress={() => {
-            void copyText(text).then((ok) => setFeedback(ok ? 'Copied' : 'Copy unavailable'));
+            const ok = downloadText(filename, contents(), mimeTypeFor(format));
+            setFeedback(ok ? 'Downloaded' : 'Download unavailable');
           }}
         />
         <Button
-          label="Download"
-          accessibilityLabel={`Download ${filename}`}
+          label="Copy"
+          accessibilityLabel={`Copy the ranked ${format} to the clipboard`}
           variant="secondary"
           size="sm"
           onPress={() => {
-            const ok = downloadText(filename, text, mimeTypeFor(format));
-            setFeedback(ok ? 'Downloaded' : 'Download unavailable');
+            void copyText(contents()).then((ok) => setFeedback(ok ? 'Copied' : 'Copy unavailable'));
           }}
         />
       </View>
@@ -58,6 +67,6 @@ export function ExportToolbar({ format, text, filename }: ExportToolbarProps) {
 
 const styles = StyleSheet.create({
   container: { gap: space.xs },
-  actions: { flexDirection: 'row', gap: space.sm },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   filename: { fontFamily: fonts.mono, fontSize: 11, color: colors.textSecondary },
 });

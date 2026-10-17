@@ -206,6 +206,7 @@ export default function RankScreen() {
           ranking={view.ranking}
           layout={layout}
           exportText={exportText}
+          getExportText={() => selectExportText(workspace, format)}
           filename={exportFilename(downloadName(workspace.source), format)}
           format={format}
           removedCount={selectRemovedCount(items)}
