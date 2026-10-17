@@ -11,30 +11,30 @@ about how many places one change has to touch.
 
 ## Status
 
-| # | Task | Area | Effort | Status |
-|---|------|------|--------|--------|
-| 1 | Memoize the list switcher's options on the rank screen | Performance | S | Done |
-| 2 | Replay comparisons incrementally; cheaper placements | Performance | M | Done |
-| 3 | Replace the single-slot selector cache with a keyed one | Performance | S | Done |
-| 4 | Stop persisting each entry two or three times | Performance | M | Done |
-| 5 | Cache `Intl` formatters | Performance | S | Done |
-| 6 | Cut needless re-renders (rows, cards, field picker) | Performance | S-M | Done |
-| 7 | One registry entry per field renderer | Modifiability | M | Done |
-| 8 | One model for every list, active or parked | Modifiability | L | Done |
-| 9 | One collision-free path key | Correctness | S | Done |
-| 10 | Remove duplicated helpers and flows | Readability | S | Done |
-| 11 | Move derived state out of the screens | Readability | M | Done |
-| 12 | Pass the card layout as one prop | Modifiability | S | Done |
-| 13 | Small cleanups: stale comments, unused store getters | Readability | S | Done |
-| 14 | Add a formatter so quote style stops drifting | Readability | S | Done |
-| 15 | Give "no list chosen" its own key in the draft hook | Correctness | S | Done |
-| 16 | Fix the two end-to-end tests that already fail on `main` | Tests | S | Done |
-| 17 | Replace raw NUL bytes in source with `\u0000` | Readability | S | Done |
-| 18 | Make the test scripts run on Windows | Tooling | S | Done |
-| 19 | Check out LF everywhere with `.gitattributes` | Tooling | S | Done |
-| 20 | Add format and end-to-end checks to CI | Tooling | S | Done |
-| 21 | Remove the pre-session file format | Modifiability | S | Done |
-| 22 | Find the end-to-end test that fails once in a while | Tests | S | Open |
+| #   | Task                                                     | Area          | Effort | Status |
+| --- | -------------------------------------------------------- | ------------- | ------ | ------ |
+| 1   | Memoize the list switcher's options on the rank screen   | Performance   | S      | Done   |
+| 2   | Replay comparisons incrementally; cheaper placements     | Performance   | M      | Done   |
+| 3   | Replace the single-slot selector cache with a keyed one  | Performance   | S      | Done   |
+| 4   | Stop persisting each entry two or three times            | Performance   | M      | Done   |
+| 5   | Cache `Intl` formatters                                  | Performance   | S      | Done   |
+| 6   | Cut needless re-renders (rows, cards, field picker)      | Performance   | S-M    | Done   |
+| 7   | One registry entry per field renderer                    | Modifiability | M      | Done   |
+| 8   | One model for every list, active or parked               | Modifiability | L      | Done   |
+| 9   | One collision-free path key                              | Correctness   | S      | Done   |
+| 10  | Remove duplicated helpers and flows                      | Readability   | S      | Done   |
+| 11  | Move derived state out of the screens                    | Readability   | M      | Done   |
+| 12  | Pass the card layout as one prop                         | Modifiability | S      | Done   |
+| 13  | Small cleanups: stale comments, unused store getters     | Readability   | S      | Done   |
+| 14  | Add a formatter so quote style stops drifting            | Readability   | S      | Done   |
+| 15  | Give "no list chosen" its own key in the draft hook      | Correctness   | S      | Done   |
+| 16  | Fix the two end-to-end tests that already fail on `main` | Tests         | S      | Done   |
+| 17  | Replace raw NUL bytes in source with `\u0000`            | Readability   | S      | Done   |
+| 18  | Make the test scripts run on Windows                     | Tooling       | S      | Done   |
+| 19  | Check out LF everywhere with `.gitattributes`            | Tooling       | S      | Done   |
+| 20  | Add format and end-to-end checks to CI                   | Tooling       | S      | Done   |
+| 21  | Remove the pre-session file format                       | Modifiability | S      | Done   |
+| 22  | Find the end-to-end test that fails once in a while      | Tests         | S      | Done   |
 
 Suggested order: the small items first, then 7 and 12 (both done), then 2, and finally 8
 together with 4, since both change the snapshot format and can share one
@@ -60,6 +60,7 @@ map and re-sorts every item, so cost grows as
 placements × (items log items + events).
 
 Fix:
+
 - When the new events array is the previous one plus appended events, start from
   the cached states. Undo and edits fall back to a full replay.
 - Within one replay, keep a running order and head-to-head map rather than
@@ -68,6 +69,7 @@ Fix:
 The elo and rebuild tests already pin the behaviour this must keep.
 
 Done:
+
 - `replayComparisons` keeps the last replay per items array. When the history
   is the cached one with events added to its end, dated no earlier than the
   last one applied, it carries on from there; anything else replays from the
@@ -133,6 +135,7 @@ this; otherwise `memo` plus callbacks that take an id.
 
 Done by hand rather than with the compiler, which would add a build step the
 tests never run:
+
 - `RankedRow` is memoized and its callbacks take the row's id, so a drag,
   which re-renders the list on every pointer move, redraws only the rows whose
   drag state or drop line changed.
@@ -153,6 +156,7 @@ Adding a renderer means editing `FIELD_RENDERERS`, `SPECIAL_RENDERERS`, the
 `picturesOf` or `previewSourceOf`, and the branches in `FieldValue.tsx`.
 
 Fix: `lib/renderers/` is now three files:
+
 - `values.ts` reads values (links, dates, places, flags, colours, ratings,
   money) and knows nothing of renderers.
 - `registry.ts` holds one entry per renderer: label, hint, slot, `accepts`,
@@ -177,6 +181,7 @@ version and a migration.
 
 Done, without a migration (the app is not in production, so older saves are
 simply dropped):
+
 - `RankedList` replaces `SavedList` and holds every list alike: setup, items,
   comparisons. `Workspace` is the document: `source` (whose `arrayPath` names
   the open list), `listDefaults` and `lists`, keyed by `pathKey`, the open one
@@ -322,6 +327,19 @@ settled position. The second went unnamed: only the pass count was captured.
 Neither would reproduce in over 200 targeted and loaded runs. CI retries a
 failed test once, so it does not block a push.
 
-Next step: run locally with `--reporter=line` (or keep Playwright's report) so
-the next failure is named, then look for a measurement taken before layout
-settles, which is what the first one was.
+A later CI run named it: "dragging a file anywhere on the page shows a drop
+overlay and imports on release" failed, then passed on retry. The page-wide
+drop target is a window listener attached in an effect, so it only exists once
+the static page has hydrated. The test sent a single `dragenter` straight after
+the reload, and on a slow machine that arrived first and went unanswered. With
+the CPU throttled 6× it failed every time. Both file-drag tests now go through
+`startFileDrag`, which repeats the `dragenter` until the overlay appears. That
+also stops the "drag out of the window" test from passing on an overlay that
+was never shown. The earlier unnamed failure can't be confirmed as this test,
+but it's the only race of this kind found.
+
+The same run also failed "on a phone, a whole decision fits on one screen" on
+both tries. That was a layout bug, not a flake: CI's wider fallback font
+(DejaVu Sans) put "Start over" on a header row of its own, which pushed Skip
+off the bottom of the screen. On narrow screens the header buttons now use
+less side padding, so they fit on one row.
