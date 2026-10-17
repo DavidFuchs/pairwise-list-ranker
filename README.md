@@ -159,6 +159,7 @@ npm run build:web  # static bundle in dist/
 | `npm run e2e` | Builds, then runs Playwright against the static build |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
+| `npm run format` | Prettier over the code (`format:check` to verify only) |
 
 Docker, for self-hosting the static build:
 
