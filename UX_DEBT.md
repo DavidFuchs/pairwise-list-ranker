@@ -40,7 +40,7 @@ It falls short in three places:
 | 6 | Fit the ranking screen in a desktop window | Speed | Medium | Done |
 | 7 | Make taking the result away obvious | Flow | High | Done |
 | 8 | Do not present an order before there is one | Clarity | Medium | Done |
-| 9 | Say what the app does on the first screen | Onboarding | Medium | Open |
+| 9 | Say what the app does on the first screen | Onboarding | Medium | Done |
 | 10 | Show field names as people would write them | Clarity | Medium | Open |
 | 11 | Say a shared-slot tip once, not under every field | Clarity | Low | Open |
 | 12 | Make the keyboard shortcuts findable | Speed | Medium | Done |
@@ -248,6 +248,10 @@ one-on-one questions") is only inside "How it works".
 Fix: one line under the title, and a three-step outline (add a list, pick
 between pairs, take the ordered list away) in the empty right-hand panel, which
 is currently blank.
+
+Done: the empty "What we found" panel now opens with "Pairwise puts a list in
+order by asking you about two items at a time, instead of sorting the whole
+thing at once", then the three steps. It gives way as soon as there is text.
 
 ### 10. Field names as written in the data
 

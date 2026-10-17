@@ -34,6 +34,7 @@ about how many places one change has to touch.
 | 19 | Check out LF everywhere with `.gitattributes` | Tooling | S | Done |
 | 20 | Add format and end-to-end checks to CI | Tooling | S | Done |
 | 21 | Remove the pre-session file format | Modifiability | S | Done |
+| 22 | Find the end-to-end test that fails once in a while | Tests | S | Open |
 
 Suggested order: the small items first, then 7 and 12 (both done), then 2, and finally 8
 together with 4, since both change the snapshot format and can share one
@@ -312,3 +313,15 @@ a Playwright container image instead.
 Session files are the only file the app saves or opens. The format they
 replaced is gone: its module, the store action that loaded it, the screens'
 handling, its tests and every mention of it.
+
+### 22. An end-to-end test fails once in a while
+
+Twice in about 30 full runs, a single end-to-end test failed and then passed on
+the next run. The first was the steady-controls test, which now reads Skip's
+settled position. The second went unnamed: only the pass count was captured.
+Neither would reproduce in over 200 targeted and loaded runs. CI retries a
+failed test once, so it does not block a push.
+
+Next step: run locally with `--reporter=line` (or keep Playwright's report) so
+the next failure is named, then look for a measurement taken before layout
+settles, which is what the first one was.

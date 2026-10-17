@@ -212,3 +212,20 @@ describe('FoundPanel default-for-every-list control', () => {
     expect(screen.queryByRole('button', { name: /set as default/i })).toBeNull();
   });
 });
+
+describe('FoundPanel before there is a list', () => {
+  it('says what the app does and how it goes', () => {
+    setup({ isBlank: true, analysis: analyzeSource('', 'auto'), selectedPath: null, entries: [] });
+
+    expect(screen.getByText(/puts a list in order by asking you about two items at a time/)).toBeDefined();
+    expect(screen.getByText('Add a list')).toBeDefined();
+    expect(screen.getByText('Pick between two')).toBeDefined();
+    expect(screen.getByText('Take it away')).toBeDefined();
+  });
+
+  it('steps aside once there is something to set up', () => {
+    setup();
+
+    expect(screen.queryByText('Pick between two')).toBeNull();
+  });
+});

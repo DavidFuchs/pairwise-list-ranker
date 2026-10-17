@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ArrayPicker } from '@/components/data/ArrayPicker';
 import { FieldPicker } from '@/components/data/FieldPicker';
+import { FirstRunSteps } from '@/components/data/FirstRunSteps';
 import { OrderPicker } from '@/components/data/OrderPicker';
 import { PositionPicker } from '@/components/data/PositionPicker';
 import { StartCta } from '@/components/data/StartCta';
@@ -95,6 +96,8 @@ export function FoundPanel({
       {/* Docked on a phone, the panel runs with the page; scrolling inside it
           as well would leave two scrolls under one thumb. */}
       <Settings docked={docked}>
+        {isBlank && <FirstRunSteps />}
+
         <ArrayPicker
           candidates={analysis.candidates}
           value={selectedPath}
