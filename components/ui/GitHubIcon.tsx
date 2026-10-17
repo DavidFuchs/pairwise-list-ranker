@@ -17,7 +17,7 @@ const MARK_PATH =
 
 const MARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="${MARK_PATH}"/></svg>`;
 
-// Masked rather than drawn from primitives (unlike TrashIcon/SampleIcon):
+// Masked rather than drawn from primitives (unlike TrashIcon):
 // the octocat's curves aren't feasible from borders and boxes, and the
 // project has no SVG-in-JS dependency. A CSS mask keeps it themeable through
 // the same `var(--*-ink)` hover convention as the other header icons.

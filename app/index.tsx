@@ -1,7 +1,9 @@
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
+import { StyleSheet, View } from "react-native";
 
 import { ApplySummary } from "@/components/data/ApplySummary";
+import { CardPreview } from "@/components/data/CardPreview";
 import { FileNotice } from "@/components/data/FileNotice";
 import type { FileNoticeState } from "@/components/data/FileNotice";
 import { FoundPanel } from "@/components/data/FoundPanel";
@@ -21,10 +23,16 @@ import {
   selectRanking,
 } from "@/lib/state/selectors";
 import type { CoverageReading } from "@/lib/state/selectors";
-import { SAMPLE_PATH, SAMPLE_ROLES } from "@/lib/import/sampleData";
 import { describeSession, readSavedFile } from "@/lib/session/sessionFile";
 import { listStore, useListStore } from "@/lib/state/useListStore";
+import type { ComplexItemValue } from "@/types/list";
 import type { DataSource } from "@/types/source";
+import { space } from "@/lib/theme";
+
+/** The narrowest the card preview gets beside the editor. */
+const PREVIEW_MIN_WIDTH = 400;
+/** The narrowest the editor gets before the preview moves below it. */
+const EDITOR_MIN_WIDTH = 420;
 
 /**
  * Every list already known this session, for the "already ranked" default -
@@ -108,6 +116,7 @@ export default function DataScreen() {
     settings: SettingsDiff;
   } | null>(null);
   const [fileNotice, setFileNotice] = useState<FileNoticeState | null>(null);
+  const [workWidth, setWorkWidth] = useState(0);
 
   useEffect(() => {
     listStore.getState().hydrate();
@@ -170,8 +179,23 @@ export default function DataScreen() {
   }, [hydrated, resumed, workspace, router]);
 
   const editing = workspace !== null;
+  // Only objects have fields to set up, so only they get a card preview.
+  const previewObjects = useMemo(
+    () =>
+      draft.entries.filter(
+        (entry): entry is ComplexItemValue =>
+          typeof entry === "object" && entry !== null && !Array.isArray(entry),
+      ),
+    [draft.entries],
+  );
   // An empty box isn't a parse error, so neither panel should treat it as one.
   const rawTextIsBlank = draft.rawText.trim() === "";
+  const showPreview = pending === null && !rawTextIsBlank && previewObjects.length > 0;
+  const sideBySide =
+    showPreview && workWidth >= EDITOR_MIN_WIDTH + PREVIEW_MIN_WIDTH + space.lg;
+  // A third of the area beside it, so cards read about as wide as one of a
+  // pair on the rank screen, and never narrower than the minimum.
+  const previewWidth = Math.max(PREVIEW_MIN_WIDTH, Math.round(workWidth / 3));
   const isSwitchingList =
     workspace !== null &&
     draft.selectedPath !== null &&
@@ -351,8 +375,6 @@ export default function DataScreen() {
 
   return (
     <AppShell
-      listName={editing ? "Editing your data" : "New list"}
-      statusText={editing ? "Editing your data" : "Nothing saved yet"}
       onFileDrop={openFile}
       stage={
         <>
@@ -367,27 +389,41 @@ export default function DataScreen() {
               />
             </PageNav>
           )}
-          <SourceInput
-            value={draft.rawText}
-            onChange={(text) => {
-              setPending(null);
-              draft.setRawText(text);
-            }}
-            onFile={openFile}
-            onSample={(format, text) => {
-              setPending(null);
-              setFileNotice(null);
-              // The songs arrive set up to show the renderers off; a plain
-              // list has no fields to set up.
-              if (format === "list") draft.setRawText(text);
-              else draft.loadPreset(text, SAMPLE_PATH, SAMPLE_ROLES);
-            }}
-            override={draft.override}
-            onOverrideChange={draft.setOverride}
-            format={draft.analysis.format}
-            issues={rawTextIsBlank ? [] : draft.analysis.issues}
-            availableOverrides={draft.availableOverrides}
-          />
+          {/* The preview sits beside the editor while there is room, so the
+              card stays in view while the fields are set in the sidebar and
+              the editor keeps the column's full height. */}
+          <View
+            style={[styles.work, sideBySide && styles.workRow]}
+            onLayout={(event) => setWorkWidth(event.nativeEvent.layout.width)}
+          >
+            <SourceInput
+              value={draft.rawText}
+              onChange={(text) => {
+                setPending(null);
+                draft.setRawText(text);
+              }}
+              onFile={openFile}
+              onSample={(sample) => {
+                setPending(null);
+                setFileNotice(null);
+                // Detected, not pinned: a format tab left on Plain list
+                // would otherwise misread the sample.
+                draft.setOverride("auto");
+                // Each sample arrives set up to show the renderers off.
+                draft.loadPreset(sample.text, sample.path, sample.roles);
+              }}
+              override={draft.override}
+              onOverrideChange={draft.setOverride}
+              format={draft.analysis.format}
+              issues={rawTextIsBlank ? [] : draft.analysis.issues}
+              availableOverrides={draft.availableOverrides}
+            />
+            {showPreview && (
+              <View style={sideBySide ? [styles.previewBeside, { width: previewWidth }] : undefined}>
+                <CardPreview objects={previewObjects} roles={draft.roles} fill={sideBySide} />
+              </View>
+            )}
+          </View>
           {fileNotice !== null && <FileNotice notice={fileNotice} onDismiss={() => setFileNotice(null)} />}
         </>
       }
@@ -444,3 +480,11 @@ export default function DataScreen() {
     />
   );
 }
+
+const styles = StyleSheet.create({
+  // Fills the stage below the page nav, so the editor can take the height.
+  work: { flex: 1, gap: space.lg },
+  workRow: { flexDirection: "row" },
+  // As tall as the editor, so it can show as many cards as that height fits.
+  previewBeside: { flexShrink: 0 },
+});

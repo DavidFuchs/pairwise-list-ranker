@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DataScreen from '@/app/index';
@@ -181,11 +181,20 @@ describe('local persistence', () => {
     expect(listStore.getState().workspace).toBeNull();
   });
 
-  it('tells the user their work is kept in this browser', () => {
+  it('says nothing about saving while saving works', () => {
     startRanking();
 
     render(<RankScreen />);
 
-    expect(screen.getByText(/saved in this browser/i)).toBeDefined();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('warns when the list is too large for the browser to keep', () => {
+    startRanking();
+    render(<RankScreen />);
+
+    act(() => listStore.setState({ saveOutcome: 'too-large' }));
+
+    expect(screen.getByRole('status').textContent).toMatch(/too large to save in this browser/i);
   });
 });

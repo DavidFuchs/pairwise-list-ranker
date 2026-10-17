@@ -117,7 +117,9 @@ export function FieldValue({ field, value, renderer, withKey = false, textStyle 
   if (renderer === 'pills' && typeof value === 'string' && value.trim() !== '') {
     const tone = pillTone(value);
     return (
-      <View style={styles.row}>
+      // Wraps like tags: a narrow card moves the pill under its key rather
+      // than crushing it to a column of letters.
+      <View style={[styles.row, styles.wrap]}>
         {key}
         <Text
           style={[
@@ -247,6 +249,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     overflow: 'hidden',
+    maxWidth: '100%',
   },
   swatch: {
     width: 14,

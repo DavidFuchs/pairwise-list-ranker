@@ -51,7 +51,8 @@ export function FileDrop({ onFile }: FileDropProps) {
 }
 
 const styles = StyleSheet.create({
-  zone: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  // Shrinks so the hint wraps inside a narrow panel instead of running past it.
+  zone: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexShrink: 1, minWidth: 0 },
   button: {
     paddingVertical: space.xs,
     paddingHorizontal: space.md,
@@ -61,5 +62,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSunken,
   },
   buttonLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.textPrimary },
-  hint: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint },
+  hint: { flexShrink: 1, fontFamily: fonts.body, fontSize: 12, color: colors.textFaint },
 });

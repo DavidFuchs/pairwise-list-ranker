@@ -45,6 +45,13 @@ const YOUTUBE_PATTERN =
 
 const STEAM_PATTERN = /^https?:\/\/store\.steampowered\.com\/app\/(\d+)(?!\d)/i;
 
+/**
+ * A header image as Steam hands it out, under the app's own folder: newer
+ * games keep it behind a hashed folder no app id can lead to.
+ */
+const STEAM_HEADER_PATTERN =
+  /^https?:\/\/[\w.-]*steamstatic\.com\/(?:store_item_assets\/)?steam\/apps\/(\d+)\/(?:[\w-]+\/)?header(?:_\w+)?\.jpg(?:[?#]\S*)?$/i;
+
 /** deezer.com/track/1, with or without a language segment like /fr/. */
 const DEEZER_PATTERN = /^https?:\/\/(?:www\.)?deezer\.com\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?track\/(\d+)(?!\d)/i;
 
@@ -76,9 +83,11 @@ function catalogueId(value: unknown): string | undefined {
   return /^\d+$/.test(text) && Number(text) > 0 ? text : undefined;
 }
 
-/** A Steam app id, as a number or a store page address. */
+/** A Steam app id, as a number, a store page address or a header image address. */
 export function steamAppId(value: unknown): string | undefined {
-  return catalogueId(value) ?? (typeof value === 'string' ? STEAM_PATTERN.exec(value.trim())?.[1] : undefined);
+  if (typeof value !== 'string') return catalogueId(value);
+  const text = value.trim();
+  return catalogueId(text) ?? STEAM_PATTERN.exec(text)?.[1] ?? STEAM_HEADER_PATTERN.exec(text)?.[1];
 }
 
 /** A Deezer track id, as a number or a track page address. */
@@ -357,7 +366,7 @@ const SPECIAL_RENDERERS: {
   {
     id: 'steam-header',
     label: 'Steam header',
-    hint: "The game's store banner, by app id",
+    hint: "The game's store banner, by app id or banner address",
     accepts: (values) => values.every((value) => steamAppId(value) !== undefined),
   },
   { id: 'tags', label: 'Tags', hint: 'Each entry as its own label', accepts: (values) => values.every(isTagList) },
@@ -473,6 +482,100 @@ export function rendererOptionsFor(values: unknown[], field?: string): RendererO
         ]
       : []),
   ];
+}
+
+/** Something worth knowing about how a field will be drawn. */
+export interface RendererCaveat {
+  /** A warning says some items may draw badly; a tip says how to do better. */
+  tone: 'warning' | 'tip';
+  text: string;
+  /** Fields in the order they are used, this one among them, for a numbered list. */
+  order?: { field: string; current: boolean }[];
+}
+
+/** What a caveat may depend on beyond the field's own values. */
+/** Another field on the card, and how it is drawn. */
+export interface CardField {
+  field: string;
+  renderer: FieldRenderer | undefined;
+}
+
+export interface CaveatContext {
+  /** The field the caveat is about. */
+  field: string;
+  /** The fields above this one on the card, in order. */
+  earlier: CardField[];
+  /** The fields below this one on the card, in order. */
+  later: CardField[];
+  /** Whether this browser draws flag emoji, rather than their two letters. */
+  drawsFlags: boolean;
+}
+
+/**
+ * The one thing worth saying about a renderer for these values, said only
+ * when it applies: a Steam field of app ids, not of the banner addresses
+ * that always work, or flags in a browser that cannot draw them.
+ */
+export function rendererCaveat(
+  renderer: FieldRenderer | undefined,
+  values: unknown[],
+  context: CaveatContext,
+): RendererCaveat | undefined {
+  const present = values.filter((value) => value !== undefined && value !== null && value !== '');
+  // Fields sharing one place on the card - the play button, or the picture
+  // beside the title - each list all of them, in the order they are used.
+  const slot = slotOf(renderer);
+  const sharing = (others: CardField[]) => others.filter((other) => slotOf(other.renderer) === slot);
+  if (slot !== 'line' && sharing(context.earlier).length + sharing(context.later).length > 0) {
+    const order = [
+      ...sharing(context.earlier).map(({ field }) => ({ field, current: false })),
+      { field: context.field, current: true },
+      ...sharing(context.later).map(({ field }) => ({ field, current: false })),
+    ];
+    return slot === 'media'
+      ? {
+          tone: 'tip',
+          text: 'These share the play button. It plays the first one in this order that has a clip for the item:',
+          order,
+        }
+      : {
+          tone: 'tip',
+          text: 'These share the spot beside the title. Each card starts on the first, and its arrows step through the rest in this order:',
+          order,
+        };
+  }
+  switch (renderer) {
+    case 'steam-header':
+      return present.some((value) => !(typeof value === 'string' && STEAM_HEADER_PATTERN.test(value.trim())))
+        ? {
+            tone: 'warning',
+            text: "Newer games keep their banner where an app id can't find it, so some may show an empty frame. The banner's own address always works: on the game's store page, copy the address of the header image.",
+          }
+        : undefined;
+    case 'flag':
+      return context.drawsFlags
+        ? undefined
+        : {
+            tone: 'tip',
+            text: "This browser shows flags as their two letters, like US, beside the country's name. Firefox, and most phones and Macs, draw the flags themselves.",
+          };
+    case 'apple-music-preview':
+    case 'deezer-preview':
+      // The only preview on the card: sharing ones are answered above.
+      return {
+        tone: 'tip',
+        text: 'Not every track has a preview clip, and some are not available in every country. Show an Apple Music or Deezer field as well, and the play button falls back to it.',
+      };
+    case 'location':
+      return present.some((value) => coordinates(value) === undefined)
+        ? {
+            tone: 'tip',
+            text: 'An address opens a map search, which may pick the wrong place. Coordinates, like 53.12, -9.73, point to the exact spot.',
+          }
+        : undefined;
+    default:
+      return undefined;
+  }
 }
 
 /** The renderer's own name, for a configuration summary. */
@@ -591,9 +694,13 @@ export function picturesOf(value: unknown, renderer: FieldRenderer | undefined):
       if (id === undefined) return [];
       return [
         {
-          // Most games keep their banner here. Newer ones may not, and an
+          // A banner address is drawn as given. An id or a store page falls
+          // back to where most games keep theirs; newer ones may not, and an
           // image that fails keeps an empty frame like any other.
-          uri: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${id}/header.jpg`,
+          uri:
+            typeof value === 'string' && STEAM_HEADER_PATTERN.test(value.trim())
+              ? value.trim()
+              : `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${id}/header.jpg`,
           aspect: STEAM_HEADER_ASPECT,
           href: `https://store.steampowered.com/app/${id}`,
           action: 'Open {label} on Steam',

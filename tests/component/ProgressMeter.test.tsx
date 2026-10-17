@@ -16,7 +16,7 @@ function run(fill: string) {
  * A list marked already ranked is credited the whole estimate on its word, so
  * the bar has to separate the run comparisons paid for from the run the import
  * was given. Without it, an assertion and an afternoon of work draw the same
- * full green bar.
+ * full accent bar.
  */
 describe("ProgressMeter claimed run", () => {
   it("hatches the whole bar for a ranked import nobody has compared yet", () => {

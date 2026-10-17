@@ -21,13 +21,13 @@ const HEIGHT = 4;
  * The ranking meter, shared so the how-it-works diagram teaches the real
  * control rather than a lookalike that can drift away from it.
  *
- * Past the estimate the green run is already full, so the surplus is laid over
+ * Past the estimate the accent run is already full, so the surplus is laid over
  * it as a second coat rather than beside it, and the gold carries a slow sheen
  * - the one ambient animation in the app, and the only signal that work past
  * the estimate is still landing.
  *
- * The three runs tile rather than stack: solid green for what comparisons
- * earned, hatched green for what an already-ranked import was credited without
+ * The three runs tile rather than stack: solid accent for what comparisons
+ * earned, hatched accent for what an already-ranked import was credited without
  * earning, then gold laid over the earned end as it goes past the estimate. So
  * a fresh ranked import reads as a full bar of hatching, and every comparison
  * turns a little of it solid.
@@ -86,11 +86,11 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   fill: { height: HEIGHT, borderRadius: 999, backgroundColor: colors.accent },
-  // Sits at the far end of the green run, where the earned part stops. The
+  // Sits at the far end of the accent run, where the earned part stops. The
   // hatching itself is a data-fill rule, since a repeating gradient has no
   // React Native style equivalent.
   claimed: { position: "absolute", top: 0, height: HEIGHT, borderRadius: 999 },
-  // Sits on top of the full green run rather than beside it.
+  // Sits on top of the full accent run rather than beside it.
   surplus: {
     position: "absolute",
     left: 0,

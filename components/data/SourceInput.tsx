@@ -1,8 +1,8 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { FileDrop } from '@/components/data/FileDrop';
-import { SampleIcon } from '@/components/ui/SampleIcon';
-import { SAMPLE_JSON, SAMPLE_LIST, SAMPLE_YAML } from '@/lib/import/sampleData';
+import { SAMPLES } from '@/lib/import/sampleData';
+import type { Sample } from '@/lib/import/sampleData';
 import type { ParseIssue } from '@/lib/import/types';
 import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
 import type { SourceFormat } from '@/types/source';
@@ -13,7 +13,7 @@ export interface SourceInputProps {
   value: string;
   onChange: (text: string) => void;
   /** A sample was asked for. Defaults to treating its text like typing. */
-  onSample?: (format: SourceFormat, text: string) => void;
+  onSample?: (sample: Sample) => void;
   /** A chosen file's text, when it should be told apart from typing - a saved session, say. Defaults to onChange. */
   onFile?: (text: string) => void;
   override: FormatOverride;
@@ -38,14 +38,6 @@ const FORMAT_NAMES: Record<SourceFormat, string> = {
   json: 'JSON',
 };
 
-// Sample text per format: the plain-list titles alone, or the richer
-// year/genre data for YAML and JSON, matching whichever tab is active.
-const SAMPLE_TEXT: Record<SourceFormat, string> = {
-  list: SAMPLE_LIST,
-  yaml: SAMPLE_YAML,
-  json: SAMPLE_JSON,
-};
-
 export function SourceInput({
   value,
   onChange,
@@ -67,6 +59,26 @@ export function SourceInput({
         </Text>
       </View>
 
+      {/* Named for what they load, so trying the app is one obvious step
+          rather than a control hidden on a format tab. */}
+      <View style={styles.samples}>
+        <Text style={styles.samplesLabel}>No list handy? Try a sample:</Text>
+        {SAMPLES.map((sample) => (
+          <Pressable
+            key={sample.id}
+            accessibilityRole="button"
+            accessibilityLabel={`Load the ${sample.label.toLowerCase()} sample`}
+            accessibilityHint={`Replaces the text below with ${sample.detail}`}
+            onPress={() => (onSample === undefined ? onChange(sample.text) : onSample(sample))}
+            dataSet={{ sample: 'button' }}
+            style={styles.sample}
+          >
+            <Text style={styles.sampleLabel}>{sample.label}</Text>
+            <Text style={styles.sampleDetail}>{sample.detail}</Text>
+          </Pressable>
+        ))}
+      </View>
+
       <TextInput
         accessibilityLabel="Your list"
         multiline
@@ -83,42 +95,19 @@ export function SourceInput({
         <View style={styles.overrides} role="radiogroup" aria-label="How to read the text">
           {visibleOverrides.map((option) => {
             const selected = option.key === override;
-            // Auto has no sample of its own — loading a sample always pins to
-            // a concrete format, so only the Plain list/YAML/JSON tabs get
-            // the trigger that reveals what their sample data looks like.
-            const sample = option.key === 'auto' ? undefined : SAMPLE_TEXT[option.key];
-
             return (
-              <View key={option.key} style={[styles.override, selected && styles.overrideSelected]}>
-                <Pressable
-                  role="radio"
-                  accessibilityLabel={option.accessibilityLabel}
-                  aria-checked={selected}
-                  onPress={() => onOverrideChange(option.key)}
-                  style={styles.overrideLabelPress}
-                >
-                  <Text style={[styles.overrideLabel, selected && styles.overrideLabelSelected]}>
-                    {option.label}
-                  </Text>
-                </Pressable>
-
-                {sample !== undefined && (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Load the ${option.label} sample`}
-                    onPress={() => {
-                      onOverrideChange(option.key);
-                      if (onSample === undefined) onChange(sample);
-                      else onSample(option.key as SourceFormat, sample);
-                    }}
-                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-                    dataSet={{ sample: 'tab' }}
-                    style={styles.sampleTrigger}
-                  >
-                    <SampleIcon />
-                  </Pressable>
-                )}
-              </View>
+              <Pressable
+                key={option.key}
+                role="radio"
+                accessibilityLabel={option.accessibilityLabel}
+                aria-checked={selected}
+                onPress={() => onOverrideChange(option.key)}
+                style={[styles.override, selected && styles.overrideSelected]}
+              >
+                <Text style={[styles.overrideLabel, selected && styles.overrideLabelSelected]}>
+                  {option.label}
+                </Text>
+              </Pressable>
             );
           })}
         </View>
@@ -155,7 +144,9 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   subtitle: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
+  // Takes whatever height the panel has left, so a long list has room to read.
   editor: {
+    flex: 1,
     minHeight: 280,
     padding: space.md,
     borderRadius: radius.md,
@@ -176,25 +167,31 @@ const styles = StyleSheet.create({
   },
   overrides: { flexDirection: 'row', gap: space.xs },
   override: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingVertical: space.xs,
+    paddingHorizontal: space.sm,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surfaceSunken,
-    overflow: 'hidden',
   },
   overrideSelected: { borderColor: colors.accentSoftBorder, backgroundColor: colors.accentSoft },
-  overrideLabelPress: { paddingVertical: space.xs, paddingHorizontal: space.sm },
   overrideLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
   overrideLabelSelected: { color: colors.accentStrong, fontWeight: '600' },
-  sampleTrigger: {
-    alignSelf: 'stretch',
-    justifyContent: 'center',
-    paddingHorizontal: space.xs,
-    borderLeftWidth: 1,
-    borderLeftColor: colors.border,
+  samples: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.sm },
+  samplesLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
+  sample: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: space.xs,
+    paddingVertical: space.xs,
+    paddingHorizontal: space.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceSunken,
   },
+  sampleLabel: { fontFamily: fonts.body, fontSize: 12, fontWeight: '600', color: colors.textPrimary },
+  sampleDetail: { fontFamily: fonts.body, fontSize: 11, color: colors.textFaint },
   detected: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint },
   issue: { fontFamily: fonts.body, fontSize: 13, color: colors.dangerText },
 });

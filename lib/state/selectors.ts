@@ -285,14 +285,14 @@ const ESTIMATE_MET_NOTE =
   "The list is sorted well enough to use. Keep going and each comparison sharpens the pairs that are still close.";
 
 /**
- * Everything the meter needs to draw itself and say what it means: the green
+ * Everything the meter needs to draw itself and say what it means: the accent
  * run, the part of that run nobody has earned yet, the gold coat over it, one
  * number that agrees with all three, and the note that appears once the
  * estimate is behind the user.
  *
  * `earnedCoverage` is the same reading with the import's credit stripped out.
  * A list marked already ranked is handed the whole estimate on its word, which
- * would otherwise draw the same full green run as an afternoon of comparisons.
+ * would otherwise draw the same full accent run as an afternoon of comparisons.
  * Passing what the comparisons alone paid for lets the bar hatch the
  * difference, and the claim converts to solid as the work lands. It defaults to
  * the coverage itself, which claims nothing: a list with no credit to strip has
@@ -316,7 +316,7 @@ export function describeCoverage(
   const spoken = capped ? `over ${SURPLUS_CAP}%` : label;
 
   const filled = Math.min(100, percent);
-  // Never negative: comparisons past the estimate overshoot the green run, and
+  // Never negative: comparisons past the estimate overshoot the accent run, and
   // overshooting it is not owing anything to the import.
   const claimed = Math.max(0, filled - Math.round(earnedCoverage * 100));
 

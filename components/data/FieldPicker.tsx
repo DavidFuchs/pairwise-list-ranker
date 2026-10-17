@@ -5,6 +5,7 @@ import { FieldLink } from '@/components/preview/FieldLink';
 import { FieldPicture } from '@/components/preview/FieldPicture';
 import { FieldValue } from '@/components/preview/FieldValue';
 import { PreviewButton, PreviewButtonPlaceholder } from '@/components/preview/PreviewButton';
+import { drawsFlags } from '@/lib/browser/flagSupport';
 import { colors, fonts, radius, space } from '@/lib/theme';
 import { describeObjectSchema } from '@/lib/import/labelField';
 import type { ObjectSchemaField } from '@/lib/import/labelField';
@@ -16,6 +17,7 @@ import {
   picturesOf,
   previewSourceOf,
   ratingScale,
+  rendererCaveat,
   rendererOptionsFor,
   slotOf,
 } from '@/lib/renderers';
@@ -292,6 +294,8 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
   const onCard = [...(titleField === undefined ? [] : [titleField]), ...details];
   const rest = schema.fields.filter((field) => field.field !== title && !shown.includes(field.field));
 
+  const cardField = (other: string) => ({ field: other, renderer: roles.fieldRenderers?.[other] });
+
   const renderCell = (field: ObjectSchemaField) => {
     const current = styleOf(field.field, roles);
     const isTitle = current.kind === 'title';
@@ -302,6 +306,15 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
     const samples = samplesOf(values);
     const renderers = rendererOptionsFor(values, field.field);
     const plays = slotOf(rendererOf(current)) === 'media';
+    // Only for a field on the card: a hidden one is drawn nowhere.
+    const caveat = isShown
+      ? rendererCaveat(rendererOf(current), values, {
+          field: field.field,
+          earlier: shown.slice(0, order - 1).map(cardField),
+          later: shown.slice(order).map(cardField),
+          drawsFlags: drawsFlags(),
+        })
+      : undefined;
     const hasMenu = !isTitle && renderers.length > 1;
 
     return (
@@ -410,6 +423,23 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
           )}
         </View>
 
+        {caveat !== undefined && (
+          <View style={styles.caveat}>
+            <Text style={[styles.caveatText, caveat.tone === 'warning' && styles.caveatWarning]}>{caveat.text}</Text>
+            {caveat.order !== undefined && (
+              <View role="list">
+                {caveat.order.map((entry, index) => (
+                  <Text key={entry.field} role="listitem" style={styles.caveatText}>
+                    {`${index + 1}. `}
+                    <Text style={entry.current ? styles.caveatCurrent : styles.caveatField}>{entry.field}</Text>
+                    {entry.current ? ' (this field)' : ''}
+                  </Text>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
         {open && hasMenu && (
           <View style={styles.menu}>
             {renderers.map((option) => (
@@ -516,6 +546,19 @@ const styles = StyleSheet.create({
   },
   mainAboveLink: { paddingBottom: 2 },
   liveLink: { alignItems: 'flex-start', paddingRight: space.md, paddingBottom: space.sm },
+  // Under the whole cell, so it reads with the field and not with a control.
+  caveat: {
+    gap: 2,
+    paddingTop: space.xs,
+    paddingBottom: space.sm,
+    paddingHorizontal: space.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.accentSoftBorder,
+  },
+  caveatText: { fontFamily: fonts.body, fontSize: 11, lineHeight: 15, color: colors.textSecondary },
+  caveatField: { fontFamily: fonts.mono },
+  caveatCurrent: { fontFamily: fonts.mono, fontWeight: '600', color: colors.accentStrong },
+  caveatWarning: { color: colors.warningText },
   play: { justifyContent: 'center', paddingHorizontal: space.md },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minWidth: 0 },
   field: {

@@ -90,40 +90,39 @@ describe('SourceInput', () => {
     expect(screen.getByLabelText(/choose a file to import/i)).toBeDefined();
   });
 
-  it('offers a sample trigger on each concrete format tab, but not Auto', () => {
+  it('offers each sample by name, saying what it loads', () => {
     setup();
 
-    expect(screen.getByRole('button', { name: /load the plain list sample/i })).toBeDefined();
-    expect(screen.getByRole('button', { name: /load the yaml sample/i })).toBeDefined();
-    expect(screen.getByRole('button', { name: /load the json sample/i })).toBeDefined();
-    expect(screen.queryByRole('button', { name: /load the auto sample/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /load the songs sample/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /load the movies sample/i })).toBeDefined();
+    expect(screen.getByText('10 songs, as JSON')).toBeDefined();
+    expect(screen.getByText('10 movies, as YAML')).toBeDefined();
+    expect(screen.getByRole('button', { name: /load the games sample/i })).toBeDefined();
+    expect(screen.getByText('10 games, as YAML')).toBeDefined();
   });
 
-  it('loads the plain-list sample from its own tab, regardless of which tab is active', async () => {
-    const { onChange, onOverrideChange, user } = setup({ override: 'yaml' });
+  it('hands the chosen sample over, whichever format tab is active', async () => {
+    const onSample = vi.fn();
+    const { onOverrideChange, user } = setup({ override: 'list', onSample });
 
-    await user.click(screen.getByRole('button', { name: /load the plain list sample/i }));
+    await user.click(screen.getByRole('button', { name: /load the movies sample/i }));
 
-    expect(onOverrideChange).toHaveBeenCalledWith('list');
-    expect(onChange).toHaveBeenCalledWith(expect.not.stringContaining('genre'));
+    expect(onSample).toHaveBeenCalledWith(expect.objectContaining({ id: 'movies', format: 'yaml' }));
+    expect(onOverrideChange).not.toHaveBeenCalled();
   });
 
-  it('loads the complex sample from the YAML tab', async () => {
-    const { onChange, onOverrideChange, user } = setup();
+  it('treats a sample as typing when no one handles samples', async () => {
+    const { onChange, user } = setup();
 
-    await user.click(screen.getByRole('button', { name: /load the yaml sample/i }));
+    await user.click(screen.getByRole('button', { name: /load the songs sample/i }));
 
-    expect(onOverrideChange).toHaveBeenCalledWith('yaml');
-    expect(onChange).toHaveBeenCalledWith(expect.stringContaining('genre'));
+    expect(onChange).toHaveBeenCalledWith(expect.stringContaining('"song_name"'));
   });
 
-  it('loads the complex sample from the JSON tab', async () => {
-    const { onChange, onOverrideChange, user } = setup();
+  it('keeps the format tabs to choosing a format', () => {
+    setup();
 
-    await user.click(screen.getByRole('button', { name: /load the json sample/i }));
-
-    expect(onOverrideChange).toHaveBeenCalledWith('json');
-    expect(onChange).toHaveBeenCalledWith(expect.stringContaining('"genre"'));
+    expect(screen.queryByRole('button', { name: /load the (plain list|yaml|json) sample/i })).toBeNull();
   });
 
   it('hides a format tab the current data cannot honestly become', () => {

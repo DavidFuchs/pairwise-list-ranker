@@ -28,7 +28,6 @@ describe("landmarks", () => {
     render(
       <AppShell
         listName="Dinners"
-        statusText="Saved in this browser"
         onReset={vi.fn()}
         rail={null}
         stage={<span>stage</span>}

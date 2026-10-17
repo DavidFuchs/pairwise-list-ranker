@@ -264,3 +264,27 @@ describe('FieldPicker', () => {
     expect(play).toBeDefined();
   });
 });
+
+describe('caveats', () => {
+  const games = (headers: unknown[]) => headers.map((header, index) => ({ title: `Game ${index}`, header }));
+  const roles: FieldRoles = { labelField: 'title', summaryFields: ['header'], fieldRenderers: { header: 'steam-header' } };
+
+  it('warns under a Steam field of app ids', () => {
+    render(<FieldPicker objects={games([620, 400])} roles={roles} onChange={vi.fn()} />);
+
+    expect(screen.getByText(/app id can't find it/i)).toBeDefined();
+  });
+
+  it('says nothing once the field holds banner addresses', () => {
+    const banner = (id: number) => `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${id}/ab12/header.jpg`;
+    render(<FieldPicker objects={games([banner(620), banner(400)])} roles={roles} onChange={vi.fn()} />);
+
+    expect(screen.queryByText(/app id can't find it/i)).toBeNull();
+  });
+
+  it('says nothing about a field that is not on the card', () => {
+    render(<FieldPicker objects={games([620, 400])} roles={{ labelField: 'title' }} onChange={vi.fn()} />);
+
+    expect(screen.queryByText(/app id can't find it/i)).toBeNull();
+  });
+});

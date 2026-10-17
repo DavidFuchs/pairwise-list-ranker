@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { CARD_FLEX_BASIS, ItemCard } from "@/components/comparison/ItemCard";
+import { cardFlexBasis, ItemCard } from "@/components/comparison/ItemCard";
 import { ProgressMeter } from "@/components/ui/ProgressMeter";
 import { useComparisonShortcuts } from "@/lib/hooks/useComparisonShortcuts";
 import { describeCoverage, describeStability, selectItemLabel } from "@/lib/state/selectors";
@@ -44,7 +44,9 @@ const INLINE_GUTTER_MIN_WIDTH = 56;
 // Flex-wrap breaks the row once the cards' flex basis no longer fits, so the
 // threshold has to use the basis too. Using their smaller minWidth left a band
 // of widths where the right card had wrapped but the rule stayed vertical.
-const INLINE_LAYOUT_MIN_WIDTH = CARD_FLEX_BASIS * 2 + INLINE_GUTTER_MIN_WIDTH + space.md * 2;
+function inlineLayoutMinWidth(hasPicture: boolean): number {
+  return cardFlexBasis(hasPicture) * 2 + INLINE_GUTTER_MIN_WIDTH + space.md * 2;
+}
 
 /**
  * The comparison stage. Each card owns the actions for its own item - choose,
@@ -74,7 +76,8 @@ export function ComparisonDeck({
   // once a narrow layout makes the gutter span the full row, that full-width
   // gutter keeps the cards stacked even after the viewport widens again.
   const [cardsWidth, setCardsWidth] = useState<number | null>(null);
-  const stacked = cardsWidth !== null && cardsWidth < INLINE_LAYOUT_MIN_WIDTH;
+  const hasPicture = (pictureFields ?? []).length > 0;
+  const stacked = cardsWidth !== null && cardsWidth < inlineLayoutMinWidth(hasPicture);
 
   const emit = useCallback(
     (outcome: ComparisonOutcome) => {

@@ -117,15 +117,15 @@ export default function RankScreen() {
     [previewTab, workspace, items, comparisonEvents, format],
   );
 
-  // The static build renders without localStorage, so the persistence answer
-  // only exists after hydration. Showing it sooner mismatches the served HTML.
-  const statusText = !hydrated
-    ? "Working locally"
+  // Only a problem is worth saying, and only once hydrated: the static build
+  // renders without localStorage, so the answer does not exist sooner.
+  const saveWarning = !hydrated
+    ? undefined
     : saveOutcome === "too-large"
       ? "Too large to save in this browser"
       : persistenceAvailable
-        ? "Saved in this browser"
-        : "Memory only";
+        ? undefined
+        : "Not saved: this browser is not keeping data";
 
   if (workspace === null) return null;
   const summary = layoutSummary(workspace.roles);
@@ -194,7 +194,7 @@ export default function RankScreen() {
   return (
     <AppShell
       listName={selectContextLine(workspace)}
-      statusText={statusText}
+      saveWarning={saveWarning}
       listSwitcher={
         <ListSwitcher
           currentPath={workspace.source.arrayPath}

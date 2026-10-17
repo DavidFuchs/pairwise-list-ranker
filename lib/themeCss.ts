@@ -6,16 +6,28 @@
  * and opt into gradient treatments with `dataSet={{ surface: 'card' }}`, which
  * react-native-web renders as a `data-surface` attribute.
  *
- * The palette is grayscale everywhere except one neon poison-green/yellow
- * accent family: panels, canvas, borders, and text are true neutrals, and
- * the accent (plus its gradient partner) is the only saturated colour of the
- * app's own. Pills are the exception, colouring the user's data.
+ * The palette is grayscale everywhere except one accent family: panels,
+ * canvas, borders, and text are true neutrals, and the accent (plus its
+ * gradient partner) is the only saturated colour of the app's own. Pills are
+ * the exception, colouring the user's data.
+ *
+ * The whole family comes from ACCENT alone. Each theme derives its shades
+ * with relative colours: text and fills sit at a fixed OKLCH lightness, so
+ * they keep their contrast whatever the accent is, and the gradient partner
+ * is the accent turned a little round the hue wheel. Changing ACCENT is the
+ * one edit a new accent needs.
  */
+
+/** The one accent colour everything accented is derived from. */
+export const ACCENT = '#25AFF3';
+
+/** The accent at an opacity, for tints, glows and shadows. */
+const accentAlpha = (alpha: number) => `rgb(from var(--accent) r g b / ${alpha})`;
 
 const LIGHT_TOKENS = `
   --canvas: #F6F6F7;
-  --canvas-tint-a: rgba(57, 219, 31, 0.08);
-  --canvas-tint-b: rgba(182, 240, 30, 0.06);
+  --canvas-tint-a: ${accentAlpha(0.08)};
+  --canvas-tint-b: rgb(from var(--violet) r g b / 0.06);
   --surface: #FFFFFF;
   --surface-muted: #EEEEF0;
   --surface-sunken: #F2F2F4;
@@ -26,15 +38,13 @@ const LIGHT_TOKENS = `
   --text-primary: #16171A;
   --text-secondary: #595B61;
   --text-faint: #86888E;
-  --accent: #45D124;
-  /* Channels, so the flame can vary its own alpha per layer. */
-  --accent-rgb: 69 209 36;
-  --accent-strong: #2FA318;
-  --accent-contrast: #06170A;
-  --accent-soft: #E7FBDA;
-  --accent-soft-border: #B3EE8E;
-  --violet: #A6D608;
-  --accent-gradient-end: #7BDE1A;
+  /* Deep enough to read as text on white and on the soft fill (AA). */
+  --accent-strong: oklch(from var(--accent) 0.5 c h);
+  --accent-contrast: oklch(from var(--accent) 0.2 calc(c * 0.4) h);
+  --accent-soft: oklch(from var(--accent) 0.96 calc(c * 0.25) h);
+  --accent-soft-border: oklch(from var(--accent) 0.86 calc(c * 0.6) h);
+  --violet: oklch(from var(--accent) l c calc(h - 25));
+  --accent-gradient-end: oklch(from var(--accent) calc(l + 0.04) c calc(h - 10));
   --surplus: #C98A0B;
   --surplus-strong: #E0A93A;
   /* Star ratings. Not the surplus gold, which belongs to the meter alone. */
@@ -43,12 +53,12 @@ const LIGHT_TOKENS = `
   /*
    * Metal at temperature, for the much-better button on hover. The body goes
    * dark and the rim runs bright, which is both how hot metal actually reads
-   * and the only way the pale label clears WCAG AA on it: white on the lighter
-   * greens tried first came in at 2.3:1, and 12px bold is not large text.
+   * and the only way the pale label clears WCAG AA on it: white on the
+   * lighter accent shades comes in well short, and 12px bold is not large text.
    */
-  --heat-core: #237F0F;
-  --heat-edge: #17610A;
-  --heat-rim: #45D124;
+  --heat-core: oklch(from var(--accent) 0.45 c h);
+  --heat-edge: oklch(from var(--accent) 0.38 c h);
+  --heat-rim: var(--accent);
   --heat-label: #FFFFFF;
   --success: #0F9F6E;
   --success-text: #0A7350;
@@ -60,9 +70,9 @@ const LIGHT_TOKENS = `
   --danger-soft: #FEF5F5;
   --danger-soft-border: #F2D6D6;
   --shadow-card: 0 1px 2px rgba(16, 17, 20, 0.05), 0 12px 24px -12px rgba(16, 17, 20, 0.16);
-  --shadow-lift: 0 2px 4px rgba(16, 17, 20, 0.06), 0 22px 40px -18px rgba(47, 163, 24, 0.4);
+  --shadow-lift: 0 2px 4px rgba(16, 17, 20, 0.06), 0 22px 40px -18px rgb(from var(--accent-strong) r g b / 0.4);
   --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --ring: rgba(69, 209, 36, 0.4);
+  --ring: ${accentAlpha(0.45)};
   --overlay: rgba(22, 23, 26, 0.45);
   /*
    * Pills, the one place data brings its own colours. Each tone is a
@@ -80,8 +90,8 @@ const LIGHT_TOKENS = `
 
 const DARK_TOKENS = `
   --canvas: #0A0A0B;
-  --canvas-tint-a: rgba(57, 255, 20, 0.12);
-  --canvas-tint-b: rgba(182, 240, 30, 0.08);
+  --canvas-tint-a: ${accentAlpha(0.12)};
+  --canvas-tint-b: rgb(from var(--violet) r g b / 0.08);
   --surface: #17181A;
   --surface-muted: #1F2023;
   --surface-sunken: #121315;
@@ -92,23 +102,21 @@ const DARK_TOKENS = `
   --text-primary: #EDEDEF;
   --text-secondary: #A2A4AA;
   --text-faint: #77797F;
-  --accent: #39FF14;
-  --accent-rgb: 57 255 20;
-  --accent-strong: #7CFF5C;
-  --accent-contrast: #051A08;
-  --accent-soft: #16280F;
-  --accent-soft-border: #2C5A1B;
-  --violet: #C6FF00;
-  --accent-gradient-end: #8CFF3E;
+  --accent-strong: oklch(from var(--accent) 0.85 calc(c * 0.7) h);
+  --accent-contrast: oklch(from var(--accent) 0.2 calc(c * 0.4) h);
+  --accent-soft: oklch(from var(--accent) 0.25 calc(c * 0.3) h);
+  --accent-soft-border: oklch(from var(--accent) 0.38 calc(c * 0.5) h);
+  --violet: oklch(from var(--accent) calc(l + 0.06) c calc(h - 25));
+  --accent-gradient-end: oklch(from var(--accent) calc(l + 0.04) c calc(h - 10));
   --surplus: #FFC53D;
   --surplus-strong: #FFA71A;
   --star: #FFD23F;
   --star-empty: #3A3D42;
   /* On black the rim can go white-hot, which is where most of the heat reads. */
-  --heat-core: #297912;
-  --heat-edge: #143009;
-  --heat-rim: #BFFFA6;
-  --heat-label: #F2FFEA;
+  --heat-core: oklch(from var(--accent) 0.45 c h);
+  --heat-edge: oklch(from var(--accent) 0.27 calc(c * 0.6) h);
+  --heat-rim: oklch(from var(--accent) 0.9 calc(c * 0.5) h);
+  --heat-label: oklch(from var(--accent) 0.98 0.02 h);
   --success: #35C08D;
   --success-text: #5FD3A9;
   --warning: #E0A64A;
@@ -119,9 +127,9 @@ const DARK_TOKENS = `
   --danger-soft: #241619;
   --danger-soft-border: #4A2A2C;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 28px -14px rgba(0, 0, 0, 0.7);
-  --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.55), 0 26px 48px -20px rgba(57, 255, 20, 0.45);
+  --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.55), 0 26px 48px -20px ${accentAlpha(0.45)};
   --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --ring: rgba(57, 255, 20, 0.5);
+  --ring: ${accentAlpha(0.5)};
   --overlay: rgba(0, 0, 0, 0.65);
   --tone-red-bg: #2E1515; --tone-red-border: #5C2626; --tone-red-text: #FF9C94;
   --tone-amber-bg: #2E2310; --tone-amber-border: #5E4618; --tone-amber-text: #EFC078;
@@ -134,7 +142,7 @@ const DARK_TOKENS = `
 `;
 
 export const themeCss = `
-:root { color-scheme: light; ${LIGHT_TOKENS} }
+:root { color-scheme: light; --accent: ${ACCENT}; ${LIGHT_TOKENS} }
 :root[data-theme='dark'] { color-scheme: dark; ${DARK_TOKENS} }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) { color-scheme: dark; ${DARK_TOKENS} }
@@ -238,17 +246,16 @@ html, body { background-color: var(--canvas); }
 }
 
 /*
- * The per-tab sample trigger stays just as quiet, then turns the accent
- * colour the tab itself would wear once selected.
+ * A sample button stays quiet beside the editor, then wears the accent a
+ * selected format tab does once it is hovered or focused.
  */
 [data-sample] {
-  --sample-ink: var(--text-faint);
-  transition: background-color 140ms ease;
+  transition: background-color 140ms ease, border-color 140ms ease;
 }
 [data-sample]:hover,
 [data-sample]:focus-visible {
-  --sample-ink: var(--accent-strong);
-  background-color: var(--accent-soft);
+  border-color: var(--accent-soft-border) !important;
+  background-color: var(--accent-soft) !important;
 }
 
 /*
@@ -311,7 +318,7 @@ html, body { background-color: var(--canvas); }
   border-color: var(--heat-rim) !important;
   background-image: radial-gradient(130% 165% at 50% 135%, var(--heat-core) 0%,
     var(--heat-edge) 72%);
-  box-shadow: 0 0 10px rgb(var(--accent-rgb) / 0.5), 0 0 22px rgb(var(--accent-rgb) / 0.22);
+  box-shadow: 0 0 10px rgb(from var(--accent) r g b / 0.5), 0 0 22px rgb(from var(--accent) r g b / 0.22);
   animation: strong-ignite 260ms ease-out, strong-heat 5200ms linear 260ms infinite;
 }
 
@@ -319,25 +326,25 @@ html, body { background-color: var(--canvas); }
 
 @keyframes strong-ignite {
   0% {
-    box-shadow: 0 0 0 rgb(var(--accent-rgb) / 0), 0 0 0 rgb(var(--accent-rgb) / 0);
+    box-shadow: 0 0 0 rgb(from var(--accent) r g b / 0), 0 0 0 rgb(from var(--accent) r g b / 0);
     filter: brightness(1);
   }
   38% {
-    box-shadow: 0 0 16px rgb(var(--accent-rgb) / 0.85), 0 0 34px rgb(var(--accent-rgb) / 0.4);
+    box-shadow: 0 0 16px rgb(from var(--accent) r g b / 0.85), 0 0 34px rgb(from var(--accent) r g b / 0.4);
     filter: brightness(1.3);
   }
   100% {
-    box-shadow: 0 0 10px rgb(var(--accent-rgb) / 0.5), 0 0 22px rgb(var(--accent-rgb) / 0.22);
+    box-shadow: 0 0 10px rgb(from var(--accent) r g b / 0.5), 0 0 22px rgb(from var(--accent) r g b / 0.22);
     filter: brightness(1);
   }
 }
 
 @keyframes strong-heat {
   0%, 100% {
-    box-shadow: 0 0 10px rgb(var(--accent-rgb) / 0.5), 0 0 22px rgb(var(--accent-rgb) / 0.22);
+    box-shadow: 0 0 10px rgb(from var(--accent) r g b / 0.5), 0 0 22px rgb(from var(--accent) r g b / 0.22);
   }
   50% {
-    box-shadow: 0 0 13px rgb(var(--accent-rgb) / 0.6), 0 0 27px rgb(var(--accent-rgb) / 0.28);
+    box-shadow: 0 0 13px rgb(from var(--accent) r g b / 0.6), 0 0 27px rgb(from var(--accent) r g b / 0.28);
   }
 }
 
@@ -362,7 +369,7 @@ html, body { background-color: var(--canvas); }
   /* Still hot, it just arrives there rather than igniting. */
   [data-strong]:hover {
     animation: none;
-    box-shadow: 0 0 11px rgb(var(--accent-rgb) / 0.55), 0 0 24px rgb(var(--accent-rgb) / 0.25);
+    box-shadow: 0 0 11px rgb(from var(--accent) r g b / 0.55), 0 0 24px rgb(from var(--accent) r g b / 0.25);
   }
 }
 `;

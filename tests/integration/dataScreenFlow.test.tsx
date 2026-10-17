@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DataScreen from '@/app/index';
-import { SAMPLE_ROLES } from '@/lib/import/sampleData';
+import { MOVIE_SAMPLE, SONG_SAMPLE } from '@/lib/import/sampleData';
 import { listStore } from '@/lib/state/useListStore';
 
 const replace = vi.fn();
@@ -124,17 +124,17 @@ describe('the data screen', () => {
   });
 });
 
-describe('the sample songs', () => {
+describe('the samples', () => {
   beforeEach(() => {
     listStore.getState().reset();
     globalThis.localStorage?.clear();
   });
 
-  it('arrive set up to show the renderers off', async () => {
+  it('bring the songs in set up to show the renderers off', async () => {
     const user = userEvent.setup();
     render(<DataScreen />);
 
-    await user.click(screen.getByRole('button', { name: /load the yaml sample/i }));
+    await user.click(screen.getByRole('button', { name: /load the songs sample/i }));
 
     expect(screen.getByRole('button', { name: 'Label items by song_name' }).getAttribute('aria-pressed')).toBe('true');
     for (const field of ['artwork_url', 'apple_music_id', 'duration_sec', 'explicit']) {
@@ -142,18 +142,32 @@ describe('the sample songs', () => {
     }
 
     await user.click(screen.getByRole('button', { name: /start ranking/i }));
-    expect(listStore.getState().workspace?.roles.fieldRenderers).toEqual(SAMPLE_ROLES.fieldRenderers);
+    expect(listStore.getState().workspace?.roles.fieldRenderers).toEqual(SONG_SAMPLE.roles.fieldRenderers);
     expect(listStore.getState().workspace?.source.arrayPath).toEqual(['songs']);
   });
 
-  it('leave the plain list with nothing to set up', async () => {
+  it('bring the movies in as YAML, set up the same way', async () => {
     const user = userEvent.setup();
     render(<DataScreen />);
 
-    await user.click(screen.getByRole('button', { name: /load the plain list sample/i }));
-    await user.click(screen.getByRole('button', { name: /start ranking/i }));
+    await user.click(screen.getByRole('button', { name: /load the movies sample/i }));
 
+    expect(screen.getByRole('button', { name: 'Label items by title' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('Read as YAML.')).toBeDefined();
+
+    await user.click(screen.getByRole('button', { name: /start ranking/i }));
     expect(listStore.getState().items).toHaveLength(10);
-    expect(listStore.getState().workspace?.roles).toEqual({});
+    expect(listStore.getState().workspace?.source.format).toBe('yaml');
+    expect(listStore.getState().workspace?.roles.fieldRenderers).toEqual(MOVIE_SAMPLE.roles.fieldRenderers);
+  });
+
+  it('read a sample by its own format even with Plain list chosen', async () => {
+    const user = userEvent.setup();
+    render(<DataScreen />);
+
+    await user.click(screen.getByRole('radio', { name: /read the text as a plain list/i }));
+    await user.click(screen.getByRole('button', { name: /load the movies sample/i }));
+
+    expect(screen.getByText('Read as YAML.')).toBeDefined();
   });
 });

@@ -21,8 +21,13 @@ import { colors, fonts, radius, space } from '@/lib/theme';
 const REPO_URL = 'https://github.com/DavidFuchs/pairwise-list-ranker';
 
 export interface AppShellProps {
-  listName: string;
-  statusText: string;
+  /** Shown beside the wordmark when there is no list switcher. */
+  listName?: string;
+  /**
+   * Said only when something is wrong with saving, such as a list too large
+   * for the browser to keep. Saving that works needs no announcement.
+   */
+  saveWarning?: string;
   /** Omitted on the data screen, where there is nothing to reset yet. */
   onReset?: () => void;
   /**
@@ -45,6 +50,8 @@ export interface AppShellProps {
 /** The stage never gets narrower than this while the sidebar sits beside it. */
 const STAGE_MIN_WIDTH = 320;
 const RAIL_WIDTH = 260;
+/** The sidebar never gets shorter than this, however short the window. */
+const PREVIEW_MIN_HEIGHT = 520;
 
 /**
  * A split view: the stage on the left, the sidebar on the right, and a
@@ -57,7 +64,7 @@ const RAIL_WIDTH = 260;
  */
 export function AppShell({
   listName,
-  statusText,
+  saveWarning,
   onReset,
   listSwitcher,
   rail,
@@ -78,6 +85,8 @@ export function AppShell({
   // through localStorage; saved once when the drag settles.
   const [draggingSidebarWidth, setDraggingSidebarWidth] = useState<number | null>(null);
   const [bodyWidth, setBodyWidth] = useState<number | null>(null);
+  // The height under the header, which the split view's columns fill.
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
 
   const railSpace = rail != null ? RAIL_WIDTH + space.lg : 0;
   const maxSidebarWidth =
@@ -160,15 +169,20 @@ export function AppShell({
       <View style={styles.header} role="banner">
         <View style={styles.brand}>
           <Text style={styles.wordmark}>Pairwise</Text>
-          {listSwitcher ?? (
-            <Text style={styles.listName} numberOfLines={1}>
-              {listName}
-            </Text>
-          )}
+          {listSwitcher ??
+            (listName !== undefined && (
+              <Text style={styles.listName} numberOfLines={1}>
+                {listName}
+              </Text>
+            ))}
         </View>
 
         <View style={styles.headerActions}>
-          <Text style={styles.status}>{statusText}</Text>
+          {saveWarning !== undefined && (
+            <Text role="status" style={styles.saveWarning}>
+              {saveWarning}
+            </Text>
+          )}
           <Button
             label="How it works"
             accessibilityLabel="How this app works"
@@ -228,7 +242,11 @@ export function AppShell({
 
       <HowItWorksModal visible={howItWorksOpen} onClose={() => setHowItWorksOpen(false)} />
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollBody}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollBody}
+        onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
+      >
         <View
           style={[styles.body, layout === 'split' && styles.bodySplit, layout === 'stacked' && styles.bodyStacked]}
           onLayout={(event) => setBodyWidth(event.nativeEvent.layout.width)}
@@ -262,7 +280,11 @@ export function AppShell({
           <View
             style={[
               styles.preview,
-              layout === 'split' && [styles.previewSplit, { width: sidebarWidth }],
+              layout === 'split' && [
+                styles.previewSplit,
+                { width: sidebarWidth },
+                viewportHeight !== null && { height: Math.max(PREVIEW_MIN_HEIGHT, viewportHeight - space.lg * 2) },
+              ],
               layout === 'stacked' && styles.previewStacked,
             ]}
             role="complementary"
@@ -323,7 +345,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.md,
   },
-  status: { fontFamily: fonts.mono, fontSize: 11, color: colors.textSecondary },
+  saveWarning: { fontFamily: fonts.body, fontSize: 12, color: colors.warningText },
   resetWarning: {
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
@@ -346,7 +368,8 @@ const styles = StyleSheet.create({
   rail: { flexGrow: 1, flexShrink: 1, flexBasis: RAIL_WIDTH, minWidth: 240, maxWidth: 340, gap: space.md },
   railSplit: { flexGrow: 0, flexShrink: 0, width: RAIL_WIDTH, marginRight: space.lg },
   stage: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: STAGE_MIN_WIDTH, gap: space.lg },
-  stageSplit: { minWidth: 0 },
+  // As tall as the sidebar beside it, so a panel that flexes can fill the column.
+  stageSplit: { minWidth: 0, alignSelf: 'stretch' },
   // In a column, flex-basis would size height rather than width.
   stageStacked: { flexBasis: 'auto', flexGrow: 0, minWidth: 0 },
   preview: {
@@ -354,7 +377,9 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     flexBasis: SIDEBAR_DEFAULT_WIDTH,
     minWidth: SIDEBAR_MIN_WIDTH,
-    minHeight: 520,
+    minHeight: PREVIEW_MIN_HEIGHT,
+    // Until the space under the header is measured; the split view then
+    // fills it exactly, down to the bottom of the window.
     height: '85vh' as unknown as number,
   },
   previewSplit: { flexShrink: 0, flexBasis: 'auto', minWidth: 0 },

@@ -189,8 +189,8 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
         </P>
         <P>
           The format is detected for you. If it guesses wrong, pick <K>Plain list</K>, <K>YAML</K>{' '}
-          or <K>JSON</K> under the box to read it that way instead. The sample buttons there load a
-          ready-made list to try the app with.
+          or <K>JSON</K> under the box to read it that way instead. No list handy? The sample buttons
+          above the box load ten songs, movies or Steam games, already set up to show the cards off.
         </P>
         <P>
           A YAML or JSON document can hold more than one list. When it does, the panel on the right
@@ -537,7 +537,7 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
           answer. The number at the end of each row is the item&apos;s rating.
         </P>
         <P>
-          Drag a row by its <K>⠿</K> handle and drop it where the line shows: it lands exactly
+          Drag a row by its <K>⠿</K> handle and drop it where the line shows: it goes exactly
           there, and nothing else moves. It is a starting point, not a pin - later comparisons can
           still move it. <K>Undo</K> takes a move back. From the keyboard, focus the handle and
           press <K>Alt</K> + <K>↑</K> or <K>↓</K>.

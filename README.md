@@ -16,8 +16,8 @@ browser, and your data never leaves it.
 
 **1. Add your list.** Paste plain text (one item per line), or drop in YAML or
 JSON for richer data. The app works out the format and shows what it found
-before anything happens. Not sure where to start? The sample buttons load a
-list of ten songs, already set up to show the cards off.
+before anything happens. Not sure where to start? The sample buttons load ten
+songs, movies or Steam games, already set up to show the cards off.
 
 **2. Choose what each card shows.** For a list of objects, pick the field
 that titles each card, tick the details to show under it, and choose how each

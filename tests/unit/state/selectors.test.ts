@@ -160,7 +160,7 @@ describe("describeCoverage", () => {
     expect(shown.surplus).toBe(0);
   });
 
-  it("splits the bar into a full green run and a gold surplus past the estimate", () => {
+  it("splits the bar into a full accent run and a gold surplus past the estimate", () => {
     const shown = describeCoverage(1.38);
 
     expect(shown.label).toBe("138%");
@@ -206,7 +206,7 @@ describe("describeCoverage", () => {
 
 /**
  * An already-ranked import is credited the whole estimate on its word alone,
- * so the meter has to say which part of its green run is a claim and which
+ * so the meter has to say which part of its accent run is a claim and which
  * part comparisons have actually paid for. The claim converts to earned as the
  * work lands, rather than the two being indistinguishable.
  */

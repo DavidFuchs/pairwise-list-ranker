@@ -113,12 +113,13 @@ export function ItemCard({
   const chips = (summaryFields ?? []).filter((field) => formatValue(raw(field), renderers?.[field], field) !== null);
   const pictures = itemPictures(raw, pictureFields, renderers);
   const sources = itemPreviewSources(raw, mediaFields, renderers);
+  const hasPicture = (pictureFields ?? []).length > 0;
   const interactive = onChoose !== undefined;
   const canChoose = interactive && !pendingDelete;
 
   return (
     <Animated.View
-      style={[styles.card, { opacity }]}
+      style={[styles.card, { flexBasis: cardFlexBasis(hasPicture), opacity }]}
       dataSet={{ surface: 'card' }}
     >
       <Pressable
@@ -130,9 +131,18 @@ export function ItemCard({
             ? `Choose ${label}`
             : `${side === 'left' ? 'Left' : 'Right'} option: ${label}`
         }
-        disabled={!canChoose}
+        // Disabled only while a choice is held back by a pending delete. A
+        // card with nothing to choose (a preview) is not disabled, which
+        // would mark its gallery, play button and links disabled too; it
+        // just leaves the tab route.
+        disabled={interactive && !canChoose}
+        tabIndex={canChoose ? 0 : -1}
         onPress={canChoose ? onChoose : undefined}
-        style={({ pressed }) => [styles.pressArea, canChoose && pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.pressArea,
+          interactive && styles.pressAreaInteractive,
+          canChoose && pressed && styles.pressed,
+        ]}
       >
       {/*
         The title leads the card. Which side it is on is self-evident from
@@ -145,7 +155,7 @@ export function ItemCard({
       )}
 
       <View style={styles.headline}>
-        {(pictureFields ?? []).length > 0 && (
+        {hasPicture && (
           <FieldGallery key={item.id} pictures={pictures} size={IMAGE_SIZE} label={label} />
         )}
         <View style={styles.headlineBody}>
@@ -264,14 +274,20 @@ function focusNode(node: View | null): void {
 /**
  * The width a card asks for before growing. Flex-wrap breaks the line on this
  * figure, not on minWidth, so the deck uses it to decide when the pair stacks.
+ * A picture beside the title takes its own width out of the card, so a card
+ * with one asks for that much more: otherwise the title and details are left
+ * a sliver beside it before the pair ever stacks.
  */
-export const CARD_FLEX_BASIS = 280;
+export function cardFlexBasis(hasPicture: boolean): number {
+  return 280 + (hasPicture ? IMAGE_SIZE + space.md : 0);
+}
 
 const styles = StyleSheet.create({
   card: {
     flexGrow: 1,
     flexShrink: 1,
-    flexBasis: CARD_FLEX_BASIS,
+    // Kept to the text-only figure even with a picture, so a stacked card
+    // still fits a phone; the basis above is what decides the stacking.
     minWidth: 250,
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -284,14 +300,15 @@ const styles = StyleSheet.create({
    */
   pressArea: {
     flex: 1,
-    // The card is the tap target, so it keeps a substantial presence even when
-    // the item is a bare string with nothing to show but its name. Without it
-    // the footer rule rides up under the title and reads as an underline.
-    minHeight: 230,
     gap: space.md,
     padding: space.lg,
     borderRadius: radius.lg,
   },
+  // The card is the tap target, so it keeps a substantial presence even when
+  // the item is a bare string with nothing to show but its name. Without it
+  // the footer rule rides up under the title and reads as an underline. A
+  // preview has no footer, so it takes only the height its content needs.
+  pressAreaInteractive: { minHeight: 230 },
   pressed: { backgroundColor: colors.accentSoft },
   topRow: {
     flexDirection: 'row',

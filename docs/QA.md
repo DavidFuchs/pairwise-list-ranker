@@ -21,7 +21,7 @@ Test in a normal window and a private window (private mode is the realistic
 
 - [ ] The page loads with no console errors or warnings.
 - [ ] The onboarding panel explains that everything starts from pasted data.
-- [ ] Sample snippets for YAML, JSON, and Markdown are readable.
+- [ ] The Songs (JSON), Movies (YAML) and Games (YAML) samples load, with their artwork, posters, trailers, Steam banners and play buttons showing.
 - [ ] The GUI tab is selected and shows an empty-state message.
 
 ## 2. Import
