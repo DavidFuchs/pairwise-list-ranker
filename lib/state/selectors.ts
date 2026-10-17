@@ -453,8 +453,9 @@ export function selectStability(
 export function describeStability(reading: StabilityReading): string {
   if (reading.pairs === 0) return '';
   if (reading.unresolved === 0) {
-    return 'Every neighbouring pair is settled. The order is ready to export.';
+    return 'Every item is settled against its neighbours. The order is ready to export.';
   }
-  const noun = reading.unresolved === 1 ? 'pair' : 'pairs';
-  return `${reading.unresolved} neighbouring ${noun} still too close to call.`;
+  return reading.unresolved === 1
+    ? '1 place in the order is still a close call.'
+    : `${reading.unresolved} places in the order are still close calls.`;
 }

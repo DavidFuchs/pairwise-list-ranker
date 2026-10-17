@@ -172,7 +172,7 @@ test('chooses by clicking anywhere on a card', async ({ page }) => {
     .first()
     .click();
 
-  await expect(page.getByText(/^1 comparisons ·/)).toBeVisible();
+  await expect(page.getByText(/^1 comparison ·/)).toBeVisible();
 });
 
 /**
@@ -228,7 +228,7 @@ test('much better records a strong win in one click', async ({ page }) => {
     .first()
     .click();
 
-  await expect(page.getByText(/^1 comparisons ·/)).toBeVisible();
+  await expect(page.getByText(/^1 comparison ·/)).toBeVisible();
 });
 
 test('choice cards return to one row after rotating back to landscape', async ({ page }) => {
@@ -267,7 +267,7 @@ test('reordering by hand adds to the comparisons instead of discarding them', as
     .getByLabel(/^Choose /)
     .first()
     .click();
-  await expect(page.getByText(/^1 comparisons ·/)).toBeVisible();
+  await expect(page.getByText(/^1 comparison ·/)).toBeVisible();
 
   // Keyboard reordering is the same commit path as a drop, and is stable to drive.
   await page
@@ -448,7 +448,7 @@ test('the controls under the cards never move up from one pair to the next', asy
     await expect(page.getByLabel(/^Choose /).first()).toBeVisible();
     positions.push(await settledTop(skip));
     await page.keyboard.press(pair % 2 === 0 ? 'ArrowLeft' : 'ArrowRight');
-    await expect(page.getByText(new RegExp(`^${pair + 1} comparisons ·`))).toBeVisible();
+    await expect(page.getByText(new RegExp(`^${pair + 1} comparisons? ·`))).toBeVisible();
   }
 
   // Taller pairs may push it down once; nothing ever pulls it back up.

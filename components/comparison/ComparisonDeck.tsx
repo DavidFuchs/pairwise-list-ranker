@@ -161,9 +161,10 @@ export function ComparisonDeck({
         <View style={styles.statusRow}>
           {leading}
           <Text style={[styles.status, styles.statusGrow]}>
-            {`${progress.comparisons} comparisons · ${progress.activeItems} items`}
+            {`${countOf(progress.comparisons, 'comparison')} · ${countOf(progress.activeItems, 'item')} · `}
+            {/* Beside the count, where the eye already is, rather than at the far end. */}
+            <Text style={styles.statusPercent}>{percentLabel}</Text>
           </Text>
-          <Text style={styles.statusPercent}>{percentLabel}</Text>
         </View>
         <Text style={styles.announcement}>
           {`Comparing ${selectItemLabel(pair.left, layout.labelField)} and ${selectItemLabel(pair.right, layout.labelField)}`}
@@ -307,6 +308,10 @@ function ShortcutKeys() {
   ));
 }
 
+function countOf(count: number, noun: string): string {
+  return `${count} ${count === 1 ? noun : `${noun}s`}`;
+}
+
 /** Whether an item carries anything beyond the field that titles its card. */
 function hasDetailFields(item: ListItem, sortField: string | undefined): boolean {
   if (!isComplexItemValue(item.value)) return false;
@@ -389,8 +394,9 @@ const styles = StyleSheet.create({
   },
   statusPercent: {
     fontFamily: fonts.mono,
-    fontSize: 11,
-    color: colors.textFaint,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textPrimary,
   },
   coverageNote: {
     fontFamily: fonts.body,

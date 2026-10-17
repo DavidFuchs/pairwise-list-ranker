@@ -576,8 +576,8 @@ describe('ComparisonDeck undo and stability', () => {
     expect(onUndo).toHaveBeenCalledTimes(2);
   });
 
-  it('reports how many neighbouring pairs are still unsettled', () => {
+  it('reports how many places in the order are still close calls', () => {
     setup({ stability: { pairs: 5, unresolved: 2 } });
-    expect(screen.getByText(/2 neighbouring pairs still too close/)).toBeDefined();
+    expect(screen.getByText(/2 places in the order are still close calls/)).toBeDefined();
   });
 });

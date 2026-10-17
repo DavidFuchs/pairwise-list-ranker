@@ -56,7 +56,11 @@ describe('describeStability', () => {
   });
 
   it('counts what is left', () => {
-    expect(describeStability({ pairs: 4, unresolved: 1 })).toMatch(/1 neighbouring pair /);
-    expect(describeStability({ pairs: 4, unresolved: 3 })).toMatch(/3 neighbouring pairs/);
+    expect(describeStability({ pairs: 4, unresolved: 1 })).toBe(
+      '1 place in the order is still a close call.',
+    );
+    expect(describeStability({ pairs: 4, unresolved: 3 })).toBe(
+      '3 places in the order are still close calls.',
+    );
   });
 });

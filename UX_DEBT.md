@@ -45,7 +45,7 @@ It falls short in three places:
 | 11 | Say a shared-slot tip once, not under every field | Clarity | Low | Done |
 | 12 | Make the keyboard shortcuts findable | Speed | Medium | Done |
 | 13 | Avoid the layout jump when data first arrives | Polish | Low | Open |
-| 14 | Plainer progress wording | Clarity | Low | Open |
+| 14 | Plainer progress wording | Clarity | Low | Done |
 | 15 | Smooth the theme switch | Polish | Low | Open |
 | 16 | Keep rating bars inside narrow cards | Polish | Low | Open |
 | 17 | Match the Start over prompt's spoken names to its labels | Accessibility | Low | Done |
@@ -286,6 +286,11 @@ type at the far end of the bar.
 
 Fix: something like "7 places in the list are still uncertain", and the
 percentage beside the comparison count where the eye already is.
+
+Done: the line reads "7 places in the order are still close calls" (and "Every
+item is settled against its neighbours" once none are), the percentage sits in
+the count line in a stronger weight, and the count says "1 comparison" rather
+than "1 comparisons".
 
 ## Polish
 
