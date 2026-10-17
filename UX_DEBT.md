@@ -42,7 +42,7 @@ It falls short in three places:
 | 8 | Do not present an order before there is one | Clarity | Medium | Done |
 | 9 | Say what the app does on the first screen | Onboarding | Medium | Done |
 | 10 | Show field names as people would write them | Clarity | Medium | Done |
-| 11 | Say a shared-slot tip once, not under every field | Clarity | Low | Open |
+| 11 | Say a shared-slot tip once, not under every field | Clarity | Low | Done |
 | 12 | Make the keyboard shortcuts findable | Speed | Medium | Done |
 | 13 | Avoid the layout jump when data first arrives | Polish | Low | Open |
 | 14 | Plainer progress wording | Clarity | Low | Open |
@@ -273,6 +273,10 @@ When several fields share the picture slot, the field picker repeats the same
 three-line tip under each of them ("These share the spot beside the title...").
 
 Fix: say it once, above the group, or only under the first field of the slot.
+
+Done: the first field of a shared slot carries the tip and the ordered list;
+each later one says where it falls in one line, such as "2nd of 3 pictures
+beside the title, after poster_url".
 
 ### 14. Progress wording
 

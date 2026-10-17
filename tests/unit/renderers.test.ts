@@ -479,7 +479,7 @@ describe('renderer caveats', () => {
     ).toMatch(/not every track/i);
   });
 
-  it('lists every preview sharing the play button, in order, on each of them', () => {
+  it('lists every preview sharing the play button under the first, and places each later one', () => {
     const caveat = rendererCaveat('deezer-preview', ['1'], {
       ...context,
       earlier: [
@@ -487,11 +487,8 @@ describe('renderer caveats', () => {
         { field: 'apple_id', renderer: 'apple-music-preview' },
       ],
     });
-    expect(caveat?.text).toMatch(/share the play button/i);
-    expect(caveat?.order).toEqual([
-      { field: 'apple_id', current: false },
-      { field: 'this', current: true },
-    ]);
+    expect(caveat?.text).toBe('2nd of 2 sources for the play button, tried after apple_id.');
+    expect(caveat?.order).toBeUndefined();
     const first = rendererCaveat('apple-music-preview', ['1'], {
       ...context,
       later: [{ field: 'deezer', renderer: 'deezer-preview' }],
@@ -502,7 +499,7 @@ describe('renderer caveats', () => {
     ]);
   });
 
-  it('lists every picture sharing the spot beside the title, in order, on each of them', () => {
+  it('lists every picture sharing the spot beside the title under the first, and places each later one', () => {
     const earlier = [{ field: 'poster', renderer: 'image' as const }];
     const later = [
       { field: 'blurb', renderer: 'long-text' as const },
@@ -510,11 +507,7 @@ describe('renderer caveats', () => {
     ];
     for (const renderer of ['image', 'image-gallery', 'youtube', 'steam-header'] as const) {
       const caveat = rendererCaveat(renderer, ['https://img.example/a.jpg'], { ...context, earlier, later });
-      expect(caveat?.text, renderer).toMatch(/share the spot beside the title/i);
-      expect(
-        caveat?.order?.map((entry) => entry.field),
-        renderer,
-      ).toEqual(['poster', 'this', 'stills']);
+      expect(caveat?.text, renderer).toBe('2nd of 3 pictures beside the title, after poster.');
     }
     const first = rendererCaveat('image', ['https://img.example/a.jpg'], { ...context, later: earlier });
     expect(first?.order?.map((entry) => entry.field)).toEqual(['this', 'poster']);

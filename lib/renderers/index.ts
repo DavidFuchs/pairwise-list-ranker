@@ -117,8 +117,22 @@ export function rendererCaveat(
   const slot = slotOf(renderer);
   const sharing = (others: CardField[]) => others.filter((other) => slotOf(other.renderer) === slot);
   if (slot !== 'line' && sharing(context.earlier).length + sharing(context.later).length > 0) {
+    const before = sharing(context.earlier);
+    const total = before.length + 1 + sharing(context.later).length;
+    // The full explanation once, under the first of them; each later one says
+    // only where it falls, rather than repeating the same paragraph.
+    if (before.length > 0) {
+      const position = `${ordinal(before.length + 1)} of ${total}`;
+      const after = before[before.length - 1]!.field;
+      return {
+        tone: 'tip',
+        text:
+          slot === 'media'
+            ? `${position} sources for the play button, tried after ${after}.`
+            : `${position} pictures beside the title, after ${after}.`,
+      };
+    }
     const order = [
-      ...sharing(context.earlier).map(({ field }) => ({ field, current: false })),
       { field: context.field, current: true },
       ...sharing(context.later).map(({ field }) => ({ field, current: false })),
     ];
@@ -136,6 +150,12 @@ export function rendererCaveat(
   }
   const present = values.filter((value) => value !== undefined && value !== null && value !== '');
   return definitionOf(renderer)?.caveat?.(present, context);
+}
+
+function ordinal(n: number): string {
+  const tens = n % 100;
+  const suffix = tens >= 11 && tens <= 13 ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th');
+  return `${n}${suffix}`;
 }
 
 /** The renderer's own name, for a configuration summary. */
