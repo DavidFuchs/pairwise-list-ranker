@@ -4,6 +4,7 @@ import { createWorkspaceStorage } from '@/lib/persistence/workspaceStorage';
 import type { StorageLike } from '@/lib/persistence/workspaceStorage';
 import {
   buildSessionFile,
+  describeLostWork,
   describeSession,
   readSavedFile,
   SESSION_FILE_KIND,
@@ -151,5 +152,32 @@ describe('session files', () => {
 
   it('has nothing to save before a list is loaded', () => {
     expect(makeStore().getState().snapshot()).toBeNull();
+  });
+});
+
+describe('describeLostWork', () => {
+  it('counts the decisions a start-over would throw away', () => {
+    expect(describeLostWork(workedStore().getState().workspace)).toBe('Your 2 decisions will be lost.');
+  });
+
+  it('names the lists when more than one has decisions', () => {
+    const store = workedStore();
+    store
+      .getState()
+      .switchList({ source: { ...films, arrayPath: ['books'] }, roles: { labelField: 'title' } });
+    const [dune, emma] = openList(store).items;
+    store.getState().recordComparison(dune!.id, emma!.id, 'left');
+
+    expect(describeLostWork(store.getState().workspace)).toBe(
+      'Your 3 decisions across 2 lists will be lost.',
+    );
+  });
+
+  it('says nothing when nothing would be lost', () => {
+    const store = makeStore();
+    store.getState().startRanking({ source: films, roles: {} });
+
+    expect(describeLostWork(store.getState().workspace)).toBeUndefined();
+    expect(describeLostWork(null)).toBeUndefined();
   });
 });

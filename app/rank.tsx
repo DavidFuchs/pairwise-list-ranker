@@ -14,6 +14,7 @@ import { downloadName, exportFilename, slugify } from '@/lib/export/filenames';
 import {
   buildSessionFile,
   confirmOpenSession,
+  describeLostWork,
   describeSession,
   hasDecisions,
   readSavedFile,
@@ -34,6 +35,17 @@ import { listStore, useListStore } from '@/lib/state/useListStore';
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent } from '@/types/ranking';
 import type { DataSource, SourceFormat } from '@/types/source';
+
+/** Downloads the whole session as a file, and says how that went. */
+function saveSession(): string {
+  const session = listStore.getState().snapshot();
+  if (session === null) return 'Nothing to save yet';
+  const file = buildSessionFile(session, new Date().toISOString());
+  const name = `${slugify(downloadName(session.workspace.source))}-session.json`;
+  return downloadText(name, JSON.stringify(file, null, 2), 'application/json')
+    ? `Saved ${name}`
+    : 'Download unavailable';
+}
 
 /** Shared empties, so the view cache recognises "nothing loaded" between renders. */
 const NO_ITEMS: ListItem[] = [];
@@ -159,6 +171,8 @@ export default function RankScreen() {
         listStore.getState().reset();
         router.replace('/');
       }}
+      resetCost={describeLostWork(workspace)}
+      onSaveBeforeReset={saveSession}
       stage={
         <>
           <PageNav>
@@ -197,15 +211,7 @@ export default function RankScreen() {
           removedCount={selectRemovedCount(items)}
           onReorder={(itemId, nextOrder) => listStore.getState().reorderItem(itemId, nextOrder)}
           sessionFile={{
-            onSave: () => {
-              const session = listStore.getState().snapshot();
-              if (session === null) return 'Nothing to save yet';
-              const file = buildSessionFile(session, new Date().toISOString());
-              const name = `${slugify(downloadName(workspace.source))}-session.json`;
-              return downloadText(name, JSON.stringify(file, null, 2), 'application/json')
-                ? `Saved ${name}`
-                : 'Download unavailable';
-            },
+            onSave: saveSession,
             onOpen: async () => {
               const text = await pickTextFile('application/json,.json');
               if (text === null) return null;

@@ -85,6 +85,21 @@ export function hasDecisions(workspace: Workspace | null): boolean {
   return workspace !== null && allLists(workspace).some((list) => list.comparisonEvents.length > 0);
 }
 
+/**
+ * What clearing the workspace would throw away, for the start-over prompt, or
+ * undefined when no decision would be lost.
+ */
+export function describeLostWork(workspace: Workspace | null): string | undefined {
+  if (workspace === null) return undefined;
+  const lists = allLists(workspace).filter((list) => list.comparisonEvents.length > 0);
+  const decisions = lists.reduce((sum, list) => sum + list.comparisonEvents.length, 0);
+  if (decisions === 0) return undefined;
+  const noun = decisions === 1 ? 'decision' : 'decisions';
+  return lists.length > 1
+    ? `Your ${decisions} ${noun} across ${lists.length} lists will be lost.`
+    : `Your ${decisions} ${noun} will be lost.`;
+}
+
 /** Asked before a session replaces decisions that would otherwise be lost. */
 export function confirmOpenSession(session: WorkspaceSnapshot): string {
   return `Open this session (${describeSession(session)})? It replaces the list you are ranking now, and its progress is gone unless you saved it.`;

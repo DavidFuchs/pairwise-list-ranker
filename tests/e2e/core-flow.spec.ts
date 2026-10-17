@@ -402,3 +402,19 @@ test('a long list does not make the layout flicker or the page scroll sideways',
   );
   expect(overflowX).toBe(false);
 });
+
+test('a phone-width screen never scrolls sideways', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  const overflowsX = () =>
+    page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  expect(await overflowsX()).toBe(false);
+
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+  await expect(page.getByLabel(/^Choose /).first()).toBeVisible();
+  expect(await overflowsX()).toBe(false);
+
+  // The start-over prompt adds buttons to the header, which is when it was widest.
+  await page.getByRole('button', { name: 'Start over' }).click();
+  expect(await overflowsX()).toBe(false);
+});

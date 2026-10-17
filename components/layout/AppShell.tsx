@@ -23,6 +23,16 @@ export interface AppShellProps {
   /** Omitted on the data screen, where there is nothing to reset yet. */
   onReset?: () => void;
   /**
+   * What starting over would throw away, said in the prompt before it does,
+   * e.g. "Your 12 comparisons will be lost." Omitted when nothing would be.
+   */
+  resetCost?: string;
+  /**
+   * Offered in the start-over prompt as the way to keep that work first.
+   * Returns what happened, for the prompt to show.
+   */
+  onSaveBeforeReset?: () => string;
+  /**
    * Replaces the plain list-name text with an interactive control, e.g.
    * ListSwitcher on the rank screen. Falls back to plain text when omitted,
    * since not every screen has other lists to jump between.
@@ -58,6 +68,8 @@ export function AppShell({
   listName,
   saveWarning,
   onReset,
+  resetCost,
+  onSaveBeforeReset,
   listSwitcher,
   rail,
   stage,
@@ -65,6 +77,7 @@ export function AppShell({
   onFileDrop,
 }: AppShellProps) {
   const [confirmingReset, setConfirmingReset] = useState(false);
+  const [resetSaveNote, setResetSaveNote] = useState<string | null>(null);
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const [fileDragActive, setFileDragActive] = useState(false);
   // dragenter/dragleave fire as the pointer crosses every child element, not
@@ -91,6 +104,30 @@ export function AppShell({
     SIDEBAR_MIN_WIDTH,
     Math.min(maxSidebarWidth, draggingSidebarWidth ?? savedSidebarWidth),
   );
+
+  // An armed start-over is a question about now. Escape, or a press anywhere
+  // outside the prompt, answers it with "keep", so it never waits for a click
+  // the user has long since stopped thinking about.
+  useEffect(() => {
+    if (!confirmingReset || Platform.OS !== 'web') return;
+    const disarm = () => {
+      setConfirmingReset(false);
+      setResetSaveNote(null);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') disarm();
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (target?.closest?.('[data-reset-prompt]') == null) disarm();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('pointerdown', onPointerDown, true);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('pointerdown', onPointerDown, true);
+    };
+  }, [confirmingReset]);
 
   useEffect(() => {
     if (onFileDrop === undefined || Platform.OS !== 'web') return;
@@ -158,7 +195,11 @@ export function AppShell({
 
   return (
     <View style={styles.root} dataSet={{ surface: 'canvas' }}>
-      <View style={styles.header} role="banner">
+      <View
+        style={styles.header}
+        role="banner"
+        dataSet={confirmingReset ? { resetPrompt: 'true' } : undefined}
+      >
         <View style={styles.brand}>
           <Text style={styles.wordmark}>Pairwise</Text>
           {listSwitcher ??
@@ -187,19 +228,22 @@ export function AppShell({
           {onReset === undefined ? null : confirmingReset ? (
             <>
               <Button
-                label="Cancel"
-                accessibilityLabel="Keep this list"
+                label="Keep this list"
                 variant="ghost"
                 size="sm"
-                onPress={() => setConfirmingReset(false)}
+                onPress={() => {
+                  setConfirmingReset(false);
+                  setResetSaveNote(null);
+                }}
               />
               <Button
-                label="Confirm"
+                label="Start over"
                 accessibilityLabel="Confirm start over"
                 variant="dangerStrong"
                 size="sm"
                 onPress={() => {
                   setConfirmingReset(false);
+                  setResetSaveNote(null);
                   onReset();
                 }}
               />
@@ -227,9 +271,23 @@ export function AppShell({
       </View>
 
       {confirmingReset && (
-        <Text style={styles.resetWarning}>
-          This clears the list held in this browser. Files you already exported are untouched.
-        </Text>
+        <View style={styles.resetPrompt} dataSet={{ resetPrompt: 'true' }} role="alert">
+          <Text style={styles.resetWarning}>
+            {resetCost === undefined ? '' : `${resetCost} `}
+            This clears the list held in this browser. Files you already exported are untouched.
+          </Text>
+          {onSaveBeforeReset !== undefined && resetCost !== undefined && (
+            <View style={styles.resetSave}>
+              <Button
+                label="Save session first"
+                variant="secondary"
+                size="sm"
+                onPress={() => setResetSaveNote(onSaveBeforeReset())}
+              />
+              {resetSaveNote !== null && <Text style={styles.resetNote}>{resetSaveNote}</Text>}
+            </View>
+          )}
+        </View>
       )}
 
       <HowItWorksModal visible={howItWorksOpen} onClose={() => setHowItWorksOpen(false)} />
@@ -338,7 +396,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     flexShrink: 1,
   },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  // Wraps rather than overflowing: on a phone the actions are wider than the
+  // screen, and a row that cannot wrap scrolls the whole page sideways.
+  headerActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    flexShrink: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    gap: space.sm,
+  },
   headerDivider: { width: 1, height: 20, backgroundColor: colors.border },
   githubLink: {
     width: 36,
@@ -348,14 +415,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   saveWarning: { fontFamily: fonts.body, fontSize: 12, color: colors.warningText },
-  resetWarning: {
+  resetPrompt: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: space.sm,
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
-    fontFamily: fonts.body,
-    fontSize: 12,
-    color: colors.dangerText,
     backgroundColor: colors.dangerSoft,
   },
+  resetWarning: { flexShrink: 1, fontFamily: fonts.body, fontSize: 12, color: colors.dangerText },
+  resetSave: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  resetNote: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
   // Reserve the scrollbar's width so it appearing never re-wraps the layout.
   scroll: { scrollbarGutter: 'stable' } as object,
   scrollBody: { padding: space.lg },

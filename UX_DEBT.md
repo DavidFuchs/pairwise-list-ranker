@@ -32,10 +32,10 @@ It falls short in three places:
 
 | # | Task | Area | Priority | Status |
 |---|------|------|----------|--------|
-| 1 | Stop the page scrolling sideways on phones | Phone | High | Open |
+| 1 | Stop the page scrolling sideways on phones | Phone | High | Done |
 | 2 | Make comparing work on a phone screen | Phone | High | Open |
 | 3 | Keep the setup screen's main button in reach on phones | Phone | High | Open |
-| 4 | Make Start over say what is lost, offer to save, and disarm itself | Trust | High | Open |
+| 4 | Make Start over say what is lost, offer to save, and disarm itself | Trust | High | Done |
 | 5 | Keep the controls still from one pair to the next | Speed | High | Open |
 | 6 | Fit the ranking screen in a desktop window | Speed | Medium | Open |
 | 7 | Make taking the result away obvious | Flow | High | Open |
@@ -48,7 +48,7 @@ It falls short in three places:
 | 14 | Plainer progress wording | Clarity | Low | Open |
 | 15 | Smooth the theme switch | Polish | Low | Open |
 | 16 | Keep rating bars inside narrow cards | Polish | Low | Open |
-| 17 | Match the Start over prompt's spoken names to its labels | Accessibility | Low | Open |
+| 17 | Match the Start over prompt's spoken names to its labels | Accessibility | Low | Done |
 | 18 | Calmer placement for Start over | Trust | Low | Open |
 
 Suggested order: 1 and 4 first (small, and one is a bug), then 5, 7 and 2,
