@@ -438,8 +438,8 @@ that is already there.
 
 Done: the picker offers text, YAML and JSON. `readTextFile` refuses a file that
 states a non-text type, or whose first 4 KB hold a NUL or undecodable bytes,
-with "\"photo.png\" is not a text file. Pairwise reads plain lists, YAML and
-JSON." A file that would replace text already in the box asks first, and an
+with `"photo.png" is not a text file. Pairwise reads plain lists, YAML and
+JSON.` A file that would replace text already in the box asks first, and an
 empty box is filled straight away.
 
 ### 25. A file dropped on the ranking screen
