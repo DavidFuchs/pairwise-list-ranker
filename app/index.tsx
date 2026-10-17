@@ -23,6 +23,7 @@ import { activeList } from '@/lib/state/lists';
 import { selectRanking } from '@/lib/state/selectors';
 import { confirmOpenSession, hasDecisions, readSavedFile } from '@/lib/session/sessionFile';
 import { listStore, useListStore } from '@/lib/state/useListStore';
+import type { ItemValue } from '@/types/list';
 import { space } from '@/lib/theme';
 
 /** The narrowest the card preview gets beside the editor. */
@@ -100,11 +101,23 @@ export default function DataScreen() {
 
   const editing = workspace !== null;
   // Only objects have fields to set up, so only they get a card preview.
-  const previewObjects = useMemo(() => draft.entries.filter(isPlainObject), [draft.entries]);
+  // What the card preview can draw: objects with their fields, plain items as
+  // their text. Anything else (a nested list) has no card to show.
+  const previewEntries = useMemo(
+    () =>
+      draft.entries.filter(
+        (entry): entry is ItemValue =>
+          isPlainObject(entry) || ['string', 'number', 'boolean'].includes(typeof entry),
+      ),
+    [draft.entries],
+  );
   // An empty box isn't a parse error, so neither panel should treat it as one.
   const rawTextIsBlank = draft.rawText.trim() === '';
-  const showPreview = pending === null && !rawTextIsBlank && previewObjects.length > 0;
-  const sideBySide = showPreview && workWidth >= EDITOR_MIN_WIDTH + PREVIEW_MIN_WIDTH + space.lg;
+  const wide = workWidth >= EDITOR_MIN_WIDTH + PREVIEW_MIN_WIDTH + space.lg;
+  // Held from the start on a wide screen, as a placeholder until there is a
+  // list, so the editor does not narrow the moment one arrives.
+  const showPreview = pending === null && (rawTextIsBlank ? wide : previewEntries.length > 0);
+  const sideBySide = showPreview && wide;
   // A third of the area beside it, so cards read about as wide as one of a
   // pair on the rank screen, and never narrower than the minimum.
   const previewWidth = Math.max(PREVIEW_MIN_WIDTH, Math.round(workWidth / 3));
@@ -290,7 +303,11 @@ export default function DataScreen() {
             />
             {showPreview && (
               <View style={sideBySide ? [styles.previewBeside, { width: previewWidth }] : undefined}>
-                <CardPreview objects={previewObjects} roles={draft.roles} fill={sideBySide} />
+                <CardPreview
+                  entries={rawTextIsBlank ? [] : previewEntries}
+                  roles={draft.roles}
+                  fill={sideBySide}
+                />
               </View>
             )}
           </View>

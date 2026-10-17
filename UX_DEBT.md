@@ -44,7 +44,7 @@ It falls short in three places:
 | 10 | Show field names as people would write them | Clarity | Medium | Done |
 | 11 | Say a shared-slot tip once, not under every field | Clarity | Low | Done |
 | 12 | Make the keyboard shortcuts findable | Speed | Medium | Done |
-| 13 | Avoid the layout jump when data first arrives | Polish | Low | Open |
+| 13 | Avoid the layout jump when data first arrives | Polish | Low | Done |
 | 14 | Plainer progress wording | Clarity | Low | Done |
 | 15 | Smooth the theme switch | Polish | Low | Done |
 | 16 | Keep rating bars inside narrow cards | Polish | Low | Done |
@@ -301,6 +301,11 @@ preview appears. The editor narrows by about 40% the moment a sample loads.
 
 Fix: reserve the preview column from the start, with a short placeholder, or
 open it with a transition.
+
+Done: on a wide screen the card preview column is there from the start, with
+"Your items will show here as cards" until there is a list, and plain lists now
+preview as title-only cards too. The editor keeps one width (499px at
+1440 x 900) whether the box is empty, holds a plain list, or holds objects.
 
 ### 15. Theme switch flash
 

@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ItemCard } from '@/components/comparison/ItemCard';
 import { cardLayout } from '@/lib/renderers';
 import { colors, fonts, radius, space } from '@/lib/theme';
-import type { ComplexItemValue, ListItem } from '@/types/list';
+import type { ItemValue, ListItem } from '@/types/list';
 import type { FieldRoles } from '@/types/source';
 
 /** More than any screen fits, and few enough that drawing them stays cheap. */
@@ -18,7 +18,8 @@ const MAX_FILL_CARDS = 12;
 const LIFT_ROOM = { top: space.sm, side: space.lg, bottom: space.lg };
 
 export interface CardPreviewProps {
-  objects: ComplexItemValue[];
+  /** The list's entries: objects show their chosen fields, plain items their text. */
+  entries: ItemValue[];
   roles: FieldRoles;
   /**
    * Takes the height it is given and shows as many whole cards as fit in it.
@@ -28,7 +29,7 @@ export interface CardPreviewProps {
 }
 
 /** A stand-in item: the card only reads the value, and the id drives its fade-in. */
-function previewItem(value: ComplexItemValue, index: number): ListItem {
+function previewItem(value: ItemValue, index: number): ListItem {
   return { id: `preview-${index}`, listId: 'preview', value, active: true, createdAt: '', updatedAt: '' };
 }
 
@@ -37,20 +38,34 @@ function previewItem(value: ComplexItemValue, index: number): ListItem {
  * they stand. Stepping through the entries shows how an item missing a field,
  * or with a longer title, comes out before any ranking starts.
  */
-export function CardPreview({ objects, roles, fill = false }: CardPreviewProps) {
+export function CardPreview({ entries, roles, fill = false }: CardPreviewProps) {
   const [index, setIndex] = useState(0);
   const [areaHeight, setAreaHeight] = useState<number | null>(null);
   const [heights, setHeights] = useState<Record<number, number>>({});
-  if (objects.length === 0) return null;
+  // Before there is a list, the panel holds its place and says what will appear,
+  // so the editor beside it does not narrow the moment one arrives.
+  if (entries.length === 0) {
+    return (
+      <View style={[styles.panel, fill && styles.panelFill]} dataSet={{ surface: 'panel' }}>
+        <View style={styles.heading}>
+          <Text style={styles.title}>Card previews</Text>
+          <Text style={styles.subtitle}>How each item will look while you rank.</Text>
+        </View>
+        <View style={styles.placeholder}>
+          <Text style={styles.placeholderText}>Your items will show here as cards.</Text>
+        </View>
+      </View>
+    );
+  }
 
   // A list edited down to fewer entries keeps the preview on one that exists.
-  const start = Math.min(index, objects.length - 1);
+  const start = Math.min(index, entries.length - 1);
   const layout = cardLayout(roles);
-  const step = (by: -1 | 1) => setIndex((start + by + objects.length) % objects.length);
+  const step = (by: -1 | 1) => setIndex((start + by + entries.length) % entries.length);
 
   // Every card is drawn and measured, but only those that fit whole are seen:
   // a card cut off at the bottom would misrepresent the card it previews.
-  const drawn = fill ? Math.min(objects.length, MAX_FILL_CARDS) : 1;
+  const drawn = fill ? Math.min(entries.length, MAX_FILL_CARDS) : 1;
   // Where each card ends, from the heights of those above it: a view reports
   // when its size changes, not when a taller card above pushes it down.
   const bottomOf = (slot: number) => {
@@ -63,7 +78,7 @@ export function CardPreview({ objects, roles, fill = false }: CardPreviewProps) 
   let visible = 0;
   while (visible < drawn && fits(visible)) visible += 1;
 
-  const range = visible > 1 ? `${start + 1}-${((start + visible - 1) % objects.length) + 1}` : `${start + 1}`;
+  const range = visible > 1 ? `${start + 1}-${((start + visible - 1) % entries.length) + 1}` : `${start + 1}`;
 
   return (
     <View style={[styles.panel, fill && styles.panelFill]} dataSet={{ surface: 'panel' }}>
@@ -72,7 +87,7 @@ export function CardPreview({ objects, roles, fill = false }: CardPreviewProps) 
           <Text style={styles.title}>Card previews</Text>
           <Text style={styles.subtitle}>How each item will look while you rank.</Text>
         </View>
-        {objects.length > visible && (
+        {entries.length > visible && (
           <View style={styles.stepper}>
             <Pressable
               accessibilityRole="button"
@@ -82,7 +97,7 @@ export function CardPreview({ objects, roles, fill = false }: CardPreviewProps) 
             >
               <Text style={styles.stepGlyph}>‹</Text>
             </Pressable>
-            <Text style={styles.count}>{`${range} of ${objects.length}`}</Text>
+            <Text style={styles.count}>{`${range} of ${entries.length}`}</Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Preview the next item"
@@ -104,7 +119,7 @@ export function CardPreview({ objects, roles, fill = false }: CardPreviewProps) 
       >
         <View style={[styles.cards, fill && styles.cardsFill]}>
           {Array.from({ length: drawn }, (_, slot) => {
-            const at = (start + slot) % objects.length;
+            const at = (start + slot) % entries.length;
             const shown = slot < visible;
             return (
               <View
@@ -118,7 +133,7 @@ export function CardPreview({ objects, roles, fill = false }: CardPreviewProps) 
                   );
                 }}
               >
-                <ItemCard item={previewItem(objects[at]!, at)} side="left" layout={layout} />
+                <ItemCard item={previewItem(entries[at]!, at)} side="left" layout={layout} />
               </View>
             );
           })}
@@ -138,6 +153,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   panelFill: { flex: 1, minHeight: 0 },
+  placeholder: {
+    flex: 1,
+    minHeight: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: space.lg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
+  },
+  placeholderText: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary, textAlign: 'center' },
   header: {
     flexDirection: 'row',
     flexWrap: 'wrap',
