@@ -51,6 +51,17 @@ It falls short in three places:
 | 17 | Match the Start over prompt's spoken names to its labels | Accessibility | Low | Done |
 | 18 | Calmer placement for Start over | Trust | Low | Done |
 | 19 | Stop the setup panel scrolling inside the page on phones | Phone | Medium | Done |
+| 20 | Give every page a title | Accessibility | High | Open |
+| 21 | Mark section titles as headings | Accessibility | High | Open |
+| 22 | Give the choice cards a role screen readers will announce | Accessibility | Medium | Open |
+| 23 | Make dragging a ranked row work with a finger | Phone | High | Open |
+| 24 | Refuse files that are not text, and ask before replacing the editor | Trust | High | Open |
+| 25 | Handle a file dropped on the ranking screen | Trust | Medium | Open |
+| 26 | Scroll the ranked list while dragging near its edge | Long lists | Medium | Open |
+| 27 | Set expectations on long lists | Long lists | Medium | Open |
+| 28 | Drop a unit from a field name its renderer already shows | Clarity | Low | Open |
+| 29 | Keep a field name on one line beside a long link | Polish | Low | Open |
+| 30 | Put all content inside a landmark | Accessibility | Low | Open |
 
 Suggested order: 1 and 4 first (small, and one is a bug), then 5, 7 and 2,
 which matter most to how the app feels, then the rest.
@@ -345,10 +356,134 @@ screen readers; the visible labels should match them.
 
 Fix: label the buttons "Keep this list" and "Start over" on screen too.
 
-## Not covered
+## Second pass
 
-This pass did not test: a screen reader end to end, touch dragging on a real
-phone, very long lists (hundreds of items), dropping files, or the Songs and
-Games samples' play and gallery controls. Flag emoji showing as "us United
-States" in Chrome on Windows is a known platform limit the field picker already
-warns about, so it is not listed.
+The areas the first pass left out, tested in the built app: the accessibility
+tree and an axe scan (no screen reader could be driven from here, so this is
+what one would read, not a recording of one), real touch input on an emulated
+iPhone 13, a 500-item list, files dropped and chosen, and the Songs and Games
+samples' play buttons and galleries.
+
+### What works
+
+- Every control has a clear accessible name: cards ("Choose The Hurt Locker"),
+  pictures ("The Hurt Locker, picture 1 of 5"), the progress bar, the theme
+  switch, and the reorder handles, which also explain Alt and the arrow keys.
+- A focused card is chosen with Enter, and focus stays on the left card as the
+  next pair arrives, so a keyboard user can keep going without hunting for it.
+- On 500 items a choice takes 11 ms (16 ms at worst).
+- Play buttons switch to Stop, play one clip at a time, stop when their card is
+  replaced, and never choose the card. Gallery arrows step through pictures
+  without choosing it either.
+- Every picture in the Songs and Games samples loads: album art, Steam banners
+  and YouTube thumbnails.
+
+### 20. No page title
+
+Neither page has a `<title>`. The browser tab shows a bare address, and a screen
+reader announces no page name on arrival. The axe scan rates this serious.
+
+Fix: a title per screen, such as "Pairwise: add a list" and "Pairwise: Movies".
+
+### 21. No headings
+
+"Add your list", "What we found", "Card previews", "Your data" and each card's
+title are plain text, and there is no top-level heading. Screen reader users
+mostly move around a page by heading, so the page reads as one long run.
+
+Fix: `role="heading"` with levels: the app name or screen as level 1, panels as
+level 2, card titles as level 3.
+
+### 22. The choice card's name may not be read
+
+The card's label ("Choose The Hurt Locker") sits on an element with no role. It
+cannot be a button, since it holds buttons of its own, but ARIA does not allow
+a name on a generic element, and several screen readers ignore one there. The
+card may then not be announced as something to choose.
+
+Fix: give the card `role="group"` with its name, and make the title (or a
+visually quiet "Choose" control) a real button inside it.
+
+### 23. Dragging a ranked row does not work with a finger
+
+With real touch input on an emulated phone, dragging the grip scrolled the page
+by 179 px and moved nothing. The grip asks for `touch-action: none`, but React
+Native Web gives every pressable a `touch-action: manipulation` class that comes
+later in the stylesheet and wins, so the browser takes the finger for a scroll
+and cancels the drag. The grip is also 18 x 25 px, under the usual 44 px for a
+touch target.
+
+Fix: set `touchAction: 'none'` in the grip's own style (the sidebar divider
+already does this), and widen its hit area to 44 px.
+
+### 24. A non-text file is pasted in as text
+
+Dropping a PNG on the setup screen put its bytes into the editor, which read
+them as a four-item plain list, with no warning. The file picker has no type
+filter, so choosing one does the same. Either way the file also replaces
+whatever was in the editor without asking, so a mistaken drop loses typed work.
+
+Fix: accept text, YAML and JSON in the picker; refuse a file whose contents are
+not text with a short message; and ask, or allow undo, before replacing text
+that is already there.
+
+### 25. A file dropped on the ranking screen
+
+Found by reading the code rather than by testing: a real drop from the
+operating system cannot be simulated here. Only the setup screen listens for
+dropped files. On the ranking screen the browser's default applies, which is
+usually to open the file in place of the app.
+
+Fix: on the ranking screen, take a dropped session file as Open session does,
+and quietly ignore anything else.
+
+### 26. Long lists: dragging stops at the edge of what is shown
+
+The ranked list has no auto-scroll while dragging, so a row can only be dropped
+among the rows on screen, and Alt with an arrow key moves it one place per
+press. Moving item 400 of 500 to the top takes dozens of drags or hundreds of
+key presses.
+
+Fix: scroll the list while a drag is held near its top or bottom edge, and
+consider "move to top" and "move to bottom" on the row.
+
+### 27. Long lists: no sense of how long this takes
+
+After 40 choices on 500 items the meter reads 1%, and the status line says
+"499 places in the order are still close calls". The estimate behind the meter
+is about 4,500 comparisons, which nothing says up front, so progress looks
+stalled.
+
+Fix: say the scale when a long list starts ("about 4,500 choices to settle 500
+items; the order is usable well before that"), and show how many places have
+settled rather than how many have not.
+
+### 28. A unit in the name that the value already shows
+
+`duration_sec` now reads "Duration sec: 2:51": the field name says seconds, but
+the duration renderer already shows minutes and seconds.
+
+Fix: when a renderer reformats a value, drop a trailing unit word (sec, secs,
+seconds, ms) from its label.
+
+### 29. A field name wrapping beside a long link
+
+A link field such as `store_url` shows its name as "Store" and "URL:" on two
+lines, because the long link beside it takes the room.
+
+Fix: keep the name on one line and let the link truncate or wrap below it.
+
+### 30. Content outside a landmark
+
+The axe scan of the ranking screen found one block of content outside any
+landmark. It named it only by a generated class, so which block it is still
+needs finding.
+
+Fix: find it, and place it inside the banner, the main region or the sidebar.
+
+### Still not covered
+
+A screen reader driven end to end (NVDA or VoiceOver), and touch on a physical
+phone rather than an emulated one. Flag emoji showing as "us United States" in
+Chrome on Windows is a known platform limit the field picker already warns
+about.
