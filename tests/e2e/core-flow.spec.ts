@@ -418,3 +418,25 @@ test('a phone-width screen never scrolls sideways', async ({ page }) => {
   await page.getByRole('button', { name: 'Start over' }).click();
   expect(await overflowsX()).toBe(false);
 });
+
+test('the controls under the cards never move up from one pair to the next', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  const skip = page.getByRole('button', { name: 'Skip this pair' });
+  const positions: number[] = [];
+  for (let pair = 0; pair < 10; pair += 1) {
+    await expect(page.getByLabel(/^Choose /).first()).toBeVisible();
+    const box = await skip.boundingBox();
+    if (box === null) throw new Error('Expected Skip to be laid out.');
+    positions.push(Math.round(box.y));
+    await page.keyboard.press(pair % 2 === 0 ? 'ArrowLeft' : 'ArrowRight');
+    await expect(page.getByText(new RegExp(`^${pair + 1} comparisons ·`))).toBeVisible();
+  }
+
+  // Taller pairs may push it down once; nothing ever pulls it back up.
+  for (let i = 1; i < positions.length; i += 1) {
+    expect(positions[i]).toBeGreaterThanOrEqual(positions[i - 1]!);
+  }
+});

@@ -557,9 +557,9 @@ describe('details, shared by the pair', () => {
 });
 
 describe('ComparisonDeck undo and stability', () => {
-  it('offers Undo only when there is something to undo', () => {
+  it('keeps Undo in place but unavailable until there is something to undo', () => {
     setup();
-    expect(screen.queryByRole('button', { name: /undo/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /undo/i }).getAttribute('aria-disabled')).toBe('true');
   });
 
   it('undoes from the button and from Ctrl+Z', async () => {

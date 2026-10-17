@@ -70,6 +70,23 @@ export function ComparisonDeck({
   // once a narrow layout makes the gutter span the full row, that full-width
   // gutter keeps the cards stacked even after the viewport widens again.
   const [cardsWidth, setCardsWidth] = useState<number | null>(null);
+  /*
+   * The tallest the pair has been, so the controls under it only ever move
+   * down, and only when a taller pair first appears: card heights follow their
+   * content, and a button that shifts between pairs is one the user misses.
+   * Kept per width, field setup and details state, since each of those changes
+   * what a card can hold.
+   */
+  const heightKey = [
+    cardsWidth === null ? '' : Math.round(cardsWidth),
+    showDetails,
+    layout.labelField,
+    layout.plainFields.join(','),
+    layout.pictureFields.join(','),
+    layout.mediaFields.join(','),
+  ].join('|');
+  const [tallest, setTallest] = useState<{ key: string; height: number }>({ key: '', height: 0 });
+  const cardsMinHeight = tallest.key === heightKey ? tallest.height : 0;
   const hasPicture = layout.pictureFields.length > 0;
   const stacked = cardsWidth !== null && cardsWidth < inlineLayoutMinWidth(hasPicture);
 
@@ -152,7 +169,16 @@ export function ComparisonDeck({
       {/* Wraps to stacked cards on narrow screens via plain flex-wrap; a width
           measurement on the row decides whether the gutter should present as a
           vertical divider or a full-width horizontal break. */}
-      <View style={styles.cards} onLayout={(event) => setCardsWidth(event.nativeEvent.layout.width)}>
+      <View
+        style={[styles.cards, { minHeight: cardsMinHeight }]}
+        onLayout={(event) => {
+          const { width, height } = event.nativeEvent.layout;
+          setCardsWidth(width);
+          setTallest((current) =>
+            current.key === heightKey && current.height >= height ? current : { key: heightKey, height },
+          );
+        }}
+      >
         <ItemCard
           item={pair.left}
           side="left"
@@ -199,19 +225,21 @@ export function ComparisonDeck({
             </Pressable>
           )}
 
-          {onUndo !== undefined && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Undo last decision"
-              onPress={() => {
-                setArmed(null);
-                onUndo();
-              }}
-              style={styles.skip}
-            >
-              <Text style={styles.skipText}>Undo</Text>
-            </Pressable>
-          )}
+          {/* Always present, so it never pushes Skip aside when it first appears. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Undo last decision"
+            disabled={onUndo === undefined}
+            aria-disabled={onUndo === undefined}
+            onPress={() => {
+              if (onUndo === undefined) return;
+              setArmed(null);
+              onUndo();
+            }}
+            style={[styles.skip, onUndo === undefined && styles.unavailable]}
+          >
+            <Text style={styles.skipText}>Undo</Text>
+          </Pressable>
 
           <Pressable
             accessibilityRole="button"
@@ -357,6 +385,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  unavailable: { opacity: 0.4 },
   skipText: {
     fontFamily: fonts.body,
     fontSize: 13,
