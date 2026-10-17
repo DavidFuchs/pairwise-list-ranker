@@ -17,6 +17,10 @@ import type { ListItem } from '@/types/list';
 
 /** The picture beside the title, when a field is drawn as an image. */
 const IMAGE_SIZE = 112;
+/** The picture on a compact card, small enough that two cards share a phone screen. */
+const COMPACT_IMAGE_SIZE = 72;
+/** The chosen fields a compact card shows; the rest wait behind Show details. */
+const COMPACT_FIELDS = 2;
 
 export interface ItemCardProps {
   item: ListItem;
@@ -29,6 +33,12 @@ export interface ItemCardProps {
    * wants. The deck owns the state.
    */
   expanded?: boolean;
+  /**
+   * For a phone, where the pair stacks: a smaller picture, a shorter title and
+   * only the first few chosen fields, so both cards fit on one screen and a
+   * decision never needs a scroll. Show details brings back the rest.
+   */
+  compact?: boolean;
   /**
    * Each card carries its own actions, so a decision is made on the thing being
    * decided about rather than in a detached row of buttons.
@@ -47,6 +57,7 @@ export function ItemCard({
   side,
   layout = EMPTY_LAYOUT,
   expanded = false,
+  compact = false,
   onChoose,
   onChooseStrong,
   onRequestDelete,
@@ -100,7 +111,8 @@ export function ItemCard({
   // Only the fields the user ticked, and every one of them, so both cards of a
   // pair show the same keys and an item without one says so instead of
   // silently dropping it. A false badge is the one line meant to say nothing.
-  const chips = plainFields.filter((field) => formatValue(raw(field), renderers[field], field) !== null);
+  const allChips = plainFields.filter((field) => formatValue(raw(field), renderers[field], field) !== null);
+  const chips = compact ? allChips.slice(0, COMPACT_FIELDS) : allChips;
   const pictures = itemPictures(raw, pictureFields, renderers);
   const sources = itemPreviewSources(raw, mediaFields, renderers);
   const hasPicture = pictureFields.length > 0;
@@ -128,7 +140,9 @@ export function ItemCard({
         onPress={canChoose ? onChoose : undefined}
         style={({ pressed }) => [
           styles.pressArea,
-          interactive && styles.pressAreaInteractive,
+          // A compact card takes only the height it needs: on a phone, height is
+          // what decides whether both cards fit on the screen.
+          interactive && !compact && styles.pressAreaInteractive,
           canChoose && pressed && styles.pressed,
         ]}
       >
@@ -136,17 +150,24 @@ export function ItemCard({
         The title leads the card. Which side it is on is self-evident from
         where it sits, so nothing precedes it.
       */}
-        {canChoose && (
+        {canChoose && !compact && (
           <View style={styles.hintBar}>
             <Text style={styles.hint}>Click to choose</Text>
           </View>
         )}
 
         <View style={styles.headline}>
-          {hasPicture && <FieldGallery key={item.id} pictures={pictures} size={IMAGE_SIZE} label={label} />}
+          {hasPicture && (
+            <FieldGallery
+              key={item.id}
+              pictures={pictures}
+              size={compact ? COMPACT_IMAGE_SIZE : IMAGE_SIZE}
+              label={label}
+            />
+          )}
           <View style={styles.headlineBody}>
             <View style={styles.topRow}>
-              <Text style={styles.title} numberOfLines={4}>
+              <Text style={[styles.title, compact && styles.titleCompact]} numberOfLines={compact ? 2 : 4}>
                 {label}
               </Text>
 
@@ -320,6 +341,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     color: colors.textPrimary,
   },
+  titleCompact: { fontSize: 19, lineHeight: 23 },
   // The picture sits to the left of everything it illustrates; the footer
   // below still spans the card.
   headline: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },

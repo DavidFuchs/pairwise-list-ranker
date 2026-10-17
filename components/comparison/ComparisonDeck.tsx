@@ -170,7 +170,7 @@ export function ComparisonDeck({
           measurement on the row decides whether the gutter should present as a
           vertical divider or a full-width horizontal break. */}
       <View
-        style={[styles.cards, { minHeight: cardsMinHeight }]}
+        style={[styles.cards, stacked && styles.cardsStacked, { minHeight: cardsMinHeight }]}
         onLayout={(event) => {
           const { width, height } = event.nativeEvent.layout;
           setCardsWidth(width);
@@ -184,6 +184,7 @@ export function ComparisonDeck({
           side="left"
           layout={layout}
           expanded={showDetails}
+          compact={stacked && !showDetails}
           pendingDelete={armed === 'left'}
           onChoose={() => choose('left')}
           onChooseStrong={() => choose('left_strong')}
@@ -202,6 +203,7 @@ export function ComparisonDeck({
           side="right"
           layout={layout}
           expanded={showDetails}
+          compact={stacked && !showDetails}
           pendingDelete={armed === 'right'}
           onChoose={() => choose('right')}
           onChooseStrong={() => choose('right_strong')}
@@ -315,7 +317,7 @@ const styles = StyleSheet.create({
     width: '100%',
     minWidth: 0,
     paddingHorizontal: 0,
-    paddingVertical: space.sm,
+    paddingVertical: 0,
   },
   gutterLine: {
     flex: 1,
@@ -373,6 +375,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: space.md,
   },
+  // Stacked on a phone, every pixel decides whether both cards fit on screen.
+  cardsStacked: { gap: space.xs },
   tray: {
     alignItems: 'center',
     gap: space.xs,

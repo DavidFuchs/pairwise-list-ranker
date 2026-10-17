@@ -33,7 +33,7 @@ It falls short in three places:
 | # | Task | Area | Priority | Status |
 |---|------|------|----------|--------|
 | 1 | Stop the page scrolling sideways on phones | Phone | High | Done |
-| 2 | Make comparing work on a phone screen | Phone | High | Open |
+| 2 | Make comparing work on a phone screen | Phone | High | Done |
 | 3 | Keep the setup screen's main button in reach on phones | Phone | High | Open |
 | 4 | Make Start over say what is lost, offer to save, and disarm itself | Trust | High | Done |
 | 5 | Keep the controls still from one pair to the next | Speed | High | Done |
@@ -98,6 +98,15 @@ Fix, roughly in order of effort:
 - A bar fixed to the bottom of the screen with the two choices (and Skip), so
   a decision never needs a scroll.
 - Later, a swipe gesture between the two.
+
+Done with the first of these, which turned out to be enough. When the pair
+stacks, each card goes compact: a 72px picture, a two-line title, the first
+two chosen fields, no "Click to choose" bar and no minimum height. The gap
+around "or" tightens, and the GitHub link and header divider give way below
+480px, so the header is one row of actions. At 390 x 844 both cards, both
+"Much better" buttons, Undo and Skip now fit on one screen; before, the second
+card started more than a screen down. Show details brings every field back.
+An end-to-end test holds the one-screen fit.
 
 ### 3. The setup screen's main button is out of reach
 

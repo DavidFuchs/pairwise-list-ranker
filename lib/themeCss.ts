@@ -245,6 +245,11 @@ html, body { background-color: var(--canvas); }
   background-color: var(--danger-soft);
 }
 
+/* Header extras that give way on a phone, so the actions fit on one row. */
+@media (max-width: 479px) {
+  [data-wide-only] { display: none !important; }
+}
+
 /*
  * A sample button stays quiet beside the editor, then wears the accent a
  * selected format tab does once it is hovered or focused.

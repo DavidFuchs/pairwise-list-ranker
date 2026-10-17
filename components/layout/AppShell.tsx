@@ -224,7 +224,7 @@ export function AppShell({
             onPress={() => setHowItWorksOpen(true)}
           />
           <ThemeToggle />
-          {onReset !== undefined && <View style={styles.headerDivider} />}
+          {onReset !== undefined && <View style={styles.headerDivider} dataSet={{ wideOnly: 'true' }} />}
           {onReset === undefined ? null : confirmingReset ? (
             <>
               <Button
@@ -262,7 +262,7 @@ export function AppShell({
             hrefAttrs={{ target: '_blank', rel: 'noopener noreferrer' }}
             accessibilityRole="link"
             accessibilityLabel="View source on GitHub"
-            dataSet={{ github: 'true' }}
+            dataSet={{ github: 'true', wideOnly: 'true' }}
             style={styles.githubLink}
           >
             <GitHubIcon />

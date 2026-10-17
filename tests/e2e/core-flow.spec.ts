@@ -440,3 +440,18 @@ test('the controls under the cards never move up from one pair to the next', asy
     expect(positions[i]).toBeGreaterThanOrEqual(positions[i - 1]!);
   }
 });
+
+test('on a phone, a whole decision fits on one screen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  const cards = page.getByLabel(/^Choose /);
+  await expect(cards.first()).toBeVisible();
+  await expect(cards.nth(1)).toBeInViewport({ ratio: 1 });
+  await expect(page.getByRole('button', { name: 'Skip this pair' })).toBeInViewport({ ratio: 1 });
+
+  // Details are a tap away, and bring back every field the card set aside.
+  await page.getByRole('switch', { name: 'Show details on both cards' }).click();
+  await expect(cards.first().getByText('rotten_tomatoes:')).toBeVisible();
+});
