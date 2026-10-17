@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { ListOptionRow } from "@/components/data/ListOptionRow";
 import type { ArrayCandidate } from "@/lib/import/arrayCandidates";
+import { pathKey } from "@/lib/import/paths";
 import type { CoverageReading } from "@/lib/state/selectors";
 import { colors, fonts, space } from "@/lib/theme";
 
@@ -31,7 +32,7 @@ export function ArrayPicker({
 }: ArrayPickerProps) {
   if (candidates.length < 2) return null;
 
-  const selectedKey = value === null ? null : value.join(".");
+  const selectedKey = value === null ? null : pathKey(value);
 
   return (
     <View
@@ -42,7 +43,7 @@ export function ArrayPicker({
       <Text style={styles.heading}>Rank which list?</Text>
 
       {candidates.map((candidate) => {
-        const key = candidate.path.join(".");
+        const key = pathKey(candidate.path);
 
         return (
           <ListOptionRow

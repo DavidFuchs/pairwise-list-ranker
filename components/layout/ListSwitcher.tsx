@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { formatPath, MIN_RANKABLE } from "@/lib/import/arrayCandidates";
 import type { ArrayCandidate } from "@/lib/import/arrayCandidates";
+import { pathKey } from "@/lib/import/paths";
 import type { CoverageReading } from "@/lib/state/selectors";
 import { colors, fonts, radius, space } from "@/lib/theme";
 
@@ -51,7 +52,7 @@ export function ListSwitcher({
   const [open, setOpen] = useState(false);
   if (options.length < 2) return null;
 
-  const currentKey = currentPath.join(".");
+  const currentKey = pathKey(currentPath);
 
   return (
     <View style={styles.wrap}>
@@ -87,7 +88,7 @@ export function ListSwitcher({
           aria-label="Which list to rank"
         >
           {options.map((option) => {
-            const key = option.path.join(".");
+            const key = pathKey(option.path);
             const selected = key === currentKey;
 
             return (

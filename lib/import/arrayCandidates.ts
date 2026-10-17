@@ -1,3 +1,5 @@
+import { isPlainObject } from '@/lib/import/shape';
+
 export interface ArrayCandidate {
   path: string[];
   count: number;
@@ -21,10 +23,6 @@ export const MIN_RANKABLE = 2;
 
 const MAX_DEPTH = 5;
 const MAX_SAMPLES = 3;
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function isScalar(value: unknown): boolean {
   return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';

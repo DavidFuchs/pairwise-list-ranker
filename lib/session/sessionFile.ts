@@ -75,3 +75,13 @@ export function describeSession(session: WorkspaceSnapshot): string {
   ];
   return parts.join(' · ');
 }
+
+/** Whether replacing what is loaded would lose any choice or placement. */
+export function hasDecisions(state: Pick<WorkspaceSnapshot, 'comparisonEvents' | 'savedLists'>): boolean {
+  return state.comparisonEvents.length > 0 || state.savedLists.some((list) => list.comparisonEvents.length > 0);
+}
+
+/** Asked before a session replaces decisions that would otherwise be lost. */
+export function confirmOpenSession(session: WorkspaceSnapshot): string {
+  return `Open this session (${describeSession(session)})? It replaces the list you are ranking now, and its progress is gone unless you saved it.`;
+}

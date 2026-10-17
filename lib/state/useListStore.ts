@@ -6,6 +6,7 @@ import { applyProgressFile } from '@/lib/progress/progressFile';
 import type { ProgressFile } from '@/lib/progress/progressFile';
 import { entriesAtPath } from '@/lib/import/arrayCandidates';
 import { diffImport } from '@/lib/import/diff';
+import { samePath } from '@/lib/import/paths';
 import { WORKSPACE_VERSION } from '@/lib/persistence/workspaceSnapshot';
 import type { WorkspaceSnapshot } from '@/lib/persistence/workspaceSnapshot';
 import { createWorkspaceStorage } from '@/lib/persistence/workspaceStorage';
@@ -22,10 +23,6 @@ import type {
   SavedList,
   Workspace,
 } from '@/types/source';
-
-function pathKey(path: string[]): string {
-  return path.join('.');
-}
 
 export interface ListStoreOptions {
   storage?: WorkspaceStorage;
@@ -376,8 +373,6 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         }
 
         const timestamp = now();
-        const leftKey = pathKey(workspace.source.arrayPath);
-        const targetKey = pathKey(source.arrayPath);
 
         const archived: SavedList = {
           workspaceId: workspace.id,
@@ -390,8 +385,8 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           createdAt: workspace.createdAt,
           updatedAt: timestamp,
         };
-        const otherSaved = savedLists.filter((list) => pathKey(list.arrayPath) !== leftKey);
-        const restored = otherSaved.find((list) => pathKey(list.arrayPath) === targetKey);
+        const otherSaved = savedLists.filter((list) => !samePath(list.arrayPath, workspace.source.arrayPath));
+        const restored = otherSaved.find((list) => samePath(list.arrayPath, source.arrayPath));
         const listDefaults = workspace.listDefaults;
 
         if (restored !== undefined) {

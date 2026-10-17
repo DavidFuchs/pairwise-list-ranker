@@ -8,6 +8,7 @@ import {
   selectCurrentPair,
   selectExportText,
   selectListConfig,
+  selectListOptions,
   selectProgress,
   selectRanking,
   selectRemovedCount,
@@ -79,6 +80,60 @@ describe("selectWorkspaceView", () => {
     const second = selectWorkspaceView(items, bWins);
 
     expect(second).not.toBe(first);
+  });
+
+  it("keeps the active list's result while another list is ranked", () => {
+    const first = selectWorkspaceView(items, bWins);
+    selectWorkspaceView([item("item-9", "Pho"), item("item-8", "Udon")], []);
+
+    expect(selectWorkspaceView(items, bWins)).toBe(first);
+  });
+
+  it("keeps ranked and unranked readings of the same arrays apart", () => {
+    const unranked = selectWorkspaceView(items, []);
+    const ranked = selectWorkspaceView(items, [], true);
+
+    expect(ranked).not.toBe(unranked);
+    expect(ranked.ranking[0]!.state.rating).toBeGreaterThan(unranked.ranking[0]!.state.rating);
+  });
+});
+
+describe("selectListOptions", () => {
+  const twoLists: Workspace = {
+    ...workspace,
+    source: {
+      ...workspace.source,
+      document: {
+        movies: [{ title: "Alien" }, { title: "Arrival" }],
+        actors: [{ name: "Weaver" }, { name: "Adams" }],
+      },
+    },
+  };
+  const movies = [
+    { ...item("m-1", { title: "Alien" }) },
+    { ...item("m-2", { title: "Arrival" }) },
+  ];
+  const movieWin: ComparisonEvent[] = [
+    { ...bWins[0]!, leftItemId: "m-1", rightItemId: "m-2" },
+  ];
+
+  it("offers every list with its setup, and the active list's progress", () => {
+    const options = selectListOptions(twoLists, [], movies, movieWin);
+
+    expect(options.map((option) => option.path)).toEqual([["movies"], ["actors"]]);
+    expect(options[0]!.configLine).toBe("shown by title");
+    expect(options[0]!.coverage?.coverage).toBeGreaterThan(0);
+    expect(options[1]!.coverage).toBeUndefined();
+  });
+
+  it("reuses the other lists' options when only the active list's history changes", () => {
+    const parked: SavedList[] = [];
+    const before = selectListOptions(twoLists, parked, movies, []);
+    const after = selectListOptions(twoLists, parked, movies, movieWin);
+
+    expect(after[1]).toBe(before[1]);
+    expect(before[0]!.coverage).toBeUndefined();
+    expect(after[0]!.coverage).toBeDefined();
   });
 });
 

@@ -11,7 +11,7 @@ import { useReducedMotion } from '@/lib/hooks/useReducedMotion';
 import { selectItemLabel } from '@/lib/state/selectors';
 import { formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
 import { colors, fonts, motion, radius, space, typeScale } from '@/lib/theme';
-import { isComplexItemValue } from '@/types/list';
+import { fieldOf, isComplexItemValue } from '@/types/list';
 import type { ListItem } from '@/types/list';
 import type { FieldRenderer } from '@/types/source';
 
@@ -106,7 +106,7 @@ export function ItemCard({
   const label = selectItemLabel(item, sortField);
   const fields = isComplexItemValue(item.value) ? Object.entries(item.value) : [];
   const detailFields = fields.filter(([key]) => key !== sortField);
-  const raw = (field: string) => (isComplexItemValue(item.value) ? item.value[field] : undefined);
+  const raw = (field: string) => fieldOf(item, field);
   // Only the fields the user ticked, and every one of them, so both cards of a
   // pair show the same keys and an item without one says so instead of
   // silently dropping it. A false badge is the one line meant to say nothing.

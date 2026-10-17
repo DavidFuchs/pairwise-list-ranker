@@ -1,10 +1,7 @@
 import { serializeDocument } from '@/lib/import/serialize';
+import { isPlainObject } from '@/lib/import/shape';
 import type { ListItem } from '@/types/list';
 import type { DataSource, FieldRoles, SourceFormat } from '@/types/source';
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 /** A structural copy, so the stored source document is never mutated. */
 function clone<T>(value: T): T {

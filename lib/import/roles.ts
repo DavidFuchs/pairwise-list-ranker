@@ -4,13 +4,9 @@ import {
   preferredLabelField,
 } from '@/lib/import/labelField';
 import { detectPositionFields, preferredPositionField } from '@/lib/import/positionField';
+import { isPlainObject } from '@/lib/import/shape';
 import { cleanRenderers } from '@/lib/renderers';
-import type { ComplexItemValue } from '@/types/list';
 import type { FieldRoles } from '@/types/source';
-
-function isPlainObject(value: unknown): value is ComplexItemValue {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 /**
  * The roles the app would choose on its own. A previous choice wins whenever

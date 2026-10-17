@@ -4,7 +4,6 @@ import { useEffect, useMemo } from "react";
 import { ComparisonDeck } from "@/components/comparison/ComparisonDeck";
 import { AppShell } from "@/components/layout/AppShell";
 import { ListSwitcher } from "@/components/layout/ListSwitcher";
-import type { ListSwitcherOption } from "@/components/layout/ListSwitcher";
 import { PageNav } from "@/components/layout/PageNav";
 import { PreviewPane } from "@/components/preview/PreviewPane";
 import type { OpenOutcome } from "@/components/preview/SessionControls";
@@ -12,14 +11,19 @@ import { Button } from "@/components/ui/Button";
 import { layoutSummary } from "@/lib/renderers";
 import { downloadText, pickTextFile } from "@/lib/browser/exportActions";
 import { downloadName, exportFilename, slugify } from "@/lib/export/filenames";
-import { buildSessionFile, describeSession, readSavedFile } from "@/lib/session/sessionFile";
-import { findArrayCandidates } from "@/lib/import/arrayCandidates";
 import {
-  describeRoles,
+  buildSessionFile,
+  confirmOpenSession,
+  describeSession,
+  hasDecisions,
+  readSavedFile,
+} from "@/lib/session/sessionFile";
+import {
   selectAvailableTabs,
   selectContextLine,
   selectExportText,
   selectListConfig,
+  selectListOptions,
   selectProgress,
   selectRemovedCount,
   selectStability,
@@ -53,18 +57,9 @@ function openSavedFile(text: string): OpenOutcome {
     listStore.getState().loadSession(saved.session);
     return `Opened the session: ${summary}.`;
   };
-  return hasDecisions()
-    ? {
-        confirm: `Open this session (${summary})? It replaces the list you are ranking now, and its progress is gone unless you saved it.`,
-        apply,
-      }
+  return hasDecisions(listStore.getState())
+    ? { confirm: confirmOpenSession(saved.session), apply }
     : { message: apply() };
-}
-
-/** Whether replacing what is loaded would lose any choice or placement. */
-function hasDecisions(): boolean {
-  const { comparisonEvents, savedLists } = listStore.getState();
-  return comparisonEvents.length > 0 || savedLists.some((list) => list.comparisonEvents.length > 0);
 }
 
 export default function RankScreen() {
@@ -130,33 +125,7 @@ export default function RankScreen() {
   if (workspace === null) return null;
   const summary = layoutSummary(workspace.roles);
 
-  const { candidates } = findArrayCandidates(workspace.source.document);
-  const listOptions: ListSwitcherOption[] = candidates.map((candidate) => {
-    const key = candidate.path.join(".");
-    const config = selectListConfig(workspace, savedLists, candidate.path);
-    const configLine = describeRoles(config.roles, config.alreadyRanked);
-
-    const saved = savedLists.find((list) => list.arrayPath.join(".") === key);
-    const progress =
-      key === workspace.source.arrayPath.join(".")
-        ? selectProgress(items, comparisonEvents, workspace.alreadyRanked)
-        : saved === undefined
-          ? undefined
-          : selectProgress(
-              saved.items,
-              saved.comparisonEvents,
-              saved.alreadyRanked,
-            );
-
-    return {
-      ...candidate,
-      configLine,
-      coverage:
-        progress !== undefined && progress.coverage > 0
-          ? { coverage: progress.coverage, earned: progress.earnedCoverage }
-          : undefined,
-    };
-  });
+  const listOptions = selectListOptions(workspace, savedLists, items, comparisonEvents);
 
   // Every list switches instantly, including one never chosen before: rather
   // than stopping the user at the data screen to answer questions they have

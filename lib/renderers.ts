@@ -318,15 +318,29 @@ export function currencyOf(renderer: FieldRenderer | undefined): Currency | unde
   return match === null ? undefined : (match[1] as Currency);
 }
 
+/**
+ * Building a formatter costs far more than using one, and the ranked list asks
+ * for one per field per row, so each is built once and kept.
+ */
+const moneyFormats = new Map<string, Intl.NumberFormat>();
+let dateFormat: Intl.DateTimeFormat | undefined;
+let compactFormat: Intl.NumberFormat | undefined;
+
 /** An amount in its currency, without cents when it is a whole number. */
 function moneyText(value: number, currency: Currency): string {
   const whole = Number.isInteger(value);
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: whole ? 0 : 2,
-    maximumFractionDigits: whole ? 0 : 2,
-  }).format(value);
+  const key = `${currency}-${whole}`;
+  let format = moneyFormats.get(key);
+  if (format === undefined) {
+    format = new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: whole ? 0 : 2,
+      maximumFractionDigits: whole ? 0 : 2,
+    });
+    moneyFormats.set(key, format);
+  }
+  return format.format(value);
 }
 
 function typeOf(value: unknown): string {
@@ -635,9 +649,8 @@ export function formatValue(value: unknown, renderer: FieldRenderer | undefined,
       const parts = dateParts(value);
       if (parts === undefined) return summaryText(value);
       // Read as a calendar day, not an instant, so no time zone moves it.
-      return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(
-        Date.UTC(parts[0], parts[1] - 1, parts[2]),
-      );
+      dateFormat ??= new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
+      return dateFormat.format(Date.UTC(parts[0], parts[1] - 1, parts[2]));
     }
     case 'year':
       return String(dateParts(value)?.[0] ?? summaryText(value));
@@ -645,7 +658,7 @@ export function formatValue(value: unknown, renderer: FieldRenderer | undefined,
       return isNumber(value) ? durationText(value) : summaryText(value);
     case 'compact':
       return isNumber(value)
-        ? new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+        ? (compactFormat ??= new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 })).format(value)
         : summaryText(value);
     case 'badge':
       return value === true ? field : value === false ? null : summaryText(value);

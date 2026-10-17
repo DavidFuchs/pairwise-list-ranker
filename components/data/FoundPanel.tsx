@@ -7,10 +7,10 @@ import { PositionPicker } from "@/components/data/PositionPicker";
 import { Button } from "@/components/ui/Button";
 import type { SourceAnalysis } from "@/lib/import/analyze";
 import { detectPositionFields } from "@/lib/import/positionField";
+import { isPlainObject } from "@/lib/import/shape";
 import { describeReadiness } from "@/lib/import/readiness";
 import type { CoverageReading } from "@/lib/state/selectors";
 import { colors, fonts, radius, space, typeScale } from "@/lib/theme";
-import type { ComplexItemValue } from "@/types/list";
 import type { FieldRoles } from "@/types/source";
 
 export interface FoundPanelProps {
@@ -36,10 +36,6 @@ export interface FoundPanelProps {
   onAlreadyRankedChange: (alreadyRanked: boolean) => void;
   onSetAsDefault?: () => void;
   onSubmit: () => void;
-}
-
-function isPlainObject(value: unknown): value is ComplexItemValue {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function countOf(amount: number, noun: string): string {

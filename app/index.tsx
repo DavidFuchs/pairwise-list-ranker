@@ -15,17 +15,18 @@ import { buildExport, buildExportDocument } from "@/lib/export/buildExport";
 import { useSourceDraft } from "@/lib/hooks/useSourceDraft";
 import type { SourceDraftSeed } from "@/lib/hooks/useSourceDraft";
 import { diffImport, diffSettings } from "@/lib/import/diff";
+import { pathKey, samePath } from "@/lib/import/paths";
+import { isPlainObject } from "@/lib/import/shape";
 import type { ImportDiff, SettingsDiff } from "@/lib/import/diff";
 import {
   describeRoles,
+  selectCoverage,
   selectListConfig,
-  selectProgress,
   selectRanking,
 } from "@/lib/state/selectors";
 import type { CoverageReading } from "@/lib/state/selectors";
-import { describeSession, readSavedFile } from "@/lib/session/sessionFile";
+import { confirmOpenSession, hasDecisions, readSavedFile } from "@/lib/session/sessionFile";
 import { listStore, useListStore } from "@/lib/state/useListStore";
-import type { ComplexItemValue } from "@/types/list";
 import type { DataSource } from "@/types/source";
 import { space } from "@/lib/theme";
 
@@ -46,12 +47,12 @@ function buildDraftSeed(): SourceDraftSeed | undefined {
   if (state.workspace === null) return undefined;
 
   const knownLists: Record<string, boolean> = {
-    [state.workspace.source.arrayPath.join(".")]: state.workspace.alreadyRanked,
+    [pathKey(state.workspace.source.arrayPath)]: state.workspace.alreadyRanked,
   };
 
   let document = state.workspace.source.document;
   for (const list of state.savedLists) {
-    knownLists[list.arrayPath.join(".")] = list.alreadyRanked;
+    knownLists[pathKey(list.arrayPath)] = list.alreadyRanked;
     const ranking = selectRanking(
       list.items,
       list.comparisonEvents,
@@ -151,13 +152,8 @@ export default function DataScreen() {
       listStore.getState().loadSession(saved.session);
       router.replace("/rank");
     };
-    const { comparisonEvents, savedLists: parked } = listStore.getState();
-    const atStake = comparisonEvents.length > 0 || parked.some((list) => list.comparisonEvents.length > 0);
-    if (atStake) {
-      setFileNotice({
-        confirm: `Open this session (${describeSession(saved.session)})? It replaces the list you are ranking now, and its progress is gone unless you saved it.`,
-        onConfirm: open,
-      });
+    if (hasDecisions(listStore.getState())) {
+      setFileNotice({ confirm: confirmOpenSession(saved.session), onConfirm: open });
     } else {
       open();
     }
@@ -182,10 +178,7 @@ export default function DataScreen() {
   // Only objects have fields to set up, so only they get a card preview.
   const previewObjects = useMemo(
     () =>
-      draft.entries.filter(
-        (entry): entry is ComplexItemValue =>
-          typeof entry === "object" && entry !== null && !Array.isArray(entry),
-      ),
+      draft.entries.filter(isPlainObject),
     [draft.entries],
   );
   // An empty box isn't a parse error, so neither panel should treat it as one.
@@ -199,7 +192,7 @@ export default function DataScreen() {
   const isSwitchingList =
     workspace !== null &&
     draft.selectedPath !== null &&
-    workspace.source.arrayPath.join(".") !== draft.selectedPath.join(".");
+    !samePath(workspace.source.arrayPath, draft.selectedPath);
 
   // Every list that already has a ranking percent earns a meter, whether that
   // came from real comparisons, from being declared already ranked, or both -
@@ -209,30 +202,13 @@ export default function DataScreen() {
     const coverages: Record<string, CoverageReading> = {};
 
     for (const list of savedLists) {
-      const listProgress = selectProgress(
-        list.items,
-        list.comparisonEvents,
-        list.alreadyRanked,
-      );
-      if (listProgress.coverage === 0) continue;
-      coverages[list.arrayPath.join(".")] = {
-        coverage: listProgress.coverage,
-        earned: listProgress.earnedCoverage,
-      };
+      const coverage = selectCoverage(list.items, list.comparisonEvents, list.alreadyRanked);
+      if (coverage !== undefined) coverages[pathKey(list.arrayPath)] = coverage;
     }
 
     if (workspace !== null) {
-      const activeProgress = selectProgress(
-        items,
-        comparisonEvents,
-        workspace.alreadyRanked,
-      );
-      if (activeProgress.coverage > 0) {
-        coverages[workspace.source.arrayPath.join(".")] = {
-          coverage: activeProgress.coverage,
-          earned: activeProgress.earnedCoverage,
-        };
-      }
+      const coverage = selectCoverage(items, comparisonEvents, workspace.alreadyRanked);
+      if (coverage !== undefined) coverages[pathKey(workspace.source.arrayPath)] = coverage;
     }
 
     return coverages;
@@ -246,7 +222,7 @@ export default function DataScreen() {
   // cosmetic guess, so an already-ranked-by-comparisons list is never
   // silently reseeded from scratch.
   const selectedPathKey =
-    draft.selectedPath === null ? null : draft.selectedPath.join(".");
+    draft.selectedPath === null ? null : pathKey(draft.selectedPath);
   // Only lists with a reading at all are in the map, so having one is itself
   // the "already has a ranking percent" test.
   const selectedCoverage =
@@ -282,7 +258,7 @@ export default function DataScreen() {
           };
 
     for (const candidate of draft.analysis.candidates) {
-      const key = candidate.path.join(".");
+      const key = pathKey(candidate.path);
       const config = selectListConfig(scope, savedLists, candidate.path);
       lines[key] = describeRoles(config.roles, config.alreadyRanked);
     }
@@ -322,7 +298,7 @@ export default function DataScreen() {
     // A different list is not an edit to this one, and nothing about it is
     // destructive - each list's ranking is kept and restored when you come
     // back to it - so it applies immediately instead of asking to confirm.
-    if (previousPath.join(".") !== source.arrayPath.join(".")) {
+    if (!samePath(previousPath, source.arrayPath)) {
       listStore
         .getState()
         .switchList({

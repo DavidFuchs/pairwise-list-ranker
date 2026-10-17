@@ -1,5 +1,7 @@
 import { buildExport } from "@/lib/export/buildExport";
-import { entriesAtPath, formatPath } from "@/lib/import/arrayCandidates";
+import { entriesAtPath, findArrayCandidates, formatPath } from "@/lib/import/arrayCandidates";
+import type { ArrayCandidate } from "@/lib/import/arrayCandidates";
+import { samePath } from "@/lib/import/paths";
 import { resolveRoles } from "@/lib/import/roles";
 import { rendererNote } from "@/lib/renderers";
 import { selectNextPair } from "@/lib/ranking/pairSelection";
@@ -28,51 +30,61 @@ export interface WorkspaceView {
   pair: ActivePair | null;
 }
 
-interface ViewCache {
-  items: ListItem[];
-  events: ComparisonEvent[];
-  alreadyRanked: boolean;
-  view: WorkspaceView;
-}
+/**
+ * Results by events array, then items array, then the alreadyRanked flag. The
+ * store replaces those arrays on every change, so a hit means nothing has
+ * changed, and a WeakMap lets old arrays go once nothing holds them. Keyed
+ * rather than one slot so that ranking a parked list, or a second store, does
+ * not evict the active list's result.
+ */
+const viewCache = new WeakMap<ComparisonEvent[], WeakMap<ListItem[], Map<boolean, WorkspaceView>>>();
 
-let cache: ViewCache | null = null;
+function cachedView(
+  items: ListItem[],
+  events: ComparisonEvent[],
+  alreadyRanked: boolean,
+  build: () => WorkspaceView,
+): WorkspaceView {
+  let byItems = viewCache.get(events);
+  if (byItems === undefined) {
+    byItems = new WeakMap();
+    viewCache.set(events, byItems);
+  }
+  let byFlag = byItems.get(items);
+  if (byFlag === undefined) {
+    byFlag = new Map();
+    byItems.set(items, byFlag);
+  }
+  let view = byFlag.get(alreadyRanked);
+  if (view === undefined) {
+    view = build();
+    byFlag.set(alreadyRanked, view);
+  }
+  return view;
+}
 
 /**
  * Replay, rank, and pick the next pair in one pass, memoized on the identity of
- * the items and event arrays. The store replaces those arrays on every change,
- * so re-renders that change nothing reuse the previous result.
+ * the items and event arrays, so re-renders that change nothing reuse the
+ * previous result.
  */
 export function selectWorkspaceView(
   items: ListItem[],
   events: ComparisonEvent[],
   alreadyRanked = false,
 ): WorkspaceView {
-  if (
-    cache !== null &&
-    cache.items === items &&
-    cache.events === events &&
-    cache.alreadyRanked === alreadyRanked
-  ) {
-    return cache.view;
-  }
+  return cachedView(items, events, alreadyRanked, () => {
+    const states = replayComparisons(items, events, alreadyRanked);
+    const ranking = rankItems(items, states, events);
+    const candidate = selectNextPair(items, states, events);
 
-  const states = replayComparisons(items, events, alreadyRanked);
-  const ranking = rankItems(items, states, events);
-  const candidate = selectNextPair(items, states, events);
+    const byId = new Map(items.map((item) => [item.id, item]));
+    const left = candidate === null ? undefined : byId.get(candidate.leftItemId);
+    const right =
+      candidate === null ? undefined : byId.get(candidate.rightItemId);
 
-  const byId = new Map(items.map((item) => [item.id, item]));
-  const left = candidate === null ? undefined : byId.get(candidate.leftItemId);
-  const right =
-    candidate === null ? undefined : byId.get(candidate.rightItemId);
-
-  const view: WorkspaceView = {
-    states,
-    ranking,
-    pair: left && right ? { left, right } : null,
-  };
-
-  cache = { items, events, alreadyRanked, view };
-  return view;
+    return { states, ranking, pair: left && right ? { left, right } : null };
+  });
 }
 
 export function selectRanking(
@@ -170,12 +182,11 @@ export function selectListConfig(
 ): ListConfig {
   if (workspace === null) return { roles: {}, alreadyRanked: false };
 
-  const key = path.join(".");
-  if (key === workspace.source.arrayPath.join(".")) {
+  if (samePath(path, workspace.source.arrayPath)) {
     return { roles: workspace.roles, alreadyRanked: workspace.alreadyRanked };
   }
 
-  const saved = savedLists.find((list) => list.arrayPath.join(".") === key);
+  const saved = savedLists.find((list) => samePath(list.arrayPath, path));
   if (saved !== undefined && saved.configuredExplicitly) {
     return { roles: saved.roles, alreadyRanked: saved.alreadyRanked };
   }
@@ -264,6 +275,75 @@ export function selectProgress(
 export interface CoverageReading {
   coverage: number;
   earned: number;
+}
+
+/** A list's meter reading, or undefined while it has no progress to show. */
+export function selectCoverage(
+  items: ListItem[],
+  events: ComparisonEvent[],
+  alreadyRanked: boolean,
+): CoverageReading | undefined {
+  const progress = selectProgress(items, events, alreadyRanked);
+  return progress.coverage > 0
+    ? { coverage: progress.coverage, earned: progress.earnedCoverage }
+    : undefined;
+}
+
+/** One list in the document, as the list switcher offers it. */
+export interface ListOption extends ArrayCandidate {
+  /** The setup it would be ranked with; see describeRoles. */
+  configLine: string;
+  /** Its ranking progress, if it has any yet. */
+  coverage?: CoverageReading;
+}
+
+const parkedOptionsCache = new WeakMap<Workspace, WeakMap<SavedList[], ListOption[]>>();
+
+/**
+ * Every list but the active one's progress, which is all that changes with a
+ * comparison. Walking the document and resolving each list's roles costs a
+ * pass over every entry, so it is kept until the workspace or the parked lists
+ * change rather than redone on every click.
+ */
+function parkedListOptions(workspace: Workspace, savedLists: SavedList[]): ListOption[] {
+  let byLists = parkedOptionsCache.get(workspace);
+  if (byLists === undefined) {
+    byLists = new WeakMap();
+    parkedOptionsCache.set(workspace, byLists);
+  }
+  const cached = byLists.get(savedLists);
+  if (cached !== undefined) return cached;
+
+  const options = findArrayCandidates(workspace.source.document).candidates.map(
+    (candidate): ListOption => {
+      const config = selectListConfig(workspace, savedLists, candidate.path);
+      const saved = savedLists.find((list) => samePath(list.arrayPath, candidate.path));
+      return {
+        ...candidate,
+        configLine: describeRoles(config.roles, config.alreadyRanked),
+        coverage:
+          saved === undefined
+            ? undefined
+            : selectCoverage(saved.items, saved.comparisonEvents, saved.alreadyRanked),
+      };
+    },
+  );
+  byLists.set(savedLists, options);
+  return options;
+}
+
+/** Every list in the document, with its setup and its progress. */
+export function selectListOptions(
+  workspace: Workspace,
+  savedLists: SavedList[],
+  items: ListItem[],
+  events: ComparisonEvent[],
+): ListOption[] {
+  const active = workspace.source.arrayPath;
+  const coverage = selectCoverage(items, events, workspace.alreadyRanked);
+  return parkedListOptions(workspace, savedLists).map((option) =>
+    samePath(option.path, active) ? { ...option, coverage } : option,
+  );
 }
 
 /**

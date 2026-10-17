@@ -1,3 +1,5 @@
+import { isPlainObject } from '@/lib/import/shape';
+
 /**
  * The optional second field role: which key receives the new rank on export.
  * Writing into the user's data is opt-in, so only names that plainly mean an
@@ -11,10 +13,6 @@ export interface PositionFieldCandidate {
 }
 
 const ORDERING_NAME = /^(order|rank|position|index|sort|priority|seq(uence)?)$/i;
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 /**
  * A field qualifies when every entry that carries it carries a number. Entries

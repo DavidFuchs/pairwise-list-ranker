@@ -190,6 +190,8 @@ test('pressing a control inside a card does not cast a vote', async ({ page }) =
 
 test('details open on both cards from one toggle', async ({ page }) => {
   await enterData(page, FILMS);
+  // A card shows only its title until a field is ticked for it.
+  await page.getByRole('checkbox', { name: 'Show year on cards' }).click();
   await page.getByRole('button', { name: 'Start ranking' }).click();
 
   // Scoped to the cards: the ranked list shows the same fields in its own rows.
@@ -252,9 +254,9 @@ test('reordering by hand adds to the comparisons instead of discarding them', as
   await page.getByRole('button', { name: /^Reorder / }).first().focus();
   await page.keyboard.press('Alt+ArrowDown');
 
-  // The move counts as two ordinary comparisons against its new neighbours, so
-  // the earlier pick survives rather than being thrown away and re-seeded.
-  await expect(page.getByText(/^3 comparisons ·/)).toBeVisible();
+  // The move is recorded as one placement beside its new neighbour, so the
+  // earlier pick survives rather than being thrown away and re-seeded.
+  await expect(page.getByText(/^2 comparisons ·/)).toBeVisible();
 });
 
 test('reordering applies immediately, with no confirmation to clear', async ({ page }) => {

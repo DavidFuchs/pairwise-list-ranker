@@ -6,7 +6,7 @@ import { gapMovesRow, insertIndexForUniform, moveItem, targetIndexForGap } from 
 import { selectItemLabel } from '@/lib/state/selectors';
 import { formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
 import { colors, fonts, space } from '@/lib/theme';
-import { isComplexItemValue } from '@/types/list';
+import { fieldOf } from '@/types/list';
 import type { ListItem } from '@/types/list';
 import type { RankedItem } from '@/types/ranking';
 import type { FieldRenderer } from '@/types/source';
@@ -49,9 +49,9 @@ export function RankedListPreview({
 }: RankedListPreviewProps) {
   const orderedIds = useMemo(() => ranking.map((entry) => entry.item.id), [ranking]);
   /**
-   * Nothing moves until the drop. The rows hold still and a line shows where
-   * the row will land, so the list never shifts under the pointer that is
-   * aiming at it. `rows` is the geometry snapshot taken at grab.
+   * Nothing moves until the drop. The rows hold still and a line marks the gap
+   * the row will drop into, so the list never shifts under the pointer that is
+   * aiming at it.
    */
   const [dragging, setDragging] = useState<{ id: string; gap: number } | null>(null);
 
@@ -95,26 +95,17 @@ export function RankedListPreview({
       if (from < 0) return;
 
       /*
-       * Measured from the DOM, in the same viewport space the pointer reports.
-       * Deriving this from onLayout instead means holding two coordinate
-       * systems at once - the earlier attempt did, and every drag silently
-       * landed at the end of the list.
-       *
-       * Taken once, at grab: the rows hold still for the whole drag, so a
-       * single snapshot stays true.
+       * Measured from the DOM on every move, in the same viewport space the
+       * pointer reports. Deriving it from onLayout instead means holding two
+       * coordinate systems at once; an earlier attempt did, and every drag
+       * silently went to the end of the list. Nothing moves until the drop, so
+       * measuring fresh is safe. A windowed list has only some rows mounted,
+       * but every row is the same height, so one measured row fixes where all
+       * of them are.
        */
       const list = grip.closest('[role="list"]');
       if (list === null) return;
 
-      /*
-       * Measured fresh from the DOM on every move, in the same viewport space
-       * the pointer reports. Nothing moves until the drop, so re-measuring is
-       * both safe and simpler than keeping a snapshot in step.
-       */
-      /*
-       * A windowed list has only some rows mounted, but every row is the same
-       * height, so one measured row fixes where all of them are.
-       */
       const gapFor = (clientY: number) => {
         const first = list.querySelector('[role="listitem"]');
         if (first === null) return 0;
@@ -199,9 +190,9 @@ export function RankedListPreview({
               rank={index + 1}
               label={selectItemLabel(entry.item, sortField)}
               meta={metaFor(entry.item, summaryFields, renderers)}
-              previewSources={itemPreviewSources((field) => fieldValue(entry.item, field), mediaFields, renderers)}
+              previewSources={itemPreviewSources((field) => fieldOf(entry.item, field), mediaFields, renderers)}
               showImage={(pictureFields ?? []).length > 0}
-              imageValue={itemPictures((field) => fieldValue(entry.item, field), pictureFields, renderers)[0]?.uri}
+              imageValue={itemPictures((field) => fieldOf(entry.item, field), pictureFields, renderers)[0]?.uri}
               rating={entry.state.rating}
               dragging={dragging?.id === id}
               insertBefore={insertionGap === index}
@@ -229,16 +220,12 @@ function metaFor(
   if (summaryFields === undefined || summaryFields.length === 0) return null;
   const parts = summaryFields.flatMap((field) => {
     const renderer = renderers?.[field];
-    const text = formatValue(fieldValue(item, field), renderer, field);
+    const text = formatValue(fieldOf(item, field), renderer, field);
     if (text === null) return [];
     // A badge is its own name; anything else is named before its value.
     return [renderer === 'badge' ? text : `${field}: ${text}`];
   });
   return parts.length === 0 ? null : parts.join('  ·  ');
-}
-
-function fieldValue(item: ListItem, field: string | undefined): unknown {
-  return field !== undefined && isComplexItemValue(item.value) ? item.value[field] : undefined;
 }
 
 const styles = StyleSheet.create({

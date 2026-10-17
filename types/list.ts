@@ -23,3 +23,8 @@ export function isComplexItemValue(value: ItemValue): value is ComplexItemValue 
 export function isPrimitiveItemValue(value: ItemValue): value is PrimitiveItemValue {
   return typeof value === 'string';
 }
+
+/** One field of an item, or undefined for a bare string or a missing field. */
+export function fieldOf(item: ListItem, field: string | undefined): unknown {
+  return field !== undefined && isComplexItemValue(item.value) ? item.value[field] : undefined;
+}

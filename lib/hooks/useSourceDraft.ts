@@ -4,6 +4,7 @@ import type { FormatOverride } from '@/components/data/SourceInput';
 import { analyzeSource } from '@/lib/import/analyze';
 import type { SourceAnalysis } from '@/lib/import/analyze';
 import { entriesAtPath } from '@/lib/import/arrayCandidates';
+import { pathKey, samePath } from '@/lib/import/paths';
 import { resolveRoles } from '@/lib/import/roles';
 import { serializeDocument } from '@/lib/import/serialize';
 import type { DataSource, FieldRoles } from '@/types/source';
@@ -19,7 +20,7 @@ export interface SourceDraftSeed {
   arrayPath: string[];
   roles: FieldRoles;
   alreadyRanked: boolean;
-  /** Path key ("a.b") to alreadyRanked, for every list already known this
+  /** Path key (see pathKey) to alreadyRanked, for every list already known this
    *  session (the active one and anything parked in savedLists) - so
    *  revisiting one of them defaults to its own real answer, not "no
    *  particular order" just because it isn't the list this screen opened on. */
@@ -110,7 +111,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
   const selectedPath = useMemo(() => {
     const stillOffered =
       chosenPath !== null &&
-      analysis.candidates.some((candidate) => candidate.path.join('.') === chosenPath.join('.'));
+      analysis.candidates.some((candidate) => samePath(candidate.path, chosenPath));
     if (stillOffered) return chosenPath;
     return analysis.candidates.length === 1 ? (analysis.candidates[0]?.path ?? null) : null;
   }, [analysis, chosenPath]);
@@ -120,35 +121,34 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     [analysis, selectedPath],
   );
 
+  const selectedKey = selectedPath === null ? '' : pathKey(selectedPath);
+
   // Per-path, not a single flag: switching to a list the user has not
   // answered this for must not inherit another list's "already ranked"
   // choice. A list already known this session (knownLists, or the list this
   // screen opened on) falls back to its own real answer; a candidate never
   // visited before starts at "no particular order" until told otherwise.
   const alreadyRanked = useMemo(() => {
-    const pathKey = selectedPath === null ? '' : selectedPath.join('.');
-    if (alreadyRankedOverride?.pathKey === pathKey) {
+    if (alreadyRankedOverride?.pathKey === selectedKey) {
       return alreadyRankedOverride.value;
     }
     if (selectedPath === null || seed === undefined) return false;
 
-    const known = seed.knownLists?.[pathKey];
+    const known = seed.knownLists?.[selectedKey];
     if (known !== undefined) return known;
-    if (pathKey === seed.arrayPath.join('.')) return seed.alreadyRanked;
+    if (samePath(selectedPath, seed.arrayPath)) return seed.alreadyRanked;
     return false;
-  }, [selectedPath, alreadyRankedOverride, seed]);
+  }, [selectedPath, selectedKey, alreadyRankedOverride, seed]);
 
   const alreadyRankedIsExplicit = useMemo(() => {
-    const pathKey = selectedPath === null ? '' : selectedPath.join('.');
-    return alreadyRankedOverride?.pathKey === pathKey;
-  }, [selectedPath, alreadyRankedOverride]);
+    return alreadyRankedOverride?.pathKey === selectedKey;
+  }, [selectedKey, alreadyRankedOverride]);
 
   const setAlreadyRanked = useCallback(
     (value: boolean) => {
-      const pathKey = selectedPath === null ? '' : selectedPath.join('.');
-      setAlreadyRankedOverride({ pathKey, value });
+        setAlreadyRankedOverride({ pathKey: selectedKey, value });
     },
-    [selectedPath],
+    [selectedKey],
   );
 
   // Per-path, like alreadyRanked above: a field choice made for one list must
@@ -156,8 +156,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
   // a field of the same name - only the list the choice was actually made
   // for gets to keep it.
   const roles = useMemo(() => {
-    const pathKey = selectedPath === null ? '' : selectedPath.join('.');
-    const choice = rolesOverride[pathKey];
+    const choice = rolesOverride[selectedKey];
 
     const previous =
       choice !== undefined
@@ -167,7 +166,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
             summaryFields: choice.summaryFields,
             fieldRenderers: choice.fieldRenderers,
           }
-        : selectedPath !== null && seed !== undefined && pathKey === seed.arrayPath.join('.')
+        : selectedPath !== null && seed !== undefined && samePath(selectedPath, seed.arrayPath)
           ? {
               labelField: seed.roles.labelField,
               positionField: seed.roles.positionField,
@@ -179,7 +178,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     const resolved = resolveRoles(entries, previous);
     if (choice === undefined || !choice.positionCleared) return resolved;
     return { ...resolved, positionField: undefined };
-  }, [entries, rolesOverride, selectedPath, seed]);
+  }, [entries, rolesOverride, selectedPath, selectedKey, seed]);
 
   const availableOverrides = useMemo(() => {
     const complex = entries.some(isComplexEntry);
@@ -205,10 +204,9 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
 
   const setRoles = useCallback(
     (next: FieldRoles) => {
-      const pathKey = selectedPath === null ? '' : selectedPath.join('.');
-      setRolesOverride((current) => ({
+        setRolesOverride((current) => ({
         ...current,
-        [pathKey]: {
+        [selectedKey]: {
           labelField: next.labelField,
           positionField: next.positionField,
           summaryFields: next.summaryFields,
@@ -217,7 +215,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
         },
       }));
     },
-    [selectedPath],
+    [selectedKey],
   );
 
   // One step, so the setup is recorded against the list it belongs to before
@@ -227,7 +225,7 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     setChosenPath(path);
     setRolesOverride((current) => ({
       ...current,
-      [path.join('.')]: {
+      [pathKey(path)]: {
         labelField: preset.labelField,
         positionField: preset.positionField,
         summaryFields: preset.summaryFields,
