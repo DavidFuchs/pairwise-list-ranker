@@ -217,6 +217,11 @@ export function selectItemLabel(item: ListItem, labelField: string | undefined):
   return typeof firstString === 'string' ? firstString : 'Untitled item';
 }
 
+/** The comparisons a list of this size usually takes to settle, roughly n*log2(n). */
+export function comparisonTarget(activeItems: number): number {
+  return activeItems < 2 ? 0 : Math.ceil(activeItems * Math.log2(activeItems));
+}
+
 /** Progress summary for the status strip. */
 export function selectProgress(
   items: ListItem[],
@@ -239,7 +244,7 @@ export function selectProgress(
   // Deliberately not clamped at 1. The target is an estimate, not a finish
   // line, and comparisons past it still sharpen the order - so capping here
   // would freeze the meter and tell the user their work had stopped counting.
-  const target = activeItems < 2 ? 0 : Math.ceil(activeItems * Math.log2(activeItems));
+  const target = comparisonTarget(activeItems);
   const fromComparisons = target === 0 ? 0 : rated / target;
   // A list declared already ranked starts fully credited - the order is
   // trusted from the outset - and further comparisons still sharpen it past
@@ -455,7 +460,39 @@ export function describeStability(reading: StabilityReading): string {
   if (reading.unresolved === 0) {
     return 'Every item is settled against its neighbours. The order is ready to export.';
   }
-  return reading.unresolved === 1
-    ? '1 place in the order is still a close call.'
-    : `${reading.unresolved} places in the order are still close calls.`;
+  // Counted up rather than down: on a long list the places still open barely
+  // move for the first few hundred choices, which reads as no progress at all.
+  const settled = reading.pairs - reading.unresolved;
+  const places = reading.pairs === 1 ? 'place' : 'places';
+  // "1 of 4 places is", "3 of 4 places are", and with none settled, the places decide: "0 of 1 place is".
+  const verb = (settled === 0 ? reading.pairs : settled) === 1 ? 'is' : 'are';
+  return `${formatCount(settled)} of ${formatCount(reading.pairs)} ${places} in the order ${verb} settled.`;
+}
+
+/** At or above this many items, the status strip says up front how long ranking takes. */
+export const LONG_LIST_ITEMS = 50;
+
+/**
+ * Said while a long list is short of its estimate: how many choices it takes,
+ * so a meter at 1% after forty of them reads as the scale of the job rather
+ * than as no progress. Null for short lists, and once the estimate is met.
+ */
+export function describeScale(activeItems: number, coverage: number): string | null {
+  // Gone with the same rounded 100% that brings the estimate-met note, so the two never overlap.
+  if (activeItems < LONG_LIST_ITEMS || Math.round(coverage * 100) >= 100) return null;
+  const target = comparisonTarget(activeItems);
+  return `About ${formatCount(roughly(target))} choices settle ${formatCount(activeItems)} items. The order is usable well before that.`;
+}
+
+/** Two significant figures: an estimate said to the last digit claims a precision it does not have. */
+function roughly(n: number): number {
+  if (n < 100) return n;
+  const unit = 10 ** (Math.floor(Math.log10(n)) - 1);
+  return Math.round(n / unit) * unit;
+}
+
+const countFormat = new Intl.NumberFormat('en-US');
+
+function formatCount(n: number): string {
+  return countFormat.format(n);
 }

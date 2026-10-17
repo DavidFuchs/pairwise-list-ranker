@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { cardFlexBasis, ItemCard } from '@/components/comparison/ItemCard';
 import { ProgressMeter } from '@/components/ui/ProgressMeter';
 import { useComparisonShortcuts } from '@/lib/hooks/useComparisonShortcuts';
-import { describeCoverage, describeStability, selectItemLabel } from '@/lib/state/selectors';
+import { describeCoverage, describeScale, describeStability, selectItemLabel } from '@/lib/state/selectors';
 import type { ActivePair, StabilityReading } from '@/lib/state/selectors';
 import { EMPTY_LAYOUT } from '@/lib/renderers';
 import type { CardLayout } from '@/lib/renderers';
@@ -152,6 +152,7 @@ export function ComparisonDeck({
   }
 
   const { label: percentLabel, note: coverageNote } = describeCoverage(progress.coverage);
+  const scaleNote = describeScale(progress.activeItems, progress.coverage);
   // Nothing to toggle when the items are bare strings.
   const hasDetails = [pair.left, pair.right].some((item) => hasDetailFields(item, layout.labelField));
 
@@ -176,6 +177,7 @@ export function ComparisonDeck({
         />
         {/* Neutral, not gold: the surplus colour belongs to the meter alone. */}
         {coverageNote !== null && <Text style={styles.coverageNote}>{coverageNote}</Text>}
+        {scaleNote !== null && <Text style={styles.coverageNote}>{scaleNote}</Text>}
         {stability !== undefined && <Text style={styles.coverageNote}>{describeStability(stability)}</Text>}
       </View>
 

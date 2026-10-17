@@ -593,9 +593,10 @@ const TOPICS: { title: string; summary: string; body: ReactNode }[] = [
         </P>
         <P>
           Drag a row by its <K>⠿</K> handle and drop it where the line shows: it goes exactly there, and
-          nothing else moves. It is a starting point, not a pin - later comparisons can still move it.{' '}
-          <K>Undo</K> takes a move back. From the keyboard, focus the handle and press <K>Alt</K> + <K>↑</K>{' '}
-          or <K>↓</K>.
+          nothing else moves. Hold it near the top or bottom of the list and the list scrolls, so a row can
+          travel past what is on screen. It is a starting point, not a pin - later comparisons can still move
+          it. <K>Undo</K> takes a move back. From the keyboard, focus the handle and press <K>Alt</K> +{' '}
+          <K>↑</K> or <K>↓</K>, or <K>Alt</K> + <K>Home</K> or <K>End</K> to send it to the top or bottom.
         </P>
       </>
     ),

@@ -126,4 +126,43 @@ describe('session files', () => {
     expect(openList(listStore).roles.fieldRenderers).toEqual({ plays: 'compact' });
     expect(await screen.findByText(/Opened the session: 3 items · 1 decision/)).toBeDefined();
   });
+
+  it('opens a session dropped on the ranking screen, asking first when there are decisions', async () => {
+    const text = savedSessionText();
+    listStore
+      .getState()
+      .startRanking({ source: { ...songs, document: ['A', 'B'], format: 'list' }, roles: {} });
+    const [a, b] = openList(listStore).items;
+    listStore.getState().recordComparison(a!.id, b!.id, 'left');
+    render(<RankScreen />);
+
+    dropFile(new File([text], 'saved.json', { type: 'application/json' }));
+
+    expect(await screen.findByText(/It replaces the list you are ranking now/)).toBeDefined();
+    expect(openList(listStore).items.map((item) => item.value)).toEqual(['A', 'B']);
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Replace with the saved session' }));
+    expect(openList(listStore).items).toHaveLength(3);
+    expect(await screen.findByText(/Opened the session: 3 items · 1 decision/)).toBeDefined();
+  });
+
+  it('leaves the list alone when something else is dropped on the ranking screen', async () => {
+    listStore.getState().startRanking({ source: songs, roles: { labelField: 'title' } });
+    render(<RankScreen />);
+
+    const drop = dropFile(new File([SONGS_TEXT], 'songs.json', { type: 'application/json' }));
+
+    expect(await screen.findByText(/"songs.json" is not a saved session/)).toBeDefined();
+    // Taken by the page, so the browser does not open the file in place of the app.
+    expect(drop.defaultPrevented).toBe(true);
+    expect(openList(listStore).items.map((item) => item.value)).toEqual(songs.document);
+  });
 });
+
+/** A file dropped from the operating system, as the window receives it. */
+function dropFile(file: File): Event {
+  const event = new Event('drop', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'dataTransfer', { value: { types: ['Files'], files: [file] } });
+  window.dispatchEvent(event);
+  return event;
+}

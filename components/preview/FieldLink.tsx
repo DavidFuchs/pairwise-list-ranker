@@ -43,7 +43,9 @@ export function FieldLink({ url, text, prefix, textStyle }: FieldLinkProps) {
   // off text nested in the underlined run.
   return (
     <View style={styles.row}>
-      <Text style={textStyle}>{prefix}</Text>
+      <Text style={[textStyle, styles.prefix]} numberOfLines={1}>
+        {prefix}
+      </Text>
       {link}
     </View>
   );
@@ -52,6 +54,10 @@ export function FieldLink({ url, text, prefix, textStyle }: FieldLinkProps) {
 const styles = StyleSheet.create({
   // A gap, not a trailing space: flex items drop whitespace at their edges.
   row: { flexDirection: 'row', alignItems: 'baseline', gap: 4, maxWidth: '100%' },
+  // The name holds its line and the address gives way, truncating, since the
+  // name is what says what the address is. Capped so a long name still leaves
+  // the address some room.
+  prefix: { flexShrink: 0, maxWidth: '60%' },
   link: { flexShrink: 1, minWidth: 0, alignSelf: 'flex-start', maxWidth: '100%' },
   base: { fontFamily: fonts.body, fontSize: 12 },
   // Size comes from textStyle when given, so a link reads at the size of the line it sits in.

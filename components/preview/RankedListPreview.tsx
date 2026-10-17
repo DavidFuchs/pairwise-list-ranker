@@ -2,9 +2,16 @@ import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RankedRow, ROW_HEIGHT } from '@/components/preview/RankedRow';
-import { gapMovesRow, insertIndexForUniform, moveItem, targetIndexForGap } from '@/lib/ranking/reorder';
+import type { KeyMove } from '@/components/preview/RankedRow';
+import {
+  edgeScrollStep,
+  gapMovesRow,
+  insertIndexForUniform,
+  moveItem,
+  targetIndexForGap,
+} from '@/lib/ranking/reorder';
 import { selectItemLabel } from '@/lib/state/selectors';
-import { EMPTY_LAYOUT, fieldLabel, formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
+import { EMPTY_LAYOUT, fieldLabelFor, formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
 import type { CardLayout, PreviewSource } from '@/lib/renderers';
 import { colors, fonts, space } from '@/lib/theme';
 import { fieldOf } from '@/types/list';
@@ -67,10 +74,10 @@ export function RankedListPreview({
   }, [dragging, orderedIds]);
 
   const handleKeyMove = useCallback(
-    (id: string, direction: -1 | 1) => {
+    (id: string, move: KeyMove) => {
       const from = orderedIds.indexOf(id);
-      const to = from + direction;
-      if (from < 0 || to < 0 || to >= orderedIds.length) return;
+      const to = move === 'top' ? 0 : move === 'bottom' ? orderedIds.length - 1 : from + move;
+      if (from < 0 || to === from || to < 0 || to >= orderedIds.length) return;
       onReorder(id, moveItem(orderedIds, from, to));
     },
     [onReorder, orderedIds],
@@ -110,15 +117,50 @@ export function RankedListPreview({
 
       setDragging({ id, gap: gapFor(startClientY) });
 
+      /*
+       * Held near the top or bottom of what scrolls, the list keeps moving, so
+       * a row can be carried past the rows on screen. Whatever scrolls is
+       * found from the list up: the list itself in the sidebar, or the page
+       * once the sidebar sits below the stage and runs its full length.
+       */
+      const scroller = scrollerOf(list);
+      let pointerY = startClientY;
+      let frame: number | null = null;
+
+      const edgeScroll = () => {
+        frame = null;
+        const rect =
+          scroller === document.scrollingElement
+            ? { top: 0, bottom: window.innerHeight }
+            : scroller.getBoundingClientRect();
+        const step = edgeScrollStep(
+          pointerY,
+          Math.max(0, rect.top),
+          Math.min(window.innerHeight, rect.bottom),
+        );
+        if (step === 0) return;
+        const before = scroller.scrollTop;
+        scroller.scrollTop = before + step;
+        if (scroller.scrollTop === before) return;
+        // The rows moved under a pointer that did not.
+        const gap = gapFor(pointerY);
+        setDragging((current) => (current === null ? null : { ...current, gap }));
+        frame = requestAnimationFrame(edgeScroll);
+      };
+
       const stop = () => {
+        if (frame !== null) cancelAnimationFrame(frame);
+        frame = null;
         window.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onUp);
         window.removeEventListener('pointercancel', onCancel);
       };
 
       const onMove = (event: PointerEvent) => {
+        pointerY = event.clientY;
         const gap = gapFor(event.clientY);
         setDragging((current) => (current === null ? null : { ...current, gap }));
+        if (frame === null) frame = requestAnimationFrame(edgeScroll);
       };
 
       const onUp = (event: PointerEvent) => {
@@ -197,6 +239,17 @@ export function RankedListPreview({
   );
 }
 
+/** The nearest element that scrolls vertically, the list's own box first; the page if none does. */
+function scrollerOf(start: Element): Element {
+  for (let node: Element | null = start; node !== null; node = node.parentElement) {
+    const { overflowY } = getComputedStyle(node);
+    if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight + 1) {
+      return node;
+    }
+  }
+  return document.scrollingElement ?? document.documentElement;
+}
+
 interface RowContent {
   label: string;
   meta: string | null;
@@ -242,7 +295,7 @@ function metaFor(item: ListItem, { plainFields, renderers }: CardLayout): string
     const text = formatValue(fieldOf(item, field), renderer, field);
     if (text === null) return [];
     // A badge is its own name; anything else is named before its value.
-    return [renderer === 'badge' ? text : `${fieldLabel(field)}: ${text}`];
+    return [renderer === 'badge' ? text : `${fieldLabelFor(field, renderer)}: ${text}`];
   });
   return parts.length === 0 ? null : parts.join('  ·  ');
 }

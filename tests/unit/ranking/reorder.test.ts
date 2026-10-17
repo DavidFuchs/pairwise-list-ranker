@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   dragInsertIndex,
+  EDGE_SCROLL_MAX,
+  EDGE_SCROLL_ZONE,
+  edgeScrollStep,
   gapMovesRow,
   insertIndexFor,
   insertIndexForUniform,
@@ -160,5 +163,35 @@ describe('insertIndexForUniform', () => {
         insertIndexFor(rows, pointer),
       );
     }
+  });
+});
+
+describe('edgeScrollStep', () => {
+  const top = 100;
+  const bottom = 700;
+
+  it('holds still away from the edges', () => {
+    expect(edgeScrollStep(400, top, bottom)).toBe(0);
+    expect(edgeScrollStep(top + EDGE_SCROLL_ZONE, top, bottom)).toBe(0);
+    expect(edgeScrollStep(bottom - EDGE_SCROLL_ZONE, top, bottom)).toBe(0);
+  });
+
+  it('scrolls up near the top and down near the bottom, faster closer in', () => {
+    const nearTop = edgeScrollStep(top + EDGE_SCROLL_ZONE - 10, top, bottom);
+    const atTop = edgeScrollStep(top + 2, top, bottom);
+    expect(nearTop).toBeLessThan(0);
+    expect(atTop).toBeLessThan(nearTop);
+    expect(edgeScrollStep(bottom - 10, top, bottom)).toBeGreaterThan(0);
+  });
+
+  it('goes flat out once the pointer is past the edge', () => {
+    expect(edgeScrollStep(top - 200, top, bottom)).toBe(-EDGE_SCROLL_MAX);
+    expect(edgeScrollStep(bottom + 200, top, bottom)).toBe(EDGE_SCROLL_MAX);
+  });
+
+  it('keeps the two zones apart in a short scroller', () => {
+    // 60px tall: each zone is at most 20px, so the middle stays still.
+    expect(edgeScrollStep(130, 100, 160)).toBe(0);
+    expect(edgeScrollStep(105, 100, 160)).toBeLessThan(0);
   });
 });

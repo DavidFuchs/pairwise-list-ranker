@@ -100,6 +100,25 @@ describe('RankedListPreview', () => {
 
     expect(onReorder).not.toHaveBeenCalled();
   });
+
+  it('sends a row to the top with alt and Home, and to the bottom with alt and End', () => {
+    const { onReorder } = setup();
+
+    fireEvent.keyDown(screen.getByLabelText(/reorder curry/i), { key: 'Home', altKey: true });
+    expect(onReorder).toHaveBeenLastCalledWith('item-2', ['item-2', 'item-0', 'item-1']);
+
+    fireEvent.keyDown(screen.getByLabelText(/reorder tacos/i), { key: 'End', altKey: true });
+    expect(onReorder).toHaveBeenLastCalledWith('item-0', ['item-1', 'item-2', 'item-0']);
+  });
+
+  it('leaves a row already at that end where it is', () => {
+    const { onReorder } = setup();
+
+    fireEvent.keyDown(screen.getByLabelText(/reorder tacos/i), { key: 'Home', altKey: true });
+    fireEvent.keyDown(screen.getByLabelText(/reorder curry/i), { key: 'End', altKey: true });
+
+    expect(onReorder).not.toHaveBeenCalled();
+  });
 });
 
 describe('RankedListPreview with a long list', () => {

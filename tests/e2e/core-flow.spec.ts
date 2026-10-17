@@ -25,19 +25,33 @@ async function enterData(page: Page, text: string) {
  * static page can trail on a slow machine, so the dragenter is repeated until
  * the app answers it rather than sent once and missed.
  */
-async function startFileDrag(page: Page) {
+async function startFileDrag(page: Page, overlay = 'Drop to import') {
   await expect
     .poll(() =>
-      page.evaluate(async () => {
+      page.evaluate(async (overlayText) => {
         const dataTransfer = new DataTransfer();
         dataTransfer.items.add(new File(['x'], 'a.txt', { type: 'text/plain' }));
         const eventInit = { bubbles: true, cancelable: true, dataTransfer, clientX: 5, clientY: 5 };
         document.body.dispatchEvent(new DragEvent('dragenter', eventInit));
         await new Promise((resolve) => setTimeout(resolve, 50));
-        return document.body.textContent?.includes('Drop to import') ?? false;
-      }),
+        return document.body.textContent?.includes(overlayText) ?? false;
+      }, overlay),
     )
     .toBe(true);
+}
+
+/** Drops a file on the page body, the way a browser hands over one dragged in from the system. */
+async function dropFile(page: Page, name: string, text: string) {
+  await page.evaluate(
+    ({ fileName, fileText }) => {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(new File([fileText], fileName, { type: 'application/json' }));
+      const eventInit = { bubbles: true, cancelable: true, dataTransfer, clientX: 5, clientY: 5 };
+      document.body.dispatchEvent(new DragEvent('dragover', eventInit));
+      document.body.dispatchEvent(new DragEvent('drop', eventInit));
+    },
+    { fileName: name, fileText: text },
+  );
 }
 
 async function chooseCardRows(page: Page) {
@@ -355,6 +369,82 @@ test('a drag that goes nowhere leaves the order alone', async ({ page }) => {
   await expect(page.getByRole('listitem').first()).toContainText('Tacos');
 });
 
+test('a row held at the edge of the list carries it past the rows on screen', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await enterData(page, Array.from({ length: 300 }, (_, i) => `Item ${i + 1}`).join('\n'));
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  const list = page.getByRole('list');
+  const grip = page.getByRole('button', { name: /^Reorder Item 1,/ });
+  const listBox = await list.boundingBox();
+  const gripBox = await grip.boundingBox();
+  if (listBox === null || gripBox === null) throw new Error('The list should be laid out.');
+
+  const x = gripBox.x + gripBox.width / 2;
+  await page.mouse.move(x, gripBox.y + gripBox.height / 2);
+  await page.mouse.down();
+  // Held just inside the bottom edge, the list scrolls on its own.
+  await page.mouse.move(x, listBox.y + listBox.height - 4, { steps: 10 });
+  await expect.poll(() => list.evaluate((el) => el.scrollTop), { timeout: 5000 }).toBeGreaterThan(2000);
+  await page.mouse.up();
+
+  const label = await page.getByRole('button', { name: /^Reorder Item 1,/ }).getAttribute('aria-label');
+  const position = Number(/position (\d+)/.exec(label ?? '')?.[1]);
+  // Far below the eight or so rows the sidebar shows at once.
+  expect(position).toBeGreaterThan(30);
+});
+
+test('alt with Home or End sends a row to the top or bottom of the list', async ({ page }) => {
+  await enterData(page, DINNERS);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  await page.getByRole('button', { name: /^Reorder Curry/ }).focus();
+  await page.keyboard.press('Alt+Home');
+  await expect(page.getByRole('listitem').first()).toContainText('Curry');
+
+  await page.getByRole('button', { name: /^Reorder Curry/ }).focus();
+  await page.keyboard.press('Alt+End');
+  await expect(page.getByRole('listitem').last()).toContainText('Curry');
+});
+
+test('a file dropped on the ranking screen opens a saved session, and nothing else', async ({ page }) => {
+  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+  await page
+    .getByLabel(/^Choose /)
+    .first()
+    .click();
+  await expect(page.getByText(/^1 comparison ·/)).toBeVisible();
+
+  // Keeps the file Save session writes, to drop back on the page.
+  await page.evaluate(() => {
+    const create = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (blob: Blob) => {
+      (window as Window & { savedBlob?: Blob }).savedBlob = blob;
+      return create(blob);
+    };
+  });
+  await page.getByRole('button', { name: 'Save this session to a file' }).click();
+  const session = await page.evaluate(
+    () => (window as Window & { savedBlob?: Blob }).savedBlob?.text() ?? '',
+  );
+  expect(session).toContain('pairwise-list-ranker-session');
+
+  await startFileDrag(page, 'Drop a saved session to open it');
+  await dropFile(page, 'notes.json', '["Tacos", "Ramen"]');
+  await expect(
+    page.getByText('"notes.json" is not a saved session. To rank a new list, use Edit data.'),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/rank$/);
+  await page.getByRole('button', { name: 'Dismiss' }).click();
+
+  await startFileDrag(page, 'Drop a saved session to open it');
+  await dropFile(page, 'movies-session.json', session);
+  // There is a decision on the line, so it asks before replacing anything.
+  await page.getByRole('button', { name: 'Replace with the saved session' }).click();
+  await expect(page.getByText(/^Opened the session: 10 items · 1 decision/)).toBeVisible();
+});
+
 test('editing an entry leaves it where the user put it', async ({ page }) => {
   await enterData(page, DINNERS);
   await page.getByRole('button', { name: 'Start ranking' }).click();
@@ -482,6 +572,24 @@ test('on a phone, a whole decision fits on one screen', async ({ page }) => {
   await expect(cards.first().getByText('Rotten tomatoes:')).toBeVisible();
 });
 
+test('a field name stays on one line beside a long link', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Load the games sample' }).click();
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+  await page.getByRole('switch', { name: 'Show details on both cards' }).click();
+
+  const name = page
+    .getByLabel(/^Choose /)
+    .first()
+    .getByText('Store URL:', { exact: true });
+  await expect(name).toBeVisible();
+  const { height, fontSize } = await name.evaluate((el) => ({
+    height: el.getBoundingClientRect().height,
+    fontSize: parseFloat(getComputedStyle(el).fontSize),
+  }));
+  expect(height).toBeLessThan(fontSize * 2);
+});
+
 test('on a phone, the setup screen keeps its main button on screen', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('button', { name: 'Load the movies sample' }).click();
@@ -546,6 +654,40 @@ test('each screen is laid out under headings a screen reader can jump between', 
   await expect(page.getByRole('heading', { level: 2, name: 'Your data' })).toBeVisible();
   // Each card is titled by a heading, so the pair can be read one item at a time.
   await expect(page.getByRole('heading', { level: 2 })).toHaveCount(3);
+});
+
+test('everything on screen sits inside a landmark', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+
+  // What axe's "region" rule asks: no visible text or control outside the
+  // banner, the main region or the sidebar. The sidebar's resize handle,
+  // which only the split view has, was the one thing that strayed.
+  const outside = () =>
+    page.evaluate(() => {
+      const landmark = '[role="banner"], [role="main"], [role="complementary"], header, main, aside';
+      const visible = (el: Element) => {
+        const box = el.getBoundingClientRect();
+        return box.width > 0 && box.height > 0;
+      };
+      return [...document.body.querySelectorAll('[role], button, input, textarea, a')]
+        .concat(
+          [...document.body.querySelectorAll('div, span')].filter((el) =>
+            [...el.childNodes].some((node) => node.nodeType === 3 && node.textContent!.trim() !== ''),
+          ),
+        )
+        .filter(
+          (el) => visible(el) && el.closest(landmark) === null && el.closest('[role="dialog"]') === null,
+        )
+        .map((el) => el.getAttribute('aria-label') ?? el.textContent?.slice(0, 40) ?? el.tagName);
+    });
+
+  await expect(page.getByRole('separator', { name: 'Resize sidebar' })).toBeVisible();
+  expect(await outside()).toEqual([]);
+
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+  await expect(page.getByLabel(/^Choose /).first()).toBeVisible();
+  expect(await outside()).toEqual([]);
 });
 
 test('each card is a named group a keyboard user can choose with Enter', async ({ page }) => {

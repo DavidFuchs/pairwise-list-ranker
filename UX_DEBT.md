@@ -56,12 +56,12 @@ It falls short in three places:
 | 22  | Give the choice cards a role screen readers will announce           | Accessibility | Medium   | Done   |
 | 23  | Make dragging a ranked row work with a finger                       | Phone         | High     | Done   |
 | 24  | Refuse files that are not text, and ask before replacing the editor | Trust         | High     | Done   |
-| 25  | Handle a file dropped on the ranking screen                         | Trust         | Medium   | Open   |
-| 26  | Scroll the ranked list while dragging near its edge                 | Long lists    | Medium   | Open   |
-| 27  | Set expectations on long lists                                      | Long lists    | Medium   | Open   |
-| 28  | Drop a unit from a field name its renderer already shows            | Clarity       | Low      | Open   |
-| 29  | Keep a field name on one line beside a long link                    | Polish        | Low      | Open   |
-| 30  | Put all content inside a landmark                                   | Accessibility | Low      | Open   |
+| 25  | Handle a file dropped on the ranking screen                         | Trust         | Medium   | Done   |
+| 26  | Scroll the ranked list while dragging near its edge                 | Long lists    | Medium   | Done   |
+| 27  | Set expectations on long lists                                      | Long lists    | Medium   | Done   |
+| 28  | Drop a unit from a field name its renderer already shows            | Clarity       | Low      | Done   |
+| 29  | Keep a field name on one line beside a long link                    | Polish        | Low      | Done   |
+| 30  | Put all content inside a landmark                                   | Accessibility | Low      | Done   |
 
 Suggested order: 1 and 4 first (small, and one is a bug), then 5, 7 and 2,
 which matter most to how the app feels, then the rest.
@@ -307,7 +307,8 @@ percentage beside the comparison count where the eye already is.
 Done: the line reads "7 places in the order are still close calls" (and "Every
 item is settled against its neighbours" once none are), the percentage sits in
 the count line in a stronger weight, and the count says "1 comparison" rather
-than "1 comparisons".
+than "1 comparisons". Since #27 the line counts up instead: "2 of 9 places in
+the order are settled".
 
 ## Polish
 
@@ -467,6 +468,13 @@ usually to open the file in place of the app.
 Fix: on the ranking screen, take a dropped session file as Open session does,
 and quietly ignore anything else.
 
+Done: the ranking screen is a drop target too, and its overlay says "Drop a
+saved session to open it". A session opens as Open session would, asking
+first when there are decisions to lose. Anything else leaves the list alone,
+with one line instead of silence, since silence looked like a drop that failed:
+`"notes.json" is not a saved session. To rank a new list, use Edit data.`
+Either way the browser no longer opens the file in place of the app.
+
 ### 26. Long lists: dragging stops at the edge of what is shown
 
 The ranked list has no auto-scroll while dragging, so a row can only be dropped
@@ -476,6 +484,13 @@ key presses.
 
 Fix: scroll the list while a drag is held near its top or bottom edge, and
 consider "move to top" and "move to bottom" on the row.
+
+Done: held within 48 px of the top or bottom of what scrolls, a drag scrolls
+the list, faster closer to the edge, and the drop line follows. That is the
+sidebar's own list, or the page once the sidebar sits below the stage. From
+the keyboard, Alt with Home or End sends the focused row to the top or bottom.
+No buttons were added to the row: two more controls on every one of 500 rows
+cost more than they save, now that a single drag reaches anywhere.
 
 ### 27. Long lists: no sense of how long this takes
 
@@ -488,6 +503,10 @@ Fix: say the scale when a long list starts ("about 4,500 choices to settle 500
 items; the order is usable well before that"), and show how many places have
 settled rather than how many have not.
 
+Done: from 50 items up, until the estimate is met, the status strip says
+"About 4,500 choices settle 500 items. The order is usable well before that."
+The stability line counts up: "12 of 499 places in the order are settled."
+
 ### 28. A unit in the name that the value already shows
 
 `duration_sec` now reads "Duration sec: 2:51": the field name says seconds, but
@@ -496,12 +515,21 @@ the duration renderer already shows minutes and seconds.
 Fix: when a renderer reformats a value, drop a trailing unit word (sec, secs,
 seconds, ms) from its label.
 
+Done: `duration_sec` reads "Duration: 2:51", on the cards and in the ranked
+list. A trailing s, sec, secs, second, seconds or ms is dropped (with an "in"
+before it) under the duration renderer, and a currency code under the money
+renderer, so "Price USD: US$29.99" in the Games sample is now "Price: US$29.99".
+A name is never left with no words.
+
 ### 29. A field name wrapping beside a long link
 
 A link field such as `store_url` shows its name as "Store" and "URL:" on two
 lines, because the long link beside it takes the room.
 
 Fix: keep the name on one line and let the link truncate or wrap below it.
+
+Done: the name holds its line and the link truncates beside it. The name is
+capped at 60% of the line, so a long one still leaves the link some room.
 
 ### 30. Content outside a landmark
 
@@ -510,6 +538,12 @@ landmark. It named it only by a generated class, so which block it is still
 needs finding.
 
 Fix: find it, and place it inside the banner, the main region or the sidebar.
+
+Done: it was the sidebar's resize handle, which sat between the main region and
+the sidebar in the split view, so phones never showed it. It now sits inside the
+sidebar, the thing it resizes. axe's region rule passes on both screens at
+desktop and phone widths, and an end-to-end test checks that nothing visible
+falls outside a landmark.
 
 ### Still not covered
 

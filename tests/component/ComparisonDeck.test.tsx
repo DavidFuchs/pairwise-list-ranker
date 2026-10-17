@@ -576,8 +576,22 @@ describe('ComparisonDeck undo and stability', () => {
     expect(onUndo).toHaveBeenCalledTimes(2);
   });
 
-  it('reports how many places in the order are still close calls', () => {
+  it('reports how many places in the order have settled', () => {
     setup({ stability: { pairs: 5, unresolved: 2 } });
-    expect(screen.getByText(/2 places in the order are still close calls/)).toBeDefined();
+    expect(screen.getByText('3 of 5 places in the order are settled.')).toBeDefined();
+  });
+
+  it('says up front how many choices a long list takes', () => {
+    setup({
+      progress: { activeItems: 500, comparisons: 40, skips: 0, coverage: 0.01, earnedCoverage: 0.01 },
+    });
+    expect(
+      screen.getByText('About 4,500 choices settle 500 items. The order is usable well before that.'),
+    ).toBeDefined();
+  });
+
+  it('leaves the scale unsaid on a short list', () => {
+    setup();
+    expect(screen.queryByText(/choices settle/)).toBeNull();
   });
 });

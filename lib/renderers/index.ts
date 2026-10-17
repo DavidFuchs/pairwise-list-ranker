@@ -4,6 +4,7 @@
  * renderers themselves are defined in ./registry, one entry each.
  */
 import { definitionOf, familyOf, FAMILIES, RENDERERS } from '@/lib/renderers/registry';
+import { fieldLabel } from '@/lib/renderers/fieldLabel';
 import type {
   CaveatContext,
   CardField,
@@ -50,6 +51,15 @@ export {
 } from '@/lib/renderers/values';
 export type { PillTone } from '@/lib/renderers/values';
 export { fieldLabel } from '@/lib/renderers/fieldLabel';
+
+/** fieldLabel for a field drawn by this renderer, without a unit the drawn value already shows. */
+export function fieldLabelFor(field: string, renderer: FieldRenderer | undefined): string {
+  const unitWords =
+    renderer === undefined
+      ? undefined
+      : (familyOf(renderer)?.unitWords?.(renderer) ?? definitionOf(renderer)?.unitWords);
+  return fieldLabel(field, unitWords);
+}
 
 export interface RendererOption {
   /** Absent for the plain default. For one with variants, the first that fits. */

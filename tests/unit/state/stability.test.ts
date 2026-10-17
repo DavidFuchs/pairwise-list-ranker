@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { describeStability, selectStability } from '@/lib/state/selectors';
+import {
+  comparisonTarget,
+  describeScale,
+  describeStability,
+  LONG_LIST_ITEMS,
+  selectStability,
+} from '@/lib/state/selectors';
 import type { ListItem } from '@/types/list';
 import type { ComparisonEvent, RankedItem } from '@/types/ranking';
 
@@ -55,12 +61,35 @@ describe('describeStability', () => {
     expect(describeStability({ pairs: 4, unresolved: 0 })).toMatch(/settled/);
   });
 
-  it('counts what is left', () => {
-    expect(describeStability({ pairs: 4, unresolved: 1 })).toBe(
-      '1 place in the order is still a close call.',
+  it('counts what has settled, not what is left', () => {
+    expect(describeStability({ pairs: 4, unresolved: 3 })).toBe('1 of 4 places in the order is settled.');
+    expect(describeStability({ pairs: 4, unresolved: 1 })).toBe('3 of 4 places in the order are settled.');
+    expect(describeStability({ pairs: 499, unresolved: 499 })).toBe(
+      '0 of 499 places in the order are settled.',
     );
-    expect(describeStability({ pairs: 4, unresolved: 3 })).toBe(
-      '3 places in the order are still close calls.',
+    expect(describeStability({ pairs: 1, unresolved: 1 })).toBe('0 of 1 place in the order is settled.');
+  });
+});
+
+describe('describeScale', () => {
+  it('says how many choices a long list takes, to two figures', () => {
+    expect(describeScale(500, 0.01)).toBe(
+      'About 4,500 choices settle 500 items. The order is usable well before that.',
     );
+    expect(describeScale(LONG_LIST_ITEMS, 0)).toMatch(/^About 280 choices settle 50 items/);
+  });
+
+  it('says nothing on a short list', () => {
+    expect(describeScale(LONG_LIST_ITEMS - 1, 0)).toBeNull();
+  });
+
+  it('gives way once the estimate is met', () => {
+    expect(describeScale(500, 0.994)).not.toBeNull();
+    expect(describeScale(500, 0.995)).toBeNull();
+  });
+
+  it('agrees with the estimate behind the meter', () => {
+    expect(comparisonTarget(500)).toBe(4483);
+    expect(comparisonTarget(1)).toBe(0);
   });
 });

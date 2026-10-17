@@ -43,10 +43,12 @@ export interface AppShellProps {
   preview: ReactNode;
   /**
    * Turns the whole page into a drop target for a dragged-in file, with a
-   * full-screen overlay while the drag is over it. Omitted on screens with
-   * nothing to import into, e.g. the rank screen.
+   * full-screen overlay while the drag is over it. Also keeps the browser
+   * from opening a dropped file in place of the app.
    */
   onFileDrop?: (file: File) => void;
+  /** What the drop overlay says a release will do. */
+  dropTitle?: string;
   /**
    * Held at the bottom of the window, under the scrolling page, once the
    * columns stack: there the sidebar's own action would sit below everything
@@ -92,6 +94,7 @@ export function AppShell({
   stage,
   preview,
   onFileDrop,
+  dropTitle = 'Drop to import',
   dock,
 }: AppShellProps) {
   const [confirmingReset, setConfirmingReset] = useState(false);
@@ -345,41 +348,51 @@ export function AppShell({
               {stage}
             </View>
 
-            {layout === 'split' && (
-              <SplitDivider
-                width={sidebarWidth}
-                min={SIDEBAR_MIN_WIDTH}
-                max={maxSidebarWidth}
-                onResize={setDraggingSidebarWidth}
-                onCommit={(width) => {
-                  setDraggingSidebarWidth(null);
-                  saveSidebarWidth(width);
-                }}
-                onReset={() => {
-                  setDraggingSidebarWidth(null);
-                  saveSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
-                }}
-              />
-            )}
-
+            {/* The divider resizes the sidebar, so it sits inside the sidebar's
+                landmark: between the two it would be content outside any. The
+                wrapper is there in every layout, so the sidebar is never
+                remounted when the split comes and goes. */}
             <View
               style={[
-                styles.preview,
-                layout === 'split' && [
-                  styles.previewSplit,
-                  { width: sidebarWidth },
-                  viewportHeight !== null && {
-                    height: Math.max(PREVIEW_MIN_HEIGHT, viewportHeight - space.lg * 2),
-                  },
-                ],
-                layout === 'stacked' && styles.previewStacked,
-                // A docked sidebar has handed its action to the dock, so it can
-                // run its full length with the page rather than scroll inside it.
-                docking && styles.previewFitsContent,
+                styles.sidebar,
+                layout === 'split' && styles.sidebarSplit,
+                layout === 'stacked' && styles.sidebarStacked,
               ]}
               role="complementary"
             >
-              {preview}
+              {layout === 'split' && (
+                <SplitDivider
+                  width={sidebarWidth}
+                  min={SIDEBAR_MIN_WIDTH}
+                  max={maxSidebarWidth}
+                  onResize={setDraggingSidebarWidth}
+                  onCommit={(width) => {
+                    setDraggingSidebarWidth(null);
+                    saveSidebarWidth(width);
+                  }}
+                  onReset={() => {
+                    setDraggingSidebarWidth(null);
+                    saveSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
+                  }}
+                />
+              )}
+
+              <View
+                style={[
+                  styles.preview,
+                  layout === 'split' && [
+                    { width: sidebarWidth },
+                    viewportHeight !== null && {
+                      height: Math.max(PREVIEW_MIN_HEIGHT, viewportHeight - space.lg * 2),
+                    },
+                  ],
+                  // A docked sidebar has handed its action to the dock, so it can
+                  // run its full length with the page rather than scroll inside it.
+                  docking && styles.previewFitsContent,
+                ]}
+              >
+                {preview}
+              </View>
             </View>
           </View>
         </ScrollView>
@@ -390,7 +403,7 @@ export function AppShell({
           <RNModal visible={fileDragActive} transparent animationType="none" onRequestClose={() => {}}>
             <View style={styles.dropOverlay} pointerEvents="none">
               <View style={styles.dropCard}>
-                <Text style={styles.dropTitle}>Drop to import</Text>
+                <Text style={styles.dropTitle}>{dropTitle}</Text>
                 <Text style={styles.dropSubtitle}>Release anywhere on the page</Text>
               </View>
             </View>
@@ -485,18 +498,22 @@ const styles = StyleSheet.create({
   stageSplit: { minWidth: 0, alignSelf: 'stretch' },
   // In a column, flex-basis would size height rather than width.
   stageStacked: { flexBasis: 'auto', flexGrow: 0, minWidth: 0 },
-  preview: {
+  sidebar: {
     flexGrow: 0,
     flexShrink: 1,
     flexBasis: SIDEBAR_DEFAULT_WIDTH,
     minWidth: SIDEBAR_MIN_WIDTH,
+  },
+  // The divider and the panel side by side, the divider running the full
+  // height of the row as the gutter between stage and sidebar.
+  sidebarSplit: { flexDirection: 'row', flexShrink: 0, flexBasis: 'auto', minWidth: 0, alignSelf: 'stretch' },
+  sidebarStacked: { flexShrink: 0, flexBasis: 'auto', minWidth: 0 },
+  preview: {
     minHeight: PREVIEW_MIN_HEIGHT,
     // Until the space under the header is measured; the split view then
     // fills it exactly, down to the bottom of the window.
     height: '85vh' as unknown as number,
   },
-  previewSplit: { flexShrink: 0, flexBasis: 'auto', minWidth: 0 },
-  previewStacked: { flexShrink: 0, flexBasis: 'auto', minWidth: 0 },
   previewFitsContent: { height: 'auto' as unknown as number, minHeight: 0 },
   dropOverlay: {
     flex: 1,

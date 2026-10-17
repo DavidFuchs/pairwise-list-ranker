@@ -75,3 +75,31 @@ export function insertIndexForUniform(
   if (rowsBefore <= 0) return 0;
   return Math.min(count, Math.ceil(rowsBefore));
 }
+
+/** How close to a scrolling edge a held drag starts the list moving. */
+export const EDGE_SCROLL_ZONE = 48;
+/** The fastest the list scrolls under a held drag, in pixels a frame. */
+export const EDGE_SCROLL_MAX = 18;
+
+/**
+ * How far to scroll this frame while a drag is held at `pointerY`, given the
+ * visible top and bottom of what scrolls: negative near the top, positive near
+ * the bottom, zero in between. Faster the closer to the edge, and flat out
+ * past it, so a row can be carried the length of a long list in one drag.
+ */
+export function edgeScrollStep(
+  pointerY: number,
+  top: number,
+  bottom: number,
+  zone = EDGE_SCROLL_ZONE,
+  max = EDGE_SCROLL_MAX,
+): number {
+  // A short scroller would have its two zones overlap; each gets at most a third.
+  const reach = Math.min(zone, (bottom - top) / 3);
+  if (reach <= 0) return 0;
+  const intoTop = top + reach - pointerY;
+  if (intoTop > 0) return -Math.ceil(max * Math.min(1, intoTop / reach));
+  const intoBottom = pointerY - (bottom - reach);
+  if (intoBottom > 0) return Math.ceil(max * Math.min(1, intoBottom / reach));
+  return 0;
+}

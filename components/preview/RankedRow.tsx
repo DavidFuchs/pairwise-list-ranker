@@ -12,6 +12,12 @@ export const ROW_HEIGHT = 56;
 
 const THUMB_SIZE = 40;
 
+/** One place up or down, or straight to an end of the list. */
+export type KeyMove = -1 | 1 | 'top' | 'bottom';
+
+/** Alt with these keys moves a row; Home and End carry it the length of a long list at once. */
+const KEY_MOVES: Record<string, KeyMove> = { ArrowUp: -1, ArrowDown: 1, Home: 'top', End: 'bottom' };
+
 export interface RankedRowProps {
   id: string;
   rank: number;
@@ -32,7 +38,7 @@ export interface RankedRowProps {
   insertAfter?: boolean;
   /** Take the row's id, so one callback serves every row and a row need not re-render for a new one. */
   onGrab: (id: string, pointerY: number, grip: HTMLElement) => void;
-  onKeyMove: (id: string, direction: -1 | 1) => void;
+  onKeyMove: (id: string, move: KeyMove) => void;
 }
 
 /**
@@ -71,21 +77,17 @@ export const RankedRow = memo(function RankedRow({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Reorder ${label}, position ${rank}. Hold alt and press the arrow keys to move it.`}
+        accessibilityLabel={`Reorder ${label}, position ${rank}. Hold alt and press the arrow keys to move it, or Home or End to send it to the top or bottom.`}
         onPointerDown={(event) => {
           event.preventDefault();
           onGrab(id, event.nativeEvent.clientY, event.currentTarget);
         }}
         onKeyDown={(event) => {
           if (!event.altKey) return;
-          if (event.key === 'ArrowUp') {
-            event.preventDefault();
-            onKeyMove(id, -1);
-          }
-          if (event.key === 'ArrowDown') {
-            event.preventDefault();
-            onKeyMove(id, 1);
-          }
+          const move = KEY_MOVES[event.key];
+          if (move === undefined) return;
+          event.preventDefault();
+          onKeyMove(id, move);
         }}
         dataSet={{ grip: 'true' }}
         style={styles.grip}

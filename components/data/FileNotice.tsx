@@ -19,7 +19,7 @@ export interface FileNoticeProps {
   onDismiss: () => void;
 }
 
-/** Sits under the source box, where the file it is about was just dropped or chosen. */
+/** Sits where the file it is about was just dropped or chosen, above what it would change. */
 export function FileNotice({ notice, onDismiss }: FileNoticeProps) {
   const asking = 'confirm' in notice;
   return (

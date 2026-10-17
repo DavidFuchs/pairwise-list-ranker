@@ -116,6 +116,11 @@ export interface RendererDefinition {
   format?: (value: unknown, field: string) => string | null | undefined;
   /** Its name in a setup summary, when that is not its label in lower case. */
   note?: string;
+  /**
+   * Units a field's name may end in that this renderer's own format already
+   * shows, so the name drops them: `duration_sec` reads "Duration: 2:51".
+   */
+  unitWords?: readonly string[];
   /** The one thing worth saying about these values, said only when it applies. */
   caveat?: (present: unknown[], context: CaveatContext) => RendererCaveat | undefined;
   /** Every picture a value gives, for a picture renderer. */
@@ -292,6 +297,7 @@ export const RENDERERS: Record<FixedRenderer, RendererDefinition> = {
     hint: 'Whole seconds as minutes and seconds',
     accepts: (values) => values.every((value) => isNumber(value) && Number.isInteger(value) && value >= 0),
     format: (value) => (isNumber(value) ? durationText(value) : undefined),
+    unitWords: ['s', 'sec', 'secs', 'second', 'seconds', 'ms'],
   },
   compact: {
     label: 'Compact number',
@@ -350,6 +356,8 @@ export interface RendererFamily {
   format: (value: unknown, renderer: FieldRenderer) => string | undefined;
   /** Its name in a setup summary. */
   note: (renderer: FieldRenderer) => string;
+  /** As RendererDefinition.unitWords, for one of this family's ids. */
+  unitWords?: (renderer: FieldRenderer) => readonly string[];
 }
 
 /** The scales every value fits under: none negative, none above the scale. */
@@ -397,6 +405,11 @@ export const FAMILIES: RendererFamily[] = [
       return currency === undefined || !isNumber(value) ? undefined : moneyText(value, currency);
     },
     note: (renderer) => currencyOf(renderer) ?? renderer,
+    // "Price USD: US$29.99" says the currency twice.
+    unitWords: (renderer) => {
+      const currency = currencyOf(renderer);
+      return currency === undefined ? [] : [currency.toLowerCase()];
+    },
   },
 ];
 

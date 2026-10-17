@@ -6,6 +6,7 @@ import type { StyleProp, TextStyle } from 'react-native';
 import { FieldLink } from '@/components/preview/FieldLink';
 import {
   fieldLabel,
+  fieldLabelFor,
   formatValue,
   isColor,
   isLink,
@@ -211,7 +212,7 @@ function viewFor(renderer: FieldRenderer): LineView | undefined {
  * Returns null when the renderer has nothing to show, like a false badge.
  */
 export function FieldValue({ field, value, renderer, withKey = false, textStyle }: FieldValueProps) {
-  const fieldKey = withKey ? <Text style={textStyle}>{`${fieldLabel(field)}:`}</Text> : null;
+  const fieldKey = withKey ? <Text style={textStyle}>{`${fieldLabelFor(field, renderer)}:`}</Text> : null;
   const view = renderer === undefined ? undefined : viewFor(renderer);
   const drawn = view?.({ field, value, renderer: renderer!, fieldKey, withKey, textStyle });
   return drawn === undefined ? (
@@ -291,7 +292,7 @@ function Plain({
   textStyle?: StyleProp<TextStyle>;
 }) {
   const text = formatValue(value, renderer, field) ?? summaryText(value);
-  return <Text style={textStyle}>{withKey ? `${fieldLabel(field)}: ${text}` : text}</Text>;
+  return <Text style={textStyle}>{withKey ? `${fieldLabelFor(field, renderer)}: ${text}` : text}</Text>;
 }
 
 const styles = StyleSheet.create({

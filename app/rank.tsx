@@ -1,8 +1,10 @@
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { ComparisonDeck } from '@/components/comparison/ComparisonDeck';
+import { FileNotice } from '@/components/data/FileNotice';
+import type { FileNoticeState } from '@/components/data/FileNotice';
 import { AppShell } from '@/components/layout/AppShell';
 import { ListSwitcher } from '@/components/layout/ListSwitcher';
 import { PreviewPane } from '@/components/preview/PreviewPane';
@@ -10,6 +12,7 @@ import type { OpenOutcome } from '@/components/preview/SessionControls';
 import { Button } from '@/components/ui/Button';
 import { cardLayout, EMPTY_LAYOUT } from '@/lib/renderers';
 import { downloadText, pickTextFile } from '@/lib/browser/exportActions';
+import { readTextFile } from '@/lib/browser/fileText';
 import { downloadName, exportFilename, slugify } from '@/lib/export/filenames';
 import {
   buildSessionFile,
@@ -56,8 +59,7 @@ const NO_EVENTS: ComparisonEvent[] = [];
  * Opens a session file. A session replaces everything, so with decisions on
  * the line it asks first.
  */
-function openSavedFile(text: string): OpenOutcome {
-  const saved = readSavedFile(text);
+function openSavedFile(saved: ReturnType<typeof readSavedFile>): OpenOutcome {
   if (saved.type === 'unreadable') return { message: saved.reason };
   if (saved.type === 'other') return { message: 'That is not a session file from this app.' };
 
@@ -71,6 +73,19 @@ function openSavedFile(text: string): OpenOutcome {
     : { message: apply() };
 }
 
+/**
+ * A file dropped on the ranking screen. A saved session opens as Open session
+ * would; anything else is left alone, since a new list belongs on the data
+ * screen, where replacing this one is a step of its own.
+ */
+async function openDroppedFile(file: File): Promise<OpenOutcome> {
+  const notSession = { message: `"${file.name}" is not a saved session. To rank a new list, use Edit data.` };
+  const read = await readTextFile(file);
+  if ('refused' in read) return notSession;
+  const saved = readSavedFile(read.text);
+  return saved.type === 'other' ? notSession : openSavedFile(saved);
+}
+
 export default function RankScreen() {
   const router = useRouter();
   const workspace = useListStore((state) => state.workspace);
@@ -82,6 +97,7 @@ export default function RankScreen() {
   const roles = useListStore((state) =>
     state.workspace === null ? undefined : activeList(state.workspace).roles,
   );
+  const [fileNotice, setFileNotice] = useState<FileNoticeState | null>(null);
 
   useEffect(() => {
     listStore.getState().hydrate();
@@ -155,6 +171,15 @@ export default function RankScreen() {
     router.replace('/');
   }
 
+  async function handleFileDrop(file: File) {
+    const outcome = await openDroppedFile(file);
+    setFileNotice(
+      'confirm' in outcome
+        ? { confirm: outcome.confirm, onConfirm: () => setFileNotice({ message: outcome.apply() }) }
+        : { message: outcome.message },
+    );
+  }
+
   return (
     <>
       <Head>
@@ -178,8 +203,11 @@ export default function RankScreen() {
         }}
         resetCost={describeLostWork(workspace)}
         onSaveBeforeReset={saveSession}
+        onFileDrop={(file) => void handleFileDrop(file)}
+        dropTitle="Drop a saved session to open it"
         stage={
           <>
+            {fileNotice !== null && <FileNotice notice={fileNotice} onDismiss={() => setFileNotice(null)} />}
             <ComparisonDeck
               leading={
                 <Button
@@ -223,7 +251,7 @@ export default function RankScreen() {
               onOpen: async () => {
                 const text = await pickTextFile('application/json,.json');
                 if (text === null) return null;
-                return openSavedFile(text);
+                return openSavedFile(readSavedFile(text));
               },
             }}
           />
