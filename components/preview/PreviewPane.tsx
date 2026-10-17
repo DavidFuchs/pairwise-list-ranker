@@ -66,7 +66,9 @@ export function PreviewPane({
   return (
     <View style={styles.pane} dataSet={{ surface: 'panel' }}>
       <View style={styles.header}>
-        <Text style={styles.title}>Your data</Text>
+        <Text style={styles.title} role="heading" aria-level={2}>
+          Your data
+        </Text>
         <Text style={styles.subtitle}>
           {tab !== 'ranked'
             ? 'Your document, in the new order'

@@ -523,3 +523,17 @@ test('every page names itself in the title', async ({ page }) => {
   await page.getByRole('button', { name: 'Edit data' }).click();
   await expect(page).toHaveTitle('Pairwise: edit data');
 });
+
+test('each screen is laid out under headings a screen reader can jump between', async ({ page }) => {
+  await expect(page.getByRole('heading', { level: 1, name: 'Pairwise' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Add your list' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'What we found' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await expect(page.getByRole('heading', { level: 3, name: 'Fields' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+  await expect(page.getByRole('heading', { level: 2, name: 'Your data' })).toBeVisible();
+  // Each card is titled by a heading, so the pair can be read one item at a time.
+  await expect(page.getByRole('heading', { level: 2 })).toHaveCount(3);
+});

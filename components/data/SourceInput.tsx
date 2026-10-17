@@ -58,7 +58,9 @@ export function SourceInput({
   return (
     <View style={styles.panel} dataSet={{ surface: 'panel' }}>
       <View style={styles.header}>
-        <Text style={styles.title}>Add your list</Text>
+        <Text style={styles.title} role="heading" aria-level={2}>
+          Add your list
+        </Text>
         <Text style={styles.subtitle}>
           Paste it, type it, or drop a file. One item per line, or any YAML or JSON.
         </Text>

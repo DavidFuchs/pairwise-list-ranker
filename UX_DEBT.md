@@ -52,7 +52,7 @@ It falls short in three places:
 | 18 | Calmer placement for Start over | Trust | Low | Done |
 | 19 | Stop the setup panel scrolling inside the page on phones | Phone | Medium | Done |
 | 20 | Give every page a title | Accessibility | High | Done |
-| 21 | Mark section titles as headings | Accessibility | High | Open |
+| 21 | Mark section titles as headings | Accessibility | High | Done |
 | 22 | Give the choice cards a role screen readers will announce | Accessibility | Medium | Open |
 | 23 | Make dragging a ranked row work with a finger | Phone | High | Done |
 | 24 | Refuse files that are not text, and ask before replacing the editor | Trust | High | Done |
@@ -398,6 +398,13 @@ mostly move around a page by heading, so the page reads as one long run.
 
 Fix: `role="heading"` with levels: the app name or screen as level 1, panels as
 level 2, card titles as level 3.
+
+Done: "Pairwise" is the level 1 heading; "Add your list", "Card previews", "What
+we found" and "Your data" are level 2, as are the two cards' titles while
+ranking; the setup panel's sections ("Rank which list?", "What order is your
+list in?", "Fields", "Write the new order into") and the preview cards' titles
+are level 3. React Native Web renders these as real `h1` to `h3` elements. An
+end-to-end test checks them.
 
 ### 22. The choice card's name may not be read
 

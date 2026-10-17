@@ -24,7 +24,9 @@ export function OrderPicker({ value, onChange, itemCount }: OrderPickerProps) {
 
   return (
     <View style={styles.group} role="radiogroup" aria-label="What order the list is in">
-      <Text style={styles.heading}>What order is your list in?</Text>
+      <Text style={styles.heading} role="heading" aria-level={3}>
+        What order is your list in?
+      </Text>
 
       <View style={styles.options}>
         <Pressable

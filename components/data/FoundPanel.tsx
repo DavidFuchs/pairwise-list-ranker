@@ -83,7 +83,9 @@ export function FoundPanel({
   return (
     <View style={[styles.panel, docked && styles.panelDocked]} dataSet={{ surface: 'panel' }}>
       <View style={styles.header}>
-        <Text style={styles.title}>What we found</Text>
+        <Text style={styles.title} role="heading" aria-level={2}>
+          What we found
+        </Text>
         <Text style={styles.subtitle}>
           {isBlank
             ? 'Nothing yet'

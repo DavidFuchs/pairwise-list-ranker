@@ -36,7 +36,9 @@ export function ArrayPicker({
 
   return (
     <View style={styles.group} role="radiogroup" aria-label="Which list to rank">
-      <Text style={styles.heading}>Rank which list?</Text>
+      <Text style={styles.heading} role="heading" aria-level={3}>
+        Rank which list?
+      </Text>
 
       {candidates.map((candidate) => {
         const key = pathKey(candidate.path);

@@ -266,7 +266,9 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
   if (!schema.fields.some((field) => field.labelCandidate)) {
     return (
       <View style={styles.group}>
-        <Text style={styles.heading}>Fields</Text>
+        <Text style={styles.heading} role="heading" aria-level={3}>
+          Fields
+        </Text>
         <Text style={styles.prompt}>
           No fields on these objects can title a card. Import objects with a text or number field.
         </Text>
@@ -502,7 +504,9 @@ export function FieldPicker({ objects, roles, onChange }: FieldPickerProps) {
 
   return (
     <View style={styles.group}>
-      <Text style={styles.heading}>Fields</Text>
+      <Text style={styles.heading} role="heading" aria-level={3}>
+        Fields
+      </Text>
       <Text style={styles.prompt}>
         Tap a field to make it the title. Tick any others to show under it, and use the arrows to set their
         order.

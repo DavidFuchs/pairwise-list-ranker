@@ -48,7 +48,9 @@ export function CardPreview({ entries, roles, fill = false }: CardPreviewProps) 
     return (
       <View style={[styles.panel, fill && styles.panelFill]} dataSet={{ surface: 'panel' }}>
         <View style={styles.heading}>
-          <Text style={styles.title}>Card previews</Text>
+          <Text style={styles.title} role="heading" aria-level={2}>
+            Card previews
+          </Text>
           <Text style={styles.subtitle}>How each item will look while you rank.</Text>
         </View>
         <View style={styles.placeholder}>
@@ -84,7 +86,9 @@ export function CardPreview({ entries, roles, fill = false }: CardPreviewProps) 
     <View style={[styles.panel, fill && styles.panelFill]} dataSet={{ surface: 'panel' }}>
       <View style={styles.header}>
         <View style={styles.heading}>
-          <Text style={styles.title}>Card previews</Text>
+          <Text style={styles.title} role="heading" aria-level={2}>
+            Card previews
+          </Text>
           <Text style={styles.subtitle}>How each item will look while you rank.</Text>
         </View>
         {entries.length > visible && (
@@ -133,7 +137,7 @@ export function CardPreview({ entries, roles, fill = false }: CardPreviewProps) 
                   );
                 }}
               >
-                <ItemCard item={previewItem(entries[at]!, at)} side="left" layout={layout} />
+                <ItemCard item={previewItem(entries[at]!, at)} side="left" layout={layout} titleLevel={3} />
               </View>
             );
           })}

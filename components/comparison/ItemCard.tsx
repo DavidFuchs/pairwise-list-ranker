@@ -39,6 +39,8 @@ export interface ItemCardProps {
    * decision never needs a scroll. Show details brings back the rest.
    */
   compact?: boolean;
+  /** The heading level of the card's title, under whatever heading holds the card. */
+  titleLevel?: 2 | 3;
   /**
    * Each card carries its own actions, so a decision is made on the thing being
    * decided about rather than in a detached row of buttons.
@@ -58,6 +60,7 @@ export function ItemCard({
   layout = EMPTY_LAYOUT,
   expanded = false,
   compact = false,
+  titleLevel = 2,
   onChoose,
   onChooseStrong,
   onRequestDelete,
@@ -167,7 +170,12 @@ export function ItemCard({
           )}
           <View style={styles.headlineBody}>
             <View style={styles.topRow}>
-              <Text style={[styles.title, compact && styles.titleCompact]} numberOfLines={compact ? 2 : 4}>
+              <Text
+                style={[styles.title, compact && styles.titleCompact]}
+                numberOfLines={compact ? 2 : 4}
+                role="heading"
+                aria-level={titleLevel}
+              >
                 {label}
               </Text>
 

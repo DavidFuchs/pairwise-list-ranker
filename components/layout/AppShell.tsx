@@ -222,7 +222,9 @@ export function AppShell({
           dataSet={confirmingReset ? { resetPrompt: 'true' } : undefined}
         >
           <View style={styles.brand}>
-            <Text style={styles.wordmark}>Pairwise</Text>
+            <Text style={styles.wordmark} role="heading" aria-level={1}>
+              Pairwise
+            </Text>
             {listSwitcher ??
               (listName !== undefined && (
                 <Text style={styles.listName} numberOfLines={1}>
