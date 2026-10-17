@@ -537,3 +537,17 @@ test('each screen is laid out under headings a screen reader can jump between', 
   // Each card is titled by a heading, so the pair can be read one item at a time.
   await expect(page.getByRole('heading', { level: 2 })).toHaveCount(3);
 });
+
+test('each card is a named group a keyboard user can choose with Enter', async ({ page }) => {
+  await enterData(page, DINNERS);
+  await page.getByRole('button', { name: 'Start ranking' }).click();
+
+  const cards = page.getByRole('group', { name: /^Choose / });
+  await expect(cards).toHaveCount(2);
+
+  await cards.first().focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText(/^1 comparison ·/)).toBeVisible();
+  // Focus stays on the left card as the next pair arrives.
+  await expect(cards.first()).toBeFocused();
+});

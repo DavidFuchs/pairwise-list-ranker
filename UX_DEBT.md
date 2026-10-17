@@ -53,7 +53,7 @@ It falls short in three places:
 | 19 | Stop the setup panel scrolling inside the page on phones | Phone | Medium | Done |
 | 20 | Give every page a title | Accessibility | High | Done |
 | 21 | Mark section titles as headings | Accessibility | High | Done |
-| 22 | Give the choice cards a role screen readers will announce | Accessibility | Medium | Open |
+| 22 | Give the choice cards a role screen readers will announce | Accessibility | Medium | Done |
 | 23 | Make dragging a ranked row work with a finger | Phone | High | Done |
 | 24 | Refuse files that are not text, and ask before replacing the editor | Trust | High | Done |
 | 25 | Handle a file dropped on the ranking screen | Trust | Medium | Open |
@@ -415,6 +415,11 @@ card may then not be announced as something to choose.
 
 Fix: give the card `role="group"` with its name, and make the title (or a
 visually quiet "Choose" control) a real button inside it.
+
+Done, the first half: the card is a group named "Choose The Hurt Locker", which
+ARIA allows, so it is announced, and Enter on the focused card still chooses
+it. A real button inside the card is still open if a screen reader is found to
+need one; this pass could not test with one.
 
 ### 23. Dragging a ranked row does not work with a finger
 

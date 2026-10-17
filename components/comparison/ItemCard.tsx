@@ -130,7 +130,9 @@ export function ItemCard({
       <Pressable
         // Not accessibilityRole="button": the card contains real buttons
         // (delete, confirm/cancel, "Much better"), and a <button> can't
-        // legally contain another <button> on web.
+        // legally contain another <button> on web. A group may carry a name
+        // where an element with no role may not, so screen readers read it.
+        role="group"
         accessibilityLabel={
           canChoose ? `Choose ${label}` : `${side === 'left' ? 'Left' : 'Right'} option: ${label}`
         }
