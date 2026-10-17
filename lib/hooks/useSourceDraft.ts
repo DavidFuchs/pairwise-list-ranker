@@ -21,7 +21,7 @@ export interface SourceDraftSeed {
   roles: FieldRoles;
   alreadyRanked: boolean;
   /** Path key (see pathKey) to alreadyRanked, for every list already known this
-   *  session (the active one and anything parked in savedLists) - so
+   *  session (every list in the workspace, open or not) - so
    *  revisiting one of them defaults to its own real answer, not "no
    *  particular order" just because it isn't the list this screen opened on. */
   knownLists?: Record<string, boolean>;
@@ -242,11 +242,10 @@ export function useSourceDraft(seed?: SourceDraftSeed): SourceDraft {
     if (selectedPath === null || analysis.issues.length > 0) return null;
     return {
       format: analysis.format,
-      rawText,
       document: analysis.document,
       arrayPath: selectedPath,
     };
-  }, [analysis, rawText, selectedPath]);
+  }, [analysis, selectedPath]);
 
   return {
     rawText,

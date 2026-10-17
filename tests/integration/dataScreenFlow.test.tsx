@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import DataScreen from '@/app/index';
 import { MOVIE_SAMPLE, SONG_SAMPLE } from '@/lib/import/sampleData';
 import { listStore } from '@/lib/state/useListStore';
+import { openList } from '@/tests/helpers/lists';
 
 const replace = vi.fn();
 const push = vi.fn();
@@ -36,7 +37,7 @@ describe('the data screen', () => {
     typeSource('Alien\nArrival\nSolaris\n');
     await user.click(await screen.findByRole('button', { name: /start ranking/i }));
 
-    expect(listStore.getState().items).toHaveLength(3);
+    expect(openList(listStore).items).toHaveLength(3);
     expect(listStore.getState().workspace?.source.format).toBe('list');
     expect(replace).toHaveBeenCalledWith('/rank');
   });
@@ -75,7 +76,7 @@ describe('the data screen', () => {
     await user.click(await screen.findByRole('radio', { name: /rank the list at movies/i }));
     await user.click(screen.getByRole('button', { name: /start ranking/i }));
 
-    expect(listStore.getState().workspace?.roles).toEqual({
+    expect(openList(listStore).roles).toEqual({
       labelField: 'title',
       positionField: 'order',
     });
@@ -108,12 +109,12 @@ describe('the data screen', () => {
     await user.click(screen.getByRole('radio', { name: /read the text as a plain list/i }));
     await user.click(await screen.findByRole('button', { name: /start ranking/i }));
 
-    expect(listStore.getState().items).toHaveLength(2);
+    expect(openList(listStore).items).toHaveLength(2);
   });
 
   it('resumes a saved workspace exactly once', async () => {
     listStore.getState().startRanking({
-      source: { format: 'list', rawText: 'a\nb\n', document: ['a', 'b'], arrayPath: [] },
+      source: { format: 'list', document: ['a', 'b'], arrayPath: [] },
       roles: {},
     });
     listStore.setState({ resumed: false });
@@ -142,7 +143,7 @@ describe('the samples', () => {
     }
 
     await user.click(screen.getByRole('button', { name: /start ranking/i }));
-    expect(listStore.getState().workspace?.roles.fieldRenderers).toEqual(SONG_SAMPLE.roles.fieldRenderers);
+    expect(openList(listStore).roles.fieldRenderers).toEqual(SONG_SAMPLE.roles.fieldRenderers);
     expect(listStore.getState().workspace?.source.arrayPath).toEqual(['songs']);
   });
 
@@ -156,9 +157,9 @@ describe('the samples', () => {
     expect(screen.getByText('Read as YAML.')).toBeDefined();
 
     await user.click(screen.getByRole('button', { name: /start ranking/i }));
-    expect(listStore.getState().items).toHaveLength(10);
+    expect(openList(listStore).items).toHaveLength(10);
     expect(listStore.getState().workspace?.source.format).toBe('yaml');
-    expect(listStore.getState().workspace?.roles.fieldRenderers).toEqual(MOVIE_SAMPLE.roles.fieldRenderers);
+    expect(openList(listStore).roles.fieldRenderers).toEqual(MOVIE_SAMPLE.roles.fieldRenderers);
   });
 
   it('read a sample by its own format even with Plain list chosen', async () => {

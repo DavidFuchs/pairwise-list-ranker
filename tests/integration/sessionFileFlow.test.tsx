@@ -9,6 +9,7 @@ import { buildProgressFile } from '@/lib/progress/progressFile';
 import { buildSessionFile } from '@/lib/session/sessionFile';
 import { listStore } from '@/lib/state/useListStore';
 import type { DataSource } from '@/types/source';
+import { openList } from '@/tests/helpers/lists';
 
 const replace = vi.fn();
 vi.mock('expo-router', () => ({ useRouter: () => ({ replace, push: vi.fn() }) }));
@@ -24,9 +25,11 @@ vi.mock('@/lib/browser/exportActions', () => ({
   pickTextFile: async () => picked.text,
 }));
 
+/** What the songs document reads as, typed or dropped in. */
+const SONGS_TEXT = '[{"title":"One","plays":1200},{"title":"Two","plays":5300},{"title":"Three","plays":90}]';
+
 const songs: DataSource = {
   format: 'json',
-  rawText: '[{"title":"One","plays":1200},{"title":"Two","plays":5300},{"title":"Three","plays":90}]',
   document: [
     { title: 'One', plays: 1200 },
     { title: 'Two', plays: 5300 },
@@ -41,7 +44,7 @@ function savedSessionText(): string {
     source: songs,
     roles: { labelField: 'title', summaryFields: ['plays'], fieldRenderers: { plays: 'compact' } },
   });
-  const [one, two] = listStore.getState().items;
+  const [one, two] = openList(listStore).items;
   listStore.getState().recordComparison(two!.id, one!.id, 'left');
   const text = JSON.stringify(buildSessionFile(listStore.getState().snapshot()!, '2026-10-16T00:00:00.000Z'));
   listStore.getState().reset();
@@ -70,9 +73,8 @@ describe('session files', () => {
     await chooseFile(text);
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/rank'));
-    const state = listStore.getState();
-    expect(state.workspace?.roles.fieldRenderers).toEqual({ plays: 'compact' });
-    expect(state.comparisonEvents).toHaveLength(1);
+    expect(openList(listStore).roles.fieldRenderers).toEqual({ plays: 'compact' });
+    expect(openList(listStore).comparisonEvents).toHaveLength(1);
     // Not pasted into the box as though it were a list.
     expect(screen.getByRole('textbox', { name: 'Your list' })).toHaveProperty('value', '');
   });
@@ -80,16 +82,16 @@ describe('session files', () => {
   it('still imports an ordinary JSON file as a list', async () => {
     render(<DataScreen />);
 
-    await chooseFile(songs.rawText);
+    await chooseFile(SONGS_TEXT);
 
-    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Your list' })).toHaveProperty('value', songs.rawText));
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Your list' })).toHaveProperty('value', SONGS_TEXT));
     expect(replace).not.toHaveBeenCalledWith('/rank');
   });
 
   it('asks before a session replaces a list with decisions behind it', async () => {
     const text = savedSessionText();
-    listStore.getState().startRanking({ source: { ...songs, rawText: 'A\nB', document: ['A', 'B'], format: 'list' }, roles: {} });
-    const [a, b] = listStore.getState().items;
+    listStore.getState().startRanking({ source: { ...songs, document: ['A', 'B'], format: 'list' }, roles: {} });
+    const [a, b] = openList(listStore).items;
     listStore.getState().recordComparison(a!.id, b!.id, 'left');
     listStore.getState().markResumed();
     render(<DataScreen />);
@@ -97,16 +99,16 @@ describe('session files', () => {
     await chooseFile(text);
 
     expect(await screen.findByText(/It replaces the list you are ranking now/)).toBeDefined();
-    expect(listStore.getState().items.map((item) => item.value)).toEqual(['A', 'B']);
+    expect(openList(listStore).items.map((item) => item.value)).toEqual(['A', 'B']);
 
     await userEvent.setup().click(screen.getByRole('button', { name: 'Replace with the saved session' }));
-    expect(listStore.getState().items).toHaveLength(3);
+    expect(openList(listStore).items).toHaveLength(3);
     expect(replace).toHaveBeenCalledWith('/rank');
   });
 
   it('explains a progress file dropped on the setup screen instead of importing it', async () => {
     listStore.getState().startRanking({ source: songs, roles: { labelField: 'title' } });
-    const progress = JSON.stringify(buildProgressFile(listStore.getState().items, [], [], ''));
+    const progress = JSON.stringify(buildProgressFile(openList(listStore).items, [], [], ''));
     listStore.getState().reset();
     render(<DataScreen />);
 
@@ -129,8 +131,8 @@ describe('session files', () => {
 
     // Nothing decided yet in the open list, so there is nothing to ask about.
     await user.click(screen.getByRole('button', { name: 'Open a session file' }));
-    await waitFor(() => expect(listStore.getState().comparisonEvents).toHaveLength(1));
-    expect(listStore.getState().workspace?.roles.fieldRenderers).toEqual({ plays: 'compact' });
+    await waitFor(() => expect(openList(listStore).comparisonEvents).toHaveLength(1));
+    expect(openList(listStore).roles.fieldRenderers).toEqual({ plays: 'compact' });
     expect(await screen.findByText(/Opened the session: 3 items · 1 decision/)).toBeDefined();
   });
 });

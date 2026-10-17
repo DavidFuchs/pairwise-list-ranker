@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DataScreen from '@/app/index';
 import { listStore } from '@/lib/state/useListStore';
+import { openList } from '@/tests/helpers/lists';
 
 const replace = vi.fn();
 const push = vi.fn();
@@ -12,8 +13,6 @@ const push = vi.fn();
 vi.mock('expo-router', () => ({
   useRouter: () => ({ replace, push }),
 }));
-
-const RAW = 'list1:\n  - Alien\n  - Arrival\n  - Solaris\nlist2:\n  - Ford\n  - Chevy\n';
 
 function typeSource(text: string) {
   fireEvent.change(screen.getByLabelText(/your list/i), { target: { value: text } });
@@ -43,11 +42,11 @@ describe('marking a list as already ranked', () => {
     );
     await user.click(screen.getByRole('button', { name: /start ranking/i }));
 
-    const { items, comparisonEvents, workspace } = listStore.getState();
-    expect(workspace?.alreadyRanked).toBe(true);
+    const { items, comparisonEvents, alreadyRanked } = openList(listStore);
+    expect(alreadyRanked).toBe(true);
 
     const { selectProgress } = await import('@/lib/state/selectors');
-    expect(selectProgress(items, comparisonEvents, workspace?.alreadyRanked).coverage).toBe(1);
+    expect(selectProgress(items, comparisonEvents, alreadyRanked).coverage).toBe(1);
   });
 
   it('leaves an unsorted list at zero coverage', async () => {
@@ -57,28 +56,26 @@ describe('marking a list as already ranked', () => {
     typeSource('Alien\nArrival\nSolaris\n');
     await user.click(screen.getByRole('button', { name: /start ranking/i }));
 
-    const { items, comparisonEvents, workspace } = listStore.getState();
+    const { items, comparisonEvents, alreadyRanked } = openList(listStore);
     const { selectProgress } = await import('@/lib/state/selectors');
-    expect(selectProgress(items, comparisonEvents, workspace?.alreadyRanked).coverage).toBe(0);
+    expect(selectProgress(items, comparisonEvents, alreadyRanked).coverage).toBe(0);
   });
 
   it('defaults a previously-declared list back to "best to worst" when revisited, with no click', async () => {
     listStore.getState().startRanking({
       source: {
         format: 'yaml',
-        rawText: RAW,
         document: { list1: ['Alien', 'Arrival', 'Solaris'], list2: ['Ford', 'Chevy'] },
         arrayPath: ['list1'],
       },
       roles: {},
       alreadyRanked: true,
     });
-    // Switch to list2 first, so list1's declared answer only lives in
-    // savedLists - the thing this default has to be derived from.
+    // Switch to list2 first, so list1's declared answer lives only on a list
+    // that is not open - the thing this default has to be derived from.
     listStore.getState().switchList({
       source: {
         format: 'yaml',
-        rawText: RAW,
         document: { list1: ['Alien', 'Arrival', 'Solaris'], list2: ['Ford', 'Chevy'] },
         arrayPath: ['list2'],
       },
@@ -102,19 +99,18 @@ describe('marking a list as already ranked', () => {
     listStore.getState().startRanking({
       source: {
         format: 'list',
-        rawText: 'Alien\nArrival\nSolaris\n',
         document: ['Alien', 'Arrival', 'Solaris'],
         arrayPath: [],
       },
       roles: {},
     });
-    const [left, right] = listStore.getState().items;
+    const [left, right] = openList(listStore).items;
     listStore.getState().recordComparison(left?.id ?? '', right?.id ?? '', 'left');
     const { selectProgress } = await import('@/lib/state/selectors');
     const before = selectProgress(
-      listStore.getState().items,
-      listStore.getState().comparisonEvents,
-      listStore.getState().workspace?.alreadyRanked,
+      openList(listStore).items,
+      openList(listStore).comparisonEvents,
+      openList(listStore).alreadyRanked,
     ).coverage;
 
     const user = userEvent.setup();
@@ -125,9 +121,9 @@ describe('marking a list as already ranked', () => {
     await user.click(screen.getAllByRole('button', { name: /apply edits/i })[0]!);
 
     const after = selectProgress(
-      listStore.getState().items,
-      listStore.getState().comparisonEvents,
-      listStore.getState().workspace?.alreadyRanked,
+      openList(listStore).items,
+      openList(listStore).comparisonEvents,
+      openList(listStore).alreadyRanked,
     ).coverage;
     expect(after).toBe(before);
   });
@@ -144,7 +140,6 @@ describe('marking a list as already ranked', () => {
     listStore.getState().startRanking({
       source: {
         format: 'list',
-        rawText: 'Alien\nArrival\nSolaris\nStalker\nDune\n',
         document: ['Alien', 'Arrival', 'Solaris', 'Stalker', 'Dune'],
         arrayPath: [],
       },
@@ -153,7 +148,7 @@ describe('marking a list as already ranked', () => {
 
     // Enough real comparisons to meet the n*log2(n) estimate (12 for 5
     // items), reordering well away from the import order.
-    const ids = listStore.getState().items.map((item) => item.id);
+    const ids = openList(listStore).items.map((item) => item.id);
     const pairs: [number, number][] = [
       [4, 0],
       [4, 1],
@@ -174,13 +169,13 @@ describe('marking a list as already ranked', () => {
 
     const { selectProgress, selectRanking } = await import('@/lib/state/selectors');
     const before = selectRanking(
-      listStore.getState().items,
-      listStore.getState().comparisonEvents,
+      openList(listStore).items,
+      openList(listStore).comparisonEvents,
       false,
     ).map((entry) => entry.item.id);
     const coverageBefore = selectProgress(
-      listStore.getState().items,
-      listStore.getState().comparisonEvents,
+      openList(listStore).items,
+      openList(listStore).comparisonEvents,
       false,
     ).coverage;
     expect(coverageBefore).toBeGreaterThanOrEqual(1);
@@ -198,11 +193,11 @@ describe('marking a list as already ranked', () => {
     await user.click(screen.getAllByRole('button', { name: /apply edits/i })[0]!);
 
     const after = selectRanking(
-      listStore.getState().items,
-      listStore.getState().comparisonEvents,
-      listStore.getState().workspace?.alreadyRanked,
+      openList(listStore).items,
+      openList(listStore).comparisonEvents,
+      openList(listStore).alreadyRanked,
     ).map((entry) => entry.item.id);
-    expect(listStore.getState().workspace?.alreadyRanked).toBe(false);
+    expect(openList(listStore).alreadyRanked).toBe(false);
     expect(after).toEqual(before);
   });
 });

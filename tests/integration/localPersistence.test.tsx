@@ -7,6 +7,7 @@ import RankScreen from '@/app/rank';
 import { WORKSPACE_STORAGE_KEY } from '@/lib/persistence/workspaceStorage';
 import { listStore } from '@/lib/state/useListStore';
 import type { DataSource } from '@/types/source';
+import { openList } from '@/tests/helpers/lists';
 
 const replace = vi.fn();
 const push = vi.fn();
@@ -17,7 +18,6 @@ vi.mock('expo-router', () => ({
 
 const dinners: DataSource = {
   format: 'list',
-  rawText: 'Tacos\nRamen\nCurry\n',
   document: ['Tacos', 'Ramen', 'Curry'],
   arrayPath: [],
 };
@@ -35,8 +35,6 @@ function simulateReload() {
   listStore.getState().flush();
   listStore.setState({
     workspace: null,
-    items: [],
-    comparisonEvents: [],
     previewTab: 'ranked',
     hydrated: false,
     resumed: false,
@@ -57,7 +55,7 @@ describe('local persistence', () => {
 
     render(<RankScreen />);
 
-    expect(listStore.getState().items.map((item) => item.value)).toEqual([
+    expect(openList(listStore).items.map((item) => item.value)).toEqual([
       'Tacos',
       'Ramen',
       'Curry',
@@ -84,7 +82,7 @@ describe('local persistence', () => {
 
     render(<RankScreen />);
 
-    expect(listStore.getState().comparisonEvents).toHaveLength(1);
+    expect(openList(listStore).comparisonEvents).toHaveLength(1);
     expect(listStore.getState().ranking()[0]?.item.id).toBe(expected);
   });
 

@@ -16,28 +16,58 @@ import {
 } from "@/lib/state/selectors";
 import type { ListItem } from "@/types/list";
 import type { ComparisonEvent } from "@/types/ranking";
-import type { SavedList, Workspace } from "@/types/source";
+import { pathKey } from "@/lib/import/paths";
+import { activeList, withList } from "@/lib/state/lists";
+import type { DataSource, ListConfig, RankedList, Workspace } from "@/types/source";
 
 const NOW = "2026-08-15T12:00:00.000Z";
 
-const workspace: Workspace = {
-  id: "list-1",
-  source: {
+function rankedList(arrayPath: string[], overrides: Partial<RankedList> = {}): RankedList {
+  return {
+    id: `list-${arrayPath.join("-") || "root"}`,
+    arrayPath,
+    roles: {},
+    alreadyRanked: false,
+    configuredExplicitly: true,
+    items: [],
+    comparisonEvents: [],
+    createdAt: NOW,
+    updatedAt: NOW,
+    ...overrides,
+  };
+}
+
+/** A workspace open at its source's arrayPath, holding these lists. */
+function workspaceWith(
+  source: DataSource,
+  lists: RankedList[],
+  listDefaults: ListConfig = { roles: { labelField: "title" }, alreadyRanked: false },
+): Workspace {
+  return {
+    source,
+    listDefaults,
+    lists: Object.fromEntries(lists.map((list) => [pathKey(list.arrayPath), list])),
+    createdAt: NOW,
+    updatedAt: NOW,
+  };
+}
+
+/** The workspace with its open list changed. */
+function withOpen(workspace: Workspace, changes: Partial<RankedList>): Workspace {
+  return withList(workspace, { ...activeList(workspace), ...changes });
+}
+
+const workspace = workspaceWith(
+  {
     format: "yaml",
-    rawText: "",
     document: {
       owner: "david",
       movies: [{ title: "Alien" }, { title: "Arrival" }],
     },
     arrayPath: ["movies"],
   },
-  roles: { labelField: "title" },
-  alreadyRanked: false,
-  listDefaults: { roles: { labelField: "title" }, alreadyRanked: false },
-  configuredExplicitly: true,
-  createdAt: NOW,
-  updatedAt: NOW,
-};
+  [rankedList(["movies"], { roles: { labelField: "title" } })],
+);
 
 function item(id: string, value: ListItem["value"], active = true): ListItem {
   return {
@@ -99,16 +129,6 @@ describe("selectWorkspaceView", () => {
 });
 
 describe("selectListOptions", () => {
-  const twoLists: Workspace = {
-    ...workspace,
-    source: {
-      ...workspace.source,
-      document: {
-        movies: [{ title: "Alien" }, { title: "Arrival" }],
-        actors: [{ name: "Weaver" }, { name: "Adams" }],
-      },
-    },
-  };
   const movies = [
     { ...item("m-1", { title: "Alien" }) },
     { ...item("m-2", { title: "Arrival" }) },
@@ -116,9 +136,20 @@ describe("selectListOptions", () => {
   const movieWin: ComparisonEvent[] = [
     { ...bWins[0]!, leftItemId: "m-1", rightItemId: "m-2" },
   ];
+  const twoLists = workspaceWith(
+    {
+      format: "yaml",
+      document: {
+        movies: [{ title: "Alien" }, { title: "Arrival" }],
+        actors: [{ name: "Weaver" }, { name: "Adams" }],
+      },
+      arrayPath: ["movies"],
+    },
+    [rankedList(["movies"], { roles: { labelField: "title" }, items: movies })],
+  );
 
-  it("offers every list with its setup, and the active list's progress", () => {
-    const options = selectListOptions(twoLists, [], movies, movieWin);
+  it("offers every list with its setup, and the open list's progress", () => {
+    const options = selectListOptions(withOpen(twoLists, { comparisonEvents: movieWin }));
 
     expect(options.map((option) => option.path)).toEqual([["movies"], ["actors"]]);
     expect(options[0]!.configLine).toBe("shown by title");
@@ -126,12 +157,12 @@ describe("selectListOptions", () => {
     expect(options[1]!.coverage).toBeUndefined();
   });
 
-  it("reuses the other lists' options when only the active list's history changes", () => {
-    const parked: SavedList[] = [];
-    const before = selectListOptions(twoLists, parked, movies, []);
-    const after = selectListOptions(twoLists, parked, movies, movieWin);
+  it("works out a list never opened once, however the open list changes", () => {
+    const before = selectListOptions(twoLists);
+    const after = selectListOptions(withOpen(twoLists, { comparisonEvents: movieWin }));
 
-    expect(after[1]).toBe(before[1]);
+    expect(after[1]!.configLine).toBe("shown by name");
+    expect(selectListConfig(withOpen(twoLists, {}), ["actors"])).toBe(selectListConfig(twoLists, ["actors"]));
     expect(before[0]!.coverage).toBeUndefined();
     expect(after[0]!.coverage).toBeDefined();
   });
@@ -375,13 +406,13 @@ describe("selectExportText", () => {
       item("item-2", { title: "Arrival" }),
     ];
 
-    expect(selectExportText(workspace, objects, [], "yaml")).toContain(
+    expect(selectExportText(withOpen(workspace, { items: objects }), "yaml")).toContain(
       "owner: david",
     );
   });
 
   it("is empty with no workspace", () => {
-    expect(selectExportText(null, [], [], "yaml")).toBe("");
+    expect(selectExportText(null, "yaml")).toBe("");
   });
 });
 
@@ -397,10 +428,9 @@ describe("selectContextLine", () => {
   });
 
   it("mentions the position field when there is one", () => {
-    const withOrder = {
-      ...workspace,
+    const withOrder = withOpen(workspace, {
       roles: { labelField: "title", positionField: "order" },
-    };
+    });
 
     expect(selectContextLine(withOrder)).toBe(
       "movies · shown by title · order written back",
@@ -408,7 +438,7 @@ describe("selectContextLine", () => {
   });
 
   it("mentions already-ranked status when set", () => {
-    const ranked = { ...workspace, alreadyRanked: true };
+    const ranked = withOpen(workspace, { alreadyRanked: true });
 
     expect(selectContextLine(ranked)).toBe(
       "movies · shown by title · already ranked",
@@ -416,16 +446,7 @@ describe("selectContextLine", () => {
   });
 
   it("names a bare list plainly", () => {
-    const bare = {
-      ...workspace,
-      source: {
-        ...workspace.source,
-        format: "list" as const,
-        document: ["a"],
-        arrayPath: [],
-      },
-      roles: {},
-    };
+    const bare = workspaceWith({ format: "list", document: ["a"], arrayPath: [] }, [rankedList([])]);
 
     expect(selectContextLine(bare)).toBe("the list");
   });
@@ -441,15 +462,7 @@ describe("selectAvailableTabs", () => {
   });
 
   it("offers the plain list tab for a plain list source", () => {
-    const bare = {
-      ...workspace,
-      source: {
-        ...workspace.source,
-        format: "list" as const,
-        document: ["a"],
-        arrayPath: [],
-      },
-    };
+    const bare = workspaceWith({ format: "list", document: ["a"], arrayPath: [] }, [rankedList([])]);
 
     expect(selectAvailableTabs(bare)).toEqual([
       "ranked",
@@ -489,41 +502,27 @@ describe("describeRoles", () => {
 });
 
 describe("selectListConfig", () => {
-  const multiList: Workspace = {
-    ...workspace,
-    source: {
-      ...workspace.source,
-      document: {
-        movies: [{ title: "Alien" }, { title: "Arrival" }],
-        actors: [{ name: "Weaver" }, { name: "Adams" }],
-      },
-    },
-    alreadyRanked: true,
-    configuredExplicitly: true,
-    listDefaults: { roles: { labelField: "title" }, alreadyRanked: true },
+  const document = {
+    movies: [{ title: "Alien" }, { title: "Arrival" }],
+    actors: [{ name: "Weaver" }, { name: "Adams" }],
   };
+  const openMovies = rankedList(["movies"], { roles: { labelField: "title" }, alreadyRanked: true });
+  const multiList = workspaceWith(
+    { format: "yaml", document, arrayPath: ["movies"] },
+    [openMovies],
+    { roles: { labelField: "title" }, alreadyRanked: true },
+  );
+  const setUpActors = rankedList(["actors"], { roles: { labelField: "name" } });
 
-  const savedActors: SavedList = {
-    workspaceId: "list-2",
-    arrayPath: ["actors"],
-    roles: { labelField: "name" },
-    alreadyRanked: false,
-    configuredExplicitly: true,
-    items: [],
-    comparisonEvents: [],
-    createdAt: NOW,
-    updatedAt: NOW,
-  };
-
-  it("reports the active list its own configuration", () => {
-    expect(selectListConfig(multiList, [], ["movies"])).toEqual({
+  it("reports the open list its own configuration", () => {
+    expect(selectListConfig(multiList, ["movies"])).toEqual({
       roles: { labelField: "title" },
       alreadyRanked: true,
     });
   });
 
-  it("reports a parked list the configuration it was set up with", () => {
-    expect(selectListConfig(multiList, [savedActors], ["actors"])).toEqual({
+  it("reports a list set up by hand the configuration it was set up with", () => {
+    expect(selectListConfig(withList(multiList, setUpActors), ["actors"])).toEqual({
       roles: { labelField: "name" },
       alreadyRanked: false,
     });
@@ -535,83 +534,80 @@ describe("selectListConfig", () => {
       listDefaults: { roles: { labelField: "title" }, alreadyRanked: false },
     };
 
-    expect(
-      selectListConfig(defaultNotRanked, [], ["actors"]).alreadyRanked,
-    ).toBe(false);
+    expect(selectListConfig(defaultNotRanked, ["actors"]).alreadyRanked).toBe(false);
   });
 
   it("falls back to the target list own label field when the default one is absent", () => {
-    expect(selectListConfig(multiList, [], ["actors"]).roles).toEqual({
+    expect(selectListConfig(multiList, ["actors"]).roles).toEqual({
       labelField: "name",
     });
   });
 
   it("keeps the default label field when the target list carries it too", () => {
-    const shared: Workspace = {
-      ...multiList,
-      source: {
-        ...multiList.source,
+    const shared = workspaceWith(
+      {
+        format: "yaml",
         document: {
           movies: [{ title: "Alien" }, { title: "Arrival" }],
           books: [{ title: "Dune" }, { title: "Ubik" }],
         },
+        arrayPath: ["movies"],
       },
-    };
+      [openMovies],
+      multiList.listDefaults,
+    );
 
-    expect(selectListConfig(shared, [], ["books"]).roles).toEqual({
+    expect(selectListConfig(shared, ["books"]).roles).toEqual({
       labelField: "title",
     });
   });
 
   it("takes an unconfigured list from the defaults, not from whatever list is open", () => {
-    const onYear: Workspace = {
-      ...multiList,
-      source: {
-        ...multiList.source,
-        arrayPath: ["movies"],
+    const onYear = workspaceWith(
+      {
+        format: "yaml",
         document: {
           movies: [{ title: "Alien", year: 1979 }],
           books: [{ title: "Dune", year: 1965 }],
         },
+        arrayPath: ["movies"],
       },
-      roles: { labelField: "year" },
-      alreadyRanked: false,
-      listDefaults: { roles: { labelField: "title" }, alreadyRanked: true },
-    };
+      [rankedList(["movies"], { roles: { labelField: "year" } })],
+      { roles: { labelField: "title" }, alreadyRanked: true },
+    );
 
-    expect(selectListConfig(onYear, [], ["books"])).toEqual({
+    expect(selectListConfig(onYear, ["books"])).toEqual({
       roles: { labelField: "title" },
       alreadyRanked: true,
     });
   });
 
-  it("re-derives a parked list that was never set up by hand", () => {
-    const inherited: SavedList = {
-      ...savedActors,
+  it("re-derives a list left earlier that was never set up by hand", () => {
+    const inherited = rankedList(["actors"], {
       roles: { labelField: "name" },
-      alreadyRanked: false,
       configuredExplicitly: false,
-    };
-    const defaults = {
-      ...multiList,
-      listDefaults: { roles: { labelField: "nickname" }, alreadyRanked: true },
-      source: {
-        ...multiList.source,
+    });
+    const defaults = workspaceWith(
+      {
+        format: "yaml",
         document: {
           movies: [{ title: "Alien" }],
           actors: [{ name: "Weaver", nickname: "Ripley" }],
         },
+        arrayPath: ["movies"],
       },
-    };
+      [openMovies, inherited],
+      { roles: { labelField: "nickname" }, alreadyRanked: true },
+    );
 
-    expect(selectListConfig(defaults, [inherited], ["actors"])).toEqual({
+    expect(selectListConfig(defaults, ["actors"])).toEqual({
       roles: { labelField: "nickname" },
       alreadyRanked: true,
     });
   });
 
   it("has nothing to inherit with no workspace", () => {
-    expect(selectListConfig(null, [], ["movies"])).toEqual({
+    expect(selectListConfig(null, ["movies"])).toEqual({
       roles: {},
       alreadyRanked: false,
     });

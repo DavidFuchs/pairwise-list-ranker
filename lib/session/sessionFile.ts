@@ -2,12 +2,14 @@ import { parseWorkspaceSnapshot, WORKSPACE_VERSION } from '@/lib/persistence/wor
 import type { WorkspaceSnapshot } from '@/lib/persistence/workspaceSnapshot';
 import { parseProgressFile, PROGRESS_FILE_KIND } from '@/lib/progress/progressFile';
 import type { ProgressFile } from '@/lib/progress/progressFile';
+import { activeList, allLists } from '@/lib/state/lists';
+import type { Workspace } from '@/types/source';
 
 /**
  * Everything needed to carry on somewhere else, in one file: the document as
- * imported, every list's setup, items, comparisons, placements and removals,
- * and the lists parked while another is open. It is the same snapshot this
- * browser keeps, labelled so a file can say what it is.
+ * imported, and every list opened in it with its setup, items, comparisons,
+ * placements and removals. It is the same snapshot this browser keeps,
+ * labelled so a file can say what it is.
  */
 export const SESSION_FILE_KIND = 'pairwise-list-ranker-session';
 export const SESSION_FILE_VERSION = 1;
@@ -64,21 +66,20 @@ export function readSavedFile(text: string): SavedFile {
 
 /** One line on what a session holds, for confirming before it replaces anything. */
 export function describeSession(session: WorkspaceSnapshot): string {
-  const lists = 1 + session.savedLists.length;
-  const decisions =
-    session.comparisonEvents.length + session.savedLists.reduce((sum, list) => sum + list.comparisonEvents.length, 0);
-  const items = session.items.filter((item) => item.active).length;
+  const lists = allLists(session.workspace);
+  const decisions = lists.reduce((sum, list) => sum + list.comparisonEvents.length, 0);
+  const items = activeList(session.workspace).items.filter((item) => item.active).length;
   const parts = [
     `${items} ${items === 1 ? 'item' : 'items'}`,
-    ...(lists > 1 ? [`${lists} lists`] : []),
+    ...(lists.length > 1 ? [`${lists.length} lists`] : []),
     `${decisions} ${decisions === 1 ? 'decision' : 'decisions'}`,
   ];
   return parts.join(' · ');
 }
 
 /** Whether replacing what is loaded would lose any choice or placement. */
-export function hasDecisions(state: Pick<WorkspaceSnapshot, 'comparisonEvents' | 'savedLists'>): boolean {
-  return state.comparisonEvents.length > 0 || state.savedLists.some((list) => list.comparisonEvents.length > 0);
+export function hasDecisions(workspace: Workspace | null): boolean {
+  return workspace !== null && allLists(workspace).some((list) => list.comparisonEvents.length > 0);
 }
 
 /** Asked before a session replaces decisions that would otherwise be lost. */

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { WORKSPACE_VERSION } from '@/lib/persistence/workspaceSnapshot';
 import type { WorkspaceSnapshot } from '@/lib/persistence/workspaceSnapshot';
 import {
   LEGACY_STORAGE_KEYS,
@@ -19,22 +20,30 @@ function memoryBackend(): StorageLike & { data: Map<string, string> } {
   };
 }
 
-function snapshot(rawText = 'Alien\nArrival\n'): WorkspaceSnapshot {
+/** A one-list session whose document holds `text`, so a test can make it as large as it needs. */
+function snapshot(text = 'Alien'): WorkspaceSnapshot {
+  const at = '2026-08-16T00:00:00.000Z';
   return {
-    version: 3,
+    version: WORKSPACE_VERSION,
     workspace: {
-      id: 'ws-1',
-      source: { format: 'list', rawText, document: ['Alien', 'Arrival'], arrayPath: [] },
-      roles: {},
-      alreadyRanked: false,
+      source: { format: 'list', document: [text, 'Arrival'], arrayPath: [] },
       listDefaults: { roles: {}, alreadyRanked: false },
-      configuredExplicitly: true,
-      createdAt: '2026-08-16T00:00:00.000Z',
-      updatedAt: '2026-08-16T00:00:00.000Z',
+      lists: {
+        '': {
+          id: 'list-1',
+          arrayPath: [],
+          roles: {},
+          alreadyRanked: false,
+          configuredExplicitly: true,
+          items: [],
+          comparisonEvents: [],
+          createdAt: at,
+          updatedAt: at,
+        },
+      },
+      createdAt: at,
+      updatedAt: at,
     },
-    items: [],
-    comparisonEvents: [],
-    savedLists: [],
     ui: { previewTab: 'ranked' },
   };
 }

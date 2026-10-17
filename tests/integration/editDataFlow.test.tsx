@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DataScreen from '@/app/index';
 import { listStore } from '@/lib/state/useListStore';
+import { openList } from '@/tests/helpers/lists';
 
 const replace = vi.fn();
 const push = vi.fn();
@@ -19,13 +20,12 @@ function seedWorkspace() {
   listStore.getState().startRanking({
     source: {
       format: 'list',
-      rawText: RAW,
       document: ['Alien', 'Arrival', 'Solaris'],
       arrayPath: [],
     },
     roles: {},
   });
-  const [left, right] = listStore.getState().items;
+  const [left, right] = openList(listStore).items;
   listStore.getState().recordComparison(left?.id ?? '', right?.id ?? '', 'left');
 }
 
@@ -39,7 +39,7 @@ describe('editing data mid-run', () => {
 
   it('opens with the unranked text unchanged, when nothing has reordered it', () => {
     listStore.getState().startRanking({
-      source: { format: 'list', rawText: RAW, document: ['Alien', 'Arrival', 'Solaris'], arrayPath: [] },
+      source: { format: 'list', document: ['Alien', 'Arrival', 'Solaris'], arrayPath: [] },
       roles: {},
     });
     render(<DataScreen />);
@@ -87,12 +87,12 @@ describe('editing data mid-run', () => {
     await user.click(await screen.findByRole('button', { name: /apply edits/i }));
     await user.click(screen.getByRole('button', { name: /cancel/i }));
 
-    expect(listStore.getState().items.filter((entry) => entry.active)).toHaveLength(3);
+    expect(openList(listStore).items.filter((entry) => entry.active)).toHaveLength(3);
   });
 
   it('keeps the ranking for entries that did not change', async () => {
     seedWorkspace();
-    const keptIds = listStore.getState().items.slice(0, 2).map((entry) => entry.id);
+    const keptIds = openList(listStore).items.slice(0, 2).map((entry) => entry.id);
     const user = userEvent.setup();
     render(<DataScreen />);
 
@@ -102,8 +102,8 @@ describe('editing data mid-run', () => {
     await user.click(await screen.findByRole('button', { name: /apply edits/i }));
     await user.click(screen.getAllByRole('button', { name: /apply edits/i })[0]!);
 
-    expect(listStore.getState().items.slice(0, 2).map((entry) => entry.id)).toEqual(keptIds);
-    expect(listStore.getState().comparisonEvents).toHaveLength(1);
+    expect(openList(listStore).items.slice(0, 2).map((entry) => entry.id)).toEqual(keptIds);
+    expect(openList(listStore).comparisonEvents).toHaveLength(1);
     expect(replace).toHaveBeenCalledWith('/rank');
   });
 
@@ -118,7 +118,7 @@ describe('editing data mid-run', () => {
     await user.click(await screen.findByRole('button', { name: /apply edits/i }));
     await user.click(screen.getAllByRole('button', { name: /apply edits/i })[0]!);
 
-    expect(listStore.getState().items.filter((entry) => entry.active)).toHaveLength(2);
+    expect(openList(listStore).items.filter((entry) => entry.active)).toHaveLength(2);
   });
 
   it('does not bounce back to the rank screen', () => {
@@ -141,17 +141,15 @@ describe('editing data mid-run', () => {
    * list reordered, and leave the untouched list exactly as imported.
    */
   it('reorders only the ranked list in a multi-list document, leaving the other as imported', () => {
-    const rawText = "list1:\n  - pears\n  - oranges\n  - apples\nlist2:\n  - chevy\n  - ford\n  - gm\n";
     listStore.getState().startRanking({
       source: {
         format: 'yaml',
-        rawText,
         document: { list1: ['pears', 'oranges', 'apples'], list2: ['chevy', 'ford', 'gm'] },
         arrayPath: ['list1'],
       },
       roles: {},
     });
-    const [pears, oranges, apples] = listStore.getState().items;
+    const [pears, oranges, apples] = openList(listStore).items;
     // pears beats both other items, ending up on top.
     listStore.getState().recordComparison(pears?.id ?? '', oranges?.id ?? '', 'left');
     listStore.getState().recordComparison(pears?.id ?? '', apples?.id ?? '', 'left');
@@ -204,6 +202,6 @@ describe('editing only the setup', () => {
     await user.click(await screen.findByRole('button', { name: /apply edits/i }));
     await user.click(screen.getByRole('button', { name: /apply edits/i }));
 
-    expect(listStore.getState().workspace?.alreadyRanked).toBe(true);
+    expect(openList(listStore).alreadyRanked).toBe(true);
   });
 });

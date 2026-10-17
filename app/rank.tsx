@@ -29,8 +29,15 @@ import {
   selectStability,
   selectWorkspaceView,
 } from "@/lib/state/selectors";
+import { activeList } from "@/lib/state/lists";
 import { listStore, useListStore } from "@/lib/state/useListStore";
+import type { ListItem } from "@/types/list";
+import type { ComparisonEvent } from "@/types/ranking";
 import type { DataSource, SourceFormat } from "@/types/source";
+
+/** Shared empties, so the view cache recognises "nothing loaded" between renders. */
+const NO_ITEMS: ListItem[] = [];
+const NO_EVENTS: ComparisonEvent[] = [];
 
 /**
  * Opens a session file, or a progress file from before sessions existed. A
@@ -57,7 +64,7 @@ function openSavedFile(text: string): OpenOutcome {
     listStore.getState().loadSession(saved.session);
     return `Opened the session: ${summary}.`;
   };
-  return hasDecisions(listStore.getState())
+  return hasDecisions(listStore.getState().workspace)
     ? { confirm: confirmOpenSession(saved.session), apply }
     : { message: apply() };
 }
@@ -65,9 +72,6 @@ function openSavedFile(text: string): OpenOutcome {
 export default function RankScreen() {
   const router = useRouter();
   const workspace = useListStore((state) => state.workspace);
-  const items = useListStore((state) => state.items);
-  const comparisonEvents = useListStore((state) => state.comparisonEvents);
-  const savedLists = useListStore((state) => state.savedLists);
   const previewTab = useListStore((state) => state.previewTab);
   const hydrated = useListStore((state) => state.hydrated);
   const persistenceAvailable = useListStore(
@@ -75,6 +79,9 @@ export default function RankScreen() {
   );
   const saveOutcome = useListStore((state) => state.saveOutcome);
   const canUndo = useListStore((state) => state.undoStack.length > 0);
+  const roles = useListStore((state) =>
+    state.workspace === null ? undefined : activeList(state.workspace).roles,
+  );
 
   useEffect(() => {
     listStore.getState().hydrate();
@@ -89,16 +96,12 @@ export default function RankScreen() {
     if (hydrated && workspace === null) router.replace("/");
   }, [hydrated, workspace, router]);
 
-  const view = selectWorkspaceView(
-    items,
-    comparisonEvents,
-    workspace?.alreadyRanked ?? false,
-  );
-  const progress = selectProgress(
-    items,
-    comparisonEvents,
-    workspace?.alreadyRanked ?? false,
-  );
+  const list = workspace === null ? null : activeList(workspace);
+  const items = list?.items ?? NO_ITEMS;
+  const comparisonEvents = list?.comparisonEvents ?? NO_EVENTS;
+  const alreadyRanked = list?.alreadyRanked ?? false;
+  const view = selectWorkspaceView(items, comparisonEvents, alreadyRanked);
+  const progress = selectProgress(items, comparisonEvents, alreadyRanked);
   const stability = selectStability(view.ranking, comparisonEvents);
   const format: SourceFormat =
     previewTab === "ranked" ? (workspace?.source.format ?? "list") : previewTab;
@@ -108,8 +111,8 @@ export default function RankScreen() {
     () =>
       previewTab === "ranked"
         ? ""
-        : selectExportText(workspace, items, comparisonEvents, format),
-    [previewTab, workspace, items, comparisonEvents, format],
+        : selectExportText(workspace, format),
+    [previewTab, workspace, format],
   );
 
   // Only a problem is worth saying, and only once hydrated: the static build
@@ -123,12 +126,11 @@ export default function RankScreen() {
         : "Not saved: this browser is not keeping data";
 
   // Kept while the roles are, so the ranked rows can reuse what they drew.
-  const roles = workspace?.roles;
   const layout = useMemo(() => (roles === undefined ? EMPTY_LAYOUT : cardLayout(roles)), [roles]);
 
-  if (workspace === null) return null;
+  if (workspace === null || list === null) return null;
 
-  const listOptions = selectListOptions(workspace, savedLists, items, comparisonEvents);
+  const listOptions = selectListOptions(workspace);
 
   // Every list switches instantly, including one never chosen before: rather
   // than stopping the user at the data screen to answer questions they have
@@ -140,11 +142,7 @@ export default function RankScreen() {
     if (workspace === null) return;
 
     const source: DataSource = { ...workspace.source, arrayPath: path };
-    const { roles, alreadyRanked } = selectListConfig(
-      workspace,
-      savedLists,
-      path,
-    );
+    const { roles, alreadyRanked } = selectListConfig(workspace, path);
     // Derived, not chosen: leaving it unmarked is what lets a later change to
     // the document defaults still reach this list.
     listStore

@@ -1,12 +1,11 @@
 import { z } from 'zod';
 
-import type { ListItem } from '@/types/list';
-import type { ComparisonEvent } from '@/types/ranking';
+import { pathKey } from '@/lib/import/paths';
 import { FIELD_RENDERERS } from '@/types/source';
-import type { PreviewTab, SavedList, Workspace } from '@/types/source';
+import type { PreviewTab, Workspace } from '@/types/source';
 
 /** Bump when the persisted shape changes so stale snapshots are dropped. */
-export const WORKSPACE_VERSION = 3;
+export const WORKSPACE_VERSION = 4;
 
 export interface WorkspaceUiState {
   previewTab: PreviewTab;
@@ -15,9 +14,6 @@ export interface WorkspaceUiState {
 export interface WorkspaceSnapshot {
   version: number;
   workspace: Workspace;
-  items: ListItem[];
-  comparisonEvents: ComparisonEvent[];
-  savedLists: SavedList[];
   ui: WorkspaceUiState;
 }
 
@@ -34,7 +30,6 @@ const itemValueSchema = z.union([
  */
 const dataSourceSchema = z.object({
   format: z.enum(['list', 'yaml', 'json']),
-  rawText: z.string(),
   document: z.unknown(),
   arrayPath: z.array(z.string()),
 });
@@ -45,31 +40,6 @@ const rolesSchema = z.object({
   summaryFields: z.array(z.string()).optional(),
   fieldRenderers: z.record(z.string(), z.enum(FIELD_RENDERERS)).optional(),
 });
-
-/**
- * listDefaults and configuredExplicitly arrived after lists could be switched
- * between, so they are optional here rather than a version bump: a snapshot
- * written before them describes a document whose only setup was chosen by
- * hand, which is exactly what those fallbacks say.
- */
-const workspaceSchema = z
-  .object({
-    id: z.string().min(1),
-    source: dataSourceSchema,
-    roles: rolesSchema,
-    alreadyRanked: z.boolean().optional().default(false),
-    listDefaults: z.object({ roles: rolesSchema, alreadyRanked: z.boolean() }).optional(),
-    configuredExplicitly: z.boolean().optional().default(true),
-    createdAt: z.string(),
-    updatedAt: z.string(),
-  })
-  .transform((workspace) => ({
-    ...workspace,
-    listDefaults: workspace.listDefaults ?? {
-      roles: workspace.roles,
-      alreadyRanked: workspace.alreadyRanked,
-    },
-  }));
 
 const listItemSchema = z.object({
   id: z.string().min(1),
@@ -89,31 +59,43 @@ const comparisonEventSchema = z.object({
   createdAt: z.string(),
 });
 
-const savedListSchema = z.object({
-  workspaceId: z.string().min(1),
+const rankedListSchema = z.object({
+  id: z.string().min(1),
   arrayPath: z.array(z.string()),
   roles: rolesSchema,
   alreadyRanked: z.boolean(),
-  configuredExplicitly: z.boolean().optional().default(true),
+  configuredExplicitly: z.boolean(),
   items: z.array(listItemSchema),
   comparisonEvents: z.array(comparisonEventSchema),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
 
+const workspaceSchema = z
+  .object({
+    source: dataSourceSchema,
+    listDefaults: z.object({ roles: rolesSchema, alreadyRanked: z.boolean() }),
+    lists: z.record(z.string(), rankedListSchema),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  // Each list is filed under its own path, and the open one is among them.
+  .refine(
+    (workspace) =>
+      Object.entries(workspace.lists).every(([key, list]) => key === pathKey(list.arrayPath)) &&
+      workspace.lists[pathKey(workspace.source.arrayPath)] !== undefined,
+  );
+
 export const workspaceSnapshotSchema = z.object({
   version: z.number().int().positive(),
   workspace: workspaceSchema,
-  items: z.array(listItemSchema),
-  comparisonEvents: z.array(comparisonEventSchema),
-  savedLists: z.array(savedListSchema),
   ui: z.object({ previewTab: z.enum(['ranked', 'list', 'yaml', 'json']) }),
 });
 
 /**
- * Returns null for anything we cannot safely restore. Persisted state is a
- * convenience, so failing to read it must never break the app. Version 1
- * snapshots hold no source document and are therefore unrecoverable.
+ * Returns null for anything we cannot safely restore, older versions included.
+ * Persisted state is a convenience, so failing to read it must never break the
+ * app.
  */
 export function parseWorkspaceSnapshot(input: unknown): WorkspaceSnapshot | null {
   const result = workspaceSnapshotSchema.safeParse(input);

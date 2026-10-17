@@ -5,6 +5,7 @@ import { WORKSPACE_STORAGE_KEY, createWorkspaceStorage } from '@/lib/persistence
 import { buildProgressFile } from '@/lib/progress/progressFile';
 import { createListStore } from '@/lib/state/useListStore';
 import type { DataSource } from '@/types/source';
+import { listAtPath, openList } from '@/tests/helpers/lists';
 
 function memoryBackend(): StorageLike & { data: Map<string, string> } {
   const data = new Map<string, string>();
@@ -18,7 +19,6 @@ function memoryBackend(): StorageLike & { data: Map<string, string> } {
 
 const nested: DataSource = {
   format: 'yaml',
-  rawText: 'movies:\n  - title: Alien\n  - title: Arrival\n',
   document: { owner: 'david', movies: [{ title: 'Alien' }, { title: 'Arrival' }] },
   arrayPath: ['movies'],
 };
@@ -44,7 +44,7 @@ describe('startRanking', () => {
   it('creates one item per entry of the chosen array', () => {
     store.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
 
-    expect(store.getState().items.map((item) => item.value)).toEqual([
+    expect(openList(store).items.map((item) => item.value)).toEqual([
       { title: 'Alien' },
       { title: 'Arrival' },
     ]);
@@ -55,7 +55,7 @@ describe('startRanking', () => {
     const workspace = store.getState().workspace;
 
     expect(workspace?.source.document).toEqual(nested.document);
-    expect(workspace?.roles).toEqual({ labelField: 'title' });
+    expect(openList(store).roles).toEqual({ labelField: 'title' });
   });
 
   it('starts the preview on the ranked tab', () => {
@@ -67,24 +67,24 @@ describe('startRanking', () => {
   it('defaults alreadyRanked to false', () => {
     store.getState().startRanking({ source: nested, roles: {} });
 
-    expect(store.getState().workspace?.alreadyRanked).toBe(false);
+    expect(openList(store).alreadyRanked).toBe(false);
   });
 
   it('records alreadyRanked when the caller marks the list as ranked', () => {
     store.getState().startRanking({ source: nested, roles: {}, alreadyRanked: true });
 
-    expect(store.getState().workspace?.alreadyRanked).toBe(true);
+    expect(openList(store).alreadyRanked).toBe(true);
     expect(store.getState().ranking()[0]?.state.rating).toBeGreaterThan(1500);
   });
 
   it('clears history from a previous list', () => {
     store.getState().startRanking({ source: nested, roles: {} });
-    const [left, right] = store.getState().items;
+    const [left, right] = openList(store).items;
     store.getState().recordComparison(left?.id ?? '', right?.id ?? '', 'left');
 
     store.getState().startRanking({ source: nested, roles: {} });
 
-    expect(store.getState().comparisonEvents).toEqual([]);
+    expect(openList(store).comparisonEvents).toEqual([]);
   });
 });
 
@@ -94,12 +94,12 @@ describe('applyEdits', () => {
   beforeEach(() => {
     store = makeStore();
     store.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
-    const [left, right] = store.getState().items;
+    const [left, right] = openList(store).items;
     store.getState().recordComparison(left?.id ?? '', right?.id ?? '', 'left');
   });
 
   it('keeps ids, and therefore history, for unchanged entries', () => {
-    const before = store.getState().items.map((item) => item.id);
+    const before = openList(store).items.map((item) => item.id);
     const edited: DataSource = {
       ...nested,
       document: {
@@ -110,8 +110,8 @@ describe('applyEdits', () => {
 
     store.getState().applyEdits({ source: edited, roles: { labelField: 'title' } });
 
-    expect(store.getState().items.slice(0, 2).map((item) => item.id)).toEqual(before);
-    expect(store.getState().comparisonEvents).toHaveLength(1);
+    expect(openList(store).items.slice(0, 2).map((item) => item.id)).toEqual(before);
+    expect(openList(store).comparisonEvents).toHaveLength(1);
   });
 
   it('adds new entries as unranked items', () => {
@@ -125,8 +125,8 @@ describe('applyEdits', () => {
 
     store.getState().applyEdits({ source: edited, roles: { labelField: 'title' } });
 
-    expect(store.getState().items).toHaveLength(3);
-    expect(store.getState().items[2]?.value).toEqual({ title: 'Solaris' });
+    expect(openList(store).items).toHaveLength(3);
+    expect(openList(store).items[2]?.value).toEqual({ title: 'Solaris' });
   });
 
   it('deactivates entries that disappeared, rather than deleting them', () => {
@@ -137,20 +137,23 @@ describe('applyEdits', () => {
 
     store.getState().applyEdits({ source: edited, roles: { labelField: 'title' } });
 
-    expect(store.getState().items).toHaveLength(2);
-    expect(store.getState().items[1]?.active).toBe(false);
-    expect(store.getState().comparisonEvents).toHaveLength(1);
+    expect(openList(store).items).toHaveLength(2);
+    expect(openList(store).items[1]?.active).toBe(false);
+    expect(openList(store).comparisonEvents).toHaveLength(1);
   });
 
   it('replaces the stored source and roles', () => {
-    const edited: DataSource = { ...nested, rawText: 'edited' };
+    const edited: DataSource = {
+      ...nested,
+      document: { owner: 'someone else', movies: [{ title: 'Alien' }, { title: 'Arrival' }] },
+    };
 
     store
       .getState()
       .applyEdits({ source: edited, roles: { labelField: 'title', positionField: 'order' } });
 
-    expect(store.getState().workspace?.source.rawText).toBe('edited');
-    expect(store.getState().workspace?.roles.positionField).toBe('order');
+    expect(store.getState().workspace?.source.document).toEqual(edited.document);
+    expect(openList(store).roles.positionField).toBe('order');
   });
 
   /** The reported bug: an edited entry fell to the bottom of the list. */
@@ -176,7 +179,7 @@ describe('applyEdits', () => {
 
     store.getState().applyEdits({ source: edited, roles: { labelField: 'title' } });
 
-    expect(store.getState().items.filter((item) => item.active).map((item) => item.value)).toEqual([
+    expect(openList(store).items.filter((item) => item.active).map((item) => item.value)).toEqual([
       { title: 'Arrival' },
       { title: 'Alien' },
     ]);
@@ -190,22 +193,22 @@ describe('applyEdits', () => {
 
     store.getState().applyEdits({ source: edited, roles: { labelField: 'title' } });
 
-    expect(store.getState().items).toHaveLength(2);
-    expect(store.getState().items.filter((item) => !item.active)).toHaveLength(1);
+    expect(openList(store).items).toHaveLength(2);
+    expect(openList(store).items.filter((item) => !item.active)).toHaveLength(1);
   });
 
   it('keeps the workspace id, so items still belong to it', () => {
-    const id = store.getState().workspace?.id;
+    const id = openList(store).id;
 
     store.getState().applyEdits({ source: nested, roles: {} });
 
-    expect(store.getState().workspace?.id).toBe(id);
+    expect(openList(store).id).toBe(id);
   });
 
   it('leaves alreadyRanked untouched when the caller does not specify it', () => {
     store.getState().applyEdits({ source: nested, roles: { labelField: 'title' } });
 
-    expect(store.getState().workspace?.alreadyRanked).toBe(false);
+    expect(openList(store).alreadyRanked).toBe(false);
   });
 
   it('updates alreadyRanked when the caller specifies it', () => {
@@ -213,7 +216,7 @@ describe('applyEdits', () => {
       .getState()
       .applyEdits({ source: nested, roles: { labelField: 'title' }, alreadyRanked: true });
 
-    expect(store.getState().workspace?.alreadyRanked).toBe(true);
+    expect(openList(store).alreadyRanked).toBe(true);
   });
 });
 
@@ -221,7 +224,6 @@ describe('switchList', () => {
   let store: ReturnType<typeof makeStore>;
   const actors: DataSource = {
     format: 'yaml',
-    rawText: 'movies:\n  - title: Alien\n  - title: Arrival\nactors:\n  - Weaver\n  - Adams\n',
     document: {
       owner: 'david',
       movies: [{ title: 'Alien' }, { title: 'Arrival' }],
@@ -233,75 +235,74 @@ describe('switchList', () => {
   beforeEach(() => {
     store = makeStore();
     store.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
-    const [left, right] = store.getState().items;
+    const [left, right] = openList(store).items;
     store.getState().recordComparison(left?.id ?? '', right?.id ?? '', 'left');
   });
 
   it('builds fresh items for a list never visited before', () => {
     store.getState().switchList({ source: actors, roles: {} });
 
-    expect(store.getState().items.map((item) => item.value)).toEqual(['Weaver', 'Adams']);
-    expect(store.getState().comparisonEvents).toEqual([]);
+    expect(openList(store).items.map((item) => item.value)).toEqual(['Weaver', 'Adams']);
+    expect(openList(store).comparisonEvents).toEqual([]);
     expect(store.getState().workspace?.source.arrayPath).toEqual(['actors']);
   });
 
-  it('archives the list being left instead of discarding it', () => {
-    const movieItems = store.getState().items;
-    const movieComparisons = store.getState().comparisonEvents;
+  it('keeps the list being left instead of discarding it', () => {
+    const movieItems = openList(store).items;
+    const movieComparisons = openList(store).comparisonEvents;
 
     store.getState().switchList({ source: actors, roles: {} });
 
-    const saved = store.getState().savedLists.find((list) => list.arrayPath.join('.') === 'movies');
+    const saved = listAtPath(store, ['movies']);
     expect(saved?.items).toEqual(movieItems);
     expect(saved?.comparisonEvents).toEqual(movieComparisons);
   });
 
   it('restores the ranking of a previously visited list exactly as it was left', () => {
-    const movieItems = store.getState().items;
-    const movieComparisons = store.getState().comparisonEvents;
+    const movieItems = openList(store).items;
+    const movieComparisons = openList(store).comparisonEvents;
 
     store.getState().switchList({ source: actors, roles: {} });
     store.getState().switchList({ source: nested, roles: { labelField: 'title' } });
 
-    expect(store.getState().items).toEqual(movieItems);
-    expect(store.getState().comparisonEvents).toEqual(movieComparisons);
+    expect(openList(store).items).toEqual(movieItems);
+    expect(openList(store).comparisonEvents).toEqual(movieComparisons);
   });
 
   /*
    * Which fields a restored list comes back on is the caller's answer, not the
-   * archived one: the data screen sends what the user is looking at, and the
+   * one it was left with: the data screen sends what the user is looking at, and the
    * switcher sends selectListConfig's - which returns a hand-configured list's
    * own setup, and re-derives every other list from the document defaults. That
-   * is what lets a change to the defaults reach a list parked before it.
+   * is what lets a change to the defaults reach a list left before it.
    */
   it('restores a list on the setup it is switched back with', () => {
     store.getState().switchList({ source: actors, roles: {} });
     store.getState().switchList({ source: nested, roles: { labelField: 'renamed' } });
 
-    expect(store.getState().workspace?.roles).toEqual({ labelField: 'renamed' });
+    expect(openList(store).roles).toEqual({ labelField: 'renamed' });
   });
 
-  it('leaves the list being switched to out of savedLists once it is active', () => {
+  it('keeps every list opened, the open one included, under its own path', () => {
     store.getState().switchList({ source: actors, roles: {} });
 
-    expect(
-      store.getState().savedLists.some((list) => list.arrayPath.join('.') === 'actors'),
-    ).toBe(false);
+    expect(Object.keys(store.getState().workspace?.lists ?? {})).toEqual(['movies', 'actors']);
+    expect(openList(store).arrayPath).toEqual(['actors']);
   });
 
-  it('round-trips saved lists through storage', () => {
+  it('round-trips every list through storage', () => {
     const backend = memoryBackend();
     const first = makeStore(backend);
     first.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
-    const [left, right] = first.getState().items;
+    const [left, right] = openList(first).items;
     first.getState().recordComparison(left?.id ?? '', right?.id ?? '', 'left');
     first.getState().switchList({ source: actors, roles: {} });
 
     const second = makeStore(backend);
     second.getState().hydrate();
 
-    expect(second.getState().savedLists).toHaveLength(1);
-    expect(second.getState().savedLists[0]?.comparisonEvents).toHaveLength(1);
+    expect(Object.keys(second.getState().workspace?.lists ?? {})).toHaveLength(2);
+    expect(listAtPath(second, ['movies'])?.comparisonEvents).toHaveLength(1);
   });
 });
 
@@ -314,9 +315,9 @@ describe('persistence', () => {
     const second = makeStore(backend);
     second.getState().hydrate();
 
-    expect(second.getState().workspace?.roles.labelField).toBe('title');
+    expect(openList(second).roles.labelField).toBe('title');
     expect(second.getState().workspace?.source.document).toEqual(nested.document);
-    expect(second.getState().items).toHaveLength(2);
+    expect(openList(second).items).toHaveLength(2);
     expect(second.getState().hydrated).toBe(true);
   });
 
@@ -338,7 +339,7 @@ describe('persistence', () => {
     store.getState().startRanking({ source: nested, roles: {} });
 
     expect(store.getState().saveOutcome).toBe('unavailable');
-    expect(store.getState().items).toHaveLength(2);
+    expect(openList(store).items).toHaveLength(2);
   });
 
   it('clears storage on reset', () => {
@@ -366,7 +367,6 @@ describe('resume', () => {
 
 const triple: DataSource = {
   format: 'yaml',
-  rawText: 'movies:\n  - title: Alien\n  - title: Arrival\n  - title: Aliens\n',
   document: {
     owner: 'david',
     movies: [{ title: 'Alien' }, { title: 'Arrival' }, { title: 'Aliens' }],
@@ -384,8 +384,7 @@ describe('reorderItem', () => {
 
   function idFor(title: string): string {
     return (
-      store
-        .getState()
+      openList(store)
         .items.find((item) => (item.value as { title: string }).title === title)?.id ?? ''
     );
   }
@@ -395,7 +394,7 @@ describe('reorderItem', () => {
 
     store.getState().reorderItem(aliens, [alien, aliens, arrival]);
 
-    expect(store.getState().comparisonEvents).toEqual([
+    expect(openList(store).comparisonEvents).toEqual([
       expect.objectContaining({ leftItemId: aliens, rightItemId: alien, outcome: 'place_below' }),
     ]);
   });
@@ -405,7 +404,7 @@ describe('reorderItem', () => {
 
     store.getState().reorderItem(aliens, [aliens, alien, arrival]);
 
-    expect(store.getState().comparisonEvents).toEqual([
+    expect(openList(store).comparisonEvents).toEqual([
       expect.objectContaining({ leftItemId: aliens, rightItemId: alien, outcome: 'place_above' }),
     ]);
   });
@@ -416,7 +415,7 @@ describe('reorderItem', () => {
     store.getState().reorderItem(aliens, [aliens, alien, arrival]);
     store.getState().undo();
 
-    expect(store.getState().comparisonEvents).toEqual([]);
+    expect(openList(store).comparisonEvents).toEqual([]);
   });
 
   it('keeps existing comparison history rather than clearing it', () => {
@@ -425,8 +424,8 @@ describe('reorderItem', () => {
 
     store.getState().reorderItem(aliens, [alien, aliens, arrival]);
 
-    expect(store.getState().comparisonEvents).toHaveLength(2);
-    expect(store.getState().comparisonEvents[0]).toEqual(
+    expect(openList(store).comparisonEvents).toHaveLength(2);
+    expect(openList(store).comparisonEvents[0]).toEqual(
       expect.objectContaining({ leftItemId: alien, rightItemId: arrival, outcome: 'left' }),
     );
   });
@@ -436,7 +435,7 @@ describe('reorderItem', () => {
 
     store.getState().reorderItem(aliens, [alien, aliens, arrival]);
 
-    expect(store.getState().items.map((item) => item.value)).toEqual([
+    expect(openList(store).items.map((item) => item.value)).toEqual([
       { title: 'Alien' },
       { title: 'Arrival' },
       { title: 'Aliens' },
@@ -461,13 +460,13 @@ describe('reorderItem', () => {
 
     store.getState().reorderItem(aliens, [alien, aliens, arrival]);
 
-    expect(store.getState().workspace?.alreadyRanked).toBe(false);
+    expect(openList(store).alreadyRanked).toBe(false);
   });
 
   it('ignores an id that is not in the new order', () => {
     store.getState().reorderItem('nonsense', [idFor('Alien'), idFor('Arrival'), idFor('Aliens')]);
 
-    expect(store.getState().comparisonEvents).toEqual([]);
+    expect(openList(store).comparisonEvents).toEqual([]);
   });
 
   it('ignores an item that has been removed', () => {
@@ -476,7 +475,7 @@ describe('reorderItem', () => {
 
     store.getState().reorderItem(aliens, [alien, aliens, arrival]);
 
-    expect(store.getState().comparisonEvents).toEqual([]);
+    expect(openList(store).comparisonEvents).toEqual([]);
   });
 
   it('does nothing without a workspace', () => {
@@ -504,7 +503,6 @@ describe('document-wide list defaults', () => {
   let store: ReturnType<typeof makeStore>;
   const actors: DataSource = {
     format: 'yaml',
-    rawText: '',
     document: {
       movies: [{ title: 'Alien' }, { title: 'Arrival' }],
       actors: [{ name: 'Weaver' }, { name: 'Adams' }],
@@ -533,7 +531,7 @@ describe('document-wide list defaults', () => {
   it('counts the first list as set up by hand', () => {
     store.getState().startRanking({ source: movies, roles: { labelField: 'title' } });
 
-    expect(store.getState().workspace?.configuredExplicitly).toBe(true);
+    expect(openList(store).configuredExplicitly).toBe(true);
   });
 
   it('rewrites the defaults when the user asks for it', () => {
@@ -552,8 +550,8 @@ describe('document-wide list defaults', () => {
 
     store.getState().setListDefaults({ roles: { labelField: 'name' }, alreadyRanked: true });
 
-    expect(store.getState().workspace?.roles).toEqual({ labelField: 'title' });
-    expect(store.getState().workspace?.alreadyRanked).toBe(false);
+    expect(openList(store).roles).toEqual({ labelField: 'title' });
+    expect(openList(store).alreadyRanked).toBe(false);
   });
 
   it('has no defaults to set before there is a document', () => {
@@ -581,7 +579,7 @@ describe('document-wide list defaults', () => {
       .getState()
       .switchList({ source: actors, roles: { labelField: 'name' }, configuredExplicitly: false });
 
-    expect(store.getState().workspace?.configuredExplicitly).toBe(false);
+    expect(openList(store).configuredExplicitly).toBe(false);
   });
 
   it('marks a list the user set up on the data screen', () => {
@@ -589,18 +587,17 @@ describe('document-wide list defaults', () => {
 
     store.getState().switchList({ source: actors, roles: { labelField: 'name' } });
 
-    expect(store.getState().workspace?.configuredExplicitly).toBe(true);
+    expect(openList(store).configuredExplicitly).toBe(true);
   });
 
-  it('keeps that mark on the list it archives', () => {
+  it('keeps that mark on the list it leaves', () => {
     store.getState().startRanking({ source: movies, roles: { labelField: 'title' } });
 
     store
       .getState()
       .switchList({ source: actors, roles: { labelField: 'name' }, configuredExplicitly: false });
 
-    const saved = store.getState().savedLists.find((list) => list.arrayPath.join('.') === 'movies');
-    expect(saved?.configuredExplicitly).toBe(true);
+    expect(listAtPath(store, ['movies'])?.configuredExplicitly).toBe(true);
   });
 
   it('does not unmark a list that was set up by hand when it is switched back to', () => {
@@ -610,7 +607,7 @@ describe('document-wide list defaults', () => {
       .getState()
       .switchList({ source: movies, roles: { labelField: 'title' }, configuredExplicitly: false });
 
-    expect(store.getState().workspace?.configuredExplicitly).toBe(true);
+    expect(openList(store).configuredExplicitly).toBe(true);
   });
 
   it('carries the defaults across a switch, so the whole document keeps one answer', () => {
@@ -640,43 +637,43 @@ describe('undo', () => {
 
   it('takes back the last comparison', () => {
     const store = started();
-    const [a, b] = store.getState().items;
+    const [a, b] = openList(store).items;
     store.getState().recordComparison(a!.id, b!.id, 'left');
-    expect(store.getState().comparisonEvents).toHaveLength(1);
+    expect(openList(store).comparisonEvents).toHaveLength(1);
 
     store.getState().undo();
 
-    expect(store.getState().comparisonEvents).toHaveLength(0);
+    expect(openList(store).comparisonEvents).toHaveLength(0);
     expect(store.getState().undoStack).toHaveLength(0);
   });
 
   it('brings back a removed item', () => {
     const store = started();
-    const [a] = store.getState().items;
+    const [a] = openList(store).items;
     store.getState().removeItem(a!.id);
-    expect(store.getState().items[0]!.active).toBe(false);
+    expect(openList(store).items[0]!.active).toBe(false);
 
     store.getState().undo();
 
-    expect(store.getState().items[0]!.active).toBe(true);
+    expect(openList(store).items[0]!.active).toBe(true);
   });
 
   it('takes back a hand reorder in one step', () => {
     const store = started();
-    const [a, b] = store.getState().items;
+    const [a, b] = openList(store).items;
     store.getState().reorderItem(b!.id, [b!.id, a!.id]);
-    const added = store.getState().comparisonEvents.length;
+    const added = openList(store).comparisonEvents.length;
     expect(added).toBeGreaterThan(0);
 
     store.getState().undo();
 
-    expect(store.getState().comparisonEvents).toHaveLength(0);
+    expect(openList(store).comparisonEvents).toHaveLength(0);
   });
 
   it('does nothing when there is nothing to undo', () => {
     const store = started();
     store.getState().undo();
-    expect(store.getState().comparisonEvents).toHaveLength(0);
+    expect(openList(store).comparisonEvents).toHaveLength(0);
   });
 });
 
@@ -684,11 +681,11 @@ describe('loadProgress', () => {
   it('replaces comparisons with those in the file, matched by item value', () => {
     const store = makeStore();
     store.getState().startRanking({ source: nested, roles: { labelField: 'title' } });
-    const [a, b] = store.getState().items;
+    const [a, b] = openList(store).items;
     store.getState().recordComparison(a!.id, b!.id, 'right_strong');
     const file = buildProgressFile(
-      store.getState().items,
-      store.getState().comparisonEvents,
+      openList(store).items,
+      openList(store).comparisonEvents,
       ['movies'],
       '2026-08-16T00:00:00.000Z',
     );
@@ -698,7 +695,7 @@ describe('loadProgress', () => {
     const result = fresh.getState().loadProgress(file);
 
     expect(result.matchedEvents).toBe(1);
-    expect(fresh.getState().comparisonEvents[0]).toMatchObject({ outcome: 'right_strong' });
+    expect(openList(fresh).comparisonEvents[0]).toMatchObject({ outcome: 'right_strong' });
     expect(fresh.getState().ranking()[0]!.item.value).toEqual({ title: 'Arrival' });
   });
 });
@@ -720,7 +717,7 @@ describe('delayed saving', () => {
       expect(backend.data.has(WORKSPACE_STORAGE_KEY)).toBe(true);
 
       backend.data.clear();
-      const [a, b] = store.getState().items;
+      const [a, b] = openList(store).items;
       store.getState().recordComparison(a!.id, b!.id, 'left');
       store.getState().flush();
       expect(backend.data.has(WORKSPACE_STORAGE_KEY)).toBe(true);
@@ -751,7 +748,7 @@ describe('hydrate with delayed saving', () => {
       // A screen mounting before the delayed save has fired.
       store.getState().hydrate();
 
-      expect(store.getState().workspace?.roles.summaryFields).toEqual(['year']);
+      expect(openList(store).roles.summaryFields).toEqual(['year']);
     } finally {
       vi.useRealTimers();
     }

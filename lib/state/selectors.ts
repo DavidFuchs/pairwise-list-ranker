@@ -1,7 +1,8 @@
 import { buildExport } from "@/lib/export/buildExport";
 import { entriesAtPath, findArrayCandidates, formatPath } from "@/lib/import/arrayCandidates";
 import type { ArrayCandidate } from "@/lib/import/arrayCandidates";
-import { samePath } from "@/lib/import/paths";
+import { pathKey, samePath } from "@/lib/import/paths";
+import { activeList, listAt } from "@/lib/state/lists";
 import { resolveRoles } from "@/lib/import/roles";
 import { rendererNote } from "@/lib/renderers";
 import { selectNextPair } from "@/lib/ranking/pairSelection";
@@ -14,7 +15,7 @@ import type {
   FieldRoles,
   ListConfig,
   PreviewTab,
-  SavedList,
+  RankedList,
   SourceFormat,
   Workspace,
 } from "@/types/source";
@@ -34,8 +35,8 @@ export interface WorkspaceView {
  * Results by events array, then items array, then the alreadyRanked flag. The
  * store replaces those arrays on every change, so a hit means nothing has
  * changed, and a WeakMap lets old arrays go once nothing holds them. Keyed
- * rather than one slot so that ranking a parked list, or a second store, does
- * not evict the active list's result.
+ * rather than one slot so that ranking a list that is not open, or a second
+ * store, does not evict the open list's result.
  */
 const viewCache = new WeakMap<ComparisonEvent[], WeakMap<ListItem[], Map<boolean, WorkspaceView>>>();
 
@@ -104,17 +105,13 @@ export function selectCurrentPair(
 }
 
 /** The exportable text for one tab, built from the user's own document. */
-export function selectExportText(
-  workspace: Workspace | null,
-  items: ListItem[],
-  events: ComparisonEvent[],
-  format: SourceFormat,
-): string {
+export function selectExportText(workspace: Workspace | null, format: SourceFormat): string {
   if (workspace === null) return "";
-  const ranked = selectRanking(items, events, workspace.alreadyRanked).map(
+  const list = activeList(workspace);
+  const ranked = selectRanking(list.items, list.comparisonEvents, list.alreadyRanked).map(
     (entry) => entry.item,
   );
-  return buildExport(workspace.source, workspace.roles, ranked, format);
+  return buildExport(workspace.source, list.roles, ranked, format);
 }
 
 /** Items deleted during comparison, which the export leaves out. */
@@ -155,47 +152,64 @@ export function describeRoles(
 export function selectContextLine(workspace: Workspace | null): string {
   if (workspace === null) return "";
 
-  const name = formatPath(workspace.source.arrayPath);
-  const roles = describeRoles(workspace.roles, workspace.alreadyRanked);
+  const list = activeList(workspace);
+  const name = formatPath(list.arrayPath);
+  const roles = describeRoles(list.roles, list.alreadyRanked);
 
   return roles === "" ? name : `${name} · ${roles}`;
 }
 
 /**
  * The setup one list in the document would be ranked with. A list the user set
- * up by hand answers for itself, whether it is the active one or parked in
- * savedLists. Every other list takes the document's defaults - resolveRoles
- * keeps the default field only where that list can honour it, and falls back to
- * the list's own best field otherwise. Deriving is what lets the switcher move
- * to a new list in one press instead of sending the user through the data
- * screen first; every picker row shows the answer, so a wrong guess is visible
- * and one Configure away from being fixed.
+ * up by hand answers for itself, whether it is open or not. Every other list
+ * takes the document's defaults - resolveRoles keeps the default field only
+ * where that list can honour it, and falls back to the list's own best field
+ * otherwise. Deriving is what lets the switcher move to a new list in one press
+ * instead of sending the user through the data screen first; every picker row
+ * shows the answer, so a wrong guess is visible and one Configure away from
+ * being fixed.
  *
- * The active list always answers for itself, set up by hand or not: the
+ * The open list always answers for itself, set up by hand or not: the
  * comparison deck and the export read those same fields, so a row claiming
  * anything else would be describing a list that is not on screen.
  */
-export function selectListConfig(
-  workspace: Workspace | null,
-  savedLists: SavedList[],
-  path: string[],
-): ListConfig {
+export function selectListConfig(workspace: Workspace | null, path: string[]): ListConfig {
   if (workspace === null) return { roles: {}, alreadyRanked: false };
 
-  if (samePath(path, workspace.source.arrayPath)) {
-    return { roles: workspace.roles, alreadyRanked: workspace.alreadyRanked };
+  const list = listAt(workspace, path);
+  if (list !== undefined && (list.configuredExplicitly || samePath(path, workspace.source.arrayPath))) {
+    return { roles: list.roles, alreadyRanked: list.alreadyRanked };
   }
+  return derivedConfig(workspace.source.document, workspace.listDefaults, path);
+}
 
-  const saved = savedLists.find((list) => samePath(list.arrayPath, path));
-  if (saved !== undefined && saved.configuredExplicitly) {
-    return { roles: saved.roles, alreadyRanked: saved.alreadyRanked };
+/** By document, then defaults, then path: a pass over every entry of the list. */
+const derivedConfigCache = new WeakMap<object, WeakMap<ListConfig, Map<string, ListConfig>>>();
+
+function derivedConfig(document: unknown, defaults: ListConfig, path: string[]): ListConfig {
+  const derive = (): ListConfig => ({
+    roles: resolveRoles(entriesAtPath(document, path), defaults.roles),
+    alreadyRanked: defaults.alreadyRanked,
+  });
+  if (typeof document !== "object" || document === null) return derive();
+
+  let byDefaults = derivedConfigCache.get(document);
+  if (byDefaults === undefined) {
+    byDefaults = new WeakMap();
+    derivedConfigCache.set(document, byDefaults);
   }
-
-  const entries = entriesAtPath(workspace.source.document, path);
-  return {
-    roles: resolveRoles(entries, workspace.listDefaults.roles),
-    alreadyRanked: workspace.listDefaults.alreadyRanked,
-  };
+  let byPath = byDefaults.get(defaults);
+  if (byPath === undefined) {
+    byPath = new Map();
+    byDefaults.set(defaults, byPath);
+  }
+  const key = pathKey(path);
+  let config = byPath.get(key);
+  if (config === undefined) {
+    config = derive();
+    byPath.set(key, config);
+  }
+  return config;
 }
 
 /** Only the tabs this source can honestly produce. */
@@ -297,53 +311,47 @@ export interface ListOption extends ArrayCandidate {
   coverage?: CoverageReading;
 }
 
-const parkedOptionsCache = new WeakMap<Workspace, WeakMap<SavedList[], ListOption[]>>();
+const coverageCache = new WeakMap<RankedList, CoverageReading | null>();
 
-/**
- * Every list but the active one's progress, which is all that changes with a
- * comparison. Walking the document and resolving each list's roles costs a
- * pass over every entry, so it is kept until the workspace or the parked lists
- * change rather than redone on every click.
- */
-function parkedListOptions(workspace: Workspace, savedLists: SavedList[]): ListOption[] {
-  let byLists = parkedOptionsCache.get(workspace);
-  if (byLists === undefined) {
-    byLists = new WeakMap();
-    parkedOptionsCache.set(workspace, byLists);
+/** selectCoverage for a list, kept while the list is unchanged. */
+function listCoverage(list: RankedList): CoverageReading | undefined {
+  let coverage = coverageCache.get(list);
+  if (coverage === undefined) {
+    coverage = selectCoverage(list.items, list.comparisonEvents, list.alreadyRanked) ?? null;
+    coverageCache.set(list, coverage);
   }
-  const cached = byLists.get(savedLists);
-  if (cached !== undefined) return cached;
-
-  const options = findArrayCandidates(workspace.source.document).candidates.map(
-    (candidate): ListOption => {
-      const config = selectListConfig(workspace, savedLists, candidate.path);
-      const saved = savedLists.find((list) => samePath(list.arrayPath, candidate.path));
-      return {
-        ...candidate,
-        configLine: describeRoles(config.roles, config.alreadyRanked),
-        coverage:
-          saved === undefined
-            ? undefined
-            : selectCoverage(saved.items, saved.comparisonEvents, saved.alreadyRanked),
-      };
-    },
-  );
-  byLists.set(savedLists, options);
-  return options;
+  return coverage ?? undefined;
 }
 
-/** Every list in the document, with its setup and its progress. */
-export function selectListOptions(
-  workspace: Workspace,
-  savedLists: SavedList[],
-  items: ListItem[],
-  events: ComparisonEvent[],
-): ListOption[] {
-  const active = workspace.source.arrayPath;
-  const coverage = selectCoverage(items, events, workspace.alreadyRanked);
-  return parkedListOptions(workspace, savedLists).map((option) =>
-    samePath(option.path, active) ? { ...option, coverage } : option,
-  );
+const candidatesCache = new WeakMap<object, ArrayCandidate[]>();
+
+/** The lists a document holds. A walk of the whole document, so kept with it. */
+function candidatesOf(document: unknown): ArrayCandidate[] {
+  if (typeof document !== "object" || document === null) return findArrayCandidates(document).candidates;
+  let candidates = candidatesCache.get(document);
+  if (candidates === undefined) {
+    candidates = findArrayCandidates(document).candidates;
+    candidatesCache.set(document, candidates);
+  }
+  return candidates;
+}
+
+/**
+ * Every list in the document, with the setup it would be ranked with and its
+ * progress. The expensive parts - walking the document, resolving roles for a
+ * list never opened, reading a list's progress - are each kept until what they
+ * read changes, so a click recomputes only the open list's meter.
+ */
+export function selectListOptions(workspace: Workspace): ListOption[] {
+  return candidatesOf(workspace.source.document).map((candidate): ListOption => {
+    const config = selectListConfig(workspace, candidate.path);
+    const list = listAt(workspace, candidate.path);
+    return {
+      ...candidate,
+      configLine: describeRoles(config.roles, config.alreadyRanked),
+      coverage: list === undefined ? undefined : listCoverage(list),
+    };
+  });
 }
 
 /**

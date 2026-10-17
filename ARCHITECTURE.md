@@ -70,20 +70,38 @@ type PreviewTab = 'ranked' | SourceFormat;
 
 interface DataSource {
   format: SourceFormat;   // how it parsed; also the default export format
-  rawText: string;        // exactly what the user gave us
   document: unknown;      // the parsed value, verbatim; string[] for 'list'
-  arrayPath: string[];    // path to the ranked array; [] when the document is it
+  arrayPath: string[];    // the list open now; [] when the document is it
 }
 
 interface FieldRoles {
   labelField?: string;    // object entries only: what titles each card
+  summaryFields?: string[];                        // fields shown on each card
+  fieldRenderers?: Record<string, FieldRenderer>;  // how each is drawn
   positionField?: string; // optional: rewritten with 1..N on export
 }
 
-interface Workspace {
-  id: string;             // lists are not named: there is nowhere to save them
-  source: DataSource;
+interface ListConfig {
   roles: FieldRoles;
+  alreadyRanked: boolean; // the imported order is a trusted ranking
+}
+
+// One list in the document, with everything ranked in it.
+interface RankedList extends ListConfig {
+  id: string;             // items and events name their list by this
+  arrayPath: string[];
+  configuredExplicitly: boolean; // set up by hand, not inherited from listDefaults
+  items: ListItem[];
+  comparisonEvents: ComparisonEvent[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// The document, and every list in it that has been opened.
+interface Workspace {
+  source: DataSource;     // source.arrayPath names the open list
+  listDefaults: ListConfig; // what a list not set up by hand inherits
+  lists: Record<string, RankedList>; // by pathKey(arrayPath); holds the open one
   createdAt: string;
   updatedAt: string;
 }
@@ -117,10 +135,8 @@ interface ComparisonEvent {
 }
 
 interface WorkspaceSnapshot {
-  version: 2;
+  version: 4;             // any other version is dropped, not migrated
   workspace: Workspace;
-  items: ListItem[];
-  comparisonEvents: ComparisonEvent[];
   ui: { previewTab: PreviewTab };
 }
 ```

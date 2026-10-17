@@ -218,7 +218,7 @@ describe('useSourceDraft', () => {
 
   /**
    * A list already ranked in an earlier switch this session (tracked in
-   * savedLists, passed in as knownLists) must default to its own real answer
+   * the workspace's lists, passed in as knownLists) must default to its own real answer
    * when revisited - not "no particular order" just because the seed's
    * arrayPath points at a different list.
    */

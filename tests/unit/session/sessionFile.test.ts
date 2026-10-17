@@ -6,6 +6,7 @@ import { buildProgressFile } from '@/lib/progress/progressFile';
 import { buildSessionFile, describeSession, readSavedFile, SESSION_FILE_KIND } from '@/lib/session/sessionFile';
 import { createListStore } from '@/lib/state/useListStore';
 import type { DataSource } from '@/types/source';
+import { openList } from '@/tests/helpers/lists';
 
 function memoryBackend(): StorageLike {
   const data = new Map<string, string>();
@@ -27,7 +28,6 @@ function makeStore() {
 
 const films: DataSource = {
   format: 'yaml',
-  rawText: 'owner: me\nmovies:\n  - title: Alien\n    year: 1979\n  - title: Arrival\n    year: 2016\n  - title: Aliens\n    year: 1986\nbooks:\n  - title: Dune\n  - title: Emma\n',
   document: {
     owner: 'me',
     movies: [
@@ -40,7 +40,7 @@ const films: DataSource = {
   arrayPath: ['movies'],
 };
 
-/** A store with real work in it: setup, choices, a placement, a removal and a parked list. */
+/** A store with real work in it: setup, choices, a placement and a removal. */
 function workedStore() {
   const store = makeStore();
   store.getState().startRanking({
@@ -48,7 +48,7 @@ function workedStore() {
     roles: { labelField: 'title', summaryFields: ['year'], fieldRenderers: { year: 'compact' } },
     alreadyRanked: true,
   });
-  const [alien, arrival, aliens] = store.getState().items.map((item) => item.id) as [string, string, string];
+  const [alien, arrival, aliens] = openList(store).items.map((item) => item.id) as [string, string, string];
   store.getState().recordComparison(arrival, alien, 'left_strong');
   store.getState().reorderItem(aliens, [aliens, arrival, alien]);
   store.getState().removeItem(alien);
@@ -72,16 +72,14 @@ describe('session files', () => {
     const [before, after] = [source.getState(), target.getState()];
 
     expect(after.workspace).toEqual(before.workspace);
-    expect(after.items).toEqual(before.items);
-    expect(after.comparisonEvents).toEqual(before.comparisonEvents);
     expect(after.previewTab).toBe('json');
     expect(after.ranking().map((entry) => entry.item.id)).toEqual(before.ranking().map((entry) => entry.item.id));
-    expect(after.workspace?.roles.fieldRenderers).toEqual({ year: 'compact' });
-    expect(after.workspace?.alreadyRanked).toBe(true);
+    expect(openList(target).roles.fieldRenderers).toEqual({ year: 'compact' });
+    expect(openList(target).alreadyRanked).toBe(true);
     expect(saved.savedAt).toBe('2026-10-16T12:00:00.000Z');
   });
 
-  it('keeps lists parked while another is open', () => {
+  it('keeps every list, not only the open one', () => {
     const store = workedStore();
     store.getState().switchList({
       source: { ...films, arrayPath: ['books'] },
@@ -94,8 +92,8 @@ describe('session files', () => {
     const saved = readSavedFile(text);
     if (saved.type !== 'session') throw new Error('expected a session');
     expect(saved.session.workspace.source.arrayPath).toEqual(['books']);
-    expect(saved.session.savedLists.map((list) => list.arrayPath)).toEqual([['movies']]);
-    expect(saved.session.savedLists[0]!.comparisonEvents).toHaveLength(2);
+    expect(Object.values(saved.session.workspace.lists).map((list) => list.arrayPath)).toEqual([['movies'], ['books']]);
+    expect(saved.session.workspace.lists.movies!.comparisonEvents).toHaveLength(2);
   });
 
   it('leaves an ordinary JSON document alone, as a list to import', () => {
@@ -106,7 +104,7 @@ describe('session files', () => {
 
   it('recognises a progress file from before sessions', () => {
     const store = workedStore();
-    const progress = buildProgressFile(store.getState().items, store.getState().comparisonEvents, ['movies'], '');
+    const progress = buildProgressFile(openList(store).items, openList(store).comparisonEvents, ['movies'], '');
     expect(readSavedFile(JSON.stringify(progress)).type).toBe('progress');
   });
 
@@ -121,9 +119,9 @@ describe('session files', () => {
 
   it('refuses a damaged session rather than half-loading it', () => {
     const file = roundTrip(JSON.stringify(buildSessionFile(workedStore().getState().snapshot()!, ''))) as {
-      session: { items: unknown };
+      session: { workspace: { lists: unknown } };
     };
-    file.session.items = 'not a list';
+    file.session.workspace.lists = 'not a list';
     expect(readSavedFile(JSON.stringify(file)).type).toBe('unreadable');
   });
 
@@ -141,7 +139,7 @@ describe('session files', () => {
     const session = store.getState().snapshot()!;
     const target = makeStore();
     target.getState().startRanking({ source: films, roles: {} });
-    target.getState().recordComparison(target.getState().items[0]!.id, target.getState().items[1]!.id, 'left');
+    target.getState().recordComparison(openList(target).items[0]!.id, openList(target).items[1]!.id, 'left');
 
     target.getState().loadSession(session);
 

@@ -11,9 +11,11 @@ export type PreviewTab = 'ranked' | SourceFormat;
 export interface DataSource {
   /** How the text parsed. Also the default export format. */
   format: SourceFormat;
-  /** Exactly what the user gave us, so the data screen can show it back. */
-  rawText: string;
-  /** The parsed value, verbatim. A string[] when format is 'list'. */
+  /**
+   * The parsed value, verbatim. A string[] when format is 'list'. The text it
+   * came from is not kept: the data screen writes it back out from this, in
+   * the ranked order, which is the text worth showing.
+   */
   document: unknown;
   /** Path to the ranked array within document. Empty when document is the array. */
   arrayPath: string[];
@@ -81,13 +83,36 @@ export interface ListConfig {
   alreadyRanked: boolean;
 }
 
-export interface Workspace {
+/**
+ * One list in the document: how it is set up and everything ranked in it. A
+ * document can hold several rankable lists, and each one the user opens is
+ * kept here until the session ends, so moving between them never loses any.
+ */
+export interface RankedList {
+  /** Items and comparison events name the list they belong to by this. */
   id: string;
-  source: DataSource;
+  /** Where the list sits in the document. */
+  arrayPath: string[];
   roles: FieldRoles;
   /** True when the imported order is a trusted best-to-worst ranking, not an
    * arbitrary sequence - seeds initial ratings from it instead of flat 1500. */
   alreadyRanked: boolean;
+  /**
+   * True when this list's setup came from the data screen. False when it was
+   * derived from the document's listDefaults, which is what lets a later
+   * change to the defaults still reach it.
+   */
+  configuredExplicitly: boolean;
+  items: ListItem[];
+  comparisonEvents: ComparisonEvent[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** The document being ranked, and every list in it that has been opened. */
+export interface Workspace {
+  /** The user's document. Its arrayPath names the list open now. */
+  source: DataSource;
   /**
    * The answer every list in this document gets until it is set up on its
    * own. Held per document rather than read off whichever list is open, so
@@ -95,32 +120,8 @@ export interface Workspace {
    * untouched list inherits.
    */
   listDefaults: ListConfig;
-  /**
-   * True when this list's own setup came from the data screen. False when it
-   * was derived from listDefaults, which is what lets a later change to the
-   * defaults still reach it.
-   */
-  configuredExplicitly: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-/**
- * A list's ranking progress while a different list from the same document is
- * active. One document can hold several rankable lists, and moving between
- * them must not discard any of them - so each one that has been ranked stays
- * here until the user comes back to it.
- */
-export interface SavedList {
-  workspaceId: string;
-  arrayPath: string[];
-  roles: FieldRoles;
-  alreadyRanked: boolean;
-  /** See Workspace.configuredExplicitly - a list keeps its answer across a
-   *  switch, including whether that answer was ever the user's own. */
-  configuredExplicitly: boolean;
-  items: ListItem[];
-  comparisonEvents: ComparisonEvent[];
+  /** Keyed by pathKey of each list's arrayPath; always holds the open one. */
+  lists: Record<string, RankedList>;
   createdAt: string;
   updatedAt: string;
 }

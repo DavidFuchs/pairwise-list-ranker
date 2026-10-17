@@ -5,25 +5,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DataScreen from '@/app/index';
 import { listStore } from '@/lib/state/useListStore';
+import { openList } from '@/tests/helpers/lists';
 
 const replace = vi.fn();
 vi.mock('expo-router', () => ({ useRouter: () => ({ replace, push: vi.fn() }) }));
-
-const RAW = `- title: One
-  artist: A
-  album: X
-  year: 1999
-- title: Two
-  artist: B
-  album: Y
-  year: 2001
-`;
 
 function seed() {
   listStore.getState().startRanking({
     source: {
       format: 'yaml',
-      rawText: RAW,
       document: [
         { title: 'One', artist: 'A', album: 'X', year: 1999 },
         { title: 'Two', artist: 'B', album: 'Y', year: 2001 },
@@ -51,6 +41,6 @@ describe('re-ordering card details while editing data', () => {
     await user.click(screen.getByRole('button', { name: /apply edits/i }));
     await user.click(screen.getByRole('button', { name: /apply edits/i }));
 
-    expect(listStore.getState().workspace?.roles.summaryFields).toEqual(['year', 'artist', 'album']);
+    expect(openList(listStore).roles.summaryFields).toEqual(['year', 'artist', 'album']);
   });
 });

@@ -17,6 +17,7 @@ import { pathKey, samePath } from "@/lib/import/paths";
 import { isPlainObject } from "@/lib/import/shape";
 import type { ImportDiff, SettingsDiff } from "@/lib/import/diff";
 import { buildDraftSeed, selectConfigLines, selectRankedCoverages } from "@/lib/state/draft";
+import { activeList } from "@/lib/state/lists";
 import { selectRanking } from "@/lib/state/selectors";
 import { confirmOpenSession, hasDecisions, readSavedFile } from "@/lib/session/sessionFile";
 import { listStore, useListStore } from "@/lib/state/useListStore";
@@ -30,9 +31,6 @@ const EDITOR_MIN_WIDTH = 420;
 export default function DataScreen() {
   const router = useRouter();
   const workspace = useListStore((state) => state.workspace);
-  const items = useListStore((state) => state.items);
-  const comparisonEvents = useListStore((state) => state.comparisonEvents);
-  const savedLists = useListStore((state) => state.savedLists);
   const hydrated = useListStore((state) => state.hydrated);
   const resumed = useListStore((state) => state.resumed);
 
@@ -83,7 +81,7 @@ export default function DataScreen() {
       listStore.getState().loadSession(saved.session);
       router.replace("/rank");
     };
-    if (hasDecisions(listStore.getState())) {
+    if (hasDecisions(listStore.getState().workspace)) {
       setFileNotice({ confirm: confirmOpenSession(saved.session), onConfirm: open });
     } else {
       open();
@@ -125,10 +123,7 @@ export default function DataScreen() {
     draft.selectedPath !== null &&
     !samePath(workspace.source.arrayPath, draft.selectedPath);
 
-  const rankedCoverages = useMemo(
-    () => selectRankedCoverages(workspace, savedLists, items, comparisonEvents),
-    [savedLists, workspace, items, comparisonEvents],
-  );
+  const rankedCoverages = useMemo(() => selectRankedCoverages(workspace), [workspace]);
 
   // The order control shows "best to worst" whenever the selected list
   // already has a ranking percent, even if that came from real comparisons
@@ -157,7 +152,6 @@ export default function DataScreen() {
     () =>
       selectConfigLines(
         workspace,
-        savedLists,
         draft.analysis.document,
         draft.analysis.candidates,
         draft.selectedPath === null
@@ -166,7 +160,6 @@ export default function DataScreen() {
       ),
     [
       workspace,
-      savedLists,
       draft.analysis.document,
       draft.analysis.candidates,
       draft.selectedPath,
@@ -207,22 +200,18 @@ export default function DataScreen() {
       return;
     }
 
-    const workspaceConfig = {
-      roles: current.workspace!.roles,
-      alreadyRanked: current.workspace!.alreadyRanked,
-    };
+    const list = activeList(current.workspace!);
+    const workspaceConfig = { roles: list.roles, alreadyRanked: list.alreadyRanked };
 
     // Diffed against the order the text box was filled with - the ranking's
     // own order - not the order the entries were imported in. Otherwise every
     // list a comparison has moved reports an order change the user never made.
-    const shownOrder = selectRanking(
-      current.items,
-      current.comparisonEvents,
-      current.workspace!.alreadyRanked,
-    ).map((entry) => entry.item);
+    const shownOrder = selectRanking(list.items, list.comparisonEvents, list.alreadyRanked).map(
+      (entry) => entry.item,
+    );
 
     setPending({
-      diff: diffImport(shownOrder, draft.entries, current.comparisonEvents),
+      diff: diffImport(shownOrder, draft.entries, list.comparisonEvents),
       // Compared against what submitting actually applies below, which is the
       // draft's own answer rather than the order control's cosmetic guess.
       settings: diffSettings(workspaceConfig, {

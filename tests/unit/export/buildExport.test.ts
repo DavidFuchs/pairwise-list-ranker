@@ -17,7 +17,6 @@ function item(id: string, value: unknown, active = true): ListItem {
 
 const nestedSource: DataSource = {
   format: 'yaml',
-  rawText: '',
   document: {
     version: 3,
     owner: 'david',
@@ -113,7 +112,6 @@ describe('buildExportDocument', () => {
   it('leaves scalar entries alone even when a position field is set', () => {
     const listSource: DataSource = {
       format: 'list',
-      rawText: '',
       document: ['Alien', 'Arrival'],
       arrayPath: [],
     };
@@ -142,7 +140,6 @@ describe('buildExport', () => {
   it('serializes a plain list as one label per line', () => {
     const listSource: DataSource = {
       format: 'list',
-      rawText: '',
       document: ['Alien', 'Arrival'],
       arrayPath: [],
     };

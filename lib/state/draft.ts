@@ -6,55 +6,51 @@
 import { buildExport, buildExportDocument } from '@/lib/export/buildExport';
 import type { SourceDraftSeed } from '@/lib/hooks/useSourceDraft';
 import type { ArrayCandidate } from '@/lib/import/arrayCandidates';
-import { pathKey } from '@/lib/import/paths';
+import { pathKey, samePath } from '@/lib/import/paths';
+import { activeList, allLists } from '@/lib/state/lists';
 import { describeRoles, selectCoverage, selectListConfig, selectRanking } from '@/lib/state/selectors';
 import type { CoverageReading } from '@/lib/state/selectors';
 import type { ListState } from '@/lib/state/useListStore';
-import type { ListItem } from '@/types/list';
-import type { ComparisonEvent } from '@/types/ranking';
-import type { FieldRoles, SavedList, Workspace } from '@/types/source';
+import type { FieldRoles, Workspace } from '@/types/source';
 
 /**
- * Every list already known this session, for the "already ranked" default -
- * the workspace's own list plus anything parked in savedLists - and the
- * document rewritten so each list's array holds its *current* ranked order,
- * not the order it was imported in. Editing your data should show what
+ * Every list already known this session, for the "already ranked" default, and
+ * the document rewritten so each list's array holds its *current* ranked
+ * order, not the order it was imported in. Editing your data should show what
  * ranking made of it, the same way the export tabs already do.
  */
-export function buildDraftSeed(
-  state: Pick<ListState, 'workspace' | 'items' | 'comparisonEvents' | 'savedLists' | 'pendingSwitchPath'>,
-): SourceDraftSeed | undefined {
+export function buildDraftSeed(state: Pick<ListState, 'workspace' | 'pendingSwitchPath'>): SourceDraftSeed | undefined {
   const { workspace } = state;
   if (workspace === null) return undefined;
+  const open = activeList(workspace);
 
-  const knownLists: Record<string, boolean> = {
-    [pathKey(workspace.source.arrayPath)]: workspace.alreadyRanked,
-  };
-
+  const knownLists: Record<string, boolean> = {};
   let document = workspace.source.document;
-  for (const list of state.savedLists) {
+  for (const list of allLists(workspace)) {
     knownLists[pathKey(list.arrayPath)] = list.alreadyRanked;
+    if (list === open) continue;
     const ranking = selectRanking(list.items, list.comparisonEvents, list.alreadyRanked);
     document = buildExportDocument(
-      { format: workspace.source.format, rawText: '', document, arrayPath: list.arrayPath },
+      { format: workspace.source.format, document, arrayPath: list.arrayPath },
       list.roles,
       ranking.map((entry) => entry.item.value),
     );
   }
 
-  const activeRanking = selectRanking(state.items, state.comparisonEvents, workspace.alreadyRanked);
+  // The open list last, written into the text the screen opens with.
+  const ranking = selectRanking(open.items, open.comparisonEvents, open.alreadyRanked);
   const rawText = buildExport(
     { ...workspace.source, document },
-    workspace.roles,
-    activeRanking.map((entry) => entry.item),
+    open.roles,
+    ranking.map((entry) => entry.item),
     workspace.source.format,
   );
 
   return {
     rawText,
-    arrayPath: workspace.source.arrayPath,
-    roles: workspace.roles,
-    alreadyRanked: workspace.alreadyRanked,
+    arrayPath: open.arrayPath,
+    roles: open.roles,
+    alreadyRanked: open.alreadyRanked,
     knownLists,
     initialSelectedPath: state.pendingSwitchPath ?? undefined,
   };
@@ -62,29 +58,17 @@ export function buildDraftSeed(
 
 /**
  * Every list that already has a ranking percent earns a meter, whether that
- * came from real comparisons, from being declared already ranked, or both -
- * and whether it is the one currently active or one parked in savedLists
- * while another list is being worked on. Keyed by pathKey; a list with no
- * reading is absent.
+ * came from real comparisons, from being declared already ranked, or both, and
+ * whether it is open or not. Keyed by pathKey; a list with no reading is absent.
  */
-export function selectRankedCoverages(
-  workspace: Workspace | null,
-  savedLists: SavedList[],
-  items: ListItem[],
-  events: ComparisonEvent[],
-): Record<string, CoverageReading> {
+export function selectRankedCoverages(workspace: Workspace | null): Record<string, CoverageReading> {
   const coverages: Record<string, CoverageReading> = {};
+  if (workspace === null) return coverages;
 
-  for (const list of savedLists) {
+  for (const list of allLists(workspace)) {
     const coverage = selectCoverage(list.items, list.comparisonEvents, list.alreadyRanked);
     if (coverage !== undefined) coverages[pathKey(list.arrayPath)] = coverage;
   }
-
-  if (workspace !== null) {
-    const coverage = selectCoverage(items, events, workspace.alreadyRanked);
-    if (coverage !== undefined) coverages[pathKey(workspace.source.arrayPath)] = coverage;
-  }
-
   return coverages;
 }
 
@@ -103,7 +87,6 @@ export interface SelectedSetup {
  */
 export function selectConfigLines(
   workspace: Workspace | null,
-  savedLists: SavedList[],
   document: unknown,
   candidates: ArrayCandidate[],
   selected: SelectedSetup | null,
@@ -113,7 +96,10 @@ export function selectConfigLines(
 
   const lines: Record<string, string> = {};
   for (const candidate of candidates) {
-    const config = selectListConfig(scope, savedLists, candidate.path);
+    const config =
+      selected !== null && samePath(candidate.path, selected.path)
+        ? selected
+        : selectListConfig(scope, candidate.path);
     lines[pathKey(candidate.path)] = describeRoles(config.roles, config.alreadyRanked);
   }
   if (selected !== null) {

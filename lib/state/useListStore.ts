@@ -6,11 +6,11 @@ import { applyProgressFile } from '@/lib/progress/progressFile';
 import type { ProgressFile } from '@/lib/progress/progressFile';
 import { entriesAtPath } from '@/lib/import/arrayCandidates';
 import { diffImport } from '@/lib/import/diff';
-import { samePath } from '@/lib/import/paths';
 import { WORKSPACE_VERSION } from '@/lib/persistence/workspaceSnapshot';
 import type { WorkspaceSnapshot } from '@/lib/persistence/workspaceSnapshot';
 import { createWorkspaceStorage } from '@/lib/persistence/workspaceStorage';
 import type { SaveOutcome, WorkspaceStorage } from '@/lib/persistence/workspaceStorage';
+import { activeList, listAt, withList } from '@/lib/state/lists';
 import type { ActivePair } from '@/lib/state/selectors';
 import { selectCurrentPair, selectRanking } from '@/lib/state/selectors';
 import type { ListItem } from '@/types/list';
@@ -20,7 +20,7 @@ import type {
   FieldRoles,
   ListConfig,
   PreviewTab,
-  SavedList,
+  RankedList,
   Workspace,
 } from '@/types/source';
 
@@ -66,12 +66,8 @@ export interface StartInput {
 }
 
 export interface ListState {
+  /** The document and every list opened in it; see activeList for the open one. */
   workspace: Workspace | null;
-  items: ListItem[];
-  comparisonEvents: ComparisonEvent[];
-  /** Other lists from the same document, kept while a different one is
-   *  active - see SavedList. */
-  savedLists: SavedList[];
   previewTab: PreviewTab;
   persistenceAvailable: boolean;
   /** Why the last save did or did not happen, for the status line. */
@@ -87,7 +83,7 @@ export interface ListState {
    * Cleared once the data screen has read it.
    */
   pendingSwitchPath: string[] | null;
-  /** In memory only: undo does not survive a reload. */
+  /** The open list's steps back. In memory only: undo does not survive a reload. */
   undoStack: UndoEntry[];
 
   ranking(): RankedItem<ListItem>[];
@@ -97,10 +93,9 @@ export interface ListState {
   startRanking(input: StartInput): void;
   applyEdits(input: StartInput): void;
   /**
-   * Moves to a different list in the same document. The list being left is
-   * archived rather than discarded, and a list visited before is restored
-   * exactly as it was, so moving back and forth between lists never loses
-   * anything.
+   * Moves to a different list in the same document. Every list opened stays in
+   * the workspace, so moving back and forth between lists never loses
+   * anything, and a list visited before comes back exactly as it was.
    */
   switchList(input: StartInput): void;
   /**
@@ -172,16 +167,9 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
 
     /** Everything worth keeping, as the browser save and a session file both hold it. */
     function buildSnapshot(): WorkspaceSnapshot | null {
-      const { workspace, items, comparisonEvents, savedLists, previewTab } = get();
+      const { workspace, previewTab } = get();
       if (workspace === null) return null;
-      return {
-        version: WORKSPACE_VERSION,
-        workspace,
-        items,
-        comparisonEvents,
-        savedLists,
-        ui: { previewTab },
-      };
+      return { version: WORKSPACE_VERSION, workspace, ui: { previewTab } };
     }
 
     function writeSnapshot(): void {
@@ -212,6 +200,18 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       });
     }
 
+    /** The open list, with nothing loaded meaning nothing to change. */
+    function current(): { workspace: Workspace; list: RankedList } | null {
+      const { workspace } = get();
+      return workspace === null ? null : { workspace, list: activeList(workspace) };
+    }
+
+    /** Puts the open list back changed, and saves. */
+    function commitList(workspace: Workspace, list: RankedList, extra: Partial<ListState> = {}): void {
+      set({ workspace: withList(workspace, list), ...extra });
+      persist();
+    }
+
     function makeComparisonEvent(
       listId: string,
       leftItemId: string,
@@ -233,11 +233,40 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       };
     }
 
+    /** A list seen for the first time: its entries become fresh items, with no history. */
+    function makeList(
+      source: DataSource,
+      roles: FieldRoles,
+      alreadyRanked: boolean,
+      configuredExplicitly: boolean,
+    ): RankedList {
+      const id = createId();
+      const timestamp = now();
+      return {
+        id,
+        arrayPath: source.arrayPath,
+        roles,
+        alreadyRanked,
+        configuredExplicitly,
+        items: entriesAtPath(source.document, source.arrayPath).map((entry) => makeItem(id, entry)),
+        comparisonEvents: [],
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+    }
+
+    function isActiveItem(list: RankedList, id: string): boolean {
+      return list.items.some((item) => item.id === id && item.active);
+    }
+
+    /** Every item, with the one named switched on or off. */
+    function setItemActive(items: ListItem[], itemId: string, active: boolean): ListItem[] {
+      const timestamp = now();
+      return items.map((item) => (item.id === itemId ? { ...item, active, updatedAt: timestamp } : item));
+    }
+
     return {
       workspace: null,
-      items: [],
-      comparisonEvents: [],
-      savedLists: [],
       previewTab: 'ranked',
       persistenceAvailable: storage.available,
       saveOutcome: null,
@@ -247,13 +276,17 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       undoStack: [],
 
       ranking() {
-        const { items, comparisonEvents, workspace } = get();
-        return selectRanking(items, comparisonEvents, workspace?.alreadyRanked ?? false);
+        const { workspace } = get();
+        if (workspace === null) return [];
+        const list = activeList(workspace);
+        return selectRanking(list.items, list.comparisonEvents, list.alreadyRanked);
       },
 
       currentPair() {
-        const { items, comparisonEvents, workspace } = get();
-        return selectCurrentPair(items, comparisonEvents, workspace?.alreadyRanked ?? false);
+        const { workspace } = get();
+        if (workspace === null) return null;
+        const list = activeList(workspace);
+        return selectCurrentPair(list.items, list.comparisonEvents, list.alreadyRanked);
       },
 
       hydrate() {
@@ -267,54 +300,38 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
           set({ hydrated: true });
           return;
         }
-        set({
-          workspace: snapshot.workspace,
-          items: snapshot.items,
-          comparisonEvents: snapshot.comparisonEvents,
-          savedLists: snapshot.savedLists,
-          previewTab: snapshot.ui.previewTab,
-          hydrated: true,
-        });
+        set({ workspace: snapshot.workspace, previewTab: snapshot.ui.previewTab, hydrated: true });
       },
 
-      /** A fresh list: new workspace, new items, no history to carry over. */
+      /** A fresh document: one new list, no history to carry over. */
       startRanking({ source, roles, alreadyRanked = false }: StartInput) {
         const timestamp = now();
+        const list = makeList(source, roles, alreadyRanked, true);
         const workspace: Workspace = {
-          id: createId(),
           source,
-          roles,
-          alreadyRanked,
           // The first list the user sets up defines what the rest of the
           // document inherits, so there is never a document without an answer.
           listDefaults: { roles, alreadyRanked },
-          configuredExplicitly: true,
+          lists: {},
           createdAt: timestamp,
           updatedAt: timestamp,
         };
 
-        const entries = entriesAtPath(source.document, source.arrayPath);
-
-        set({
-          workspace,
-          items: entries.map((entry) => makeItem(workspace.id, entry)),
-          comparisonEvents: [],
-          previewTab: 'ranked',
-          undoStack: [],
-        });
+        set({ workspace: withList(workspace, list), previewTab: 'ranked', undoStack: [] });
         persist();
       },
 
       /**
-       * Edited data on the same workspace. Entries the user did not touch keep
+       * Edited data for the open list. Entries the user did not touch keep
        * their item id, and therefore their rating and their history.
        */
       applyEdits({ source, roles, alreadyRanked }: StartInput) {
-        const workspace = get().workspace;
-        if (workspace === null) return;
+        const open = current();
+        if (open === null) return;
+        const { workspace, list } = open;
 
         const entries = entriesAtPath(source.document, source.arrayPath);
-        const diff = diffImport(get().items, entries, get().comparisonEvents);
+        const diff = diffImport(list.items, entries, list.comparisonEvents);
         const kept = new Set(diff.kept.map((entry) => entry.item.id));
         const timestamp = now();
 
@@ -328,111 +345,53 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
          * still refer to them, and only active items are ever displayed.
          */
         const items: ListItem[] = [
-          ...diff.ordered.map(({ item, entry }) =>
-            item === null ? makeItem(workspace.id, entry) : item,
-          ),
-          ...get().items
+          ...diff.ordered.map(({ item, entry }) => (item === null ? makeItem(list.id, entry) : item)),
+          ...list.items
             .filter((item) => !kept.has(item.id))
-            .map((item) =>
-              item.active ? { ...item, active: false, updatedAt: timestamp } : item,
-            ),
+            .map((item) => (item.active ? { ...item, active: false, updatedAt: timestamp } : item)),
         ];
 
-        const settled = alreadyRanked ?? workspace.alreadyRanked;
-
-        set({
-          workspace: {
-            ...workspace,
-            source,
+        commitList(
+          { ...workspace, source, updatedAt: timestamp },
+          {
+            ...list,
             roles,
-            alreadyRanked: settled,
+            alreadyRanked: alreadyRanked ?? list.alreadyRanked,
             configuredExplicitly: true,
+            items,
             updatedAt: timestamp,
           },
-          items,
-          undoStack: [],
-        });
-        persist();
+          { undoStack: [] },
+        );
       },
 
-      /**
-       * Moves to a different list in the same document. The list being left
-       * is archived into savedLists instead of discarded; a list visited
-       * before in this session is restored byte-for-byte, ratings and all.
-       */
-      switchList({
-        source,
-        roles,
-        alreadyRanked = false,
-        configuredExplicitly = true,
-      }: StartInput) {
-        const { workspace, items, comparisonEvents, savedLists } = get();
+      switchList({ source, roles, alreadyRanked = false, configuredExplicitly = true }: StartInput) {
+        const { workspace } = get();
         if (workspace === null) {
           get().startRanking({ source, roles, alreadyRanked });
           return;
         }
 
         const timestamp = now();
-
-        const archived: SavedList = {
-          workspaceId: workspace.id,
-          arrayPath: workspace.source.arrayPath,
-          roles: workspace.roles,
-          alreadyRanked: workspace.alreadyRanked,
-          configuredExplicitly: workspace.configuredExplicitly,
-          items,
-          comparisonEvents,
-          createdAt: workspace.createdAt,
-          updatedAt: timestamp,
-        };
-        const otherSaved = savedLists.filter((list) => !samePath(list.arrayPath, workspace.source.arrayPath));
-        const restored = otherSaved.find((list) => samePath(list.arrayPath, source.arrayPath));
-        const listDefaults = workspace.listDefaults;
-
-        if (restored !== undefined) {
-          set({
-            workspace: {
-              id: restored.workspaceId,
-              source,
-              // The caller resolved these against the defaults already, so a
-              // list never set up by hand picks up any change made since it
-              // was parked - see selectListConfig.
-              roles,
-              alreadyRanked,
-              listDefaults,
-              // Once a list is the user's own answer, coming back to it from
-              // the switcher must not quietly hand it back to the defaults.
-              configuredExplicitly: restored.configuredExplicitly || configuredExplicitly,
-              createdAt: restored.createdAt,
-              updatedAt: timestamp,
-            },
-            items: restored.items,
-            comparisonEvents: restored.comparisonEvents,
-            savedLists: [...otherSaved.filter((list) => list !== restored), archived],
-            previewTab: 'ranked',
-            undoStack: [],
-          });
-          persist();
-          return;
-        }
-
-        const newWorkspace: Workspace = {
-          id: createId(),
-          source,
-          roles,
-          alreadyRanked,
-          listDefaults,
-          configuredExplicitly,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        };
-        const entries = entriesAtPath(source.document, source.arrayPath);
+        const visited = listAt(workspace, source.arrayPath);
+        const list: RankedList =
+          visited === undefined
+            ? makeList(source, roles, alreadyRanked, configuredExplicitly)
+            : {
+                ...visited,
+                // The caller resolved these against the defaults already, so a
+                // list never set up by hand picks up any change made since it
+                // was last open - see selectListConfig.
+                roles,
+                alreadyRanked,
+                // Once a list is the user's own answer, coming back to it from
+                // the switcher must not quietly hand it back to the defaults.
+                configuredExplicitly: visited.configuredExplicitly || configuredExplicitly,
+                updatedAt: timestamp,
+              };
 
         set({
-          workspace: newWorkspace,
-          items: entries.map((entry) => makeItem(newWorkspace.id, entry)),
-          comparisonEvents: [],
-          savedLists: [...otherSaved, archived],
+          workspace: withList({ ...workspace, source, updatedAt: timestamp }, list),
           previewTab: 'ranked',
           undoStack: [],
         });
@@ -448,20 +407,19 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       },
 
       /**
-       * A hand-arranged position becomes two ordinary comparisons against the
-       * item's new neighbours - the same rating nudge and progress credit one
-       * side-by-side pick would give, rather than discarding every comparison
-       * and re-seeding the whole list. The ranking stays a pure derivation of
-       * comparison history; a drag just adds to that history instead of
-       * replacing it.
+       * A hand-arranged position becomes one placement against the item's new
+       * neighbour - the same progress credit a side-by-side pick would give,
+       * rather than discarding every comparison and re-seeding the whole list.
+       * The ranking stays a pure derivation of comparison history; a drag just
+       * adds to that history instead of replacing it.
        */
       reorderItem(itemId: string, nextOrder: string[]) {
-        const { workspace, items, comparisonEvents } = get();
-        if (workspace === null) return;
+        const open = current();
+        if (open === null) return;
+        const { workspace, list } = open;
 
-        const isActive = (id: string) => items.some((item) => item.id === id && item.active);
         const index = nextOrder.indexOf(itemId);
-        if (index < 0 || !isActive(itemId)) return;
+        if (index < 0 || !isActiveItem(list, itemId)) return;
 
         const aboveId = index > 0 ? nextOrder[index - 1] : undefined;
         const belowId = index < nextOrder.length - 1 ? nextOrder[index + 1] : undefined;
@@ -470,19 +428,19 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         // top, directly below. Comparisons against the new neighbours would
         // move them too, and a single nudge rarely carries the item all the
         // way to where it was dropped.
-        const events: ComparisonEvent[] = [];
-        if (aboveId !== undefined && isActive(aboveId)) {
-          events.push(makeComparisonEvent(workspace.id, itemId, aboveId, 'place_below'));
-        } else if (belowId !== undefined && isActive(belowId)) {
-          events.push(makeComparisonEvent(workspace.id, itemId, belowId, 'place_above'));
+        let event: ComparisonEvent | null = null;
+        if (aboveId !== undefined && isActiveItem(list, aboveId)) {
+          event = makeComparisonEvent(list.id, itemId, aboveId, 'place_below');
+        } else if (belowId !== undefined && isActiveItem(list, belowId)) {
+          event = makeComparisonEvent(list.id, itemId, belowId, 'place_above');
         }
-        if (events.length === 0) return;
+        if (event === null) return;
 
-        set({
-          comparisonEvents: [...comparisonEvents, ...events],
-          undoStack: pushUndo({ kind: 'comparison', eventIds: events.map((entry) => entry.id) }),
-        });
-        persist();
+        commitList(
+          workspace,
+          { ...list, comparisonEvents: [...list.comparisonEvents, event] },
+          { undoStack: pushUndo({ kind: 'comparison', eventIds: [event.id] }) },
+        );
       },
 
       setPreviewTab(tab: PreviewTab) {
@@ -491,78 +449,76 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       },
 
       recordComparison(leftItemId: string, rightItemId: string, outcome: ComparisonOutcome) {
-        const { workspace, items, comparisonEvents } = get();
-        if (workspace === null || leftItemId === rightItemId) return;
+        const open = current();
+        if (open === null || leftItemId === rightItemId) return;
+        const { workspace, list } = open;
+        if (!isActiveItem(list, leftItemId) || !isActiveItem(list, rightItemId)) return;
 
-        const isRankable = (id: string) => items.some((item) => item.id === id && item.active);
-        if (!isRankable(leftItemId) || !isRankable(rightItemId)) return;
-
-        const event = makeComparisonEvent(workspace.id, leftItemId, rightItemId, outcome);
-        set({
-          comparisonEvents: [...comparisonEvents, event],
-          undoStack: pushUndo({ kind: 'comparison', eventIds: [event.id] }),
-        });
-        persist();
+        const event = makeComparisonEvent(list.id, leftItemId, rightItemId, outcome);
+        commitList(
+          workspace,
+          { ...list, comparisonEvents: [...list.comparisonEvents, event] },
+          { undoStack: pushUndo({ kind: 'comparison', eventIds: [event.id] }) },
+        );
       },
 
       /** Deleting never records a comparison: the pair simply goes away. */
       removeItem(itemId: string) {
-        const timestamp = now();
-        const wasActive = get().items.some((item) => item.id === itemId && item.active);
-        set({
-          undoStack: wasActive ? pushUndo({ kind: 'remove', itemId }) : get().undoStack,
-          items: get().items.map((item) =>
-            item.id === itemId ? { ...item, active: false, updatedAt: timestamp } : item,
-          ),
-        });
-        persist();
+        const open = current();
+        if (open === null) return;
+        const { workspace, list } = open;
+
+        const wasActive = isActiveItem(list, itemId);
+        commitList(
+          workspace,
+          { ...list, items: setItemActive(list.items, itemId, false) },
+          { undoStack: wasActive ? pushUndo({ kind: 'remove', itemId }) : get().undoStack },
+        );
       },
 
       undo() {
+        const open = current();
         const entry = get().undoStack.at(-1);
-        if (entry === undefined) return;
+        if (open === null || entry === undefined) return;
+        const { workspace, list } = open;
         const undoStack = get().undoStack.slice(0, -1);
 
         if (entry.kind === 'comparison') {
           const gone = new Set(entry.eventIds);
-          set({
-            comparisonEvents: get().comparisonEvents.filter((event) => !gone.has(event.id)),
-            undoStack,
-          });
+          commitList(
+            workspace,
+            { ...list, comparisonEvents: list.comparisonEvents.filter((event) => !gone.has(event.id)) },
+            { undoStack },
+          );
         } else {
-          const timestamp = now();
-          set({
-            items: get().items.map((item) =>
-              item.id === entry.itemId ? { ...item, active: true, updatedAt: timestamp } : item,
-            ),
-            undoStack,
-          });
+          commitList(workspace, { ...list, items: setItemActive(list.items, entry.itemId, true) }, { undoStack });
         }
-        persist();
       },
 
       loadProgress(file: ProgressFile): ProgressLoadResult {
-        const { workspace, items } = get();
-        if (workspace === null) {
+        const open = current();
+        if (open === null) {
           return { matchedEvents: 0, unmatchedEvents: 0, removed: 0, unmatchedRemoved: 0 };
         }
+        const { workspace, list } = open;
 
-        const applied = applyProgressFile(file, items, workspace.id, createId);
+        const applied = applyProgressFile(file, list.items, list.id, createId);
         const removed = new Set(applied.removedIds);
         const timestamp = now();
 
-        set({
-          comparisonEvents: applied.events,
-          // Removals only ever add: an item inactive here may have been
-          // dropped by an edit of the document, and is not the file's to revive.
-          items: items.map((item) =>
-            item.active && removed.has(item.id)
-              ? { ...item, active: false, updatedAt: timestamp }
-              : item,
-          ),
-          undoStack: [],
-        });
-        persist();
+        commitList(
+          workspace,
+          {
+            ...list,
+            comparisonEvents: applied.events,
+            // Removals only ever add: an item inactive here may have been
+            // dropped by an edit of the document, and is not the file's to revive.
+            items: list.items.map((item) =>
+              item.active && removed.has(item.id) ? { ...item, active: false, updatedAt: timestamp } : item,
+            ),
+          },
+          { undoStack: [] },
+        );
 
         return {
           matchedEvents: applied.matchedEvents,
@@ -580,9 +536,6 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
         cancelPendingSave();
         set({
           workspace: session.workspace,
-          items: session.items,
-          comparisonEvents: session.comparisonEvents,
-          savedLists: session.savedLists,
           previewTab: session.ui.previewTab,
           // History from before belongs to the list being replaced.
           undoStack: [],
@@ -616,9 +569,6 @@ export function createListStore(options: ListStoreOptions = {}): ListStore {
       reset() {
         set({
           workspace: null,
-          items: [],
-          comparisonEvents: [],
-          savedLists: [],
           previewTab: 'ranked',
           saveOutcome: null,
           lastSavedAt: undefined,
