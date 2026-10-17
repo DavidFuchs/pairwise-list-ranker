@@ -419,6 +419,24 @@ test('a phone-width screen never scrolls sideways', async ({ page }) => {
   expect(await overflowsX()).toBe(false);
 });
 
+/**
+ * Where an element comes to rest. A new pair lays out over a frame or two, and
+ * under load a single reading can catch it part way; the settled position is
+ * the one a pointer aims at.
+ */
+async function settledTop(locator: import('@playwright/test').Locator): Promise<number> {
+  let previous: number | null = null;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const box = await locator.boundingBox();
+    if (box === null) throw new Error('Expected the element to be laid out.');
+    const top = Math.round(box.y);
+    if (top === previous) return top;
+    previous = top;
+    await locator.page().waitForTimeout(100);
+  }
+  throw new Error('The element never settled.');
+}
+
 test('the controls under the cards never move up from one pair to the next', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByRole('button', { name: 'Load the movies sample' }).click();
@@ -428,9 +446,7 @@ test('the controls under the cards never move up from one pair to the next', asy
   const positions: number[] = [];
   for (let pair = 0; pair < 10; pair += 1) {
     await expect(page.getByLabel(/^Choose /).first()).toBeVisible();
-    const box = await skip.boundingBox();
-    if (box === null) throw new Error('Expected Skip to be laid out.');
-    positions.push(Math.round(box.y));
+    positions.push(await settledTop(skip));
     await page.keyboard.press(pair % 2 === 0 ? 'ArrowLeft' : 'ArrowRight');
     await expect(page.getByText(new RegExp(`^${pair + 1} comparisons ·`))).toBeVisible();
   }
@@ -469,4 +485,21 @@ test('on a phone, the setup screen keeps its main button on screen', async ({ pa
 
   await start.click();
   await expect(page).toHaveURL(/\/rank$/);
+});
+
+test('on a phone, the setup screen scrolls as one page', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await expect(page.getByText('What we found')).toBeVisible();
+
+  // Only the page itself scrolls: no box inside it with a scroll of its own.
+  const scrollers = await page.evaluate(
+    () =>
+      [...document.querySelectorAll('div')].filter(
+        (el) =>
+          el.scrollHeight > el.clientHeight + 10 &&
+          ['auto', 'scroll'].includes(getComputedStyle(el).overflowY),
+      ).length,
+  );
+  expect(scrollers).toBe(1);
 });

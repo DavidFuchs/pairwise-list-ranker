@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ArrayPicker } from '@/components/data/ArrayPicker';
@@ -79,7 +80,7 @@ export function FoundPanel({
   });
 
   return (
-    <View style={styles.panel} dataSet={{ surface: 'panel' }}>
+    <View style={[styles.panel, docked && styles.panelDocked]} dataSet={{ surface: 'panel' }}>
       <View style={styles.header}>
         <Text style={styles.title}>What we found</Text>
         <Text style={styles.subtitle}>
@@ -91,7 +92,9 @@ export function FoundPanel({
         </Text>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.body}>
+      {/* Docked on a phone, the panel runs with the page; scrolling inside it
+          as well would leave two scrolls under one thumb. */}
+      <Settings docked={docked}>
         <ArrayPicker
           candidates={analysis.candidates}
           value={selectedPath}
@@ -143,13 +146,24 @@ export function FoundPanel({
             </Text>
           </View>
         )}
-      </ScrollView>
+      </Settings>
 
       {/* On a phone the shell docks this at the bottom of the window instead. */}
       {!docked && (
         <StartCta label={ctaLabel} reason={readiness.reason} ready={readiness.ready} onSubmit={onSubmit} />
       )}
     </View>
+  );
+}
+
+/** The panel's settings: their own scroll in a sidebar, plain content when docked. */
+function Settings({ docked, children }: { docked: boolean; children: ReactNode }) {
+  return docked ? (
+    <View style={styles.bodyDocked}>{children}</View>
+  ) : (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.body}>
+      {children}
+    </ScrollView>
   );
 }
 
@@ -174,6 +188,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
+  // Sized by its content, which the page scrolls, rather than filling a column.
+  panelDocked: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto' },
+  bodyDocked: { gap: space.md },
   header: { gap: 2 },
   scroll: { flex: 1, minHeight: 0, marginHorizontal: -space.lg },
   body: { gap: space.md, paddingHorizontal: space.lg },

@@ -369,6 +369,9 @@ export function AppShell({
                   },
                 ],
                 layout === 'stacked' && styles.previewStacked,
+                // A docked sidebar has handed its action to the dock, so it can
+                // run its full length with the page rather than scroll inside it.
+                docking && styles.previewFitsContent,
               ]}
               role="complementary"
             >
@@ -490,6 +493,7 @@ const styles = StyleSheet.create({
   },
   previewSplit: { flexShrink: 0, flexBasis: 'auto', minWidth: 0 },
   previewStacked: { flexShrink: 0, flexBasis: 'auto', minWidth: 0 },
+  previewFitsContent: { height: 'auto' as unknown as number, minHeight: 0 },
   dropOverlay: {
     flex: 1,
     alignItems: 'center',

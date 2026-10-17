@@ -50,7 +50,7 @@ It falls short in three places:
 | 16 | Keep rating bars inside narrow cards | Polish | Low | Open |
 | 17 | Match the Start over prompt's spoken names to its labels | Accessibility | Low | Done |
 | 18 | Calmer placement for Start over | Trust | Low | Open |
-| 19 | Stop the setup panel scrolling inside the page on phones | Phone | Medium | Open |
+| 19 | Stop the setup panel scrolling inside the page on phones | Phone | Medium | Done |
 
 Suggested order: 1 and 4 first (small, and one is a bug), then 5, 7 and 2,
 which matter most to how the app feels, then the rest.
@@ -132,6 +132,10 @@ the wrong one, and the panel's last settings sit behind its own scroll.
 
 Fix: once the columns stack, let the panel take the height of its content and
 scroll with the page.
+
+Done: while the shell is docking, the sidebar takes the height of its content
+and the panel lays its settings out without a scroll of its own. The rank
+screen keeps its bounded sidebar, which its windowed list needs.
 
 ## Trust
 
