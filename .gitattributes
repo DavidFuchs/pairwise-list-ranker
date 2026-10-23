@@ -1,0 +1,6 @@
+# The repo stores LF and every checkout gets LF, whatever core.autocrlf says.
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.jpg binary

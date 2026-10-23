@@ -1,0 +1,485 @@
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { ObjectDrilldown } from '@/components/comparison/ObjectDrilldown';
+import { FieldGallery } from '@/components/preview/FieldGallery';
+import { FieldValue } from '@/components/preview/FieldValue';
+import { PreviewButton } from '@/components/preview/PreviewButton';
+import { StrongChoiceButton } from '@/components/comparison/StrongChoiceButton';
+import { TrashIcon } from '@/components/ui/TrashIcon';
+import { useReducedMotion } from '@/lib/hooks/useReducedMotion';
+import { selectItemLabel } from '@/lib/state/selectors';
+import { EMPTY_LAYOUT, formatValue, itemPictures, itemPreviewSources } from '@/lib/renderers';
+import type { CardLayout } from '@/lib/renderers';
+import { colors, fonts, motion, radius, space, typeScale } from '@/lib/theme';
+import { fieldOf, isComplexItemValue } from '@/types/list';
+import type { ListItem } from '@/types/list';
+
+/** The picture beside the title, when a field is drawn as an image. */
+const IMAGE_SIZE = 112;
+/** The picture on a compact card, small enough that two cards share a phone screen. */
+const COMPACT_IMAGE_SIZE = 72;
+/** The row of a card's own actions: the trash can and Much better. */
+const ACTIONS_MIN_HEIGHT = 40;
+/**
+ * What a card on the ranking screen adds under its content for those actions,
+ * rule and spacing included, which a preview card leaves out.
+ */
+export const CARD_ACTIONS_HEIGHT = space.md * 2 + 1 + ACTIONS_MIN_HEIGHT;
+
+export interface ItemCardProps {
+  item: ListItem;
+  side: 'left' | 'right';
+  /** Which fields the card draws, and how; see cardLayout. */
+  layout?: CardLayout;
+  /**
+   * Details are shown or hidden for the pair, not per card: comparing one
+   * item's details against the other's summary is not a comparison anyone
+   * wants. The deck owns the state.
+   */
+  expanded?: boolean;
+  /**
+   * For wherever the pair stacks: a smaller picture and title, and the chosen
+   * fields wrapped side by side under them rather than a line each, so both
+   * cards fit on one screen. Every chosen field still shows: the setup screen
+   * previews these cards, and a card that drops fields would not match it.
+   */
+  compact?: boolean;
+  /** The heading level of the card's title, under whatever heading holds the card. */
+  titleLevel?: 2 | 3;
+  /**
+   * Each card carries its own actions, so a decision is made on the thing being
+   * decided about rather than in a detached row of buttons.
+   */
+  onChoose?: () => void;
+  onChooseStrong?: () => void;
+  onRequestDelete?: () => void;
+  onConfirmDelete?: () => void;
+  onCancelDelete?: () => void;
+  /** True while this card is waiting for the user to confirm a delete. */
+  pendingDelete?: boolean;
+  /**
+   * True while "Don't recognize…" is armed: the card is highlighted, pressing
+   * it marks the item instead of choosing it, and the actions that would
+   * answer or remove it are hidden so they cannot be hit by mistake.
+   */
+  recognizeArmed?: boolean;
+}
+
+export function ItemCard({
+  item,
+  side,
+  layout = EMPTY_LAYOUT,
+  expanded = false,
+  compact = false,
+  titleLevel = 2,
+  onChoose,
+  onChooseStrong,
+  onRequestDelete,
+  onConfirmDelete,
+  onCancelDelete,
+  pendingDelete = false,
+  recognizeArmed = false,
+}: ItemCardProps) {
+  const reducedMotion = useReducedMotion();
+  const [opacity] = useState(() => new Animated.Value(1));
+  const confirmRef = useRef<View | null>(null);
+  const removeRef = useRef<View | null>(null);
+  /** True while the confirmation below holds the focus this card took. */
+  const tookFocus = useRef(false);
+
+  // Fade the replacement card in after each decision, so the swap reads as a
+  // new pair rather than text mutating in place.
+  useEffect(() => {
+    if (reducedMotion) {
+      opacity.setValue(1);
+      return;
+    }
+    opacity.setValue(0);
+    const animation = Animated.timing(opacity, {
+      toValue: 1,
+      duration: motion.cardSwapMs,
+      useNativeDriver: false,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [item.id, opacity, reducedMotion]);
+
+  // The confirmation replaces the button that opened it, which would drop
+  // focus onto the document body and restart tabbing from the top of the
+  // page. Focus follows the prompt in, and comes back to the trash can when
+  // the prompt goes away without taking the card with it.
+  useEffect(() => {
+    if (pendingDelete) {
+      focusNode(confirmRef.current);
+      tookFocus.current = true;
+    } else if (tookFocus.current) {
+      tookFocus.current = false;
+      focusNode(removeRef.current);
+    }
+  }, [pendingDelete]);
+
+  const { labelField, plainFields, renderers, pictureFields, mediaFields } = layout;
+  const label = selectItemLabel(item, labelField);
+  const fields = isComplexItemValue(item.value) ? Object.entries(item.value) : [];
+  const detailFields = fields.filter(([key]) => key !== labelField);
+  const raw = (field: string) => fieldOf(item, field);
+  // Only the fields the user ticked, and every one of them, so both cards of a
+  // pair show the same keys and an item without one says so instead of
+  // silently dropping it. A false badge is the one line meant to say nothing.
+  const chips = plainFields.filter((field) => formatValue(raw(field), renderers[field], field) !== null);
+  const pictures = itemPictures(raw, pictureFields, renderers);
+  const sources = itemPreviewSources(raw, mediaFields, renderers);
+  const hasPicture = pictureFields.length > 0;
+  const interactive = onChoose !== undefined;
+  const canChoose = interactive && !pendingDelete;
+
+  // The fields the user chose stay through the details: they are the part
+  // asked to always be seen.
+  const fieldChips = chips.length > 0 && (
+    <View style={compact ? styles.chipRow : styles.chipColumn}>
+      {chips.map((field) => (
+        <View key={field} style={[styles.chip, renderers[field] === 'long-text' && styles.chipBlock]}>
+          <FieldValue
+            field={field}
+            value={raw(field)}
+            renderer={renderers[field]}
+            withKey
+            textStyle={styles.chipText}
+          />
+        </View>
+      ))}
+    </View>
+  );
+
+  return (
+    <Animated.View
+      style={[
+        styles.card,
+        recognizeArmed && styles.cardRecognizeArmed,
+        { flexBasis: cardFlexBasis(hasPicture), opacity },
+      ]}
+      dataSet={{ surface: 'card' }}
+    >
+      <Pressable
+        // Not accessibilityRole="button": the card contains real buttons
+        // (delete, confirm/cancel, "Much better"), and a <button> can't
+        // legally contain another <button> on web. A group may carry a name
+        // where an element with no role may not, so screen readers read it.
+        role="group"
+        accessibilityLabel={
+          canChoose
+            ? `${recognizeArmed ? "Don't recognize" : 'Choose'} ${label}`
+            : `${side === 'left' ? 'Left' : 'Right'} option: ${label}`
+        }
+        // Disabled only while a choice is held back by a pending delete. A
+        // card with nothing to choose (a preview) is not disabled, which
+        // would mark its gallery, play button and links disabled too; it
+        // just leaves the tab route.
+        disabled={interactive && !canChoose}
+        tabIndex={canChoose ? 0 : -1}
+        onPress={canChoose ? onChoose : undefined}
+        style={({ pressed }) => [
+          styles.pressArea,
+          // A compact card takes only the height it needs: on a phone, height is
+          // what decides whether both cards fit on the screen.
+          interactive && !compact && styles.pressAreaInteractive,
+          canChoose && pressed && styles.pressed,
+        ]}
+      >
+        {/*
+        The title leads the card. Which side it is on is self-evident from
+        where it sits, so nothing precedes it.
+      */}
+        {canChoose && !compact && (
+          <View style={styles.hintBar}>
+            <Text style={styles.hint}>{recognizeArmed ? "Don't recognize this one" : 'Click to choose'}</Text>
+          </View>
+        )}
+
+        <View style={styles.headline}>
+          {hasPicture && (
+            <FieldGallery
+              key={item.id}
+              pictures={pictures}
+              size={compact ? COMPACT_IMAGE_SIZE : IMAGE_SIZE}
+              label={label}
+            />
+          )}
+          <View style={styles.headlineBody}>
+            <View style={styles.topRow}>
+              <Text
+                style={[styles.title, compact && styles.titleCompact]}
+                numberOfLines={4}
+                role="heading"
+                aria-level={titleLevel}
+              >
+                {label}
+              </Text>
+
+              {sources.length > 0 && <PreviewButton sources={sources} label={label} compact />}
+            </View>
+
+            {!compact && fieldChips}
+          </View>
+        </View>
+
+        {/* Under the picture as well as the title: on a narrow card that
+          width is what keeps the fields from running long. */}
+        {compact && fieldChips}
+
+        {expanded && detailFields.length > 0 && isComplexItemValue(item.value) && (
+          <View style={styles.detailsBlock}>
+            <ObjectDrilldown value={item.value} omitField={labelField} />
+          </View>
+        )}
+
+        {interactive && (
+          <View style={styles.footer}>
+            {pendingDelete ? (
+              <View
+                ref={confirmRef}
+                accessibilityRole="alert"
+                // Focusable only to receive focus from the code above: it is
+                // a prompt, not a stop on the tab route.
+                tabIndex={-1}
+                style={styles.confirm}
+              >
+                <Text
+                  style={styles.confirmText}
+                >{`Remove "${label}" from the list? If you don't know it, use Don't recognize… instead.`}</Text>
+                <View style={styles.confirmActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Keep ${label}`}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      onCancelDelete?.();
+                    }}
+                    style={styles.confirmCancel}
+                  >
+                    <Text style={styles.confirmCancelText}>Keep</Text>
+                    <Text style={styles.confirmKey}>Esc</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Confirm deleting ${label}`}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      onConfirmDelete?.();
+                    }}
+                    style={styles.confirmDelete}
+                  >
+                    <Text style={styles.confirmDeleteText}>Remove</Text>
+                    <Text style={[styles.confirmKey, styles.confirmDeleteKey]}>Enter</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.actions}>
+                {/* Bottom left, away from the play button at the top and the
+                  strong choice on the right, so neither is ever a slip away
+                  from removing the item. Both go while "don't recognize" is
+                  armed; the row keeps its height so the card does not jump. */}
+                {!recognizeArmed && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Delete ${label}`}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      onRequestDelete?.();
+                    }}
+                    ref={removeRef}
+                    dataSet={{ remove: 'card' }}
+                    style={styles.removeButton}
+                  >
+                    <TrashIcon />
+                  </Pressable>
+                )}
+
+                {!recognizeArmed && onChooseStrong !== undefined && (
+                  <StrongChoiceButton label={label} onPress={onChooseStrong} />
+                )}
+              </View>
+            )}
+          </View>
+        )}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+/**
+ * Focus is a web notion, and these refs are DOM nodes there. On native the
+ * calls are no-ops, which is the right answer: there is no tab route to keep.
+ */
+function focusNode(node: View | null): void {
+  (node as unknown as HTMLElement | null)?.focus?.();
+}
+
+/**
+ * The width a card asks for before growing. Flex-wrap breaks the line on this
+ * figure, not on minWidth, so the deck uses it to decide when the pair stacks.
+ * A picture beside the title takes its own width out of the card, so a card
+ * with one asks for that much more: otherwise the title and details are left
+ * a sliver beside it before the pair ever stacks.
+ */
+export function cardFlexBasis(hasPicture: boolean): number {
+  return 280 + (hasPicture ? IMAGE_SIZE + space.md : 0);
+}
+
+const styles = StyleSheet.create({
+  card: {
+    flexGrow: 1,
+    flexShrink: 1,
+    // Kept to the text-only figure even with a picture, so a stacked card
+    // still fits a phone; the basis above is what decides the stacking.
+    minWidth: 250,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  // Armed to mark: the whole card reads as the thing about to be set aside.
+  cardRecognizeArmed: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
+  /**
+   * The whole card is the choice, so the press target fills it. Padding lives
+   * here rather than on the card so there is no dead border to click.
+   */
+  pressArea: {
+    flex: 1,
+    gap: space.md,
+    padding: space.lg,
+    borderRadius: radius.lg,
+  },
+  // The card is the tap target, so it keeps a substantial presence even when
+  // the item is a bare string with nothing to show but its name. Without it
+  // the footer rule rides up under the title and reads as an underline. A
+  // preview has no footer, so it takes only the height its content needs.
+  pressAreaInteractive: { minHeight: 230 },
+  pressed: { backgroundColor: colors.accentSoft },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: space.sm,
+  },
+  removeButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+  },
+  title: {
+    flex: 1,
+    ...typeScale.cardTitle,
+    fontFamily: fonts.heading,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+    color: colors.textPrimary,
+  },
+  titleCompact: { fontSize: 19, lineHeight: 23 },
+  // The picture sits to the left of everything it illustrates; the footer
+  // below still spans the card.
+  headline: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
+  headlineBody: { flex: 1, minWidth: 0, gap: space.md },
+  // Chosen fields each get a line, so both cards of a pair line up row for row.
+  chipColumn: { flexDirection: 'column', alignItems: 'flex-start', gap: space.xs },
+  // A compact card trades that line-up for height: the fields run on as wrapping
+  // pills, each its own pill so where one field ends stays plain.
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: space.xs },
+  chip: {
+    maxWidth: '100%',
+    paddingVertical: 4,
+    paddingHorizontal: 9,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceMuted,
+  },
+  // Prose does not fit a pill: it reads as a block with softer corners, on a
+  // line of its own among wrapping pills too.
+  chipBlock: { alignSelf: 'stretch', width: '100%', borderRadius: radius.sm, paddingVertical: 6 },
+  chipText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    lineHeight: 16,
+    color: colors.textSecondary,
+  },
+  detailsBlock: { gap: space.sm },
+  // Pinned to the bottom so both cards line their actions up, whatever height
+  // their content takes.
+  footer: {
+    marginTop: 'auto',
+    paddingTop: space.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: space.sm,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.sm,
+    minHeight: ACTIONS_MIN_HEIGHT,
+  },
+  // Above everything it describes, set like the app's other small labels.
+  hintBar: {
+    alignItems: 'center',
+    paddingBottom: space.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  hint: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: colors.textFaint,
+  },
+  confirm: {
+    gap: space.sm,
+    padding: space.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.dangerSoftBorder,
+    backgroundColor: colors.dangerSoft,
+  },
+  confirmText: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.dangerText },
+  confirmActions: { flexDirection: 'row', gap: space.xs },
+  confirmCancel: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 34,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  confirmCancelText: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
+  confirmDelete: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 34,
+    borderRadius: radius.sm,
+    backgroundColor: colors.danger,
+  },
+  confirmDeleteText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'var(--danger-on-fill)',
+  },
+  /**
+   * The delete is the one action here that can be reached two ways - the
+   * trash can and D then L or R - so the keys that answer it are written on
+   * the buttons rather than left to be guessed.
+   */
+  confirmKey: { fontFamily: fonts.mono, fontSize: 10, color: colors.textFaint },
+  confirmDeleteKey: { color: 'var(--danger-on-fill)', opacity: 0.7 },
+});
