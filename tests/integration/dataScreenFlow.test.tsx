@@ -178,6 +178,7 @@ describe('the samples', () => {
     await user.click(screen.getByRole('radio', { name: /read the text as a plain list/i }));
     await user.click(screen.getByRole('button', { name: /load the movies sample/i }));
 
-    expect(screen.getByText('Read as YAML.')).toBeDefined();
+    expect(screen.getByText('Format').parentElement?.textContent).toBe('FormatYAML');
+    expect(screen.getByText('Items').parentElement?.textContent).toBe('Items10');
   });
 });

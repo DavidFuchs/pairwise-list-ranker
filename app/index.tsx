@@ -12,11 +12,13 @@ import { useScreenFocused } from '@/lib/hooks/useScreenFocused';
 import { useSourceDraft } from '@/lib/hooks/useSourceDraft';
 import { readTextFile } from '@/lib/browser/fileText';
 import { MIN_RANKABLE } from '@/lib/import/arrayCandidates';
+import type { ArrayCandidate } from '@/lib/import/arrayCandidates';
 import { readSavedFile } from '@/lib/session/sessionFile';
 import { pasteSeed } from '@/lib/state/draft';
 import { pasteDraft } from '@/lib/state/pasteDraft';
 import { listStore, useListStore } from '@/lib/state/useListStore';
 import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
+import type { SourceFormat } from '@/types/source';
 
 /** Whether the text holds a list worth ranking, and if not, the next thing to do. */
 function continueState(
@@ -38,21 +40,68 @@ function continueState(
   return { ready: true };
 }
 
+const FORMAT_NAMES: Record<SourceFormat, string> = {
+  list: 'Plain list',
+  yaml: 'YAML',
+  json: 'JSON',
+};
+
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`;
+}
+
+/** What was found in the text: its format, and each list with its item count. */
+function ListDetails({ format, candidates }: { format: SourceFormat; candidates: ArrayCandidate[] }) {
+  const total = candidates.reduce((sum, candidate) => sum + candidate.count, 0);
+  return (
+    <View style={styles.details}>
+      <View style={styles.row}>
+        <Text style={styles.label}>Format</Text>
+        <Text style={styles.value}>{FORMAT_NAMES[format]}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>Lists found</Text>
+        <Text style={styles.value}>{candidates.length}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>Items</Text>
+        <Text style={styles.value}>{total}</Text>
+      </View>
+      {candidates.length > 1 &&
+        candidates.map((candidate) => (
+          <View key={candidate.path.join('.')} style={styles.row}>
+            <Text style={styles.listName} numberOfLines={1}>
+              {candidate.path.join(' / ') || 'List'}
+            </Text>
+            <Text style={styles.listCount}>{plural(candidate.count, 'item')}</Text>
+          </View>
+        ))}
+    </View>
+  );
+}
+
 /** The sidebar's copy of the way forward; the dock holds it on a narrow screen. */
 function ContinuePanel({
   reason,
   ready,
   onSubmit,
+  details,
 }: {
   reason?: string;
   ready: boolean;
   onSubmit: () => void;
+  details: { format: SourceFormat; candidates: ArrayCandidate[] } | null;
 }) {
   const docked = useShellDocking();
   if (docked) return null;
   return (
     <View style={styles.panel} dataSet={{ surface: 'panel' }}>
       <Text style={styles.panelTitle}>Your list</Text>
+      {details === null ? (
+        <Text style={styles.empty}>Nothing to read yet.</Text>
+      ) : (
+        <ListDetails format={details.format} candidates={details.candidates} />
+      )}
       <StartCta label="Continue" reason={reason} ready={ready} onSubmit={onSubmit} />
     </View>
   );
@@ -178,7 +227,6 @@ export default function PasteScreen() {
                 }}
                 override={draft.override}
                 onOverrideChange={draft.setOverride}
-                format={draft.analysis.format}
                 issues={issues}
                 availableOverrides={draft.availableOverrides}
               />
@@ -186,7 +234,18 @@ export default function PasteScreen() {
             {fileNotice !== null && <FileNotice notice={fileNotice} onDismiss={() => setFileNotice(null)} />}
           </>
         }
-        preview={<ContinuePanel reason={next.reason} ready={next.ready} onSubmit={handleContinue} />}
+        preview={
+          <ContinuePanel
+            reason={next.reason}
+            ready={next.ready}
+            onSubmit={handleContinue}
+            details={
+              rawTextIsBlank || issues.length > 0
+                ? null
+                : { format: draft.analysis.format, candidates: draft.analysis.candidates }
+            }
+          />
+        }
       />
     </>
   );
@@ -202,6 +261,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
+  details: { gap: space.xs },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: space.sm },
+  label: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
+  value: { fontFamily: fonts.body, fontSize: 13, fontWeight: '600', color: colors.textPrimary },
+  listName: { flexShrink: 1, fontFamily: fonts.body, fontSize: 12, color: colors.textFaint },
+  listCount: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint },
+  empty: { fontFamily: fonts.body, fontSize: 13, color: colors.textFaint },
   panelTitle: {
     ...typeScale.sectionTitle,
     fontFamily: fonts.heading,

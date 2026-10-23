@@ -23,8 +23,6 @@ export interface SourceInputProps {
   onFile?: (file: File) => void;
   override: FormatOverride;
   onOverrideChange: (next: FormatOverride) => void;
-  /** The format actually in use, whether detected or forced. */
-  format: SourceFormat;
   issues: ParseIssue[];
   /** Which format tabs the current data honestly supports. */
   availableOverrides?: FormatOverride[];
@@ -37,12 +35,6 @@ const OVERRIDES: { key: FormatOverride; label: string; accessibilityLabel: strin
   { key: 'json', label: 'JSON', accessibilityLabel: 'Read the text as JSON' },
 ];
 
-const FORMAT_NAMES: Record<SourceFormat, string> = {
-  list: 'a plain list',
-  yaml: 'YAML',
-  json: 'JSON',
-};
-
 export function SourceInput({
   value,
   onChange,
@@ -50,7 +42,6 @@ export function SourceInput({
   onSample,
   override,
   onOverrideChange,
-  format,
   issues,
   availableOverrides = OVERRIDES.map((option) => option.key),
 }: SourceInputProps) {
@@ -128,10 +119,6 @@ export function SourceInput({
         </View>
       </View>
 
-      {value.trim() !== '' && issues.length === 0 && (
-        <Text style={styles.detected}>{`Read as ${FORMAT_NAMES[format]}.`}</Text>
-      )}
-
       {issues.map((issue, index) => (
         <Text key={`${issue.path}-${index}`} role="alert" style={styles.issue}>
           {issue.line === undefined ? issue.message : `Line ${issue.line}: ${issue.message}`}
@@ -207,6 +194,5 @@ const styles = StyleSheet.create({
   },
   sampleLabel: { fontFamily: fonts.body, fontSize: 12, fontWeight: '600', color: colors.textPrimary },
   sampleDetail: { fontFamily: fonts.body, fontSize: 11, color: colors.textFaint },
-  detected: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint },
   issue: { fontFamily: fonts.body, fontSize: 13, color: colors.dangerText },
 });

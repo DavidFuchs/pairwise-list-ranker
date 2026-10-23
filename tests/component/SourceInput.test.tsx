@@ -11,7 +11,6 @@ function setup(overrides: Partial<React.ComponentProps<typeof SourceInput>> = {}
     onChange: vi.fn(),
     override: 'auto' as const,
     onOverrideChange: vi.fn(),
-    format: 'list' as const,
     issues: [],
     ...overrides,
   };
@@ -32,18 +31,6 @@ describe('SourceInput', () => {
     setup({ value: 'Alien\nArrival' });
 
     expect((screen.getByLabelText(/your list/i) as HTMLTextAreaElement).value).toBe('Alien\nArrival');
-  });
-
-  it('names the format it detected', () => {
-    setup({ value: 'movies:\n  - a\n  - b\n', format: 'yaml' });
-
-    expect(screen.getByText(/read as yaml/i)).toBeDefined();
-  });
-
-  it('says nothing about the format while the box is empty', () => {
-    setup();
-
-    expect(screen.queryByText(/read as/i)).toBeNull();
   });
 
   it('offers each format override', () => {

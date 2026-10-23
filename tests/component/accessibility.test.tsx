@@ -119,7 +119,6 @@ describe('source input', () => {
         onChange={vi.fn()}
         override="json"
         onOverrideChange={vi.fn()}
-        format="json"
         issues={[{ path: '', message: 'Invalid JSON', line: 1 }]}
       />,
     );
