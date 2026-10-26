@@ -223,7 +223,11 @@ export default function PasteScreen() {
                   draft.setOverride('auto');
                   // Each sample arrives set up to show the renderers off.
                   draft.loadPreset(sample.text, sample.path, sample.roles);
-                  pasteDraft.getState().loadPreset(sample.text, { path: sample.path, roles: sample.roles });
+                  pasteDraft.getState().loadPreset(sample.text, {
+                    path: sample.path,
+                    siblingPaths: sample.siblingPaths,
+                    roles: sample.roles,
+                  });
                 }}
                 override={draft.override}
                 onOverrideChange={draft.setOverride}

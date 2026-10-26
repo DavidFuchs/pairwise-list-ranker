@@ -8,10 +8,22 @@ import {
   SAMPLE_GAMES,
   SAMPLE_MOVIES,
   SAMPLE_SONGS,
+  SAMPLE_TRIPS,
   SAMPLES,
   SONG_SAMPLE,
+  TRIP_SAMPLE,
 } from '@/lib/import/sampleData';
+import type { Sample } from '@/lib/import/sampleData';
 import { picturesOf, rendererOptionsFor } from '@/lib/renderers';
+
+/** Every list a sample sets up, opened one or not. */
+function presetLists(sample: Sample): { path: string[]; records: Record<string, unknown>[] }[] {
+  const document = analyzeSource(sample.text, 'auto').document;
+  return [sample.path, ...(sample.siblingPaths ?? [])].map((path) => ({
+    path,
+    records: entriesAtPath(document, path) as Record<string, unknown>[],
+  }));
+}
 
 describe('sample data', () => {
   it('reads each sample back as its own records, in the format it names', () => {
@@ -19,6 +31,7 @@ describe('sample data', () => {
       [SONG_SAMPLE, SAMPLE_SONGS],
       [MOVIE_SAMPLE, SAMPLE_MOVIES],
       [GAME_SAMPLE, SAMPLE_GAMES],
+      [TRIP_SAMPLE, SAMPLE_TRIPS.summer],
     ] as const) {
       const analysis = analyzeSource(sample.text, 'auto');
       expect(analysis.issues, sample.id).toEqual([]);
@@ -38,36 +51,41 @@ describe('sample data', () => {
 
   // A preset is only a showcase if every renderer it picks is one the field's
   // values actually qualify for.
-  it('presets only renderers each field is offered', () => {
+  it('presets only renderers each field is offered, in every list it sets up', () => {
     for (const sample of SAMPLES) {
-      const records = entriesAtPath(analyzeSource(sample.text, 'auto').document, sample.path) as Record<
-        string,
-        unknown
-      >[];
-      for (const [field, renderer] of Object.entries(sample.roles.fieldRenderers ?? {})) {
-        const offered = rendererOptionsFor(
-          records.map((record) => record[field]),
-          field,
-        ).flatMap((option) => [option.id, ...(option.variants ?? []).map((variant) => variant.id)]);
-        expect(offered, `${sample.id}.${field}`).toContain(renderer);
+      for (const { path, records } of presetLists(sample)) {
+        for (const [field, renderer] of Object.entries(sample.roles.fieldRenderers ?? {})) {
+          const offered = rendererOptionsFor(
+            records.map((record) => record[field]),
+            field,
+          ).flatMap((option) => [option.id, ...(option.variants ?? []).map((variant) => variant.id)]);
+          expect(offered, `${path.join('.')}.${field}`).toContain(renderer);
+        }
       }
     }
   });
 
   it('presets the title apart from the details, and only fields the records carry', () => {
     for (const sample of SAMPLES) {
-      const records = entriesAtPath(analyzeSource(sample.text, 'auto').document, sample.path) as Record<
-        string,
-        unknown
-      >[];
-      for (const field of [sample.roles.labelField!, ...sample.roles.summaryFields!]) {
-        expect(
-          records.some((record) => field in record),
-          `${sample.id}.${field}`,
-        ).toBe(true);
+      for (const { path, records } of presetLists(sample)) {
+        for (const field of [sample.roles.labelField!, ...sample.roles.summaryFields!]) {
+          expect(
+            records.some((record) => field in record),
+            `${path.join('.')}.${field}`,
+          ).toBe(true);
+        }
       }
       expect(sample.roles.summaryFields).not.toContain(sample.roles.labelField);
     }
+  });
+
+  it('offers every trip list in the picker, and nothing else', () => {
+    const { candidates, warnings } = analyzeSource(TRIP_SAMPLE.text, 'auto');
+    expect(candidates.map((candidate) => candidate.path)).toEqual([
+      TRIP_SAMPLE.path,
+      ...TRIP_SAMPLE.siblingPaths!,
+    ]);
+    expect(warnings).toEqual([]);
   });
 
   it('shows off renderers the songs leave out', () => {

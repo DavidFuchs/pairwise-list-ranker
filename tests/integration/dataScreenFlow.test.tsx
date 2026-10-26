@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import PasteScreen from '@/app/index';
 import SetupScreen from '@/app/setup';
-import { MOVIE_SAMPLE, SONG_SAMPLE } from '@/lib/import/sampleData';
+import { MOVIE_SAMPLE, SONG_SAMPLE, TRIP_SAMPLE } from '@/lib/import/sampleData';
 import { pasteDraft } from '@/lib/state/pasteDraft';
 import { listStore } from '@/lib/state/useListStore';
 import { openList } from '@/tests/helpers/lists';
@@ -169,6 +169,26 @@ describe('the samples', () => {
     expect(openList(listStore).items).toHaveLength(10);
     expect(listStore.getState().workspace?.source.format).toBe('yaml');
     expect(openList(listStore).roles.fieldRenderers).toEqual(MOVIE_SAMPLE.roles.fieldRenderers);
+  });
+
+  it('bring the trips in as three lists, each set up the same way', async () => {
+    const user = await sampleThroughSetup(/load the trip lists sample/i);
+
+    expect(
+      screen.getByRole('button', { name: 'Label items by destination' }).getAttribute('aria-pressed'),
+    ).toBe('true');
+
+    await user.click(screen.getByText('trips.long_weekend'));
+    expect(
+      screen.getByRole('button', { name: 'Label items by destination' }).getAttribute('aria-pressed'),
+    ).toBe('true');
+    expect(screen.getByRole('checkbox', { name: 'Show photo on cards' }).getAttribute('aria-checked')).toBe(
+      'true',
+    );
+
+    await user.click(screen.getByRole('button', { name: /start ranking/i }));
+    expect(listStore.getState().workspace?.source.arrayPath).toEqual(['trips', 'long_weekend']);
+    expect(openList(listStore).roles.fieldRenderers).toEqual(TRIP_SAMPLE.roles.fieldRenderers);
   });
 
   it('read a sample by its own format even with Plain list chosen', async () => {

@@ -4,7 +4,7 @@ import type { FieldRoles, SourceFormat } from '@/types/source';
 
 /**
  * Written out the first time it is read, then kept. A sample's text is only
- * wanted when its button is pressed, and writing three of them out is work the
+ * wanted when its button is pressed, and writing them all out is work the
  * page would otherwise do before it shows anything.
  */
 function written(write: () => string): () => string {
@@ -14,7 +14,7 @@ function written(write: () => string): () => string {
 
 /** Ready-made data for trying the ranker without typing or importing anything. */
 export interface Sample {
-  id: 'songs' | 'movies' | 'games';
+  id: 'songs' | 'movies' | 'games' | 'trips';
   /** What the button says. */
   label: string;
   /** What arrives, and in which format, so loading one is no surprise. */
@@ -22,8 +22,10 @@ export interface Sample {
   format: SourceFormat;
   /** The sample as text in its format; written out on first use. */
   readonly text: string;
-  /** Where the list sits in the document. */
+  /** Where the list sits in the document; the one setup opens on. */
   path: string[];
+  /** The document's other lists, which share the list's fields and its setup. */
+  siblingPaths?: string[][];
   /** The setup the list arrives with, chosen to show the cards off. */
   roles: FieldRoles;
 }
@@ -964,5 +966,350 @@ export const GAME_SAMPLE: Sample = {
   },
 };
 
+export interface SampleTrip {
+  destination: string;
+  /** Two-letter country code. */
+  country: string;
+  photo: string;
+  /** Latitude and longitude, so the map opens on the exact spot. */
+  location: string;
+  trip_style: string;
+  highlights: string[];
+  nights: number;
+  /** Door to door from Toronto, by air or by road. */
+  travel_hours: number;
+  /** Per person, flights or gas and a place to stay included. */
+  est_cost_cad: number;
+  passport_needed: boolean;
+  why_go: string;
+  guide_url: string;
+}
+
+export interface SampleTrips {
+  summer: SampleTrip[];
+  winter: SampleTrip[];
+  long_weekend: SampleTrip[];
+}
+
+/**
+ * Trip ideas from Toronto, one list per kind of trip. A summer trip and a
+ * long weekend are never weighed against each other, so each list is ranked
+ * on its own. Photos are the English Wikipedia's, guides are Wikivoyage's,
+ * and costs are rough.
+ */
+export const SAMPLE_TRIPS: SampleTrips = {
+  summer: [
+    {
+      destination: 'Lisbon',
+      country: 'PT',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Lisboa_-_Portugal_%2852597836992%29.jpg/330px-Lisboa_-_Portugal_%2852597836992%29.jpg',
+      location: '38.7253, -9.15',
+      trip_style: 'City',
+      highlights: ['Food', 'Old town', 'Beaches nearby'],
+      nights: 8,
+      travel_hours: 7,
+      est_cost_cad: 3200,
+      passport_needed: true,
+      why_go:
+        'Long evenings on hilltop terraces, custard tarts still warm from the oven, and Atlantic beaches a short train ride from the old tram lines.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Lisbon',
+    },
+    {
+      destination: 'Reykjavík',
+      country: 'IS',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Reykjav%C3%ADk%2C_view_from_Hallgr%C3%ADmskirkja_%282%29.jpg/330px-Reykjav%C3%ADk%2C_view_from_Hallgr%C3%ADmskirkja_%282%29.jpg',
+      location: '64.1458, -21.9425',
+      trip_style: 'Nature',
+      highlights: ['Midnight sun', 'Hot springs', 'Waterfalls'],
+      nights: 7,
+      travel_hours: 6,
+      est_cost_cad: 4100,
+      passport_needed: true,
+      why_go:
+        'A base for the Ring Road, with geysers, glaciers and black sand beaches a day trip away, and daylight that barely ends in June.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Reykjav%C3%ADk',
+    },
+    {
+      destination: 'Banff',
+      country: 'CA',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c5/Moraine_Lake_17092005.jpg/330px-Moraine_Lake_17092005.jpg',
+      location: '51.1784, -115.5708',
+      trip_style: 'Mountains',
+      highlights: ['Hiking', 'Lakes', 'Wildlife'],
+      nights: 6,
+      travel_hours: 5,
+      est_cost_cad: 2600,
+      passport_needed: false,
+      why_go:
+        'Turquoise lakes under the Rockies, alpine hikes to tea houses, and a good chance of seeing elk, bighorn sheep or a bear from the road.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Banff_National_Park',
+    },
+    {
+      destination: 'Dubrovnik',
+      country: 'HR',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/The_walls_of_the_fortress_and_View_of_the_old_city._panorama.jpg/330px-The_walls_of_the_fortress_and_View_of_the_old_city._panorama.jpg',
+      location: '42.6403, 18.1083',
+      trip_style: 'Beach',
+      highlights: ['City walls', 'Island hopping', 'Swimming'],
+      nights: 9,
+      travel_hours: 12,
+      est_cost_cad: 3900,
+      passport_needed: true,
+      why_go:
+        'Walk the walls of the old town at sunrise before the crowds, then take the ferry out to the islands for clear water and seafood lunches.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Dubrovnik',
+    },
+    {
+      destination: 'Cape Breton Island',
+      country: 'CA',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/Cabot_Trail_winding_through_Cape_Breton_Highlands_National_Park%2C_Nova_Scotia.jpg/330px-Cabot_Trail_winding_through_Cape_Breton_Highlands_National_Park%2C_Nova_Scotia.jpg',
+      location: '46.4869, -60.7461',
+      trip_style: 'Road trip',
+      highlights: ['Cabot Trail', 'Whale watching', 'Celtic music'],
+      nights: 7,
+      travel_hours: 3,
+      est_cost_cad: 2200,
+      passport_needed: false,
+      why_go:
+        'Drive the Cabot Trail as it climbs and drops along the coast, with whale tours from Pleasant Bay and fiddle music at a kitchen party most nights.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Cape_Breton_Island',
+    },
+    {
+      destination: 'Amalfi Coast',
+      country: 'IT',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/Amalfi_Coast_%28Italy%2C_October_2020%29_-_75_%2850558355441%29.jpg/330px-Amalfi_Coast_%28Italy%2C_October_2020%29_-_75_%2850558355441%29.jpg',
+      location: '40.65, 14.6',
+      trip_style: 'Beach',
+      highlights: ['Cliffside towns', 'Boat trips', 'Food'],
+      nights: 8,
+      travel_hours: 11,
+      est_cost_cad: 4800,
+      passport_needed: true,
+      why_go:
+        'Pastel towns stacked on cliffs above the sea, lemon groves, and boat days to hidden coves, with Pompeii and Capri close enough for a day each.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Amalfi_Coast',
+    },
+  ],
+  winter: [
+    {
+      destination: 'Whistler',
+      country: 'CA',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/Blackcomb_Peak.jpg/330px-Blackcomb_Peak.jpg',
+      location: '50.1163, -122.9574',
+      trip_style: 'Ski',
+      highlights: ['Skiing', 'Village', 'Peak 2 Peak'],
+      nights: 6,
+      travel_hours: 7,
+      est_cost_cad: 3600,
+      passport_needed: false,
+      why_go:
+        'Two mountains joined by a gondola, more ski runs than you can cover in a week, and a car-free village for après when the lifts close.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Whistler',
+    },
+    {
+      destination: 'Niseko',
+      country: 'JP',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1f/%E3%83%8B%E3%82%BB%E3%82%B3%E6%9D%B1%E5%B1%B1%E3%82%B9%E3%82%AD%E3%83%BC%E5%A0%B42.JPG/330px-%E3%83%8B%E3%82%BB%E3%82%B3%E6%9D%B1%E5%B1%B1%E3%82%B9%E3%82%AD%E3%83%BC%E5%A0%B42.JPG',
+      location: '42.8048, 140.6874',
+      trip_style: 'Ski',
+      highlights: ['Powder', 'Onsen', 'Ramen'],
+      nights: 10,
+      travel_hours: 20,
+      est_cost_cad: 5500,
+      passport_needed: true,
+      why_go:
+        'Some of the lightest, deepest snow anywhere, with a soak in a hot spring and a bowl of ramen waiting at the bottom of every ski day.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Niseko',
+    },
+    {
+      destination: 'Tromsø',
+      country: 'NO',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Troms%C3%B8_sentrum_%285835702754%29.jpg/330px-Troms%C3%B8_sentrum_%285835702754%29.jpg',
+      location: '69.6517, 18.9556',
+      trip_style: 'Nature',
+      highlights: ['Northern lights', 'Dog sledding', 'Fjords'],
+      nights: 6,
+      travel_hours: 14,
+      est_cost_cad: 4700,
+      passport_needed: true,
+      why_go:
+        'Far enough north that the aurora shows up most clear nights, with husky sledding by day and whale tours in the fjords early in the season.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Troms%C3%B8',
+    },
+    {
+      destination: 'Oaxaca',
+      country: 'MX',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/MonteAlbanWest.jpg/330px-MonteAlbanWest.jpg',
+      location: '17.0606, -96.7253',
+      trip_style: 'City',
+      highlights: ['Food', 'Markets', 'Ruins'],
+      nights: 8,
+      travel_hours: 8,
+      est_cost_cad: 2400,
+      passport_needed: true,
+      why_go:
+        'Warm, dry days, seven kinds of mole, mezcal tastings in the valley, and the hilltop ruins of Monte Albán twenty minutes from the old town.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Oaxaca_(city)',
+    },
+    {
+      destination: 'Manuel Antonio',
+      country: 'CR',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/Manuel_antonio_06_april_2005.jpeg/330px-Manuel_antonio_06_april_2005.jpeg',
+      location: '9.3756, -84.1358',
+      trip_style: 'Beach',
+      highlights: ['Rainforest', 'Monkeys', 'Surfing'],
+      nights: 9,
+      travel_hours: 8,
+      est_cost_cad: 3300,
+      passport_needed: true,
+      why_go:
+        'Rainforest that runs right down to the beach, with sloths and capuchin monkeys on the trails and easy surf in the bay.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Manuel_Antonio_National_Park',
+    },
+  ],
+  long_weekend: [
+    {
+      destination: 'Montreal',
+      country: 'CA',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/Montreal%2C_Quebec_skyline.jpg/330px-Montreal%2C_Quebec_skyline.jpg',
+      location: '45.5089, -73.5542',
+      trip_style: 'City',
+      highlights: ['Food', 'Festivals', 'Old Montreal'],
+      nights: 3,
+      travel_hours: 5,
+      est_cost_cad: 900,
+      passport_needed: false,
+      why_go:
+        'Bagels, smoked meat and natural wine bars, a festival most weekends in summer, and cobbled streets in the old port for an evening walk.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Montreal',
+    },
+    {
+      destination: 'Quebec City',
+      country: 'CA',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/Quebec_City_skyline_from_L%C3%A9vis.jpg/330px-Quebec_City_skyline_from_L%C3%A9vis.jpg',
+      location: '46.8139, -71.2081',
+      trip_style: 'City',
+      highlights: ['Old town', 'Château Frontenac', 'Winter Carnival'],
+      nights: 3,
+      travel_hours: 8,
+      est_cost_cad: 1100,
+      passport_needed: false,
+      why_go:
+        'A walled old town that feels a world away, with the ferry across to Lévis for the view and Montmorency Falls a short drive out.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Quebec_City',
+    },
+    {
+      destination: 'New York City',
+      country: 'US',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7a/View_of_Empire_State_Building_from_Rockefeller_Center_New_York_City_dllu_%28cropped%29.jpg/330px-View_of_Empire_State_Building_from_Rockefeller_Center_New_York_City_dllu_%28cropped%29.jpg',
+      location: '40.7128, -74.0061',
+      trip_style: 'City',
+      highlights: ['Broadway', 'Museums', 'Food'],
+      nights: 3,
+      travel_hours: 2,
+      est_cost_cad: 1800,
+      passport_needed: true,
+      why_go:
+        'A show on Broadway, an afternoon at the Met, and a different neighbourhood to eat through each night, all a short flight away.',
+      guide_url: 'https://en.wikivoyage.org/wiki/New_York_City',
+    },
+    {
+      destination: 'Chicago',
+      country: 'US',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Chicago_River_ferry_b.jpg/330px-Chicago_River_ferry_b.jpg',
+      location: '41.8819, -87.6278',
+      trip_style: 'City',
+      highlights: ['Architecture', 'Jazz', 'Lakefront'],
+      nights: 3,
+      travel_hours: 2,
+      est_cost_cad: 1400,
+      passport_needed: true,
+      why_go:
+        'The architecture boat tour down the river, deep dish and jazz clubs at night, and a bike ride along the lakefront path in the morning.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Chicago',
+    },
+    {
+      destination: 'Prince Edward County',
+      country: 'CA',
+      photo:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d8/Lake_Ontario_-_Sandbanks_Provincial_Park_2001.jpg/330px-Lake_Ontario_-_Sandbanks_Provincial_Park_2001.jpg',
+      location: '43.9, -77.2667',
+      trip_style: 'Road trip',
+      highlights: ['Wineries', 'Sandbanks', 'Farm stands'],
+      nights: 2,
+      travel_hours: 2.5,
+      est_cost_cad: 600,
+      passport_needed: false,
+      why_go:
+        'An easy drive for dunes and swimming at Sandbanks, a loop of small wineries and cideries, and a farm stand at every second turn.',
+      guide_url: 'https://en.wikivoyage.org/wiki/Prince_Edward_County',
+    },
+  ],
+};
+
+const tripText = written(() => stringifyYaml({ trips: SAMPLE_TRIPS }, { lineWidth: 0 }));
+
+/**
+ * The only sample with more than one list, so it shows the list picker. It
+ * opens on summer, and the winter and long weekend lists arrive set up the
+ * same way: a photo, a flag, a map, the kind of trip as a coloured pill,
+ * highlights as tags, the cost in Canadian dollars, a passport badge, why to
+ * go and a guide. The nights and travel time are a tick away.
+ */
+export const TRIP_SAMPLE: Sample = {
+  id: 'trips',
+  label: 'Trip lists',
+  detail: '3 lists of trips by season, as YAML',
+  format: 'yaml',
+  get text() {
+    return tripText();
+  },
+  path: ['trips', 'summer'],
+  siblingPaths: [
+    ['trips', 'winter'],
+    ['trips', 'long_weekend'],
+  ],
+  roles: {
+    labelField: 'destination',
+    summaryFields: [
+      'photo',
+      'country',
+      'location',
+      'trip_style',
+      'highlights',
+      'est_cost_cad',
+      'passport_needed',
+      'why_go',
+      'guide_url',
+    ],
+    fieldRenderers: {
+      photo: 'image',
+      country: 'flag',
+      location: 'location',
+      trip_style: 'pills',
+      highlights: 'tags',
+      est_cost_cad: 'currency-CAD',
+      passport_needed: 'badge',
+      why_go: 'long-text',
+      guide_url: 'link',
+    },
+  },
+};
+
 /** Every sample, in the order they are offered. */
-export const SAMPLES: Sample[] = [SONG_SAMPLE, MOVIE_SAMPLE, GAME_SAMPLE];
+export const SAMPLES: Sample[] = [SONG_SAMPLE, MOVIE_SAMPLE, GAME_SAMPLE, TRIP_SAMPLE];

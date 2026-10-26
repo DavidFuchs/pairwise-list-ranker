@@ -139,15 +139,17 @@ export function selectConfigLines(
 /**
  * What the list setup screen opens with for a new list: the pasted text read
  * as the paste page left it, and a sample's own list and fields when one was
- * loaded. Everything else starts fresh.
+ * loaded, its other lists set up the same way. Everything else starts fresh.
  */
 export function pasteSeed(paste: Pick<PasteDraftState, 'rawText' | 'override' | 'preset'>): SourceDraftSeed {
+  const roles = paste.preset?.roles ?? {};
   return {
     rawText: paste.rawText,
     override: paste.override,
     arrayPath: paste.preset?.path ?? [],
-    roles: paste.preset?.roles ?? {},
+    roles,
     startingOrder: 'unordered',
     initialSelectedPath: paste.preset?.path,
+    knownRoles: Object.fromEntries((paste.preset?.siblingPaths ?? []).map((path) => [pathKey(path), roles])),
   };
 }

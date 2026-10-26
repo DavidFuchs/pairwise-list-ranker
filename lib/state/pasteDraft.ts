@@ -7,6 +7,8 @@ import type { FieldRoles } from '@/types/source';
 /** A sample's own choice of list and fields, kept until the text is edited. */
 export interface PastePreset {
   path: string[];
+  /** The sample's other lists, set up with the same roles. */
+  siblingPaths?: string[][];
   roles: FieldRoles;
 }
 

@@ -139,7 +139,7 @@ describe('describeProgress', () => {
 
   it('says why it cannot tell for a list that started ranked', () => {
     expect(describeProgress({ kind: 'ranked-start' }, null)).toEqual({
-      text: "Every item has been compared. Keep going to fix your order where answers disagree.",
+      text: 'Every item has been compared. Keep going to fix your order where answers disagree.',
       bar: 'coverage',
       share: 1,
     });

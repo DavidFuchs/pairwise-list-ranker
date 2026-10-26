@@ -22,6 +22,7 @@ Test in a normal window and a private window (private mode is the realistic
 - [ ] The page loads with no console errors or warnings.
 - [ ] The onboarding panel explains that everything starts from pasted data.
 - [ ] The Songs (JSON), Movies (YAML) and Games (YAML) samples load, with their artwork, posters, trailers, Steam banners and play buttons showing.
+- [ ] The Trip lists (YAML) sample opens setup on the summer list with the list picker showing all three lists, and the winter and long weekend lists show the same photos, flags and fields when picked.
 - [ ] The GUI tab is selected and shows an empty-state message.
 
 ## 2. Import
