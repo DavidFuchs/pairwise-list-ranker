@@ -40,7 +40,7 @@ function eventKinds(): string[] {
 }
 
 function pairShown(): boolean {
-  return screen.queryAllByLabelText(/^Choose /).length === 2;
+  return screen.queryAllByLabelText(/^Choose (?!a download format)/).length === 2;
 }
 
 describe('pairs only', () => {

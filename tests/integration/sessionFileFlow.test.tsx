@@ -104,7 +104,7 @@ describe('session files', () => {
     const user = userEvent.setup();
 
     await user.click(screen.getByRole('button', { name: 'Save this session to a file' }));
-    expect(downloads[0]?.name).toMatch(/-session\.json$/);
+    expect(downloads[0]?.name).toMatch(/^pairwise-session-\d{4}-\d{2}-\d{2}\.json$/);
     expect(JSON.parse(downloads[0]!.text).kind).toBe('pairwise-list-ranker-session');
 
     // Nothing decided yet in the open list, so there is nothing to ask about.

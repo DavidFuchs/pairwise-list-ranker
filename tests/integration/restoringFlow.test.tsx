@@ -86,7 +86,7 @@ describe('restoring a ranking', () => {
 
     expect(builds().pending).toBe(1);
     expect(screen.getAllByText(RESTORING)).toHaveLength(2);
-    expect(screen.queryByLabelText(/^Choose /)).toBeNull();
+    expect(screen.queryByLabelText(/^Choose (?!a download format)/)).toBeNull();
     expect(screen.queryByRole('button', { name: "Can't decide" })).toBeNull();
     expect(screen.queryByRole('button', { name: /undo/i })).toBeNull();
     expect(screen.queryAllByRole('listitem')).toHaveLength(0);
@@ -119,7 +119,7 @@ describe('restoring a ranking', () => {
 
     expect(await screen.findByText('3 answers so far')).toBeDefined();
     expect(screen.queryByText(RESTORING)).toBeNull();
-    expect(screen.getAllByLabelText(/^Choose /)).toHaveLength(2);
+    expect(screen.getAllByLabelText(/^Choose (?!a download format)/)).toHaveLength(2);
     expect(screen.getAllByRole('listitem')).toHaveLength(4);
     expect(rankedIds()).toEqual(replay(toEngineList(openList(listStore))).ranked);
 
@@ -173,6 +173,6 @@ describe('a two-item list with nothing left to ask', () => {
     await user.keyboard('{Control>}z{/Control}');
 
     expect(screen.getByText('0 answers so far')).toBeDefined();
-    expect(screen.getAllByLabelText(/^Choose /)).toHaveLength(2);
+    expect(screen.getAllByLabelText(/^Choose (?!a download format)/)).toHaveLength(2);
   });
 });

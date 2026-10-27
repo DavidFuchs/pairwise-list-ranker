@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#202226"/><stop offset="1" stop-color="#0A0A0B"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.3" r="0.6">
+      <stop offset="0" stop-color="#25AFF3" stop-opacity="0.28"/><stop offset="1" stop-color="#25AFF3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6FD3FF"/><stop offset="1" stop-color="#1C8FE6"/>
+    </linearGradient>
+    <linearGradient id="r2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F4F5F7"/><stop offset="1" stop-color="#C9CBD1"/>
+    </linearGradient>
+    <clipPath id="heroClip2"><rect x="232" y="292" width="560" height="130" rx="65"/></clipPath>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <filter id="blur" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur stdDeviation="38"/></filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <g transform="translate(0,-22)">
+    <rect x="232" y="292" width="560" height="130" rx="65" fill="#25AFF3" opacity="0.55" filter="url(#blur)"/>
+    <rect x="232" y="292" width="560" height="130" rx="65" fill="url(#hero)"/>
+    <g clip-path="url(#heroClip2)"><rect x="232" y="292" width="560" height="70" fill="url(#gloss)"/></g>
+    <path d="M690 372 L722 340 L754 372" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="232" y="472" width="420" height="130" rx="65" fill="url(#r2)"/>
+    <rect x="232" y="652" width="280" height="130" rx="65" fill="#5A5D66"/>
+  </g>
+</svg>
