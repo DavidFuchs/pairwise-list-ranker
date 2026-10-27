@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { ComparisonDeck } from '@/components/comparison/ComparisonDeck';
 import type { DeckStatus } from '@/components/comparison/ComparisonDeck';
+import { ProgressExplainerModal } from '@/components/comparison/ProgressExplainerModal';
 import { FileNotice } from '@/components/data/FileNotice';
 import type { FileNoticeState } from '@/components/data/FileNotice';
 import { AppShell } from '@/components/layout/AppShell';
 import { ListSwitcher } from '@/components/layout/ListSwitcher';
 import { PreviewPane } from '@/components/preview/PreviewPane';
 import type { OpenOutcome } from '@/components/preview/SessionControls';
-import { useEngineView } from '@/lib/engine/engineHost';
+import { engineHost, useEngineView } from '@/lib/engine/engineHost';
 import { useProgress } from '@/lib/hooks/useProgress';
 import type { EngineView } from '@/lib/engine/engineHost';
 import { cardLayout, EMPTY_LAYOUT } from '@/lib/renderers';
@@ -30,8 +31,10 @@ import {
   selectTitleFits,
   selectExportText,
   selectListConfig,
+  selectItemLabel,
   selectListOptions,
 } from '@/lib/state/selectors';
+import { explainProgress } from '@/lib/state/progressExplain';
 import { useScreenFocused } from '@/lib/hooks/useScreenFocused';
 import { formatPath } from '@/lib/import/arrayCandidates';
 import { pathKey } from '@/lib/import/paths';
@@ -177,6 +180,29 @@ export default function RankScreen() {
   // Kept while the roles are, so the ranked rows can reuse what they drew.
   const layout = useMemo(() => (roles === undefined ? EMPTY_LAYOUT : cardLayout(roles)), [roles]);
 
+  // The explainer is worked out only while its window is open, and afresh for each view.
+  const [explaining, setExplaining] = useState(false);
+  const explanation = useMemo(() => {
+    if (!explaining || list === null || progress === null || view.status !== 'ready') return null;
+    const evidence = engineHost.shownEvidence(list);
+    // Before the session starts there is nothing to read the doubts from; the first stage needs none.
+    if (evidence === null && progress.state.kind !== 'comparing') return null;
+    return explainProgress({
+      state: progress.state,
+      level: progress.level,
+      events: list.events,
+      shown: view.ranked.map((item) => item.id),
+      evidence,
+    });
+  }, [explaining, list, progress, view]);
+  const labelOf = useMemo(() => {
+    const byId = new Map((list?.items ?? []).map((item) => [item.id, item]));
+    return (id: string): string => {
+      const item = byId.get(id);
+      return item === undefined ? id : selectItemLabel(item, layout.labelField);
+    };
+  }, [list, layout]);
+
   if (workspace === null || list === null) return null;
 
   const listOptions = selectListOptions(workspace);
@@ -257,7 +283,8 @@ export default function RankScreen() {
               status={view.status}
               activeItems={activeItems(list).length}
               layout={layout}
-              progress={progress}
+              progress={progress?.display ?? null}
+              onExplainProgress={() => setExplaining(true)}
               trailing={
                 <ListSwitcher
                   currentPath={workspace.source.arrayPath}
@@ -278,6 +305,15 @@ export default function RankScreen() {
               }}
               onMarkUnrecognized={markUnrecognized}
             />
+            {progress !== null && (
+              <ProgressExplainerModal
+                visible={explaining}
+                onClose={() => setExplaining(false)}
+                progress={progress.display}
+                explanation={explanation}
+                labelOf={labelOf}
+              />
+            )}
           </>
         }
         preview={

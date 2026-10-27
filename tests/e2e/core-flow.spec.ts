@@ -212,6 +212,24 @@ test('once every item has been compared the progress line names a level, and kee
   await expect(page.getByText(A_LEVEL)).toBeVisible();
 });
 
+test('"Why?" on the progress line opens a window about the level, and closes again', async ({ page }) => {
+  await enterData(page, THIRTY_ITEMS);
+  await continueToSetup(page);
+  await page.getByRole('radio', { name: 'The list is in no particular order' }).click();
+  await startRanking(page);
+
+  await page.getByRole('link', { name: 'Why is the order at this stage?' }).click();
+  await expect(page.getByText('How close is this order?')).toBeVisible();
+  await expect(page.getByText('Keep answering to bring them in.')).toBeVisible();
+  await page.getByRole('button', { name: 'Close' }).last().click();
+  await expect(page.getByText('How close is this order?')).toHaveCount(0);
+
+  await answerUntilEveryItemIsCompared(page);
+  await page.getByRole('link', { name: 'Why is the order at this stage?' }).click();
+  await expect(page.getByText('How close is this order?')).toBeVisible();
+  await expect(page.getByText("The details aren't ready yet.")).toHaveCount(0);
+});
+
 test('a list that arrives ranked says it cannot tell yet, and then says nothing more', async ({ page }) => {
   await enterData(page, THIRTY_ITEMS);
   await continueToSetup(page);

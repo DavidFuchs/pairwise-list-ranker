@@ -713,6 +713,25 @@ The strip says only what is true:
     themselves is still on average 4 to 10 points less accurate at the top
     levels than the clean users, so the wording stays modest. The line is
     outside the polite live region.
+  - **Why?** A link after the line's words opens a window, "How close is this
+    order?", that says why the line reads what it does, in terms of the
+    user's own answers (`lib/state/progressExplain.ts`, drawn by
+    `components/comparison/ProgressExplainerModal.tsx`). It is worked out only
+    while the window is open, from the open session's fit
+    (`EngineHost.shownEvidence`), with the same chance for each pair the
+    level reads (`pairChances`), so it never says less is in doubt than the
+    level shows. Each pair at 5% or more is put down to one cause, checked in
+    this order: answered directly both ways; a circle (the counted answers
+    lead from each item down to the other within three steps each way), drawn
+    as a loop of up to four items; every direct answer a draw; an item placed
+    by a move with fewer than two counted answers since; never compared
+    directly, with the shortest chain of answers that orders them; or one
+    direct answer. Pairs of one circle are one spot. The three heaviest spots
+    are shown, with what settles each, and a note when the next question is
+    about one; the top level shows one only past 10%. Answers a move set
+    aside are never cited, since they are not among the fit's terms. While
+    items are still uncompared it names them instead. The words describe the
+    answers, never the person: a circle is close calls, not a change of mind.
 
 The app counts two things, and its copy uses only these two words for them:
 

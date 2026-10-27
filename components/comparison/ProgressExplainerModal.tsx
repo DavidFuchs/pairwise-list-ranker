@@ -41,7 +41,11 @@ export function ProgressExplainerModal({
   return (
     <Modal visible={visible} onClose={onClose} title="How close is this order?">
       <ProgressLine progress={progress} />
-      {explanation !== null && <Explanation explanation={explanation} labelOf={labelOf} />}
+      {explanation === null ? (
+        <Text style={styles.body}>{"The details aren't ready yet. Try again in a moment."}</Text>
+      ) : (
+        <Explanation explanation={explanation} labelOf={labelOf} />
+      )}
     </Modal>
   );
 }
@@ -285,15 +289,15 @@ function CirclePicture({
             {index < items.length - 1 && (
               <Text
                 style={styles.arrowDown}
-              >{`↓  over, answer ${(answers[index] as AnswerRef).answer}`}</Text>
+              >{`↓  over, answer ${(answers[index] as AnswerRef).answer}`}</Text>
             )}
           </View>
         ))}
       </View>
       <View style={styles.bracket}>
         <Text style={styles.arrowBack}>◀</Text>
-        <Text style={styles.bracketLabel}>{`over, answer ${back.answer}`}</Text>
       </View>
+      <Text style={styles.bracketLabel}>{`over, answer ${back.answer}`}</Text>
     </View>
   );
 }
@@ -341,10 +345,10 @@ const styles = StyleSheet.create({
     borderColor: colors.borderStrong,
     backgroundColor: colors.surface,
   },
-  circle: { flexDirection: 'row', alignSelf: 'flex-start', gap: space.sm },
+  circle: { flexDirection: 'row', gap: space.sm },
   circleColumn: { gap: 0 },
   circleStep: { alignItems: 'flex-start' },
-  circleChip: { minHeight: CHIP_HEIGHT, minWidth: 160 },
+  circleChip: { minHeight: CHIP_HEIGHT, minWidth: 140 },
   arrowDown: {
     ...typeScale.meta,
     fontFamily: fonts.body,
@@ -355,7 +359,7 @@ const styles = StyleSheet.create({
   // From the middle of the first chip to the middle of the last.
   bracket: {
     marginVertical: CHIP_HEIGHT / 2,
-    width: 28,
+    width: 20,
     borderTopWidth: 2,
     borderRightWidth: 2,
     borderBottomWidth: 2,
@@ -376,8 +380,7 @@ const styles = StyleSheet.create({
     ...typeScale.meta,
     fontFamily: fonts.body,
     color: colors.textSecondary,
-    position: 'absolute',
-    left: 36,
-    width: 120,
+    alignSelf: 'center',
+    flexShrink: 1,
   },
 });

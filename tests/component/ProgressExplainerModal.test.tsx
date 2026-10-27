@@ -78,9 +78,9 @@ describe('ProgressExplainerModal', () => {
     for (const name of ['Reykjavík', 'Lisbon', 'Cape Breton Island']) {
       expect(circle.textContent).toContain(name);
     }
-    expect(screen.getByText(/over, answer 1$/)).toBeDefined();
-    expect(screen.getByText(/over, answer 15$/)).toBeDefined();
-    expect(screen.getByText('over, answer 9')).toBeDefined();
+    expect(screen.getByText(/over, answer\s1$/)).toBeDefined();
+    expect(screen.getByText(/over, answer\s15$/)).toBeDefined();
+    expect(screen.getByText(/^over, answer\s9$/)).toBeDefined();
     expect(circle.getAttribute('aria-label')).toBe(
       'Reykjavík over Lisbon, answer 1. Lisbon over Cape Breton Island, answer 15. Cape Breton Island over Reykjavík, answer 9.',
     );
@@ -166,6 +166,11 @@ describe('ProgressExplainerModal', () => {
     setup(atLevel(3), { text: 'Changes from here should be small.', bar: 'level', share: 1 });
     expect(screen.getByText('Nothing is left in real doubt.')).toBeDefined();
     expect(screen.getByText('You can stop here, or keep going to be sure.')).toBeDefined();
+  });
+
+  it('says when the details are not ready yet', () => {
+    setup(null);
+    expect(screen.getByText("The details aren't ready yet. Try again in a moment.")).toBeDefined();
   });
 
   it('closes from its close button', async () => {

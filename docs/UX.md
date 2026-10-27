@@ -162,6 +162,12 @@ Between and below the pair:
   Keep going to fix your order where answers disagree." The
   bar is for the eye and the words carry the meaning, so it is outside the
   live region and a screen reader meets only the words.
+  The line ends with a "Why?" link. It opens "How close is this order?":
+  the line again, a sentence for the level, and up to three spots still in
+  doubt, each in terms of the user's own answers with their numbers ("Lisbon
+  over Cape Breton Island, answer 15"), with what settles it. A circle of
+  answers is drawn as a loop. The window never gives a number beyond answer
+  numbers and counts, and never says the user changed their mind.
 - a single split pill, **Can't decide | Don't recognize…**, centred - it
   belongs to the pair, not to either item. _Don't recognize…_ arms a choice in
   place: both cards highlight, and the pill becomes _Don't recognize either |
