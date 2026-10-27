@@ -22,6 +22,12 @@ async function enterData(page: Page, text: string) {
   await page.getByLabel('Your list').fill(text);
 }
 
+/** Opens the sample menu on the paste page and loads one of its samples. */
+async function loadSample(page: Page, name: string) {
+  await page.getByRole('button', { name: 'Try a sample list' }).click();
+  await page.getByRole('menuitem', { name: `Load the ${name} sample` }).click();
+}
+
 /** From the paste page to the list setup screen. */
 async function continueToSetup(page: Page) {
   await page.getByRole('button', { name: 'Continue' }).click();
@@ -531,7 +537,7 @@ test('alt with Home or End sends a row to the top or bottom of the list', async 
 });
 
 test('a file dropped on the ranking screen opens a saved session, and nothing else', async ({ page }) => {
-  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await loadSample(page, 'movies');
   await startRanking(page);
   await page
     .getByLabel(/^Choose /)
@@ -598,7 +604,7 @@ test('a long list does not make the layout flicker or the page scroll sideways',
 
 test('a phone-width screen never scrolls sideways', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await loadSample(page, 'movies');
   const overflowsX = () =>
     page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(await overflowsX()).toBe(false);
@@ -646,7 +652,7 @@ async function settledTop(locator: import('@playwright/test').Locator): Promise<
 
 test('the controls under the cards never move up from one pair to the next', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await loadSample(page, 'movies');
   await startRanking(page);
 
   const skip = page.getByRole('button', { name: "Can't decide" });
@@ -666,7 +672,7 @@ test('the controls under the cards never move up from one pair to the next', asy
 
 test('on a phone, a stacked card shows every chosen field', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await loadSample(page, 'movies');
   // The sample shows a dozen fields, more than two cards can hold on one
   // screen, and the preview says so before ranking starts.
   await continueToSetup(page);
@@ -696,7 +702,7 @@ test('the card preview draws the cards the ranking screen will', async ({ browse
     const context = await browser.newContext({ viewport: { width, height } });
     const page = await context.newPage();
     await page.goto('/');
-    await page.getByRole('button', { name: 'Load the movies sample' }).click();
+    await loadSample(page, 'movies');
     await continueToSetup(page);
     const preview = page.locator('[data-surface="card"]').first();
     await expect(preview.locator('img').first()).toBeVisible();
@@ -713,7 +719,7 @@ test('the card preview draws the cards the ranking screen will', async ({ browse
 
 test('a field name stays on one line beside a long link', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Load the games sample' }).click();
+  await loadSample(page, 'games');
   await startRanking(page);
   await page.getByRole('switch', { name: 'Show details on both cards' }).click();
 
@@ -731,7 +737,7 @@ test('a field name stays on one line beside a long link', async ({ page }) => {
 
 test('on a phone, the setup screen keeps its main button on screen', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await loadSample(page, 'movies');
   await continueToSetup(page);
 
   const start = page.getByRole('button', { name: 'Start ranking' });
@@ -747,7 +753,7 @@ test('on a phone, the setup screen keeps its main button on screen', async ({ pa
 
 test('on a phone, the setup screen scrolls as one page', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await loadSample(page, 'movies');
   await continueToSetup(page);
   await expect(page.getByText('What we found')).toBeVisible();
 
@@ -765,7 +771,7 @@ test('on a phone, the setup screen scrolls as one page', async ({ page }) => {
 
 test('on a desktop window, the controls under the cards are on screen', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await loadSample(page, 'movies');
   await startRanking(page);
 
   await expect(page.getByRole('button', { name: "Can't decide" })).toBeInViewport({ ratio: 1 });
@@ -774,7 +780,7 @@ test('on a desktop window, the controls under the cards are on screen', async ({
 test('every page names itself in the title', async ({ page }) => {
   await expect(page).toHaveTitle('Pairwise: add a list');
 
-  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await loadSample(page, 'movies');
   await startRanking(page);
   await expect(page).toHaveTitle('Pairwise: ranking movies');
 
@@ -786,7 +792,7 @@ test('each screen is laid out under headings a screen reader can jump between', 
   await expect(page.getByRole('heading', { level: 1, name: 'Pairwise' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Add your list' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await loadSample(page, 'movies');
   await continueToSetup(page);
   await expect(page.getByRole('heading', { level: 2, name: 'What we found' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 3, name: 'Fields' })).toBeVisible();
@@ -799,7 +805,7 @@ test('each screen is laid out under headings a screen reader can jump between', 
 
 test('everything on screen sits inside a landmark', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.getByRole('button', { name: 'Load the movies sample' }).click();
+  await loadSample(page, 'movies');
 
   // What axe's "region" rule asks: no visible text or control outside the
   // banner, the main region or the sidebar. The sidebar's resize handle,
