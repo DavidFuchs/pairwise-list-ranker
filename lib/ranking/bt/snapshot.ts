@@ -6,7 +6,7 @@ import type { EngineList, StartingOrder } from '@/types/rankingEvents';
  * Bump whenever replay semantics or the snapshot's shape change. A snapshot
  * from another version is ignored, so a stale cache can never change a result.
  */
-export const ENGINE_SNAPSHOT_VERSION = 4;
+export const ENGINE_SNAPSHOT_VERSION = 5;
 
 /**
  * A JSON-safe copy of the engine's fitted state at the end of a history

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { Evidence } from '@/lib/ranking/bt/evidence';
+import { discountEarlier, Evidence } from '@/lib/ranking/bt/evidence';
 import { Timeline } from '@/lib/ranking/bt/timeline';
 import type { PairOutcome, RankingEvent } from '@/types/rankingEvents';
 
@@ -162,5 +162,78 @@ describe('Evidence', () => {
     expect(evidence.counts()).toEqual({ pairs: 6 });
     evidence.truncate(counts);
     expect(evidence.activeTerms(timeline)).toEqual(record(prefix).evidence.activeTerms(timeline));
+  });
+});
+
+describe('discountEarlier', () => {
+  const placement = (itemId: string): RankingEvent => ({ ...base, id: 'pl', kind: 'placement', itemId });
+  const discountedTerms = (events: RankingEvent[]) => {
+    const { evidence, timeline } = record(events);
+    return discountEarlier(evidence.activeTerms(timeline).pairs, 0.5);
+  };
+  const weights = (events: RankingEvent[]): number[] => discountedTerms(events).map((t) => t.weight);
+  const discounted = (events: RankingEvent[]): boolean[] =>
+    discountedTerms(events).map((t) => t.discounted === true);
+
+  // Lisbon (a) against Amalfi Coast (b), as the owner answered them in answers 9, 13, 15, 43, 45 and 47.
+  const owner = [
+    pair('a', 'b', 'left'),
+    pair('a', 'b', 'right'),
+    pair('b', 'a', 'left'),
+    pair('b', 'a', 'right'),
+    pair('a', 'b', 'left'),
+    pair('a', 'b', 'left'),
+  ];
+  const threeA = [pair('a', 'b', 'left'), pair('a', 'b', 'left'), pair('a', 'b', 'left')];
+
+  it('answers all one way are not discounted, whichever side each was shown on', () => {
+    expect(weights([pair('a', 'b', 'left'), pair('b', 'a', 'right'), pair('a', 'b', 'left')])).toEqual([
+      1, 1, 1,
+    ]);
+  });
+
+  it("the owner's six answers: Lisbon, Amalfi Coast twice, then Lisbon three times", () => {
+    expect(weights(owner)).toEqual([0.25, 0.125, 0.125, 1, 1, 1]);
+    expect(discounted(owner)).toEqual([true, true, true, false, false, false]);
+  });
+
+  it('one late answer against three halves the three', () => {
+    expect(weights([...threeA, pair('a', 'b', 'right')])).toEqual([0.5, 0.5, 0.5, 1]);
+  });
+
+  it('a "much better" answer is discounted from 1.75', () => {
+    expect(weights([pair('a', 'b', 'left_strong'), pair('a', 'b', 'right')])).toEqual([0.875, 1]);
+  });
+
+  it('a draw between disagreeing answers is untouched and changes nothing', () => {
+    expect(weights([pair('a', 'b', 'left'), pair('a', 'b', 'draw'), pair('a', 'b', 'right')])).toEqual([
+      0.5, 0.25, 0.25, 1,
+    ]);
+  });
+
+  it('other pairs are untouched', () => {
+    expect(weights([pair('a', 'b', 'left'), pair('a', 'c', 'right'), pair('a', 'b', 'right')])).toEqual([
+      0.5, 1, 1,
+    ]);
+  });
+
+  it('a factor of 1 returns the same term objects', () => {
+    const { evidence, timeline } = record(owner);
+    const terms = evidence.activeTerms(timeline).pairs;
+    discountEarlier(terms, 1).forEach((term, i) => expect(term).toBe(terms[i]));
+  });
+
+  it('answers a move set aside neither count nor discount', () => {
+    expect(weights([pair('a', 'b', 'left'), placement('a'), pair('a', 'b', 'right')])).toEqual([1]);
+  });
+
+  it('a "don\'t recognize" mark excludes the answers, so they discount nothing', () => {
+    expect(
+      weights([pair('a', 'b', 'left'), pair('a', 'b', 'right'), unrecognized(['a']), pair('b', 'c', 'left')]),
+    ).toEqual([1]);
+  });
+
+  it('a removed item keeps its answers and they still discount', () => {
+    expect(weights([pair('a', 'b', 'left'), pair('a', 'b', 'right'), removal(['a'])])).toEqual([0.5, 1]);
   });
 });
