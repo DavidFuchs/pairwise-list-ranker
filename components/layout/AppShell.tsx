@@ -26,7 +26,7 @@ import appIcon from '../../assets/icon.png';
 const REPO_URL = 'https://github.com/DavidFuchs/pairwise-list-ranker';
 
 export interface AppShellProps {
-  /** Shown beside the wordmark when there is no list switcher. */
+  /** Shown beside the wordmark. */
   listName?: string;
   /**
    * Said only when something is wrong with saving, such as a list too large
@@ -45,12 +45,6 @@ export interface AppShellProps {
    * Returns what happened, for the prompt to show.
    */
   onSaveBeforeReset?: () => string;
-  /**
-   * Replaces the plain list-name text with an interactive control, e.g.
-   * ListSwitcher on the rank screen. Falls back to plain text when omitted,
-   * since not every screen has other lists to jump between.
-   */
-  listSwitcher?: ReactNode;
   rail?: ReactNode;
   stage: ReactNode;
   preview: ReactNode;
@@ -102,7 +96,6 @@ export function AppShell({
   onReset,
   resetCost,
   onSaveBeforeReset,
-  listSwitcher,
   rail,
   stage,
   preview,
@@ -249,12 +242,11 @@ export function AppShell({
               <Text style={styles.wordmark} role="heading" aria-level={1}>
                 Pairwise
               </Text>
-              {listSwitcher ??
-                (listName !== undefined && (
-                  <Text style={styles.listName} numberOfLines={1}>
-                    {listName}
-                  </Text>
-                ))}
+              {listName !== undefined && (
+                <Text style={styles.listName} numberOfLines={1}>
+                  {listName}
+                </Text>
+              )}
             </View>
           </View>
 

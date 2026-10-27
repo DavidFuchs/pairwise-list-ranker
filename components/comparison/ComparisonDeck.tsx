@@ -66,11 +66,11 @@ export interface ComparisonDeckProps {
    */
   undoElsewhere?: string;
   /**
-   * Leads the status line, such as a control that belongs with the status. On the
+   * Ends the status line, right-aligned, such as a control that belongs with the status. On the
    * line rather than above it, since every row above the cards is one more
    * thing between a short window and the controls under them.
    */
-  leading?: ReactNode;
+  trailing?: ReactNode;
   /** A quiet line under the count about how close the order is (docs/ARCHITECTURE.md 6.12). */
   progress?: ProgressDisplay | null;
 }
@@ -113,7 +113,7 @@ export function ComparisonDeck({
   onMarkUnrecognized,
   onUndo,
   undoElsewhere,
-  leading,
+  trailing,
   progress,
 }: ComparisonDeckProps) {
   // Nothing half-built is ever answerable: unless the ranking is ready there is no pair.
@@ -241,8 +241,8 @@ export function ComparisonDeck({
     return (
       <View style={styles.stage}>
         <View style={styles.statusRow} accessibilityLiveRegion="polite">
-          {leading}
           <Text style={[styles.status, styles.statusGrow]}>{RESTORING_TEXT}</Text>
+          {trailing}
         </View>
       </View>
     );
@@ -252,12 +252,14 @@ export function ComparisonDeck({
     return (
       <View style={styles.stage}>
         {/* The count stays true with no pair on offer, so it stays. */}
-        {(leading !== undefined || answers > 0) && (
+        {(trailing !== undefined || answers > 0) && (
           <View style={styles.statusRow}>
-            {leading}
-            {answers > 0 && (
+            {answers > 0 ? (
               <Text style={[styles.status, styles.statusGrow]}>{describeAnswers(answers)}</Text>
+            ) : (
+              <View style={styles.statusGrow} />
             )}
+            {trailing}
           </View>
         )}
         {status === 'unrestored' ? (
@@ -287,8 +289,8 @@ export function ComparisonDeck({
     <View style={styles.stage}>
       <View style={styles.statusStrip} accessibilityLiveRegion="polite">
         <View style={styles.statusRow}>
-          {leading}
           <Text style={[styles.status, styles.statusGrow]}>{describeAnswers(answers)}</Text>
+          {trailing}
         </View>
         <Text style={styles.announcement}>
           {`Comparing ${selectItemLabel(left, layout.labelField)} and ${selectItemLabel(right, layout.labelField)}`}
@@ -547,8 +549,8 @@ const styles = StyleSheet.create({
     color: colors.textFaint,
   },
   statusStrip: { gap: space.sm },
-  // Wraps, so on a phone the count drops under the controls that lead the
-  // line rather than being squeezed into a column beside them.
+  // Wraps, so on a phone the control that ends the line drops under the
+  // count rather than squeezing it into a column.
   statusRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

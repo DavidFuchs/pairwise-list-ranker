@@ -23,8 +23,6 @@ export interface ListSwitcherOption extends ArrayCandidate {
 export interface ListSwitcherProps {
   /** The path currently being ranked. */
   currentPath: string[];
-  /** e.g. "movies · shown by title · already ranked", for the caption. */
-  caption: string;
   /** Every rankable list in the document, current one included. Rendering
    *  nothing when there is only one keeps the common case unchanged. */
   options: ListSwitcherOption[];
@@ -34,14 +32,14 @@ export interface ListSwitcherProps {
 }
 
 /**
- * Always-visible replacement for the plain list-name text, so that a document
- * holding more than one rankable list makes that obvious from the toolbar
- * instead of only inside list setup. Picking another list here
+ * Always-visible control above the comparison, so that a document
+ * holding more than one rankable list makes that obvious from the
+ * stage instead of only inside list setup. Picking another list here
  * switches immediately, the same "nothing is lost" behaviour as ArrayPicker,
  * and a list never set up before comes along on the document's defaults rather
  * than sending the user through list setup first.
  */
-export function ListSwitcher({ currentPath, caption, options, onSelect, onConfigure }: ListSwitcherProps) {
+export function ListSwitcher({ currentPath, options, onSelect, onConfigure }: ListSwitcherProps) {
   const [open, setOpen] = useState(false);
   if (options.length < 2) return null;
 
@@ -55,14 +53,12 @@ export function ListSwitcher({ currentPath, caption, options, onSelect, onConfig
         onPress={() => setOpen(true)}
         style={({ pressed }) => [styles.trigger, pressed && styles.triggerPressed]}
       >
+        <Text style={styles.triggerLabel}>List:</Text>
         <Text style={styles.triggerPath} numberOfLines={1}>
           {formatPath(currentPath)}
         </Text>
         <Text style={styles.chevron}>⌄</Text>
       </Pressable>
-      <Text style={styles.caption} numberOfLines={1}>
-        {caption}
-      </Text>
 
       <Modal visible={open} onClose={() => setOpen(false)} title="Switch list">
         <Text style={styles.hint}>
@@ -111,7 +107,7 @@ export function ListSwitcher({ currentPath, caption, options, onSelect, onConfig
 }
 
 const styles = StyleSheet.create({
-  wrap: { flexShrink: 1, gap: 1 },
+  wrap: { alignSelf: 'flex-start', maxWidth: '100%' },
   trigger: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -129,6 +125,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft,
     borderColor: colors.accentSoftBorder,
   },
+  triggerLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
   triggerPath: {
     fontFamily: fonts.mono,
     fontSize: 13,
@@ -137,12 +134,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   chevron: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint },
-  caption: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginLeft: 2,
-  },
   hint: {
     fontFamily: fonts.body,
     fontSize: 13,

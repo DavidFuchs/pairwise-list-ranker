@@ -27,7 +27,6 @@ import {
 } from '@/lib/session/sessionFile';
 import {
   selectAvailableTabs,
-  selectContextLine,
   selectTitleFits,
   selectExportText,
   selectListConfig,
@@ -238,17 +237,7 @@ export default function RankScreen() {
         <title>{`Pairwise: ranking ${formatPath(workspace.source.arrayPath)}`}</title>
       </Head>
       <AppShell
-        listName={selectContextLine(workspace)}
         saveWarning={saveWarning}
-        listSwitcher={
-          <ListSwitcher
-            currentPath={workspace.source.arrayPath}
-            caption={selectContextLine(workspace)}
-            options={listOptions}
-            onSelect={switchToList}
-            onConfigure={configureList}
-          />
-        }
         onReset={() => {
           listStore.getState().reset();
           // Start over means an empty paste page, not the text of the list just cleared.
@@ -269,6 +258,14 @@ export default function RankScreen() {
               activeItems={activeItems(list).length}
               layout={layout}
               progress={progress}
+              trailing={
+                <ListSwitcher
+                  currentPath={workspace.source.arrayPath}
+                  options={listOptions}
+                  onSelect={switchToList}
+                  onConfigure={configureList}
+                />
+              }
               onUndo={onUndo}
               undoElsewhere={undoElsewhere}
               onOutcome={(outcome) => {

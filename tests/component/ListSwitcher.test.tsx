@@ -26,7 +26,6 @@ const actors: ListSwitcherOption = {
 function renderSwitcher(overrides: Partial<Parameters<typeof ListSwitcher>[0]> = {}) {
   const props = {
     currentPath: ['movies'],
-    caption: 'movies · shown by title · already ranked',
     options: [movies, actors],
     onSelect: vi.fn(),
     onConfigure: vi.fn(),
@@ -117,7 +116,6 @@ describe('ListSwitcher', () => {
     const { container } = render(
       <ListSwitcher
         currentPath={['movies']}
-        caption="movies"
         options={[movies]}
         onSelect={vi.fn()}
         onConfigure={vi.fn()}
