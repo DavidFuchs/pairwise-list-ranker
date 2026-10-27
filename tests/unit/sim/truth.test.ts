@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { seededRandom } from '@/tests/helpers/random';
 import { makeWorld } from '@/tests/sim/truth';
 
 const options = { n: 100, kind: 'uniform', startingOrder: 'ranked', quality: 'honest', seed: 7 } as const;
@@ -62,5 +63,35 @@ describe('makeWorld', () => {
     expect(places).toEqual([1, 2, 3, 4]);
     const best = [...subset].sort((x, y) => world.trueRank(x) - world.trueRank(y))[0]!;
     expect(truth.span(best)).toEqual([1, 1]);
+  });
+});
+
+describe('World.drift', () => {
+  const small = { n: 10, kind: 'uniform', startingOrder: 'unordered', quality: 'honest', seed: 3 } as const;
+
+  it("gives the picked items one another's values, each a new one, and keeps the set of values", () => {
+    const world = makeWorld(small);
+    const before = new Map(world.ids.map((id) => [id, world.value(id)]));
+    const picked = world.drift(0.2, 2, seededRandom(11));
+    expect(picked).toHaveLength(2);
+    for (const id of picked) expect(world.value(id), id).not.toBe(before.get(id));
+    for (const id of world.ids.filter((id) => !picked.includes(id)))
+      expect(world.value(id)).toBe(before.get(id));
+    const sorted = (values: number[]) => [...values].sort((a, b) => a - b);
+    expect(sorted(world.ids.map((id) => world.value(id)))).toEqual(sorted([...before.values()]));
+  });
+
+  it('ranks by the new values', () => {
+    const world = makeWorld(small);
+    world.trueRank('i0');
+    world.drift(0.5, 2, seededRandom(11));
+    const byValue = [...world.ids].sort((a, b) => world.value(b) - world.value(a));
+    expect(byValue.map((id) => world.trueRank(id))).toEqual(Array.from({ length: 10 }, (_, k) => k));
+  });
+
+  it('picks the same items for the same stream', () => {
+    expect(makeWorld(small).drift(0.2, 2, seededRandom(5))).toEqual(
+      makeWorld(small).drift(0.2, 2, seededRandom(5)),
+    );
   });
 });

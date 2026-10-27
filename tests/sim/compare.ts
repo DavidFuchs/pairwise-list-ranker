@@ -169,14 +169,21 @@ export function scenarioGroupOf(scenario: string): string {
   return scenario;
 }
 
+/** Each drift scenario its own group, every other a guard: the later-answers calibration. */
+export function driftGroupOf(scenario: string): string | null {
+  return /-drift-n\d+$/.test(scenario) ? scenario : null;
+}
+
 /**
- * The groupOf that SIM_GROUPS names: `model` (unset or empty, baseModelOf) or
- * `scenario` (scenarioGroupOf). Throws, naming the value, for anything else.
+ * The groupOf that SIM_GROUPS names: `model` (unset or empty, baseModelOf),
+ * `scenario` (scenarioGroupOf) or `recency` (driftGroupOf). Throws, naming the
+ * value, for anything else.
  */
 export function parseGroups(text: string | undefined): (scenario: string) => string | null {
   if (text === undefined || text === '' || text === 'model') return baseModelOf;
   if (text === 'scenario') return scenarioGroupOf;
-  throw new Error(`SIM_GROUPS: ${text} is not a grouping (model, scenario)`);
+  if (text === 'recency') return driftGroupOf;
+  throw new Error(`SIM_GROUPS: ${text} is not a grouping (model, scenario, recency)`);
 }
 
 /** The list size from a name ending in `-n<size>`, or null. */

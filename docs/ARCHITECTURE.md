@@ -1111,10 +1111,19 @@ engine:
 The simulation is `tests/sim/`; its users are careful, typical, fuzzy and sloppy,
 plus users who use "Much better" often, rarely or inconsistently, lists with true
 ties, clusters and gaps, bad "Ranked" imports and reversed sections, users who
-move items wrongly and then correct, and lists with many "don't recognize"
-items. It measures, at every quarter of `n` answers, mean, median and
-worst-decile displacement, the share within 5% and within 1%, Kendall pair
-accuracy, and the accuracy of the top 20.
+move items wrongly and then correct, lists with many "don't recognize"
+items, and users whose mind changes partway through. It measures, at every
+quarter of `n` answers, mean, median and worst-decile displacement, the share
+within 5% and within 1%, Kendall pair accuracy, and the accuracy of the top 20.
+
+The drift scenarios (tag `cal-recency`; 6, 12 and 100 items, and 60 in the `ci`
+set) change a typical user's mind after `4n` answers on lists under 26 items
+and `3n` from 26 up: 20% of the items, and at least two, take one another's
+values, so each of them moves. The run lasts a further `8n` answers, and its
+gate is the answers after the change until the shown order matches the new
+truth exactly (under 26 items) or 90% of items are within 5% of their new
+place (from 26 up). They calibrate how much later answers outweigh earlier
+ones on the same pair (6.1).
 
 ## 12. Future extension paths
 

@@ -454,3 +454,31 @@ describe('runScenario', () => {
     );
   });
 });
+
+describe('a drift scenario', () => {
+  const drifting = scenario({
+    name: 'drift-small',
+    n: 6,
+    budgetAnswers: 24 + 48,
+    extras: { drift: { at: 24, share: 0.2, minItems: 2 } },
+  });
+
+  it('changes the values the user answers by after the drift point, keeping the set of values', () => {
+    const valuesAt = new Map<number, number[]>();
+    let answers = 0;
+    const trace = runScenario(drifting, 1, ({ answer, world }) => {
+      if (answer) answers++;
+      if (answer && (answers === 24 || answers === 25)) {
+        valuesAt.set(
+          answers,
+          world.ids.map((id) => world.value(id)),
+        );
+      }
+    });
+    const before = valuesAt.get(24) as number[];
+    const after = valuesAt.get(25) as number[];
+    expect(before.filter((value, k) => value !== after[k]).length).toBeGreaterThanOrEqual(2);
+    expect([...after].sort()).toEqual([...before].sort());
+    expect(trace.answersToGate === null || trace.answersToGate <= 48).toBe(true);
+  });
+});

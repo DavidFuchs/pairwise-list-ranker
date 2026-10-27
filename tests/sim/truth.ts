@@ -29,6 +29,13 @@ export interface World {
   truthOver(shown: readonly string[]): Truth;
   /** The strict rank, 0 for the best, with ties in value broken by id. */
   trueRank(id: string): number;
+  /**
+   * A change of heart: picks max(minItems, round(share * n)) items and gives
+   * each the value of the next in a shuffled order (the last takes the
+   * first's), so every picked item changes value and the set of values stays
+   * the same. Every reading after it sees the new values. Returns the picked ids.
+   */
+  drift(share: number, minItems: number, random: () => number): string[];
 }
 
 /** Import position to true rank (0 is best), before any ties are applied. */
@@ -129,6 +136,14 @@ export function makeWorld(options: {
     ids,
     value: (id) => values.get(id)!,
     trueRank: (id) => strictRanks().get(id)!,
+    drift(share, minItems, random) {
+      const count = Math.min(ids.length, Math.max(minItems, Math.round(share * ids.length)));
+      const picked = shuffled(ids, random).slice(0, count);
+      const old = picked.map((id) => values.get(id)!);
+      picked.forEach((id, k) => values.set(id, old[(k + 1) % count]!));
+      strict = null;
+      return picked;
+    },
     truthOver(shown) {
       const spans = new Map<string, [number, number]>();
       for (const id of shown) {

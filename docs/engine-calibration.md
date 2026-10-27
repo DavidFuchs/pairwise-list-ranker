@@ -115,12 +115,12 @@ files (the rule is written at the top of `tests/sim/compare.ts`). It reads
 `docs/engine-calibration-runs/<label>.json` for each label and writes
 `compare-<first candidate>.md` beside them. Settings:
 
-| Variable         | Meaning                                                                                                                                      |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SIM_CURRENT`    | The label of the current value's run (`baseline` is one).                                                                                    |
-| `SIM_CANDIDATES` | A comma list of labels to compare with it.                                                                                                   |
-| `SIM_SCENARIOS`  | Optional: a regular expression, matched as `SIM_FILTER` is, that limits the comparison. Unset compares every scenario of the current file.   |
-| `SIM_GROUPS`     | Optional: `model` (the default: the mean over the four base models, other scenarios are guards) or `scenario` (each scenario its own group). |
+| Variable         | Meaning                                                                                                                                                                                                          |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SIM_CURRENT`    | The label of the current value's run (`baseline` is one).                                                                                                                                                        |
+| `SIM_CANDIDATES` | A comma list of labels to compare with it.                                                                                                                                                                       |
+| `SIM_SCENARIOS`  | Optional: a regular expression, matched as `SIM_FILTER` is, that limits the comparison. Unset compares every scenario of the current file.                                                                       |
+| `SIM_GROUPS`     | Optional: `model` (the default: the mean over the four base models, other scenarios are guards), `scenario` (each scenario its own group) or `recency` (each drift scenario its own group, every other a guard). |
 
 In short: seeds are paired by number; a scenario's change is the mean of
 (candidate - current) / current over its paired seeds; a candidate more than 10%

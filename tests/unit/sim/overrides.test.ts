@@ -109,3 +109,10 @@ describe('the override mocks reach the engine', () => {
     expect(evidence.activeTerms(timeline).pairs).toEqual([{ winner: a, loser: b, weight: 3, eventIndex: 0 }]);
   });
 });
+
+describe('RECENCY_FACTOR', () => {
+  it('can be overridden', () => {
+    expect(OVERRIDABLE).toContain('RECENCY_FACTOR');
+    expect(parseOverrides('{"RECENCY_FACTOR":0.5}')).toEqual({ RECENCY_FACTOR: 0.5 });
+  });
+});

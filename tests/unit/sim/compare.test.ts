@@ -471,3 +471,12 @@ describe('formatDecision', () => {
     expect(text).not.toContain(String.fromCharCode(0x2014));
   });
 });
+
+describe("parseGroups('recency')", () => {
+  it('makes each drift scenario its own group and every other a guard', () => {
+    const groupOf = parseGroups('recency');
+    expect(groupOf('typical-unordered-drift-n6')).toBe('typical-unordered-drift-n6');
+    expect(groupOf('typical-unordered-drift-n100')).toBe('typical-unordered-drift-n100');
+    expect(groupOf('typical-unordered-pairs-n100')).toBeNull();
+  });
+});

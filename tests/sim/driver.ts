@@ -26,6 +26,12 @@ export interface ScenarioExtras {
    * move is recorded as a probe in the trace.
    */
   probeMoves?: { every: number; count: number; kind: 'near' | 'far' };
+  /**
+   * After `at` answers the user's mind changes: World.drift(share, minItems)
+   * gives some items new values, and the gate is measured from then on against
+   * the new truth.
+   */
+  drift?: { at: number; share: number; minItems: number };
 }
 
 export interface Scenario {
@@ -78,7 +84,10 @@ export interface Trace {
   scenario: string;
   seed: number;
   samples: Sample[];
-  /** Answers until within5 first reached 0.9, or null if it never did within the budget. */
+  /**
+   * Answers until within5 first reached 0.9, or null if it never did within the budget. In a drift
+   * scenario, the answers after the drift until the drift gate was met against the new truth.
+   */
   answersToGate: number | null;
   probes: MoveProbe[];
   /** Probe moves the driver wanted to make but could not: no candidate place gave the displacement asked for. */
@@ -116,6 +125,10 @@ const EPOCH_MS = Date.UTC(2026, 0, 1);
 /** Salts that give the user and the driver's own choices streams apart from the world's. */
 const USER_SALT = 0xc2b2ae35;
 const DRIVER_SALT = 0x85ebca6b;
+const DRIFT_SALT = 0x27d4eb2f;
+
+/** Under this many items, the drift gate is the exact order; from it up, the usual within5 gate. */
+const DRIFT_EXACT_UNDER = 26;
 
 function stamped(seed: number, index: number, body: EventBody): RankingEvent {
   return {
@@ -328,6 +341,20 @@ export function runScenario(scenario: Scenario, seed: number, observe?: (step: D
   const gateSamples: { answers: number; within5: number }[] = [];
   let reached = false;
 
+  const drift = extras.drift;
+  const driftThreshold = n < DRIFT_EXACT_UNDER ? 1 : GATE_WITHIN5;
+  /** The drift gate's reading: the share of pairs the right way round on a short list, within5 on a long one. */
+  const driftScore = (measures: Measures): number =>
+    n < DRIFT_EXACT_UNDER ? measures.kendall : measures.within5;
+  const driftSamples: { answers: number; within5: number }[] = [];
+  let drifted = false;
+  /** Samples the drift gate after every answer from the drift until it is met. */
+  const sampleDrift = (at: number): void => {
+    if (!drifted || driftSamples.some((sample) => sample.within5 >= driftThreshold)) return;
+    const shown = session.state.ranked;
+    driftSamples.push({ answers: at, within5: driftScore(measure(shown, world.truthOver(shown))) });
+  };
+
   actBetween(0);
   {
     // Before the first question: a list that starts at the gate reports 0 answers to it.
@@ -365,6 +392,13 @@ export function runScenario(scenario: Scenario, seed: number, observe?: (step: D
       }
     }
 
+    sampleDrift(answers);
+    if (drift && !drifted && answers === drift.at) {
+      world.drift(drift.share, drift.minItems, seededRandom((seed ^ DRIFT_SALT) >>> 0));
+      drifted = true;
+      sampleDrift(answers);
+    }
+
     if (answers < budgetAnswers) actBetween(answers);
   }
 
@@ -372,7 +406,12 @@ export function runScenario(scenario: Scenario, seed: number, observe?: (step: D
     scenario: scenario.name,
     seed,
     samples,
-    answersToGate: answersToThreshold(gateSamples, GATE_WITHIN5),
+    answersToGate: drift
+      ? (() => {
+          const at = answersToThreshold(driftSamples, driftThreshold);
+          return at === null ? null : at - drift.at;
+        })()
+      : answersToThreshold(gateSamples, GATE_WITHIN5),
     probes,
     probesSkipped,
   };

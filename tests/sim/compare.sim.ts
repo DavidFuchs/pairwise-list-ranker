@@ -15,7 +15,8 @@ import { scenarios } from '@/tests/sim/scenarios';
  * SIM_FILTER is; unset compares every scenario in the current file) and
  * SIM_GROUPS (optional: `model`, the default, takes the mean over the base
  * models and treats every other scenario as a guard; `scenario` makes each
- * scenario its own group, as the three "Much better" habits need). It reads
+ * scenario its own group, as the three "Much better" habits need; `recency`
+ * makes each drift scenario its own group and every other a guard). It reads
  * docs/engine-calibration-runs/<label>.json for each label, prints the result
  * and writes it to docs/engine-calibration-runs/compare-<first candidate>.md.
  * With SIM_CURRENT and SIM_CANDIDATES unset there is nothing to compare and it

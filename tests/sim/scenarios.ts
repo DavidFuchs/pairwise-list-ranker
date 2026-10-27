@@ -117,6 +117,27 @@ function probeSet(n: number): Scenario[] {
   }));
 }
 
+/** Share of the items whose values change at the drift point, and the fewest that do. */
+const DRIFT_SHARE = 0.2;
+const DRIFT_MIN_ITEMS = 2;
+
+/**
+ * A typical user whose mind changes partway through (docs/ARCHITECTURE.md 11):
+ * after `at` answers some items get new values, and the run lasts a further 8n
+ * answers. Short lists drift later, at 4n, since every pair has been asked by
+ * then; longer ones at 3n.
+ */
+function drift(n: number): Scenario {
+  const at = (n < 26 ? 4 : 3) * n;
+  return {
+    ...base('typical', 'unordered', n),
+    name: `typical-unordered-drift-n${n}`,
+    tags: ['cal-recency'],
+    budgetAnswers: at + BUDGET_PER_ITEM * n,
+    extras: { drift: { at, share: DRIFT_SHARE, minItems: DRIFT_MIN_ITEMS } },
+  };
+}
+
 /** A variant of the typical scenario, named `typical-<start>-<variant>-n<n>`. */
 function variant(
   variantName: string,
@@ -175,6 +196,7 @@ export function scenarios(size: 'ci' | 'full'): Scenario[] {
       ...calPairsSet(60, ['careful']).filter((s) => s.startingOrder === 'rough'),
       ...strongPairsSet(60),
       ...probeSet(60),
+      drift(60),
     ];
   }
   return [
@@ -186,5 +208,8 @@ export function scenarios(size: 'ci' | 'full'): Scenario[] {
     ...calPairsSet(100),
     ...strongPairsSet(100),
     ...probeSet(100),
+    drift(6),
+    drift(12),
+    drift(100),
   ];
 }

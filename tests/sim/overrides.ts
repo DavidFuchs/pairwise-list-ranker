@@ -15,6 +15,7 @@ export const BT_CONSTANTS = [
   'DRAW_WEIGHT_EACH_WAY',
   'PLACEMENT_SD_FRACTION',
   'REPEAT_FACTOR',
+  'RECENCY_FACTOR',
 ] as const;
 
 /** Every constant a run may override. */

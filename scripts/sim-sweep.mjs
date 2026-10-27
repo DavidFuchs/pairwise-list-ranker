@@ -36,6 +36,7 @@ const CONSTANTS = {
   DRAW_WEIGHT_EACH_WAY: { atLeast: 0 },
   PLACEMENT_SD_FRACTION: { above: 0 },
   REPEAT_FACTOR: { above: 0, atMost: 1 },
+  RECENCY_FACTOR: { atLeast: 0, atMost: 1 },
 };
 
 const PICKERS = ['current', 'adjacent'];

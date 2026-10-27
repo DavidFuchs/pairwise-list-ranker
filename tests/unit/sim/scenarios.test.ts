@@ -37,10 +37,10 @@ describe.each(['ci', 'full'] as const)("scenarios('%s')", (size) => {
     for (const item of SPEC_ITEMS) expect(covered, item).toContain(item);
   });
 
-  it('gives every scenario a tags array and a budget of 8n answers, the probe scenarios aside', () => {
+  it('gives every scenario a tags array and a budget of 8n answers, the probe and drift scenarios aside', () => {
     for (const s of set) {
       expect(Array.isArray(s.tags), s.name).toBe(true);
-      if (s.extras?.probeMoves) continue;
+      if (s.extras?.probeMoves || s.extras?.drift) continue;
       expect(s.budgetAnswers, s.name).toBe(8 * s.n);
     }
   });
@@ -135,7 +135,10 @@ describe('scenario sizes', () => {
         expect(new Set(sizes), `${model} ${start}`).toEqual(new Set([100, 400]));
       }
     }
-    const tagged = set.filter((s) => (s.tags ?? []).some((tag) => tag !== 'strongOften'));
+    // The drift scenarios also run on short lists, where repeated pairs are common.
+    const tagged = set.filter(
+      (s) => (s.tags ?? []).some((tag) => tag !== 'strongOften') && !s.tags?.includes('cal-recency'),
+    );
     expect(tagged.filter((s) => s.n !== 100).map((s) => s.name)).toEqual([]);
   });
 
@@ -210,12 +213,36 @@ describe('the calibration scenarios', () => {
     );
   });
 
-  it('gives every new scenario a budget of 8n answers, the probe scenarios aside', () => {
+  it('gives every new scenario a budget of 8n answers, the probe and drift scenarios aside', () => {
     const calibration = full.filter(
-      (s) => (s.tags ?? []).some((tag) => tag.startsWith('cal-')) && !s.extras?.probeMoves,
+      (s) =>
+        (s.tags ?? []).some((tag) => tag.startsWith('cal-')) && !s.extras?.probeMoves && !s.extras?.drift,
     );
     expect(calibration.length).toBeGreaterThan(0);
     for (const s of calibration) expect(s.budgetAnswers, s.name).toBe(8 * s.n);
+  });
+
+  it('has the drift scenarios: 6, 12 and 100 items in full, 60 in ci, each 8n answers past the drift', () => {
+    expect(taggedWith('cal-recency')).toEqual([
+      'typical-unordered-drift-n6',
+      'typical-unordered-drift-n12',
+      'typical-unordered-drift-n100',
+    ]);
+    const expected: Record<string, number> = {
+      'typical-unordered-drift-n6': 24,
+      'typical-unordered-drift-n12': 48,
+      'typical-unordered-drift-n100': 300,
+      'typical-unordered-drift-n60': 180,
+    };
+    for (const s of [...full, ...ci].filter((x) => x.tags?.includes('cal-recency'))) {
+      const at = expected[s.name];
+      expect(at, s.name).toBeDefined();
+      expect(s.extras?.drift, s.name).toEqual({ at, share: 0.2, minItems: 2 });
+      expect(s.budgetAnswers, s.name).toBe((at as number) + 8 * s.n);
+    }
+    expect(ci.filter((s) => s.tags?.includes('cal-recency')).map((s) => s.name)).toEqual([
+      'typical-unordered-drift-n60',
+    ]);
   });
 
   it('has the three strong habits', () => {
