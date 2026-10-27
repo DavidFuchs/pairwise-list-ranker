@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { replay } from '@/lib/ranking/bt/engine';
-import { disorderOfState, levelOf, type ProgressLevel } from '@/lib/ranking/bt/progress';
+import { disorderOfState, levelOf, pairChances, type ProgressLevel } from '@/lib/ranking/bt/progress';
 import { selectProgressState } from '@/lib/state/progress';
-import { explainProgress, type Spot } from '@/lib/state/progressExplain';
+import { DOUBT, explainProgress, type Spot } from '@/lib/state/progressExplain';
 import { rankedList, recorded } from '@/tests/helpers/snapshots';
 import { drivenHistory } from '@/tests/helpers/engineCorpus';
 import type { PairOutcome, RankingEvent, StartingOrder } from '@/types/rankingEvents';
@@ -118,7 +118,8 @@ describe('explainProgress', () => {
     const byWinner = Object.fromEntries(circle.answers.map((answer) => [answer.winner, answer.answer]));
     expect(byWinner).toEqual({ reykjavik: 1, 'cape-breton': 9, lisbon: 15 });
     expect(circle.chance).toBeGreaterThan(0.4);
-    expect(circle.next).toBe(state.nextPair !== null && state.nextPair.every((id) => loop.includes(id)));
+    expect(state.nextPair?.every((id) => loop.includes(id))).toBe(true);
+    expect(circle.next).toBe(true);
     expect(explanation.settled).toEqual({ first: ['banff'], middle: [], last: ['dubrovnik', 'amalfi'] });
     expect(explanation.moreSpots).toBe(0);
   });
@@ -214,6 +215,83 @@ describe('explainProgress', () => {
     );
   });
 
+  it('counts a pair with one clear answer and a draw as resting on one answer', () => {
+    const events = [
+      ask('a', 'b'),
+      ask('a', 'b', 'draw'),
+      ...answered([
+        ['x', 'a'],
+        ['x', 'b'],
+        ['a', 'y'],
+        ['b', 'y'],
+      ]),
+    ];
+    const spot = explain(['a', 'b', 'x', 'y'], events).explanation.spots[0] as PairSpot;
+    expect(spot.kind).toBe('one-answer');
+    expect(spot.answers.map((answer) => [answer.answer, answer.draw])).toEqual([
+      [1, false],
+      [2, true],
+    ]);
+  });
+
+  it('follows a circle of four in order, each answer from one item to the next', () => {
+    const events = answered([
+      ['a', 'b'],
+      ['b', 'c'],
+      ['c', 'd'],
+      ['d', 'a'],
+      ['x', 'a'],
+      ['x', 'b'],
+      ['x', 'c'],
+      ['x', 'd'],
+    ]);
+    const { explanation } = explain(['a', 'b', 'c', 'd', 'x'], events);
+    expect(kinds(explanation.spots)).toEqual(['circle']);
+    const circle = explanation.spots[0] as Extract<Spot, { kind: 'circle' }>;
+    expect(circle.items).toHaveLength(4);
+    circle.answers.forEach((answer, k) => {
+      expect(answer.winner).toBe(circle.items[k]);
+      expect(answer.loser).toBe(circle.items[(k + 1) % circle.items.length]);
+    });
+  });
+
+  it('puts every pair that circles through a known circle with it, whatever its chance', () => {
+    // a, b and c go in a circle, and so do a, b and d; c and d are a toss-up only because of them.
+    const events = answered([
+      ['a', 'b'],
+      ['b', 'c'],
+      ['c', 'a'],
+      ['b', 'd'],
+      ['d', 'a'],
+    ]);
+    const { explanation } = explain(['a', 'b', 'c', 'd'], events);
+    expect(kinds(explanation.spots)).toEqual(['circle']);
+    expect(explanation.spots[0]?.chance).toBeGreaterThan(0.45);
+    expect(explanation.moreSpots).toBe(0);
+    expect(explanation.doubtful).toBe(0);
+  });
+
+  it('at the top level gives the spot with the likeliest pair, not the heaviest', () => {
+    // The circle's pairs add up to more, but x and y are a closer call than any of them.
+    const events = answered([
+      ['a', 'b'],
+      ['a', 'b'],
+      ['b', 'c'],
+      ['b', 'c'],
+      ['c', 'a'],
+      ['x', 'z'],
+      ['y', 'z'],
+    ]);
+    const ids = ['a', 'b', 'c', 'x', 'y', 'z'];
+    expect(kinds(explain(ids, events).explanation.spots)[0]).toBe('circle');
+    const { explanation } = explain(ids, events, 'unordered', 3);
+    expect(explanation.spots).toEqual([
+      expect.objectContaining({ kind: 'inferred', above: 'x', below: 'y' }),
+    ]);
+    expect(explanation.moreSpots).toBe(0);
+    expect(explanation.doubtful).toBe(0);
+  });
+
   it('lists the items not yet compared while comparing, with no spots', () => {
     const { explanation } = explain(['a', 'b', 'c', 'd'], [ask('a', 'b')]);
     expect(explanation.state.kind).toBe('comparing');
@@ -271,5 +349,27 @@ describe('explainProgress', () => {
     expect(explanation.spots.length).toBe(3);
     expect(explanation.moreSpots).toBeGreaterThan(0);
     expect(explanation.settled).toBeNull();
+  });
+
+  it('looks for causes only among the likeliest pairs early on a long list, and counts each pair once', () => {
+    // Early on, a thousand items leave hundreds of thousands of pairs in doubt.
+    const history = drivenHistory({ n: 1000, events: 1200, seed: 3, user: 'typical' });
+    const state = replay(history);
+    const inDoubt = (pairChances(state) ?? []).filter((pair) => pair.chance >= DOUBT).length;
+    expect(inDoubt).toBeGreaterThan(100_000);
+    const started = performance.now();
+    const explanation = explainProgress({
+      state: { kind: 'level', disorder: 0.2, items: 1000 },
+      level: 0,
+      events: history.events,
+      shown: state.ranked,
+      evidence: state,
+    });
+    expect(performance.now() - started).toBeLessThan(1500);
+    expect(explanation.spots.length).toBe(3);
+    // Each pair in doubt is in a spot, given or not, or counted on its own, never both.
+    const spots = explanation.spots.length + explanation.moreSpots;
+    expect(explanation.doubtful).toBeLessThanOrEqual(inDoubt - spots);
+    expect(explanation.doubtful).toBeGreaterThanOrEqual(inDoubt - 200);
   });
 });

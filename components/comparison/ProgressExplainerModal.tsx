@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { ProgressLine } from '@/components/comparison/ProgressLine';
 import { Modal } from '@/components/ui/Modal';
 import type { ProgressDisplay } from '@/lib/state/progress';
+import { formatCount } from '@/lib/state/selectors';
 import {
   MAX_CIRCLE_PICTURE,
   type AnswerRef,
@@ -57,7 +58,7 @@ function Explanation({
   explanation: ProgressExplanation;
   labelOf: (id: string) => string;
 }) {
-  const { state, level, spots, moreSpots } = explanation;
+  const { state, level, spots, moreSpots, doubtful } = explanation;
 
   if (state.kind === 'comparing') {
     const named = explanation.uncompared.slice(0, MAX_UNCOMPARED_NAMED).map(labelOf);
@@ -81,11 +82,7 @@ function Explanation({
     state.kind === 'ranked-start'
       ? "Your list started in an order you said was already ranked, so Pairwise trusts that order and can't measure how far off it is. What it can show is where your answers disagree with it."
       : level === 0
-        ? `Many items could still move several places.${
-            explanation.doubtful > 0
-              ? ` ${plural(explanation.doubtful, 'more pair')} ${explanation.doubtful === 1 ? 'is' : 'are'} still in doubt.`
-              : ''
-          }`
+        ? 'Many items could still move several places.'
         : level === 1
           ? 'Most of the order is settled. A few spots are still in doubt:'
           : level === 2
@@ -103,9 +100,7 @@ function Explanation({
       {spots.map((spot, index) => (
         <SpotCard key={index} spot={spot} labelOf={labelOf} />
       ))}
-      {moreSpots > 0 && (
-        <Text style={styles.body}>{`And ${plural(moreSpots, 'more spot')} like these.`}</Text>
-      )}
+      {(moreSpots > 0 || doubtful > 0) && <Text style={styles.body}>{restOf(explanation)}</Text>}
       {level === 3 ? (
         <Text style={styles.body}>You can stop here, or keep going to be sure.</Text>
       ) : (
@@ -146,7 +141,16 @@ function joinNames(names: readonly string[]): string {
 }
 
 function plural(count: number, noun: string): string {
-  return count === 1 ? `1 ${noun}` : `${count} ${noun}s`;
+  return `${formatCount(count)} ${count === 1 ? noun : `${noun}s`}`;
+}
+
+/** What the window leaves out: the spots past the ones given, then the pairs in doubt in no spot. */
+function restOf({ spots, moreSpots, doubtful }: ProgressExplanation): string {
+  const pairs =
+    doubtful === 0
+      ? ''
+      : `${plural(doubtful, spots.length > 0 ? 'other pair' : 'pair')} ${doubtful === 1 ? 'is' : 'are'} still in doubt.`;
+  return moreSpots > 0 ? `And ${plural(moreSpots, 'more spot')} like these.${pairs && ` ${pairs}`}` : pairs;
 }
 
 /** How likely a spot's likeliest pair is to be the wrong way round, in words; null when it is not worth a word. */
@@ -220,7 +224,8 @@ function SpotCard({ spot, labelOf }: { spot: Spot; labelOf: (id: string) => stri
       settles = 'A question or two about it will confirm the spot.';
       break;
     case 'one-answer':
-      heading = 'Only one answer between these';
+      heading =
+        spot.answers.length > 1 ? 'Only one clear answer between these' : 'Only one answer between these';
       body = <Answers lines={spot.answers.map(answer)} />;
       settles = 'Another answer would confirm it.';
       break;

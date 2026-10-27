@@ -38,7 +38,7 @@ export type Spot = SpotBase &
         answers: AnswerRef[];
       }
     | {
-        /** Answered directly both ways; every direct answer a draw; or one direct answer and nothing more. */
+        /** Answered directly both ways; every direct answer a draw; or one clear direct answer, with draws or alone. */
         kind: 'both-ways' | 'undecided' | 'one-answer';
         above: string;
         below: string;
@@ -66,7 +66,7 @@ export interface ProgressExplanation {
   spots: Spot[];
   /** Spots past the ones given. */
   moreSpots: number;
-  /** Pairs in doubt that no given spot covers. */
+  /** Pairs in doubt in no spot, given or not; none at the top level. */
   doubtful: number;
   /**
    * The shown items in no pair in doubt, on a list under 26 items: by name when
@@ -83,6 +83,8 @@ export const TOP_LEVEL_DOUBT = 0.1;
 export const MAX_SPOTS = 3;
 /** The most answers a chain or either half of a circle is followed through. */
 const MAX_CHAIN = 3;
+/** The most pairs in doubt looked at for a cause; the rest are counted. */
+const MAX_CLASSIFIED = 200;
 /** Circles up to this many items are drawn; longer ones are written out. */
 export const MAX_CIRCLE_PICTURE = 4;
 /** Settled items are named up to this many. */
@@ -239,43 +241,65 @@ export function explainProgress(input: {
   const next = evidence.nextPair === null ? null : keyOf(evidence.nextPair[0], evidence.nextPair[1]);
 
   /** Each spot, with the sum of its pairs' chances to rank it by and the pairs it covers. */
-  const found: { spot: Spot; total: number; pairs: number }[] = [];
-  const add = (spot: Spot): void => {
-    found.push({ spot, total: spot.chance, pairs: 1 });
+  type Found = { spot: Spot; total: number; pairs: number };
+  const found: Found[] = [];
+  /** The circle spot each item is in, and the moved spot of each moved item. */
+  const circleWith = new Map<string, Found>();
+  const movedSpot = new Map<string, Found>();
+  const add = (spot: Spot): Found => {
+    const at = { spot, total: spot.chance, pairs: 1 };
+    found.push(at);
+    return at;
   };
-  const join = (at: (typeof found)[number], chance: number, isNext: boolean): void => {
+  const join = (at: Found, chance: number, isNext: boolean): void => {
     at.total += chance;
     at.pairs++;
     at.spot.chance = Math.max(at.spot.chance, chance);
     at.spot.next ||= isNext;
   };
 
-  for (const { above, below, chance } of doubts) {
-    const isNext = next === keyOf(above, below);
-    const met = direct.get(keyOf(above, below)) ?? [];
+  // Only the likeliest pairs are worth a cause: past these, a long list early on
+  // has hundreds of thousands in doubt, and they are only counted.
+  const looked = doubts.slice(0, MAX_CLASSIFIED).map((pair) => {
+    const met = direct.get(keyOf(pair.above, pair.below)) ?? [];
     const clear = met.filter((answer) => !answer.draw);
+    const bothWays =
+      clear.some((answer) => answer.winner === pair.above) &&
+      clear.some((answer) => answer.winner === pair.below);
+    const down = bothWays ? null : chainBetween(pair.above, pair.below, beat, shownSet);
+    const up = down && chainBetween(pair.below, pair.above, beat, shownSet);
+    return { ...pair, met, clear, bothWays, down, up, made: false };
+  });
+
+  // Circles first, so a pair is put with a circle whatever its chance. Circles
+  // that share an item are one spot, drawn as the first one found.
+  for (const pair of looked) {
+    if (!pair.down || !pair.up) continue;
+    const circle = circleOf(pair.down, pair.up, position);
+    if (circle === null || circle.items.some((id) => circleWith.has(id))) continue;
+    const nextInIt = evidence.nextPair !== null && evidence.nextPair.every((id) => circle.items.includes(id));
+    const at = add({ chance: pair.chance, next: nextInIt, kind: 'circle', ...circle });
+    for (const id of circle.items) circleWith.set(id, at);
+    pair.made = true;
+  }
+
+  for (const { above, below, chance, met, clear, bothWays, down, up, made } of looked) {
+    if (made) continue;
+    const isNext = next === keyOf(above, below);
     const base = { chance, next: isNext };
 
-    if (clear.some((answer) => answer.winner === above) && clear.some((answer) => answer.winner === below)) {
+    if (bothWays) {
       add({ ...base, kind: 'both-ways', above, below, answers: met });
       continue;
     }
 
-    const inCircle = found.find(
-      (at) => at.spot.kind === 'circle' && at.spot.items.includes(above) && at.spot.items.includes(below),
-    );
-    if (inCircle !== undefined) {
-      join(inCircle, chance, isNext);
-      continue;
-    }
-    const down = chainBetween(above, below, beat, shownSet);
-    const up = down && chainBetween(below, above, beat, shownSet);
-    const circle = down && up && circleOf(down, up, position);
-    if (circle) {
-      const nextInIt =
-        evidence.nextPair !== null && evidence.nextPair.every((id) => circle.items.includes(id));
-      add({ ...base, kind: 'circle', ...circle, next: nextInIt });
-      continue;
+    if (down && up) {
+      const through = [...down, ...up].flatMap((answer) => [answer.winner, answer.loser]);
+      const sharing = through.map((id) => circleWith.get(id)).find((at) => at !== undefined);
+      if (sharing !== undefined) {
+        join(sharing, chance, isNext);
+        continue;
+      }
     }
 
     if (met.length > 0 && clear.length === 0) {
@@ -288,23 +312,17 @@ export function explainProgress(input: {
     );
     if (moved !== undefined) {
       const movedNext = evidence.nextPair?.includes(moved) ?? false;
-      const known = found.find((at) => at.spot.kind === 'moved' && at.spot.item === moved);
-      if (known !== undefined) join(known, chance, movedNext);
-      else add({ ...base, kind: 'moved', item: moved, next: movedNext });
+      const at = movedSpot.get(moved);
+      if (at !== undefined) join(at, chance, movedNext);
+      else movedSpot.set(moved, add({ ...base, kind: 'moved', item: moved, next: movedNext }));
       continue;
     }
 
     if (met.length === 0) {
-      add({
-        ...base,
-        kind: 'inferred',
-        above,
-        below,
-        chain: chainBetween(above, below, beat, shownSet) ?? [],
-      });
+      add({ ...base, kind: 'inferred', above, below, chain: down ?? [] });
       continue;
     }
-    if (met.length === 1) {
+    if (clear.length === 1) {
       add({ ...base, kind: 'one-answer', above, below, answers: met });
       continue;
     }
@@ -312,17 +330,24 @@ export function explainProgress(input: {
 
   // Stable, so spots of equal weight keep the order of their likeliest pair.
   found.sort((a, b) => b.total - a.total);
-  const limit =
-    level === 3 ? (found[0] !== undefined && found[0].spot.chance > TOP_LEVEL_DOUBT ? 1 : 0) : MAX_SPOTS;
-  const given = found.slice(0, limit);
-  const covered = given.reduce((total, at) => total + at.pairs, 0);
+  // The top level gives only the likeliest change, and only past TOP_LEVEL_DOUBT.
+  const likeliest = found.reduce<Found | undefined>(
+    (best, at) => (best === undefined || at.spot.chance > best.spot.chance ? at : best),
+    undefined,
+  );
+  const given =
+    level === 3
+      ? likeliest !== undefined && likeliest.spot.chance > TOP_LEVEL_DOUBT
+        ? [likeliest]
+        : []
+      : found.slice(0, MAX_SPOTS);
 
   const doubted = new Set(doubts.flatMap((pair) => [pair.above, pair.below]));
   return {
     ...empty,
     spots: given.map((at) => at.spot),
     moreSpots: level === 3 ? 0 : found.length - given.length,
-    doubtful: doubts.length - covered,
+    doubtful: level === 3 ? 0 : doubts.length - found.reduce((total, at) => total + at.pairs, 0),
     settled: settledOf(shown, evidence.slots, doubted),
   };
 }

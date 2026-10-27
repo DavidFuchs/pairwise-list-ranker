@@ -98,7 +98,7 @@ a closing line.
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | comparing                                  | "Pairwise can't say how close the order is until every item has been compared at least once. These haven't been yet:" then up to 8 item names, and "and N more" past that. No spots. Closing: "Keep answering to bring them in." (The picker has no rule to ask them first; their wide uncertainty only makes them likely.) |
 | ranked-start                               | "Your list started in an order you said was already ranked, so Pairwise trusts that order and can't measure how far off it is. What it can show is where your answers disagree with it." Then the spots, if any; if none: "None of your answers disagree with the starting order so far."                                   |
-| level 0, Rough order so far                | "Many items could still move several places." Then the spots. On a long list the paragraph adds the count: "N pairs are still close to a coin toss."                                                                                                                                                                        |
+| level 0, Rough order so far                | "Many items could still move several places." Then the spots.                                                                                                                                                                                                                                                               |
 | level 1, Taking shape                      | "Most of the order is settled. A few spots are still in doubt:" then the spots.                                                                                                                                                                                                                                             |
 | level 2, Close                             | "Only fine adjustments left. The last doubts:" then the spots.                                                                                                                                                                                                                                                              |
 | level 3, Changes from here should be small | "Nothing is left in real doubt." If any pair has a chance of flipping above 10%, "The likeliest remaining change:" and that one spot; otherwise no spots. Closing: "You can stop here, or keep going to be sure."                                                                                                           |
@@ -111,13 +111,14 @@ behind it, and a line saying what settles it.
 
 The kinds, in the order they are checked for a doubtful pair (A shown above B):
 
-1. **Circle.** The counted answers lead from A down to B and from B down to A
+1. **Answered both ways.** A and B were asked directly, and at least one answer
+   went each way. Heading: "You've picked both ways". Body lists each answer
+   with its number. Settles: "Another answer between these two decides it."
+   Checked first: the direct answers are the plainer cause.
+2. **Circle.** The counted answers lead from A down to B and from B down to A
    (A over X, X over B; B over A directly, or through one item). Shown as a
    loop. Heading: "These answers go in a circle". Settles: "One more answer
    between any two of these breaks the circle."
-2. **Answered both ways.** A and B were asked directly, and at least one answer
-   went each way. Heading: "You've picked both ways". Body lists each answer
-   with its number. Settles: "Another answer between these two decides it."
 3. **Couldn't decide.** Every direct answer between A and B was "Can't decide".
    Heading: "You couldn't decide between these". Settles: "If they really are
    even, their order doesn't matter much. If not, a clear answer settles it."
@@ -129,16 +130,25 @@ The kinds, in the order they are checked for a doubtful pair (A shown above B):
    counted answers since. Heading: "You moved Lisbon here". Settles: "A
    question or two about it will confirm the spot." Checked before 4, after 1
    to 3.
-6. **One answer, close call.** One direct answer, nothing else against it. Heading:
-   "Only one answer between these". Settles: "Another answer would confirm it."
+6. **One answer, close call.** One clear direct answer, alone or beside draws.
+   Heading: "Only one answer between these", or "Only one clear answer between
+   these" when there are draws too. Settles: "Another answer would confirm it."
 
 A pair that fits none of these (doubt from the general spread of a long list)
-is counted in "N more pairs are still close", not shown as a spot.
+is not shown as a spot. Only the 200 likeliest doubtful pairs are looked at for
+a cause; early on a long list there can be hundreds of thousands, and the rest
+are only counted.
 
-Grouping: pairs whose circles share their items are one circle spot (the
-three loop pairs of the trips list are one spot, not three). Spots are ordered
-by the sum of their pairs' flip chances. At most three are shown; past that,
-"and N more spots like these".
+Grouping: circles are found first, so every pair that circles through items of
+a known circle joins it whatever its chance (the three loop pairs of the trips
+list are one spot, not three). Circles that share an item are one spot, drawn
+as the first one found. Spots are ordered by the sum of their pairs' flip
+chances. At most three are shown. After them, one line says what is left out,
+each pair counted once: "And N more spots like these." for the spots past
+three, then "N other pairs are still in doubt." for doubtful pairs in no spot
+("N pairs are still in doubt." when no spot is shown). Counts over 999 use
+digit grouping. At the top level the one spot given is the one with the
+likeliest pair, and no counts are shown.
 
 If the next question on the cards is a pair in a spot, that spot's settle line
 ends with: "The next question is about this." That replaces the button for now.
@@ -214,7 +224,7 @@ interface ProgressExplanation {
   uncompared: string[]; // item ids, comparing stage only
   spots: Spot[]; // at most three
   moreSpots: number;
-  closePairs: number; // doubtful pairs not in any spot
+  closePairs: number; // doubtful pairs in no spot, given or not
   settled: string[]; // items in no doubtful pair, small lists only
 }
 
@@ -258,7 +268,9 @@ Steps:
 3. **Classify** each doubtful pair as in Spots. The circle search is a
    breadth-first search over the counted answers as a directed graph (winner to
    loser), at most three steps each way, starting only from the doubtful pair's
-   two items, so it stays cheap on long lists.
+   two items, and only for the 200 likeliest doubtful pairs, so it stays cheap
+   on long lists. Circles are made in a first pass over those pairs, so a pair
+   is grouped with a circle however its chance compares with the circle's.
 4. **Group and rank** spots, cut to three, and mark the one with the next pair.
 5. **Settled items** (lists under 26 only).
 

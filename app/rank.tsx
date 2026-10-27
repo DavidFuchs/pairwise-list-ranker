@@ -181,7 +181,12 @@ export default function RankScreen() {
   const layout = useMemo(() => (roles === undefined ? EMPTY_LAYOUT : cardLayout(roles)), [roles]);
 
   // The explainer is worked out only while its window is open, and afresh for each view.
-  const [explaining, setExplaining] = useState(false);
+  // The window belongs to the list it was opened on, so switching lists closes it.
+  const [explainingList, setExplainingList] = useState<string | undefined>(undefined);
+  const explaining = explainingList !== undefined && explainingList === listId;
+  // While the view rebuilds there is no progress; the open window keeps the last line it had.
+  const [lastProgress, setLastProgress] = useState(progress);
+  if (progress !== null && progress !== lastProgress) setLastProgress(progress);
   const explanation = useMemo(() => {
     if (!explaining || list === null || progress === null || view.status !== 'ready') return null;
     const evidence = engineHost.shownEvidence(list);
@@ -284,7 +289,7 @@ export default function RankScreen() {
               activeItems={activeItems(list).length}
               layout={layout}
               progress={progress?.display ?? null}
-              onExplainProgress={() => setExplaining(true)}
+              onExplainProgress={() => setExplainingList(listId)}
               trailing={
                 <ListSwitcher
                   currentPath={workspace.source.arrayPath}
@@ -305,11 +310,11 @@ export default function RankScreen() {
               }}
               onMarkUnrecognized={markUnrecognized}
             />
-            {progress !== null && (
+            {lastProgress !== null && (
               <ProgressExplainerModal
                 visible={explaining}
-                onClose={() => setExplaining(false)}
-                progress={progress.display}
+                onClose={() => setExplainingList(undefined)}
+                progress={(progress ?? lastProgress).display}
                 explanation={explanation}
                 labelOf={labelOf}
               />

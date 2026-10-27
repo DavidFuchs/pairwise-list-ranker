@@ -726,9 +726,14 @@ The strip says only what is true:
     as a loop of up to four items; every direct answer a draw; an item placed
     by a move with fewer than two counted answers since; never compared
     directly, with the shortest chain of answers that orders them; or one
-    direct answer. Pairs of one circle are one spot. The three heaviest spots
-    are shown, with what settles each, and a note when the next question is
-    about one; the top level shows one only past 10%. Answers a move set
+    clear direct answer. Only the 200 likeliest pairs are looked at for a
+    cause, so a long list early on, with hundreds of thousands in doubt,
+    still opens at once; the rest are counted. Circles are found first, and
+    every pair that circles through one, or circles that share an item, are
+    one spot. The three heaviest spots are shown, with what settles each, and
+    a note when the next question is about one, then a count of the spots
+    and pairs left out, each pair counted once. The top level shows only the
+    spot with the likeliest pair, and only past 10%. Answers a move set
     aside are never cited, since they are not among the fit's terms. While
     items are still uncompared it names them instead. The words describe the
     answers, never the person: a circle is close calls, not a change of mind.

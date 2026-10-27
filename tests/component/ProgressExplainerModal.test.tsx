@@ -131,9 +131,7 @@ describe('ProgressExplainerModal', () => {
       }),
       { text: 'Rough order so far.', bar: 'level', share: 0.25 },
     );
-    expect(
-      screen.getByText('Many items could still move several places. 5 more pairs are still in doubt.'),
-    ).toBeDefined();
+    expect(screen.getByText('Many items could still move several places.')).toBeDefined();
     expect(screen.getByText("You've picked both ways")).toBeDefined();
     expect(screen.getByText('Alpha over Bravo, answer 4.')).toBeDefined();
     expect(screen.getByText('Bravo over Alpha, answer 19.')).toBeDefined();
@@ -142,7 +140,34 @@ describe('ProgressExplainerModal', () => {
     expect(screen.getByText('Their order comes from how each did against other items.')).toBeDefined();
     expect(screen.getByText('Comparing them directly settles it.')).toBeDefined();
     expect(screen.getAllByText('could go either way')).toHaveLength(3);
-    expect(screen.getByText('And 2 more spots like these.')).toBeDefined();
+    expect(screen.getByText('And 2 more spots like these. 5 other pairs are still in doubt.')).toBeDefined();
+  });
+
+  it('counts the pairs in doubt in no spot, in digits a reader can take in', () => {
+    setup(atLevel(0, { doubtful: 443863 }), { text: 'Rough order so far.', bar: 'level', share: 0.25 });
+    expect(screen.getByText('443,863 pairs are still in doubt.')).toBeDefined();
+  });
+
+  it('says a pair with a draw beside its one answer has only one clear answer', () => {
+    setup(
+      atLevel(1, {
+        spots: [
+          {
+            kind: 'one-answer',
+            above: 'a',
+            below: 'b',
+            chance: 0.14,
+            next: false,
+            answers: [
+              { winner: 'a', loser: 'b', answer: 1, draw: false },
+              { winner: 'a', loser: 'b', answer: 2, draw: true },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(screen.getByText('Only one clear answer between these')).toBeDefined();
+    expect(screen.getByText("Can't decide between Alpha and Bravo, answer 2.")).toBeDefined();
   });
 
   it('names the items not yet compared, and counts past eight', () => {
