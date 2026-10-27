@@ -73,6 +73,18 @@ describe('ComparisonDeck layout', () => {
     expect(screen.getByText(close.text)).toBeDefined();
   });
 
+  it('offers "Why?" on the progress line only when it can open the explainer', async () => {
+    const onExplainProgress = vi.fn();
+    const { user } = setup({ progress: close, onExplainProgress });
+    await user.click(screen.getByRole('link', { name: 'Why is the order at this stage?' }));
+    expect(onExplainProgress).toHaveBeenCalledOnce();
+  });
+
+  it('has no "Why?" link without a way to open the explainer', () => {
+    setup({ progress: close });
+    expect(screen.queryByRole('link', { name: 'Why is the order at this stage?' })).toBeNull();
+  });
+
   it('fills the bar to the share the progress says, with ticks only for a level', () => {
     const width = () => screen.getByTestId('progress-fill').style.width;
 

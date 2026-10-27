@@ -73,6 +73,8 @@ export interface ComparisonDeckProps {
   trailing?: ReactNode;
   /** A quiet line under the count about how close the order is (docs/ARCHITECTURE.md 6.12). */
   progress?: ProgressDisplay | null;
+  /** Opens the window that explains the progress line; without it the line has no "Why?" link. */
+  onExplainProgress?: () => void;
 }
 
 // The inline gutter needs enough room for the vertical rule, the word "or",
@@ -115,6 +117,7 @@ export function ComparisonDeck({
   undoElsewhere,
   trailing,
   progress,
+  onExplainProgress,
 }: ComparisonDeckProps) {
   // Nothing half-built is ever answerable: unless the ranking is ready there is no pair.
   const pair = status === 'ready' ? shownPair : null;
@@ -307,7 +310,7 @@ export function ComparisonDeck({
             setProgressHeight((kept) => Math.max(kept, height));
           }}
         >
-          {progress !== null && <ProgressLine progress={progress} />}
+          {progress !== null && <ProgressLine progress={progress} onExplain={onExplainProgress} />}
         </View>
       )}
 

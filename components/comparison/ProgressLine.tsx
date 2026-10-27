@@ -9,9 +9,10 @@ import { colors, fonts, radius, space } from '@/lib/theme';
  * compared; after that it fills in quarters to the level, with a tick between
  * them; a list that started ranked keeps the full compared bar. The bar is
  * decoration for the eye; the words carry the meaning, so a screen reader meets
- * only them.
+ * only them. With `onExplain`, a "Why?" link after the words opens the
+ * explainer window.
  */
-export function ProgressLine({ progress }: { progress: ProgressDisplay }) {
+export function ProgressLine({ progress, onExplain }: { progress: ProgressDisplay; onExplain?: () => void }) {
   return (
     <View style={styles.row}>
       <View testID={`progress-bar-${progress.bar}`} style={styles.track} aria-hidden>
@@ -19,7 +20,22 @@ export function ProgressLine({ progress }: { progress: ProgressDisplay }) {
         {progress.bar === 'level' &&
           [25, 50, 75].map((at) => <View key={at} style={[styles.tick, { left: `${at}%` }]} />)}
       </View>
-      <Text style={styles.text}>{progress.text}</Text>
+      <Text style={styles.text}>
+        {progress.text}
+        {onExplain !== undefined && (
+          <>
+            {' '}
+            <Text
+              accessibilityRole="link"
+              accessibilityLabel="Why is the order at this stage?"
+              onPress={onExplain}
+              style={styles.link}
+            >
+              Why?
+            </Text>
+          </>
+        )}
+      </Text>
     </View>
   );
 }
@@ -36,4 +52,5 @@ const styles = StyleSheet.create({
   fill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: colors.accent },
   tick: { position: 'absolute', top: 0, bottom: 0, width: 2, backgroundColor: colors.surface },
   text: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary, flexShrink: 1 },
+  link: { color: colors.accentStrong, textDecorationLine: 'underline' },
 });
