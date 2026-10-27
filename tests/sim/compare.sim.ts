@@ -64,7 +64,7 @@ describe.skipIf(currentLabel === '' && candidateLabels.length === 0)('compare ca
       decision,
       current,
       filterText,
-      groupsText === 'scenario' ? 'scenario' : 'model',
+      groupsText === 'scenario' || groupsText === 'recency' ? groupsText : 'model',
     );
     // This config does not show console.log from a passing test; stdout itself does.
     process.stdout.write(text);

@@ -223,6 +223,20 @@ not undone, the item was placed (6.8) or marked "don't recognize" (6.9). A pair
 event counts only if both its items are still eligible for it. Eligibility goes
 through one predicate, never two implementations.
 
+**Later answers.** When the same two items have been compared more than once,
+each clear answer counts `0.5^k` of its weight, where `k` is the number of later
+counted clear answers between them that picked the other item. People work out
+what matters to them as they rank, so when their answers about a pair change,
+the later ones say more about what they think now. Answers that agree never
+discount each other, so answering a pair the same way again never makes the
+engine less sure; and after three answers one way it takes two the other way to
+tip the pair, so one stray answer does not. A draw neither discounts nor is
+discounted. Only counted answers take part: an answer the eligibility rule sets
+aside neither counts nor discounts anything. The discount is applied where the
+counted answers are chosen (`Evidence.activeTerms`), so the fit, the flip
+chances, the levels and the explainer all read the same weights. Calibrated, see
+docs/engine-calibration.md "Later answers".
+
 Removal is deliberately not in that rule: removed items keep their evidence, so
 a survivor keeps what it learned against an item later removed. The rule behind
 every exclusion is that evidence stops counting only when the user's action says
@@ -616,6 +630,7 @@ From `lib/ranking/bt/constants.ts`; `docs/engine-calibration.md` has the runs.
 | Rough / ranked prior sd | 20% / 3% of span                     | how much the imported order is trusted                                |
 | "Much better" weight    | 1.75                                 | carried over from the Elo engine; calibrated, kept                    |
 | Draw weight             | 0.25 each way                        | a draw is half a win each way at half weight; calibrated, kept        |
+| Later answers           | 0.5 per later answer the other way   | a change of mind counts; one stray answer does not; calibrated        |
 | Strength band           | `1e-6`                               | ties on a fixed grid are transitive                                   |
 | Solver tolerance        | `1e-10`                              | four orders below the band, so warm and fresh replays rarely disagree |
 | Placement sd            | 10% of visible items, 1 to 25 places | a move is a firm regional statement; calibrated by simulation         |

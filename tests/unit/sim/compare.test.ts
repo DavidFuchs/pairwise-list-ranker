@@ -470,6 +470,14 @@ describe('formatDecision', () => {
     expect(text).toContain('careful-unordered-n100');
     expect(text).not.toContain(String.fromCharCode(0x2014));
   });
+
+  it('names the recency grouping in the header', () => {
+    const current = models('cur');
+    const text = formatDecision(decide(current, [models('cand')], ALL), current, '', 'recency');
+    expect(text).toContain(
+      'Groups: each drift scenario its own (the mean is over them; every other scenario is a guard).',
+    );
+  });
 });
 
 describe("parseGroups('recency')", () => {

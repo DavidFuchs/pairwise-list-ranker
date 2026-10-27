@@ -494,7 +494,7 @@ export function formatDecision(
   decision: Decision,
   current: ResultFile,
   filter: string,
-  grouping: 'model' | 'scenario' = 'model',
+  grouping: 'model' | 'scenario' | 'recency' = 'model',
 ): string {
   const lines: string[] = [];
   const settings = (file: ResultFile): string =>
@@ -503,9 +503,12 @@ export function formatDecision(
   lines.push(`Current: ${current.label} (${settings(current)}).`);
   lines.push(`Scenarios: ${filter === '' ? 'every scenario of the current file' : `filter ${filter}`}.`);
   lines.push(
-    grouping === 'model'
-      ? 'Groups: the base models (the mean is over them; every other scenario is a guard).'
-      : 'Groups: each scenario its own (the mean is over every compared scenario).',
+    {
+      model: 'Groups: the base models (the mean is over them; every other scenario is a guard).',
+      scenario: 'Groups: each scenario its own (the mean is over every compared scenario).',
+      recency:
+        'Groups: each drift scenario its own (the mean is over them; every other scenario is a guard).',
+    }[grouping],
   );
   lines.push(
     'Seeds are paired by number. A run that never reached the gate counts as its last sample (its budget, or fewer on an early stop) and is counted as censored.',

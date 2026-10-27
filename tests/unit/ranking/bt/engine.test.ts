@@ -611,10 +611,15 @@ describe('placements through a real fit (docs/ARCHITECTURE.md 6.8 step 9)', () =
     lower: number | undefined;
   }
 
-  /** Drops `item` between the rows now at the given positions of the others (undefined is an edge), and checks the result. */
+  /**
+   * Drops `item` between the rows now at the given positions of the others (undefined is an edge), and checks the result.
+   * The others keep the order of the refit without the item's earlier answers (6.8 steps 2 to 4: other rows may
+   * shift in that refit, and the placed item then moves nothing else), which is the list with the item set aside.
+   */
   function expectDrop(l: EngineList, item: string, where: Drop): void {
     const before = replay(l);
     const others = before.ranked.filter((id) => id !== item);
+    const refit = replay({ ...l, events: [...l.events, unrecognized(item)] }).ranked;
     const above = where.upper === undefined ? undefined : others[where.upper];
     const below = where.lower === undefined ? undefined : others[where.lower];
     const dropped = place(item, above, below);
@@ -627,7 +632,7 @@ describe('placements through a real fit (docs/ARCHITECTURE.md 6.8 step 9)', () =
       if (below !== undefined) expect(state.ranked[at + 1]).toBe(below);
       else expect(at).toBe(state.ranked.length - 1);
       expect(state.priorSource.get(item)).toBe('placement');
-      expect(state.ranked.filter((id) => id !== item)).toEqual(others);
+      expect(state.ranked.filter((id) => id !== item)).toEqual(refit);
     }
   }
 

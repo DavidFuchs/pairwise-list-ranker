@@ -37,7 +37,7 @@ environment variables:
 
 `SIM_OVERRIDES` names constants from `lib/ranking/bt/constants.ts`
 (`PAIR_WEIGHT`, `STRONG_WEIGHT`, `DRAW_WEIGHT_EACH_WAY`, `PLACEMENT_SD_FRACTION`,
-`REPEAT_FACTOR`). An unknown name stops the run (the removed `GROUP_REORDERED_WEIGHT`
+`REPEAT_FACTOR`, `RECENCY_FACTOR`). An unknown name stops the run (the removed `GROUP_REORDERED_WEIGHT`
 and `AUTO_GROUPS_PER_ITEM` included). The run mocks the modules
 that define the constants; no production code changes. For example, in bash:
 
@@ -95,9 +95,9 @@ node scripts/sim-sweep.mjs --constant STRONG_WEIGHT --values 1.75,2.5 --filter c
 node scripts/sim-sweep.mjs --constant STRONG_WEIGHT --values 1.75,2.5 --filter cal-strong
 ```
 
-The sweep accepts only the five constants that can still be overridden:
-`PAIR_WEIGHT`, `STRONG_WEIGHT`, `DRAW_WEIGHT_EACH_WAY`, `PLACEMENT_SD_FRACTION`
-and `REPEAT_FACTOR`. Another name stops the sweep before any run. The pairs-only
+The sweep accepts only the six constants that can still be overridden:
+`PAIR_WEIGHT`, `STRONG_WEIGHT`, `DRAW_WEIGHT_EACH_WAY`, `PLACEMENT_SD_FRACTION`,
+`REPEAT_FACTOR` and `RECENCY_FACTOR`. Another name stops the sweep before any run. The pairs-only
 placement re-check used it this way:
 
 ```sh
@@ -172,6 +172,9 @@ at n = 100 unless noted:
   `gaps`, `loose`, `reversed-sections`, `wrong-moves`, `wrong-moves-corrected`,
   `multi-move` and `marked`; plus `lazy30` and `corrector` at n = 400
   (no calibration tag).
+- `typical-unordered-drift-n<6|12|100>` (and `-n60` in the `ci` set): a typical
+  user whose mind changes partway through. Tag `cal-recency`; see "Later
+  answers".
 
 ### Probes
 
@@ -561,6 +564,85 @@ answers (8n, the whole budget) are draws, 20.6%. This is a one-off count with th
 driver's `observe` on that one scenario and seed, not a baseline measurement.
 About one answer in five being a draw is why the weight matters: the gap between
 0 and 0.25 is large, while the gaps among 0.25, 0.4 and 0.5 are small.
+
+### Later answers
+
+Calibrated 2026-10-27. `RECENCY_FACTOR` is **0.5**: each clear answer counts
+0.5^k of its weight, where k is the number of later clear answers between the
+same two items that picked the other one (docs/ARCHITECTURE.md 6.1). Answers
+that agree never discount each other, and draws neither discount nor are
+discounted. A factor of 1 is off, the behaviour before this change.
+
+Why: on the owner's six-item summer trips list (47 answers), Lisbon and Amalfi
+Coast were answered six times, Lisbon in answer 9, Amalfi Coast in 13 and 15,
+then Lisbon in 43, 45 and 47. Counted equally that is 4 to 2 and a 34% chance of
+the pair being the wrong way round ("could go either way"). At 0.5 it counts
+3.25 to 0.25 and the chance is 4.8%, under the 5% doubt line, with the order
+unchanged (Banff, Cape Breton Island, Dubrovnik, Reykjavík, Lisbon, Amalfi
+Coast). `tests/unit/ranking/bt/laterAnswers.test.ts` holds that session.
+
+Scenarios: `typical-unordered-drift-n6`, `-n12` and `-n100` (tag `cal-recency`;
+see docs/ARCHITECTURE.md 11), where 20% of the items, and at least two, take one
+another's values after 4n answers (3n at 100 items). Their gate is the answers
+after the change until the order is exactly right (under 26 items) or 90% of
+items are within 5% of their new place (100 items). Compared with
+`SIM_GROUPS=recency`: each drift scenario decides as its own group, every other
+scenario is a guard.
+
+Sweep: values 1 (current, the reference), 0.8, 0.6, 0.5, 0.3 and 0; 6 seeds;
+`--size full`; filter `cal-[rp][ea]`, which selects `cal-recency` and `cal-pairs`
+without a `|` (cmd.exe breaks on it) and also catches the `typical-ranked-*`
+scenarios (the `cal-ra` in "typical-ranked"), which are guards. Each run took
+about 3 minutes. Files: `engine-calibration-runs/RECENCY_FACTOR-<value>.json` and
+[compare-RECENCY_FACTOR-0.8.md](engine-calibration-runs/compare-RECENCY_FACTOR-0.8.md).
+
+The 6-seed short-list gates were too noisy to read: 12 items went +15.1%,
++7.0%, -0.7% and +13.3% at 0.8, 0.6, 0.3 and 0. The two short scenarios were run
+again with 40 seeds (`RECENCY_FACTOR-<value>-short40.json`,
+[compare-RECENCY_FACTOR-0.8-short40.md](engine-calibration-runs/compare-RECENCY_FACTOR-0.8-short40.md)).
+Mean answers after the change to the exact order, change against 1:
+
+| Factor      | 6 items | 12 items |   Mean | Verdict                                 |
+| ----------- | ------: | -------: | -----: | --------------------------------------- |
+| 1 (current) |       - |        - |      - | off                                     |
+| 0.8         |  -10.2% |    -9.1% |  -9.6% | eligible                                |
+| 0.6         |  -19.0% |   -14.5% | -16.7% | eligible                                |
+| 0.5         |  -24.4% |   -22.8% | -23.6% | **chosen**                              |
+| 0.3         |  -32.0% |   -23.1% | -27.6% | best by the rule; fails the spec, below |
+| 0           |  -28.1% |    -0.5% | -14.3% | eligible, 2 seeds censored against 3    |
+
+Guards: every `cal-pairs` scenario and the 100-item drift scenario reached the
+gate in exactly the same number of answers at every factor (+0.0%). At 100 items
+the picker rarely asks a pair twice before the gate, so the rule has nothing to
+act on there; it matters on short lists, where every pair comes round again.
+
+Decision: 0.5, not 0.3. The rule prefers 0.3 by 4 points, but the spec
+(docs/superpowers/specs/2026-10-27-later-answers-count-more-design.md) asks
+that one stray answer never overturn a settled pair: after three answers one
+way, a single answer the other way must not tip it. That needs a factor above
+1/3. At 0.5 the three count 1.5 against 1; at 0.3 they count 0.9 and one
+misclick would flip the pair. A factor of 0 (the latest answer alone counts)
+does worse than 0.5 on 12 items for the same reason.
+
+Checks at 0.5:
+
+- Users whose mind never changes, on 6 and 12 items, 40 seeds, every user
+  model (a one-off run with no drift, not kept): answers to the exact order are
+  the same as at 1 (sloppy at 12 items 33.4 against 34.1) and the share of pairs
+  the right way round at the end differs by at most 0.001.
+- The short-list levels (lists of 5 to 25 items, every user model, unordered and
+  rough, 8 seeds, every answer once every item had been compared; a one-off
+  run): the true share within a place at each level is unchanged. "Close" holds a
+  mean of 96.5% with 10.7% below 90% (10.8% at 1); the top level 99.4% with 2.1%
+  below 90% (2.3% at 1). `tests/unit/sim/progressGate.test.ts` passes.
+- `npm run bench:engine`: a warm answer went from 8.7 ms to 9.9 ms on the
+  benchmark list, inside the 100 ms budget (docs/ARCHITECTURE.md 6.11).
+
+What the rule cannot say: the drift scenarios are one kind of change of mind, a
+handful of items swapping places at once. A gradual change, or one confined to
+the top of the list, was not simulated. And the 100-item scenario shows the
+rule does nothing measurable on long lists, so its benefit there is unproven
+either way.
 
 ### "Much better" weight
 

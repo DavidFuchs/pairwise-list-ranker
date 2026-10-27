@@ -1,8 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { discountEarlier, Evidence } from '@/lib/ranking/bt/evidence';
 import { Timeline } from '@/lib/ranking/bt/timeline';
 import type { PairOutcome, RankingEvent } from '@/types/rankingEvents';
+
+// The terms as recorded, with no later answer discounting an earlier one, so discountEarlier is tested on its own.
+// tests/unit/ranking/bt/laterAnswers.test.ts checks that activeTerms applies it.
+vi.mock('@/lib/ranking/bt/constants', async (original) => ({
+  ...(await original<typeof import('@/lib/ranking/bt/constants')>()),
+  RECENCY_FACTOR: 1,
+}));
 
 const base = { listId: 'list-1', createdAt: '2026-10-17T12:00:00.000Z' };
 const ids = ['a', 'b', 'c', 'd', 'e'];

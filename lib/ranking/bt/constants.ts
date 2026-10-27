@@ -20,7 +20,7 @@ export const STRONG_WEIGHT = 1.75;
 export const DRAW_WEIGHT_EACH_WAY = 0.25;
 // Each clear answer counts RECENCY_FACTOR^k, k = later counted clear answers on the same pair the other way.
 // 1 is off. Calibrated in docs/engine-calibration.md "Later answers".
-export const RECENCY_FACTOR = 1;
+export const RECENCY_FACTOR = 0.5;
 
 /** Strengths within one band (Math.round(s / BAND_WIDTH)) count as tied. */
 export const BAND_WIDTH = 1e-6;
