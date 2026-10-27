@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { expectedDisorder, levelOf, settleLevel } from '@/lib/ranking/bt/progress';
+import { replay } from '@/lib/ranking/bt/engine';
+import { disorderOfState, expectedDisorder, levelOf, settleLevel } from '@/lib/ranking/bt/progress';
 import { seededRandom } from '@/tests/helpers/random';
+import type { RankingEvent } from '@/types/rankingEvents';
 import { normalCdf } from '@/tests/sim/signals';
 
 /** Every pair, the way the neighbour search is meant to equal. */
@@ -85,6 +87,18 @@ describe('expectedDisorder', () => {
     expect(spread).toBeLessThan(unsure);
   });
 
+  it('reads each pair from the given chance, with the item given first (shown above) first', () => {
+    const strengths = [2, 0, 1];
+    const uncertainties = [1, 1, 1];
+    const asked: string[] = [];
+    const disorder = expectedDisorder(strengths, uncertainties, Infinity, (i, j) => {
+      asked.push(`${i}${j}`);
+      return 0.25;
+    });
+    expect(asked.sort()).toEqual(['01', '02', '12']);
+    expect(disorder).toBeCloseTo((2 * 3 * 0.25) / 9, 12);
+  });
+
   it('stays near linear in the list on a long list', () => {
     const n = 20000;
     const strengths = Array.from({ length: n }, (_, i) => i * 0.01);
@@ -94,13 +108,62 @@ describe('expectedDisorder', () => {
   });
 });
 
+describe('disorderOfState', () => {
+  const pair = (index: number, left: string, right: string): RankingEvent => ({
+    id: `e${index}`,
+    listId: 'progress',
+    createdAt: new Date(Date.UTC(2026, 0, 1) + index * 1000).toISOString(),
+    kind: 'pair',
+    leftItemId: left,
+    rightItemId: right,
+    outcome: 'left',
+  });
+
+  it('is null without a fit, as for a view shown before its session starts', () => {
+    expect(disorderOfState({ ranked: ['a', 'b'] })).toBeNull();
+  });
+
+  it('does not count an item that won every answer as in doubt, as the Gaussian estimate does', () => {
+    // a beats everything; b, c and d go round in a loop, so only their order is in doubt.
+    const events = [
+      pair(0, 'a', 'b'),
+      pair(1, 'a', 'c'),
+      pair(2, 'a', 'd'),
+      pair(3, 'b', 'c'),
+      pair(4, 'c', 'd'),
+      pair(5, 'd', 'b'),
+    ];
+    const state = replay({ originalItemIds: ['a', 'b', 'c', 'd'], startingOrder: 'unordered', events });
+    const gaussian = expectedDisorder(
+      state.ranked.map((id) => state.strengths.get(id) as number),
+      state.ranked.map((id) => state.uncertainty.get(id) as number),
+    );
+    const disorder = disorderOfState(state) as number;
+    // The loop alone: three pairs at about an even chance, over 4 items squared, twice.
+    expect(disorder).toBeGreaterThan((2 * 3 * 0.4) / 16);
+    expect(disorder).toBeLessThan(gaussian);
+  });
+
+  it('keeps the Gaussian estimate from 26 items', () => {
+    const ids = Array.from({ length: 30 }, (_, k) => `i${k}`);
+    const events = ids.slice(1).map((id, k) => pair(k, ids[k] as string, id));
+    const state = replay({ originalItemIds: ids, startingOrder: 'unordered', events });
+    const gaussian = expectedDisorder(
+      state.ranked.map((id) => state.strengths.get(id) as number),
+      state.ranked.map((id) => state.uncertainty.get(id) as number),
+      0.1,
+    );
+    expect(disorderOfState(state)).toBe(gaussian);
+  });
+});
+
 describe('levelOf', () => {
   it('reads the four levels off the disorder', () => {
     expect(levelOf(0.5, 60)).toBe(0);
     expect(levelOf(0.07, 60)).toBe(0);
     expect(levelOf(0.0699, 60)).toBe(1);
-    expect(levelOf(0.03, 60)).toBe(1);
-    expect(levelOf(0.0299, 60)).toBe(2);
+    expect(levelOf(0.025, 60)).toBe(1);
+    expect(levelOf(0.0249, 60)).toBe(2);
     expect(levelOf(0.02, 60)).toBe(2);
     expect(levelOf(0.0199, 60)).toBe(3);
     expect(levelOf(0, 60)).toBe(3);
@@ -110,10 +173,10 @@ describe('levelOf', () => {
 describe('levelOf for a list under 26 items', () => {
   it('reads the disorder in expected places out, the same at every small size', () => {
     for (const n of [5, 10, 20]) {
-      expect(levelOf(1.5 / n, n), `n ${n}`).toBe(0);
-      expect(levelOf(1.3 / n, n), `n ${n}`).toBe(1);
-      expect(levelOf(0.7 / n, n), `n ${n}`).toBe(2);
-      expect(levelOf(0.4 / n, n), `n ${n}`).toBe(3);
+      expect(levelOf(1.1 / n, n), `n ${n}`).toBe(0);
+      expect(levelOf(0.9 / n, n), `n ${n}`).toBe(1);
+      expect(levelOf(0.3 / n, n), `n ${n}`).toBe(2);
+      expect(levelOf(0.2 / n, n), `n ${n}`).toBe(3);
     }
   });
 
@@ -123,8 +186,8 @@ describe('levelOf for a list under 26 items', () => {
   });
 
   it('holds a level just past its boundary, with the same margin', () => {
-    expect(settleLevel(3, 0.52 / 10, 10)).toBe(3);
-    expect(settleLevel(3, 0.6 / 10, 10)).toBe(2);
+    expect(settleLevel(3, 0.27 / 10, 10)).toBe(3);
+    expect(settleLevel(3, 0.3 / 10, 10)).toBe(2);
   });
 });
 
@@ -134,7 +197,7 @@ describe('settleLevel', () => {
   });
 
   it('rises at once', () => {
-    expect(settleLevel(1, 0.025, 60)).toBe(2);
+    expect(settleLevel(1, 0.022, 60)).toBe(2);
     expect(settleLevel(0, 0.01, 60)).toBe(3);
   });
 
@@ -142,8 +205,8 @@ describe('settleLevel', () => {
     expect(settleLevel(3, 0.021, 60)).toBe(3);
     expect(settleLevel(3, 0.0219, 60)).toBe(3);
     expect(settleLevel(3, 0.023, 60)).toBe(2);
-    expect(settleLevel(2, 0.032, 60)).toBe(2);
-    expect(settleLevel(2, 0.034, 60)).toBe(1);
+    expect(settleLevel(2, 0.027, 60)).toBe(2);
+    expect(settleLevel(2, 0.028, 60)).toBe(1);
   });
 
   it('can fall more than one level when the disorder jumps', () => {

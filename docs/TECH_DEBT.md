@@ -30,9 +30,9 @@ from smaller future changes with AUC about 0.97 across the tested checkpoints
 
 | Deletion pattern | 30 more answers | 60 more answers |
 | ---------------- | --------------: | --------------: |
-| None             |             0.0% |             0.0% |
-| Bottom 40%       |             0.0% |             0.0% |
-| Random 40%       |             0.4% |             0.8% |
+| None             |            0.0% |            0.0% |
+| Bottom 40%       |            0.0% |            0.0% |
+| Random 40%       |            0.4% |            0.8% |
 
 At level 2, observed rates were 0.5% / 2.1% with no deletion, 1.2% / 2.4% for
 bottom deletion, and 5.9% / 7.8% for random deletion. Counts per level and

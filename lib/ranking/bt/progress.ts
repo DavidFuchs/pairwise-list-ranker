@@ -1,3 +1,5 @@
+import { FlipChances, type FitEvidence } from '@/lib/ranking/bt/flips';
+
 /**
  * How close the shown order is to the one the user's answers describe
  * (docs/ARCHITECTURE.md 6.12), as a few levels. It is read from the engine's own
@@ -7,14 +9,18 @@
  * (docs/engine-calibration.md, "Progress levels").
  */
 
-/** The standard normal CDF (Abramowitz and Stegun 7.1.26 through erf). */
-function normalCdf(x: number): number {
+/**
+ * The chance a standard normal draw is below -|x| (Abramowitz and Stegun
+ * 7.1.26 through erfc). Only the lower tail is used, so it is continuous at 0:
+ * the two-sided form steps by about 1e-9 there, which is as much as the
+ * picker's tie grid, and would let a gap of 0 and one of 1e-34 score apart.
+ */
+export function normalTail(x: number): number {
   const z = Math.abs(x) / Math.SQRT2;
   const t = 1 / (1 + 0.3275911 * z);
   const poly =
     t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))));
-  const erf = 1 - poly * Math.exp(-z * z);
-  return x >= 0 ? 0.5 * (1 + erf) : 0.5 * (1 - erf);
+  return 0.5 * poly * Math.exp(-z * z);
 }
 
 /** A pair this many standard deviations apart is taken to be in order: its chance of a flip is below 1e-9. */
@@ -40,11 +46,18 @@ const WIDE_TIMES_MEDIAN = 4;
  * `cap` stops the work once the disorder is known to be at least that much:
  * the result is then somewhere from `cap` to the true value, which is all a
  * level above its highest boundary needs.
+ *
+ * `chance` gives a pair's chance of being the wrong way round, by index into
+ * the arrays, the lower index first: the arrays are in displayed order, so it
+ * is the item shown above. Without it, the Gaussian estimate from the two
+ * uncertainties is used. The uncertainties still bound which pairs are looked
+ * at.
  */
 export function expectedDisorder(
   strengths: readonly number[],
   uncertainties: readonly number[],
   cap = Infinity,
+  chance?: (i: number, j: number) => number,
 ): number {
   const n = strengths.length;
   if (n < 2) return 0;
@@ -73,10 +86,16 @@ export function expectedDisorder(
 
   const limit = (cap * n * n) / 2;
   let flips = 0;
-  const flip = (i: number, j: number): number =>
-    normalCdf(
-      -Math.abs((s[i] as number) - (s[j] as number)) / Math.sqrt((u[i] as number) + (u[j] as number)),
-    );
+  const flip = chance
+    ? (i: number, j: number): number => {
+        const a = order[i] as number;
+        const b = order[j] as number;
+        return a < b ? chance(a, b) : chance(b, a);
+      }
+    : (i: number, j: number): number =>
+        normalTail(
+          Math.abs((s[i] as number) - (s[j] as number)) / Math.sqrt((u[i] as number) + (u[j] as number)),
+        );
 
   // Narrow against narrow: nearest neighbours down the order, until the gap is sure.
   for (let a = 0; a < narrow.length; a++) {
@@ -120,21 +139,34 @@ export function expectedDisorder(
 
 /**
  * The disorder of the shown items from an engine state: null when the state
- * carries no strengths (a view shown from a cached snapshot before its session
+ * carries no fit (a view shown from a cached snapshot before its session
  * starts). Items without a strength, such as unrecognized ones, are left out.
+ *
+ * A list under 26 items reads each pair's chance from the answers themselves
+ * (flips.ts). The Gaussian estimate doubts an item that has won or lost every
+ * answer, and on a short list those items are a large share: it read six
+ * items as "Taking shape" with only three of them in doubt. A longer list
+ * keeps the Gaussian estimate, which means the same at every size from 26 up;
+ * the exact chances did not (docs/engine-calibration.md, "Flip chances").
  */
 export function disorderOfState(state: {
   ranked: readonly string[];
-  strengths?: ReadonlyMap<string, number>;
-  uncertainty?: ReadonlyMap<string, number>;
+  fit?: FitEvidence;
+  slots?: ReadonlyMap<string, number>;
 }): number | null {
-  const { strengths, uncertainty } = state;
-  if (strengths === undefined || uncertainty === undefined) return null;
-  const fitted = state.ranked.filter((id) => strengths.has(id) && uncertainty.has(id));
-  return expectedDisorder(
-    fitted.map((id) => strengths.get(id) as number),
-    fitted.map((id) => uncertainty.get(id) as number),
-    fitted.length < MIN_ITEMS_FOR_PAIR_SCALE ? Infinity : DISORDER_CAP,
+  const { fit, slots } = state;
+  if (fit === undefined || slots === undefined) return null;
+  const fitted = state.ranked.flatMap((id) => {
+    const slot = slots.get(id);
+    return slot === undefined ? [] : [slot];
+  });
+  const strengths = fitted.map((slot) => fit.strengths[slot] as number);
+  const uncertainties = fitted.map((slot) => fit.uncertainty[slot] as number);
+  if (fitted.length >= MIN_ITEMS_FOR_PAIR_SCALE)
+    return expectedDisorder(strengths, uncertainties, DISORDER_CAP);
+  const flips = new FlipChances(fit);
+  return expectedDisorder(strengths, uncertainties, Infinity, (i, j) =>
+    flips.chance(fitted[i] as number, fitted[j] as number),
   );
 }
 
@@ -152,23 +184,26 @@ export type ProgressLevel = 0 | 1 | 2 | 3;
  * Lists shorter than this read their levels in places, not in shares of the
  * list: the 5% window is a place or two, so the same disorder means a smaller
  * share of items out of place (docs/engine-calibration.md, "Progress levels").
+ * They also read each pair's chance from the answers (disorderOfState).
  */
 export const MIN_ITEMS_FOR_PAIR_SCALE = 26;
 
 /**
  * Where each level begins, as the largest disorder it allows. The true share
- * of items within 5% of their place averaged about 39% at level 0, 77% at 1,
- * 96% at 2 and 98% at 3, for unordered and rough starts of 26 items and more.
+ * of items within 5% of their place averaged about 40% at level 0, 80% at 1,
+ * 96% at 2 and 99% at 3, for unordered and rough starts of 26 items and more.
+ * "Close" began at 0.03 until the picker asked for flips (docs/engine-calibration.md,
+ * "Flip chances").
  */
-const LEVEL_CEILINGS: readonly number[] = [Infinity, 0.07, 0.03, 0.02];
+const LEVEL_CEILINGS: readonly number[] = [Infinity, 0.07, 0.025, 0.02];
 
 /**
  * The same for a list under 26 items, in expected places out (the disorder
- * times the list length), which means the same at every small size. Within a
- * place of the true one: about 55% of items at level 0, 85% at 1, 97% at 2 and
- * 100% at 3.
+ * times the list length), read from the exact chances, which means the same
+ * at every small size. Within a place of the true one: about 53% of items at
+ * level 0, 85% at 1, 96% at 2 and 99.6% at 3.
  */
-const SMALL_LEVEL_CEILINGS_IN_PLACES: readonly number[] = [Infinity, 1.4, 0.8, 0.5];
+const SMALL_LEVEL_CEILINGS_IN_PLACES: readonly number[] = [Infinity, 1.0, 0.4, 0.25];
 
 function ceilingsFor(n: number): readonly number[] {
   return n >= MIN_ITEMS_FOR_PAIR_SCALE

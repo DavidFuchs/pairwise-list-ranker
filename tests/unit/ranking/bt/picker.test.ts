@@ -48,15 +48,31 @@ describe('pickPair', () => {
   });
 
   it('repeats are discounted by 0.3 per showing', () => {
-    // Slots 0 and 1 tie in strength; slot 2 is 6 apart. With every u at 1, the
-    // close pair (0,1) scores about 5.3x the far pair (0,2). A factor of 0.3
-    // keeps (0,1) ahead after one showing (0.3 x 5.3 = 1.6) and puts it behind
-    // after two (0.09 x 5.3 = 0.47). Only factors between about 0.2 and 0.45 do both.
-    const strengths = Float64Array.from([0, 0, 6]);
+    // Slots 0 and 1 tie in strength; slot 2 is 1.7 above. With every u at 1, the
+    // tied pair (0,1) scores about 5.2x the pair (0,2). A factor of 0.3 keeps
+    // (0,1) ahead after one showing (0.3 x 5.2 = 1.6) and puts it behind after
+    // two (0.09 x 5.2 = 0.47). Only factors between about 0.2 and 0.45 do both.
+    const strengths = Float64Array.from([0, 0, 1.7]);
     const at = (times: number) => pickPair(input(3, { strengths, shown: new Map([[pairKey(0, 1), times]]) }));
     expect(at(0)).toEqual([0, 1]);
     expect(at(1)).toEqual([0, 1]);
     expect(at(2)).toEqual([0, 2]);
+  });
+
+  it('a pair shown three times is asked again only when nothing else can be', () => {
+    // (0,2) is all but certain, so (0,1) wins at every discount until the cap.
+    const strengths = Float64Array.from([0, 0, 6]);
+    const at = (times: number) => pickPair(input(3, { strengths, shown: new Map([[pairKey(0, 1), times]]) }));
+    expect(at(2)).toEqual([0, 1]);
+    expect(at(3)).toEqual([0, 2]);
+    // With only one pair to ask, it is asked however often it was shown.
+    expect(pickPair(input(2, { shown: new Map([[pairKey(0, 1), 5]]) }))).toEqual([0, 1]);
+  });
+
+  it('skips a pair the answers have settled, even when the Gaussian estimate doubts it', () => {
+    // Every pair is tied for the Gaussian estimate; the answers say (0,1) is settled.
+    const flips = { chance: (a: number, b: number) => (a + b === 1 ? 0 : 0.5) };
+    expect(pickPair(input(3, { flips }))).toEqual([0, 2]);
   });
 
   it('ties go to the higher-ranked pair', () => {

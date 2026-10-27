@@ -1,5 +1,6 @@
 import { CHECKPOINT_EVERY } from '@/lib/ranking/bt/constants';
 import { Evidence, type EvidenceCounts } from '@/lib/ranking/bt/evidence';
+import { type FitEvidence, FlipChances } from '@/lib/ranking/bt/flips';
 import { compile, emptyCurvature, evaluate, type Problem } from '@/lib/ranking/bt/objective';
 import { displayedOrder, TieOrder } from '@/lib/ranking/bt/order';
 import { pairKey, pickPair } from '@/lib/ranking/bt/picker';
@@ -32,6 +33,9 @@ export interface EngineState {
   /** Where each fitted item's active prior came from. */
   priorSource: ReadonlyMap<string, PriorSource>;
   nextPair: [string, string] | null;
+  /** What the flip chances are read from (flips.ts), by slot, and each fitted item's slot in it. */
+  fit: FitEvidence;
+  slots: ReadonlyMap<string, number>;
 }
 
 /**
@@ -607,15 +611,33 @@ function describeState(state: ReplayState, { problem, curvature: fitted }: Fit):
   const strengthMap = new Map<string, number>();
   const uncertaintyMap = new Map<string, number>();
   const sourceMap = new Map<string, PriorSource>();
+  const slots = new Map<string, number>();
   for (const slot of problem.free) {
     uncertainty[slot] = 1 / (curvature[slot] as number);
     const id = ids[slot] as string;
     strengthMap.set(id, strengths[slot] as number);
     uncertaintyMap.set(id, uncertainty[slot] as number);
     sourceMap.set(id, (state.placedAt[slot] as number) >= 0 ? 'placement' : 'seed');
+    slots.set(id, slot);
   }
   const order = displayedOrder(visibleSlots(timeline), strengths, state.tie);
-  const input = { order, strengths, uncertainty, shown: state.shown, previousPair: state.previousPair };
+  const fit: FitEvidence = {
+    strengths: strengths.slice(),
+    uncertainty,
+    priorMean: state.priorMean.slice(),
+    priorVar: state.priorVar.slice(),
+    // A fresh array for each problem, and its terms are never changed.
+    pairs: problem.pairs,
+  };
+  const flips = new FlipChances(fit);
+  const input = {
+    order,
+    strengths,
+    uncertainty,
+    shown: state.shown,
+    previousPair: state.previousPair,
+    flips,
+  };
   const nextPair = pickPair(input);
   return {
     eventCount: state.eventCount,
@@ -625,6 +647,8 @@ function describeState(state: ReplayState, { problem, curvature: fitted }: Fit):
     uncertainty: uncertaintyMap,
     priorSource: sourceMap,
     nextPair: nextPair ? [ids[nextPair[0]] as string, ids[nextPair[1]] as string] : null,
+    fit,
+    slots,
   };
 }
 

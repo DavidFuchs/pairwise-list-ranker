@@ -102,7 +102,7 @@ const SLICE_MS = 12;
 
 /** The part of an engine state the view and the remembered orders are made from. */
 type ShownState = Pick<EngineState, 'ranked' | 'unrecognized' | 'nextPair'> &
-  Partial<Pick<EngineState, 'strengths' | 'uncertainty' | 'eventCount'>>;
+  Partial<Pick<EngineState, 'strengths' | 'uncertainty' | 'eventCount' | 'fit' | 'slots'>>;
 
 /**
  * The session for the open list, and the history it covers. A list opened
@@ -314,7 +314,7 @@ export function createEngineHost(
   const coarsely = (value: number): number => Math.round(value / 0.002);
 
   function refreshDisorder(listId: string, state: ShownState, delayMs = 0): void {
-    if (state.strengths === undefined || refreshing.has(listId)) return;
+    if (state.fit === undefined || refreshing.has(listId)) return;
     const known = disorders.get(listId);
     const every = Math.max(1, Math.ceil(state.ranked.length / 50));
     if (

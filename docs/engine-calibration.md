@@ -26,14 +26,14 @@ seeds, with one test per scenario so a failure names it. It writes
 `docs/engine-calibration-runs/<label>.json` once, at the end. Settings come from
 environment variables:
 
-| Variable        | Default    | Meaning                                                                                                         |
-| --------------- | ---------- | --------------------------------------------------------------------------------------------------------------- |
-| `SIM_LABEL`     | `baseline` | Names the output file.                                                                                          |
-| `SIM_SEEDS`     | `3`        | Seeds 1 to this number.                                                                                         |
-| `SIM_SIZE`      | `full`     | `ci` (a small set at n = 60, seconds) or `full` (63 scenarios, up to n = 400).                                  |
-| `SIM_OVERRIDES` | none       | A JSON object of constants to override for the run (see below).                                                 |
+| Variable        | Default    | Meaning                                                                                                              |
+| --------------- | ---------- | -------------------------------------------------------------------------------------------------------------------- |
+| `SIM_LABEL`     | `baseline` | Names the output file.                                                                                               |
+| `SIM_SEEDS`     | `3`        | Seeds 1 to this number.                                                                                              |
+| `SIM_SIZE`      | `full`     | `ci` (a small set at n = 60, seconds) or `full` (63 scenarios, up to n = 400).                                       |
+| `SIM_OVERRIDES` | none       | A JSON object of constants to override for the run (see below).                                                      |
 | `SIM_PICKER`    | `current`  | `current` (the engine's own picker) or `adjacent` (the simpler picker of docs/ARCHITECTURE.md 6.7's required check). |
-| `SIM_FILTER`    | none       | A regular expression matched against each scenario's name and tags; only the scenarios that match are run.      |
+| `SIM_FILTER`    | none       | A regular expression matched against each scenario's name and tags; only the scenarios that match are run.           |
 
 `SIM_OVERRIDES` names constants from `lib/ranking/bt/constants.ts`
 (`PAIR_WEIGHT`, `STRONG_WEIGHT`, `DRAW_WEIGHT_EACH_WAY`, `PLACEMENT_SD_FRACTION`,
@@ -940,11 +940,11 @@ The baseline was taken with Auto's `G` at rough 0.5 and the placement width at
 
 ### Release gates at 400 items
 
-| Gate                                                                |               Limit |                   Baseline |                                                    Calibrated | Verdict                                     |
-| ------------------------------------------------------------------- | ------------------: | -------------------------: | ------------------------------------------------------------: | ------------------------------------------- |
-| `typical-unordered-n400` (Auto)                                     |                1.5n |                280 (0.70n) |                                                   280 (0.70n) | met                                         |
-| `typical-unordered-pairs-n400` (pairs only)                         |                  6n |               1427 (3.57n) |                                                  1427 (3.57n) | met                                         |
-| `typical-unordered-lazy30-n400` (30% lazy accepters, Auto)          |                  3n |                413 (1.03n) |                                                   427 (1.07n) | met                                         |
+| Gate                                                                     |               Limit |                   Baseline |                                                    Calibrated | Verdict                                     |
+| ------------------------------------------------------------------------ | ------------------: | -------------------------: | ------------------------------------------------------------: | ------------------------------------------- |
+| `typical-unordered-n400` (Auto)                                          |                1.5n |                280 (0.70n) |                                                   280 (0.70n) | met                                         |
+| `typical-unordered-pairs-n400` (pairs only)                              |                  6n |               1427 (3.57n) |                                                  1427 (3.57n) | met                                         |
+| `typical-unordered-lazy30-n400` (30% lazy accepters, Auto)               |                  3n |                413 (1.03n) |                                                   427 (1.07n) | met                                         |
 | Placement test (docs/ARCHITECTURE.md 6.8 step 11), n = 100, seeds 1 to 3 | near and far shares | near 18 of 18, far 0 of 18 | near 18 of 18, far 16 of 18 (12 seeds: 72 of 72 and 56 of 72) | near met; far partly met (0.78 at 12 seeds) |
 
 The placement gate is the one with a gap: a far-moved item is brought back within
@@ -1029,9 +1029,9 @@ to 1.5n under Auto to the 2.8n to 5.0n above.
 Spec 13.3's Auto gate (1.5n) and lazy30 gate (3n) are removed with the group
 question. What stays:
 
-| Gate                                                             | Limit               | Pairs-only baseline                  | Verdict       |
-| ---------------------------------------------------------------- | ------------------- | ------------------------------------ | ------------- |
-| `typical-unordered-pairs-n400` (pairs only)                      | 6n                  | 1427 (3.57n; seeds 1400, 1400, 1480) | met           |
+| Gate                                                                  | Limit               | Pairs-only baseline                  | Verdict       |
+| --------------------------------------------------------------------- | ------------------- | ------------------------------------ | ------------- |
+| `typical-unordered-pairs-n400` (pairs only)                           | 6n                  | 1427 (3.57n; seeds 1400, 1400, 1480) | met           |
 | Placement test (docs/ARCHITECTURE.md 6.8 step 11), n = 100, seeds 1-3 | near and far shares | near 14 of 18, far 1 of 18, after 2n | not met at 2n |
 
 `typical-unordered-n400` is now the same game as the pairs gate (1427, 3.57n).
@@ -1198,10 +1198,12 @@ because "Getting close" was too generous on a rough start with reversed sections
 (an average of 69%), which is the case of a list sorted by a weak field.
 
 The shipped levels and their ceilings on the disorder: level 0, "Rough order so
-far.", above 0.07; level 1, "Taking shape.", 0.03 to 0.07; level 2, "Close.
-Mostly fine adjustments left.", 0.02 to 0.03; level 3, "Changes from here should
-be small.", under 0.02. A level falls back only once the disorder is 10% past its
-ceiling.
+far.", above 0.07; level 1, "Taking shape.", 0.025 to 0.07; level 2, "Close.
+Mostly fine adjustments left.", 0.02 to 0.025; level 3, "Changes from here
+should be small.", under 0.02. A level falls back only once the disorder is 10%
+past its ceiling. "Close" began at 0.03 until the picker changed on 2026-10-26
+(see "Flip chances"): with the new picker the 0.025 to 0.03 band had 14% of
+checkpoints below 85% of items near their place, and the progress gate failed.
 
 ### Where there is no level
 
@@ -1231,13 +1233,59 @@ but a tenth of bad imports read 0, so it was not made a level.
 
 ### Short lists
 
+_Revised 2026-10-26: short lists now read each pair's chance from the answers;
+see "Flip chances" below. The first table is the one the shipped ceilings come
+from; the Gaussian figures after it are kept as history._
+
 Lists under 26 items are measured against a window of one place, so the same
-per-list disorder means a much smaller share of items out of place: the
-per-list thresholds read "Rough" for lists 84% accurate. In expected places out
-(the disorder times the list length) the relation is the same at every small
-size and import quality. Checked on 8 to 25 items, 20 seeds, every user model,
-unordered and rough starts with every item compared, the share of items within
-a place of their true one:
+per-list disorder means a much smaller share of items out of place. In expected
+places out (the disorder times the list length) the relation is about the same
+at every small size and import quality. Checked on 5, 6, 8, 10, 15, 20 and 25
+items, 8 seeds, every user model, unordered, rough and reversed-section starts,
+at every answer once every item had been compared, with the exact chances and
+the current picker, the share of items within a place of their true one:
+
+| Places out | Mean | Share below 90% | Share below 85% |
+| ---------- | ---: | --------------: | --------------: |
+| under 0.1  | 100% |              0% |              0% |
+| 0.1 to 0.2 |  99% |              3% |              2% |
+| 0.2 to 0.3 |  98% |              8% |              4% |
+| 0.3 to 0.4 |  97% |             10% |              7% |
+| 0.4 to 0.5 |  93% |             20% |             16% |
+| 0.5 to 0.6 |  90% |             36% |             28% |
+| 0.6 to 0.8 |  86% |             50% |             42% |
+| 0.8 to 1   |  77% |             69% |             62% |
+| 1 to 1.4   |  65% |             88% |             81% |
+| 1.4 to 2   |  56% |             96% |             93% |
+| over 2     |  40% |            100% |            100% |
+
+The shipped ceilings are 1.0, 0.4 and 0.25 places: "Rough order so far" from 1.0
+up (about 53% within a place), "Taking shape" 0.4 to 1.0 (about 87%), "Close"
+0.25 to 0.4 (about 97%), "Changes from here should be small" under 0.25
+(99.6%). At each size on its own the top level held a mean of at least 99% with
+at most 3.1% below 90%, and "Close" a mean of at least 95.6% with at most 10.9%
+below 85%; a "Close" ceiling of 0.5 put 10 and 20 items at 13.7% below 85%,
+over the 12% floor. The disorder is worked out with no cap for these lists.
+
+Median answers to reach each level, unordered and rough starts, on the same
+seeds:
+
+| Items | Before: "Close" | Before: top | Now: "Close" | Now: top |
+| ----: | --------------: | ----------: | -----------: | -------: |
+|     5 |               6 |          22 |            5 |        6 |
+|     6 |               8 |          31 |            8 |        8 |
+|     8 |              14 |          40 |           13 |       14 |
+|    10 |              23 |          60 |           19 |       20 |
+|    15 |              44 |          87 |           38 |       43 |
+|    20 |              67 |   not in 6n |           61 |       74 |
+|    25 |              96 |   not in 6n |           92 |      112 |
+
+"Before" is the Gaussian estimate with the old picker and ceilings of 1.4, 0.8
+and 0.5 places. Its levels were more accurate than their words need ("Close"
+98.8%, the top 100%) because the estimate doubted every item that had won or
+lost each answer, and the old picker kept asking about those items.
+
+The Gaussian figures the old ceilings came from, 8 to 25 items, 20 seeds:
 
 | Places out | Mean | Share below 90% | Share below 85% |
 | ---------- | ---: | --------------: | --------------: |
@@ -1248,15 +1296,6 @@ a place of their true one:
 | 1.1 to 1.4 |  81% |             54% |             45% |
 | 1.4 to 2   |  72% |             71% |             63% |
 | over 2     |  47% |             96% |             95% |
-
-The shipped ceilings are 1.4, 0.8 and 0.5 places: "Rough order so far" from 1.4
-up (about 55% within a place), "Taking shape" 0.8 to 1.4 (about 85%), "Close"
-0.5 to 0.8 (about 97%), "Changes from here should be small" under 0.5 (100%).
-At 26 items the per-list ceilings are 1.8, 0.78 and 0.52 places, so the two
-scales meet. The disorder is worked out with no cap for these lists, since the
-lowest ceiling can be above the cap used for long ones. Lists of 2 to 6 items
-were checked too: the top two levels held at every size, though a place is a
-large share of so short a list.
 
 A field sort is stored as a rough start (`initialStartingOrder: 'rough'`, with
 the items in the field's order), so the rough rows above stand for it.
@@ -1269,3 +1308,86 @@ The thresholds are not generated. To check or move them, run
 and fails if the top two levels stop meeting their floors (a mean of 95% and at
 most 6% below 90% for the top level; a mean of 90% and at most 12% below 85% for
 "Close") or if the levels stop rising with the accuracy.
+
+### Flip chances
+
+_Decided 2026-10-26. Code: `lib/ranking/bt/flips.ts`, the picker in
+`lib/ranking/bt/picker.ts`, `disorderOfState` in `lib/ranking/bt/progress.ts`._
+
+**The complaint.** A six-item list of trips read "Taking shape" after 24
+answers, and the last nine questions all paired the top item (which had won
+all ten of its answers) or the bottom one with items already settled. The only
+real doubt was a loop of three in the middle (A over B, B over C, C over A, one
+answer each), and no question after the loop closed went back to it.
+
+**The cause.** The engine's uncertainty for an item is 1 / H_ii, a Gaussian
+around the fitted strength. An item that always wins has a one-sided
+posterior: surely above the items it beat, unsure only how far. The Gaussian
+is symmetric, so it puts as much weight on the impossible side. On that list,
+after the loop closed, the chance that the top item was below the second:
+
+| Estimate                                        | Chance |
+| ----------------------------------------------- | -----: |
+| Gaussian from each item's uncertainty (shipped) |    23% |
+| Gaussian on the gap, full covariance            |    23% |
+| Gaussian matched to the posterior's mean and sd |   7.8% |
+| Exact, by Metropolis sampling of the posterior  |   0.7% |
+| Exact along the pair's gap, margin-weighted     |   0.5% |
+| Exact along the pair's gap, equal movement      |   1.5% |
+
+No symmetric curve fits a one-sided posterior: even a perfect moment match
+(what expectation propagation and TrueSkill aim for) was ten times too high.
+The old picker made it worse: it scored each item's own uncertainty, which is
+widest for the always-winning item, so it kept asking about it.
+
+**The chance.** For a pair, `flips.ts` follows the true log posterior along
+the line where the upper item rises and the lower falls, in proportion to
+their uncertainties, with every other item held at its fitted strength, and
+integrates it on both sides of the point where the gap closes. For a Gaussian
+posterior this gives the Gaussian chance. On a five-item test history it
+matches a brute-force integral to three decimals; on the six-item list, at the
+answer where the exact sampler read two pairs at 32% and 36%, it read 35% and
+38%. The integration grid does not move with the strengths, and the step the
+gap closes in is split with one more look at the curve, so the result moves
+smoothly: the picker compares scores to a part in 1e9, and a grid that shifted
+with the gap broke warm and fresh agreement. For the same reason the Gaussian
+estimate now uses only the lower tail of the normal (the two-sided Abramowitz
+and Stegun form steps by about 1e-9 at 0).
+
+**The picker.** Score = chance the pair is the wrong way round times
+`p (1 - p) / c2 * (u_A + u_B)`, the Gaussian chance for every candidate and the
+exact one for the 32 best (docs/ARCHITECTURE.md 6.7). On `cal-pairs`, 12 seeds,
+n = 100, against the old picker (`picker-before-flips` and `picker-flips`,
+compared in `compare-picker-flips.md`): -2.5% answers to the gate over the four
+base models (careful -7.4%, typical -2.7%, fuzzy +0.1%, sloppy 0.0%), within1
+at 8n equal or higher in every scenario, nothing censored. A pair shown three
+times is offered again only when every other pair has been too, so a loop the
+user cannot call is not asked forever.
+
+Moved items, 12 seeds at n = 100 (`probe-before-flips` and `probe-flips`): near
+probes kept 72 of 72 before and after, far probes 47 of 72 before and 48 of 72
+after. The CI gate had used seeds 1 and 2 (12 far probes), where the share
+swings by chance (8 of 12 before, 6 of 12 after, against a floor of 0.55); it
+now uses seeds 1 to 6 (23 of 36 before, 22 of 36 after).
+
+**The levels.** Short lists use the exact chances, with the ceilings in "Short
+lists" above. Lists of 26 items and more keep the Gaussian estimate: with the
+exact chances, one set of ceilings was too generous at 30 items (8.7% of
+top-level checkpoints below 90%) and too strict at 100 (the top level at 600
+answers against 550), while the Gaussian estimate means about the same at every
+size from 26 up. With the new picker its "Close" ceiling moved from 0.03 to
+0.025. On 30, 60 and 100 items, 4 seeds, every user model, unordered, rough and
+reversed-section starts, the share of items within 5% of their place averaged
+40%, 80%, 96% and 99% at the four levels, and the median answers to the top
+level were 132, 282 and 500 (before: not within 6n, 354 and 550).
+
+On the trips list the line now reads the top level from the eleventh answer,
+"Taking shape" once the loop closes (0.54 places out, the loop alone), and the
+next question is one of the loop's pairs; answered, one more answer brings back
+"Close" and three bring back the top level.
+
+**Cost.** At 1,000 items and 10,000 answers (unthrottled Node, `PERF=1`), a warm
+pair append went from a median of 6.5 ms to 7.3 ms, and with 80% draws from
+6.5 ms to 8.1 ms; replays and snapshot opens were unchanged within noise. A
+`cal-pairs` sim run took 141 s against 54 s, since at n = 100 the fit is cheap
+and the evidence copy and the 32 exact chances are most of each answer.

@@ -122,7 +122,11 @@ describe('warm path against fresh replay (docs/ARCHITECTURE.md 6.6)', () => {
     expect(seen.undos).toBeGreaterThan(0);
     expect(seen.dragBacks).toBeGreaterThan(0);
     expect(seen.startingOrders).toEqual(new Set(STARTS));
-    for (const user of USERS) expect(seen.drawsByUser.get(user), `draws by ${user}`).toBeGreaterThan(0);
+    // A careful user draws only on a pair closer than its tiny noise, which the
+    // picker, asking the pairs most likely out of order, almost never offers.
+    for (const user of USERS.filter((u) => u !== 'careful')) {
+      expect(seen.drawsByUser.get(user), `draws by ${user}`).toBeGreaterThan(0);
+    }
   });
 
   it('warm path and fresh replay agree on histories at the strength grid lines', () => {

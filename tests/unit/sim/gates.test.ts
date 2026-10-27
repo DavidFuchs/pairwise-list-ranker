@@ -21,9 +21,9 @@ function scenarioNamed(name: string): Scenario {
   return found;
 }
 
-function play(name: string): Trace[] {
+function play(name: string, seeds: readonly number[] = SEEDS): Trace[] {
   const scenario = scenarioNamed(name);
-  return SEEDS.map((seed) => runScenario(scenario, seed));
+  return seeds.map((seed) => runScenario(scenario, seed));
 }
 
 /** Mean answers to the gate (90% of items within 5%); a run that never reached it fails the test. */
@@ -48,6 +48,11 @@ describe('release gates (docs/ARCHITECTURE.md 11), n = 100', () => {
   // (docs/engine-calibration.md, "Placement re-check under pairs only"): near 72 of 72, far 47 of 72.
   const NEAR_FLOOR = 0.9;
   const FAR_FLOOR = 0.55;
+  // Six probes a seed, and about two in three come back, so two seeds (12 probes)
+  // fell under the floor by chance about one run in five; six seeds make that rare.
+  // Seeds 1 to 6 kept 23 of 36 with the old picker and 22 of 36 with the current one
+  // (docs/engine-calibration.md, "Flip chances").
+  const FAR_SEEDS = [1, 2, 3, 4, 5, 6];
 
   /** The share of probes kept (at most PROBE_KEPT from their true place) a further 8n answers after the move. */
   function keptShareAfter8n(traces: Trace[]): { measured: number; share: number } {
@@ -72,7 +77,7 @@ describe('release gates (docs/ARCHITECTURE.md 11), n = 100', () => {
   it(
     'an item moved far from its true place is brought back within 5% after a further 8n answers (docs/ARCHITECTURE.md 6.8 step 11)',
     () => {
-      const { measured, share } = keptShareAfter8n(play(`typical-unordered-probe-far-n${N}`));
+      const { measured, share } = keptShareAfter8n(play(`typical-unordered-probe-far-n${N}`, FAR_SEEDS));
       expect(measured, 'no far probe was measured at 8n').toBeGreaterThan(0);
       expect(share, `share ${share}`).toBeGreaterThanOrEqual(FAR_FLOOR);
     },

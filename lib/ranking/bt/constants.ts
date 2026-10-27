@@ -45,6 +45,10 @@ export const PICKER_OFFSETS = [
 ] as const;
 /** Repeat penalty: a pair asked j times before scores 0.3^j of its value. */
 export const REPEAT_FACTOR = 0.3;
+/** A pair asked this many times is offered again only when every other pair has been too. */
+export const MAX_SHOWINGS = 3;
+/** The picker reads the exact flip chance for at most this many of its best-scoring candidates. */
+export const PICKER_EXACT_CHECKS = 32;
 
 /** A checkpoint is kept after every placement and every this-many events. */
 export const CHECKPOINT_EVERY = 500;

@@ -474,23 +474,39 @@ line. The design therefore:
 
 ### 6.7 Choosing the next question
 
-A calibrated rule of thumb for "which question would teach the engine most", not
-a derived expected information gain.
+A calibrated rule of thumb for "which question would settle the order most", not
+a derived expected information gain. It asks about the pairs most likely to be
+the wrong way round, not about the items whose strengths are least sure: an
+item that has won every answer has a wide strength (the answers say it is on
+top, not by how much) but a settled place, and asking about it again teaches
+nothing about the order.
 
 Order the counted items by strength. For each item, consider opponents at
 offsets 1 to 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512 and 768
-places below it. Score each pair:
+places below it. Score each pair, A shown above B:
 
     c2 = k^2 + u_A + u_B      (k^2 = 2: the model's own scale, squared,
                                so all terms are in strength units squared)
     p  = 1 / (1 + exp(-(s_A - s_B) / sqrt(c2)))
-    I  = p (1 - p) / c2
-    score = u_A^2 I / (1 + u_A I) + u_B^2 I / (1 + u_B I)
+    settle = p (1 - p) / c2 * (u_A + u_B)
+    score  = flip(A, B) * settle
 
-Multiply by `0.3^j` where `j` is how many times the pair has been shown, and
-never offer the immediately previous pair. Removed items and items marked "don't
-recognize" are never offered. The simulation compared this picker with a simpler
-one (adjacent pairs, weighted by `u_A + u_B`); this rule is kept because it won.
+`flip(A, B)` is the chance that B belongs above A. Every pair is first scored
+with the Gaussian estimate, `Phi(-(s_A - s_B) / sqrt(u_A + u_B))`; then the 32
+best are scored again, best first, with the chance read from the answers
+themselves (`lib/ranking/bt/flips.ts`, section 6.12), until the next Gaussian
+score is below the best exact one, and the best exact score wins. Scores are
+compared on the grid of section 6.6, the shortlist too, so warm and fresh
+replays ask the same question.
+
+Multiply by `0.3^j` where `j` is how many times the pair has been shown; a pair
+shown three times is offered again only when every other pair has been too.
+Never offer the immediately previous pair. Removed items and items marked
+"don't recognize" are never offered. Against the earlier rule, which scored
+each item's own uncertainty, this one reached the gate in 2.5% fewer answers
+over the four user models at n = 100 (careful users 7.4%), and on a six-item
+list it stopped asking about an item that had already won every answer
+(docs/engine-calibration.md, "Flip chances").
 
 ### 6.8 Placements
 
@@ -605,6 +621,8 @@ From `lib/ranking/bt/constants.ts`; `docs/engine-calibration.md` has the runs.
 | Placement sd            | 10% of visible items, 1 to 25 places | a move is a firm regional statement; calibrated by simulation         |
 | Picker offsets          | 1 to 6, 8, 12 ... 768 places         | near and far opponents at a fixed cost                                |
 | Repeat penalty          | 0.3 per showing                      | the same pair again teaches little                                    |
+| Most showings           | 3, unless nothing else can be asked  | a pair the user cannot call is not asked forever                      |
+| Exact picker checks     | 32 best Gaussian scores              | the exact flip chance at a bounded cost per answer                    |
 | Checkpoint              | every placement and 500 events       | warm rebuilds after an undo stay cheap                                |
 
 ### 6.11 Speed
@@ -664,11 +682,25 @@ The strip says only what is true:
     is idle, about every n/50 events, and shown once it has moved by 0.002. It
     rises at once
     and falls back only once the disorder is 10% past the boundary, so a level
-    does not flicker. Lists under 26 items read the same disorder in expected
-    places out (the disorder times the list length), with the boundaries 1.4,
-    0.8 and 0.5 places, because the 5% window there is a place or two. Measured
-    on unordered and rough starts of 26 items and more, the share of items within 5% of their true place averaged about 39%,
-    77%, 96% and 98% at the four levels; the two top levels held for rough
+    does not flicker. Lists under 26 items read the disorder in expected
+    places out (the disorder times the list length), with the boundaries 1.0,
+    0.4 and 0.25 places, because the 5% window there is a place or two. They
+    also take each pair's chance from the answers themselves
+    (`lib/ranking/bt/flips.ts`) rather than from the Gaussian the
+    uncertainties describe: an item that has won or lost every answer has a
+    wide strength, and the Gaussian reads that as doubt about its place. On a
+    short list such items are a large share: a six-item list that had read
+    "Taking shape" from its first nine answers to its 24th now reads the top
+    level from its eleventh, until a three-way loop in the middle makes it
+    "Taking shape" again, the loop alone. The chance follows the posterior
+    along the pair's gap, with every other item held at its fitted strength,
+    the two items moving in proportion to their uncertainties. Lists of 26
+    items and more keep the Gaussian estimate, which reads the same at every
+    size there (the exact chances did not), with the boundaries 0.07, 0.025
+    and 0.02. Measured on unordered and rough starts of 26 items and more,
+    the share of items within 5% of their true place averaged about 40%, 80%,
+    96% and 99% at the four levels; under 26 items, the share within a place
+    averaged about 53%, 87%, 97% and 99.6%. The two top levels held for rough
     starts that were loose or had reversed sections, which is what a list
     sorted by a field is, and the lower two ran lower there. The full tables
     are in `docs/engine-calibration.md`, "Progress levels".
