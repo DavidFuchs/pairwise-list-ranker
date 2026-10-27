@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { replay } from '@/lib/ranking/bt/engine';
-import { disorderOfState, expectedDisorder, levelOf, settleLevel } from '@/lib/ranking/bt/progress';
+import {
+  disorderOfState,
+  expectedDisorder,
+  levelOf,
+  pairChances,
+  settleLevel,
+} from '@/lib/ranking/bt/progress';
 import { seededRandom } from '@/tests/helpers/random';
 import type { RankingEvent } from '@/types/rankingEvents';
 import { normalCdf } from '@/tests/sim/signals';
@@ -154,6 +160,33 @@ describe('disorderOfState', () => {
       0.1,
     );
     expect(disorderOfState(state)).toBe(gaussian);
+  });
+});
+
+describe('pairChances', () => {
+  const pair = (index: number, left: string, right: string): RankingEvent => ({
+    id: `e${index}`,
+    listId: 'progress',
+    createdAt: new Date(Date.UTC(2026, 0, 1) + index * 1000).toISOString(),
+    kind: 'pair',
+    leftItemId: left,
+    rightItemId: right,
+    outcome: 'left',
+  });
+
+  it('is null without a fit', () => {
+    expect(pairChances({ ranked: ['a', 'b'] })).toBeNull();
+  });
+
+  it('gives every pair the disorder sums, the one shown above first', () => {
+    const events = [pair(0, 'a', 'b'), pair(1, 'b', 'c'), pair(2, 'c', 'a'), pair(3, 'a', 'd')];
+    const state = replay({ originalItemIds: ['a', 'b', 'c', 'd'], startingOrder: 'unordered', events });
+    const pairs = pairChances(state) as NonNullable<ReturnType<typeof pairChances>>;
+    for (const { above, below } of pairs) {
+      expect(state.ranked.indexOf(above)).toBeLessThan(state.ranked.indexOf(below));
+    }
+    const sum = pairs.reduce((total, { chance }) => total + chance, 0);
+    expect((2 * sum) / 16).toBeCloseTo(disorderOfState(state) as number, 12);
   });
 });
 

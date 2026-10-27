@@ -60,6 +60,12 @@ export interface EngineHost {
    * the replay fails it is the active items in arrival order.
    */
   rankingNow(list: RankedList): ListItem[];
+  /**
+   * The open list's fit, for the progress explainer, when the session showing
+   * it is for exactly this history; null otherwise, as while it restores or
+   * before a deferred session starts.
+   */
+  shownEvidence(list: RankedList): ShownEvidence | null;
   /** Saves the open session's sealed snapshot to the cache. */
   flushCache(): void;
   /** Drops cached snapshots of lists not named, such as lists no longer in the workspace. */
@@ -102,7 +108,10 @@ const SLICE_MS = 12;
 
 /** The part of an engine state the view and the remembered orders are made from. */
 type ShownState = Pick<EngineState, 'ranked' | 'unrecognized' | 'nextPair'> &
-  Partial<Pick<EngineState, 'strengths' | 'uncertainty' | 'eventCount' | 'fit' | 'slots'>>;
+  Partial<Pick<EngineState, 'strengths' | 'uncertainty' | 'eventCount' | 'fit' | 'slots' | 'priorSource'>>;
+
+/** What the progress explainer reads from the open list's engine state. */
+export type ShownEvidence = Pick<EngineState, 'ranked' | 'nextPair' | 'fit' | 'slots' | 'priorSource'>;
 
 /**
  * The session for the open list, and the history it covers. A list opened
@@ -685,6 +694,14 @@ export function createEngineHost(
 
     view() {
       return store.getState().view;
+    },
+
+    shownEvidence(list) {
+      const state = stateFor(list);
+      if (state === null) return null;
+      const { ranked, nextPair, fit, slots, priorSource } = state;
+      if (fit === undefined || slots === undefined || priorSource === undefined) return null;
+      return { ranked, nextPair, fit, slots, priorSource };
     },
 
     rankingNow(list) {

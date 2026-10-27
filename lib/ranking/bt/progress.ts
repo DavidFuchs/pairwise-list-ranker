@@ -52,12 +52,16 @@ const WIDE_TIMES_MEDIAN = 4;
  * is the item shown above. Without it, the Gaussian estimate from the two
  * uncertainties is used. The uncertainties still bound which pairs are looked
  * at.
+ *
+ * `onPair` hears every pair looked at, by index as for `chance`, with its
+ * chance.
  */
 export function expectedDisorder(
   strengths: readonly number[],
   uncertainties: readonly number[],
   cap = Infinity,
   chance?: (i: number, j: number) => number,
+  onPair?: (i: number, j: number, chance: number) => void,
 ): number {
   const n = strengths.length;
   if (n < 2) return 0;
@@ -86,7 +90,7 @@ export function expectedDisorder(
 
   const limit = (cap * n * n) / 2;
   let flips = 0;
-  const flip = chance
+  const chanceAt = chance
     ? (i: number, j: number): number => {
         const a = order[i] as number;
         const b = order[j] as number;
@@ -96,6 +100,16 @@ export function expectedDisorder(
         normalTail(
           Math.abs((s[i] as number) - (s[j] as number)) / Math.sqrt((u[i] as number) + (u[j] as number)),
         );
+  const flip = onPair
+    ? (i: number, j: number): number => {
+        const value = chanceAt(i, j);
+        const a = order[i] as number;
+        const b = order[j] as number;
+        if (a < b) onPair(a, b, value);
+        else onPair(b, a, value);
+        return value;
+      }
+    : chanceAt;
 
   // Narrow against narrow: nearest neighbours down the order, until the gap is sure.
   for (let a = 0; a < narrow.length; a++) {
@@ -154,19 +168,54 @@ export function disorderOfState(state: {
   fit?: FitEvidence;
   slots?: ReadonlyMap<string, number>;
 }): number | null {
+  return walkState(state, DISORDER_CAP);
+}
+
+/** A pair of shown items, the one shown above first, and its chance of being the wrong way round. */
+export interface PairChance {
+  above: string;
+  below: string;
+  chance: number;
+}
+
+/**
+ * Every pair the disorder is summed over, with the chance the progress level
+ * reads for it, uncapped: what the progress explainer ranks the doubts by.
+ * Null without a fit, as for disorderOfState.
+ */
+export function pairChances(state: {
+  ranked: readonly string[];
+  fit?: FitEvidence;
+  slots?: ReadonlyMap<string, number>;
+}): PairChance[] | null {
+  const pairs: PairChance[] = [];
+  const found = walkState(state, Infinity, (above, below, chance) => pairs.push({ above, below, chance }));
+  return found === null ? null : pairs;
+}
+
+/** disorderOfState's walk, with `longCap` as the cap for a long list, telling `onPair` each pair by id. */
+function walkState(
+  state: { ranked: readonly string[]; fit?: FitEvidence; slots?: ReadonlyMap<string, number> },
+  longCap: number,
+  onPair?: (above: string, below: string, chance: number) => void,
+): number | null {
   const { fit, slots } = state;
   if (fit === undefined || slots === undefined) return null;
-  const fitted = state.ranked.flatMap((id) => {
-    const slot = slots.get(id);
-    return slot === undefined ? [] : [slot];
-  });
+  const ids = state.ranked.filter((id) => slots.has(id));
+  const fitted = ids.map((id) => slots.get(id) as number);
   const strengths = fitted.map((slot) => fit.strengths[slot] as number);
   const uncertainties = fitted.map((slot) => fit.uncertainty[slot] as number);
+  const heard =
+    onPair && ((i: number, j: number, chance: number) => onPair(ids[i] as string, ids[j] as string, chance));
   if (fitted.length >= MIN_ITEMS_FOR_PAIR_SCALE)
-    return expectedDisorder(strengths, uncertainties, DISORDER_CAP);
+    return expectedDisorder(strengths, uncertainties, longCap, undefined, heard);
   const flips = new FlipChances(fit);
-  return expectedDisorder(strengths, uncertainties, Infinity, (i, j) =>
-    flips.chance(fitted[i] as number, fitted[j] as number),
+  return expectedDisorder(
+    strengths,
+    uncertainties,
+    Infinity,
+    (i, j) => flips.chance(fitted[i] as number, fitted[j] as number),
+    heard,
   );
 }
 

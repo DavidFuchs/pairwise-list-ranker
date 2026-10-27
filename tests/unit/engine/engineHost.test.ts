@@ -886,6 +886,25 @@ describe('the cache', () => {
   });
 });
 
+describe('shownEvidence', () => {
+  it("is the open session's fit for exactly the shown history, and null otherwise", async () => {
+    const host = createEngineHost({ builder: createSyncBuilder(), cache: createEngineCache(null) });
+    const list = prefix(40);
+    host.sync(list);
+    await waitFor(() => host.view()?.status === 'ready');
+    host.viewShown();
+    await waitFor(() => host.shownEvidence(list) !== null);
+    const evidence = host.shownEvidence(list);
+    const expected = replay(toEngineList(list));
+    expect(evidence?.ranked).toEqual(expected.ranked);
+    expect(evidence?.nextPair).toEqual(expected.nextPair);
+    expect(evidence?.fit.pairs.length).toBe(expected.fit.pairs.length);
+    expect(evidence?.priorSource).toEqual(expected.priorSource);
+    expect(host.shownEvidence(prefix(39))).toBeNull();
+    expect(host.shownEvidence(prefix(40, 'list-b'))).toBeNull();
+  });
+});
+
 describe('rankingNow', () => {
   it('returns the ready order without replaying, and replays when restoring', async () => {
     const { builder, requests } = deferredBuilder();
