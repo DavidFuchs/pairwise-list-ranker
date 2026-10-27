@@ -114,12 +114,7 @@ describe('ListSwitcher', () => {
 
   it('stays out of the way when the document holds only one list', () => {
     const { container } = render(
-      <ListSwitcher
-        currentPath={['movies']}
-        options={[movies]}
-        onSelect={vi.fn()}
-        onConfigure={vi.fn()}
-      />,
+      <ListSwitcher currentPath={['movies']} options={[movies]} onSelect={vi.fn()} onConfigure={vi.fn()} />,
     );
 
     expect(container.textContent).toBe('');
