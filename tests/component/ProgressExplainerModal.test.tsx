@@ -26,9 +26,9 @@ const tripsCircle: Spot = {
   kind: 'circle',
   items: ['reykjavik', 'lisbon', 'cape-breton'],
   answers: [
-    { winner: 'reykjavik', loser: 'lisbon', answer: 1, draw: false },
-    { winner: 'lisbon', loser: 'cape-breton', answer: 15, draw: false },
-    { winner: 'cape-breton', loser: 'reykjavik', answer: 9, draw: false },
+    { winner: 'reykjavik', loser: 'lisbon', answer: 1, draw: false, discounted: false },
+    { winner: 'lisbon', loser: 'cape-breton', answer: 15, draw: false, discounted: false },
+    { winner: 'cape-breton', loser: 'reykjavik', answer: 9, draw: false, discounted: false },
   ],
   chance: 0.47,
   next: true,
@@ -102,12 +102,59 @@ describe('ProgressExplainerModal', () => {
       loser: items[(k + 1) % items.length] as string,
       answer: k + 1,
       draw: false,
+      discounted: false,
     }));
     setup(atLevel(1, { spots: [{ ...tripsCircle, items, answers }] }));
     expect(screen.queryByTestId('progress-circle')).toBeNull();
     expect(
       screen.getByText('Alpha over Bravo over Reykjavík over Lisbon over Banff over Alpha'),
     ).toBeDefined();
+  });
+
+  it('a both-ways card with discounted answers says the later ones count more', () => {
+    setup(
+      atLevel(1, {
+        spots: [
+          {
+            above: 'a',
+            below: 'b',
+            chance: 0.15,
+            next: false,
+            kind: 'both-ways',
+            answers: [
+              { winner: 'b', loser: 'a', answer: 3, draw: false, discounted: true },
+              { winner: 'a', loser: 'b', answer: 12, draw: false, discounted: false },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(
+      screen.getByText(
+        'Your later answers count for more, so the earlier ones the other way count for less.',
+      ),
+    ).toBeDefined();
+  });
+
+  it('a both-ways card with no discounted answers has no such line', () => {
+    setup(
+      atLevel(1, {
+        spots: [
+          {
+            above: 'a',
+            below: 'b',
+            chance: 0.25,
+            next: false,
+            kind: 'both-ways',
+            answers: [
+              { winner: 'b', loser: 'a', answer: 3, draw: false, discounted: false },
+              { winner: 'a', loser: 'b', answer: 12, draw: false, discounted: false },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(screen.queryByText(/later answers count for more/)).toBeNull();
   });
 
   it('words each kind of spot with what settles it', () => {
@@ -119,11 +166,15 @@ describe('ProgressExplainerModal', () => {
             ...pairOf,
             kind: 'both-ways',
             answers: [
-              { winner: 'a', loser: 'b', answer: 4, draw: false },
-              { winner: 'b', loser: 'a', answer: 19, draw: false },
+              { winner: 'a', loser: 'b', answer: 4, draw: false, discounted: false },
+              { winner: 'b', loser: 'a', answer: 19, draw: false, discounted: false },
             ],
           },
-          { ...pairOf, kind: 'undecided', answers: [{ winner: 'a', loser: 'b', answer: 2, draw: true }] },
+          {
+            ...pairOf,
+            kind: 'undecided',
+            answers: [{ winner: 'a', loser: 'b', answer: 2, draw: true, discounted: false }],
+          },
           { ...pairOf, kind: 'inferred', chain: [] },
         ],
         moreSpots: 2,
@@ -159,8 +210,8 @@ describe('ProgressExplainerModal', () => {
             chance: 0.14,
             next: false,
             answers: [
-              { winner: 'a', loser: 'b', answer: 1, draw: false },
-              { winner: 'a', loser: 'b', answer: 2, draw: true },
+              { winner: 'a', loser: 'b', answer: 1, draw: false, discounted: false },
+              { winner: 'a', loser: 'b', answer: 2, draw: true, discounted: false },
             ],
           },
         ],

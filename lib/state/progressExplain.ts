@@ -17,6 +17,8 @@ export interface AnswerRef {
   loser: string;
   answer: number;
   draw: boolean;
+  /** The engine counts it for less: a later answer between the same two went the other way. */
+  discounted: boolean;
 }
 
 interface SpotBase {
@@ -112,7 +114,15 @@ function countedAnswers(events: readonly RankingEvent[], evidence: ShownEvidence
     if (winner === undefined || loser === undefined) continue;
     const known = terms.get(term.eventIndex);
     if (known !== undefined) known.draw = true;
-    else terms.set(term.eventIndex, { winner, loser, answer: answerAt[term.eventIndex] ?? 0, draw: false });
+    else {
+      terms.set(term.eventIndex, {
+        winner,
+        loser,
+        answer: answerAt[term.eventIndex] ?? 0,
+        draw: false,
+        discounted: term.discounted === true,
+      });
+    }
   }
   return [...terms.values()].sort((a, b) => a.answer - b.answer);
 }

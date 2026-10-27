@@ -196,7 +196,16 @@ function SpotCard({ spot, labelOf }: { spot: Spot; labelOf: (id: string) => stri
     }
     case 'both-ways':
       heading = "You've picked both ways";
-      body = <Answers lines={spot.answers.map(answer)} />;
+      body = (
+        <>
+          <Answers lines={spot.answers.map(answer)} faint={spot.answers.map((ref) => ref.discounted)} />
+          {spot.answers.some((ref) => ref.discounted) && (
+            <Text style={styles.body}>
+              {'Your later answers count for more, so the earlier ones the other way count for less.'}
+            </Text>
+          )}
+        </>
+      );
       settles = 'Another answer between these two decides it.';
       break;
     case 'undecided':
@@ -246,11 +255,12 @@ function SpotCard({ spot, labelOf }: { spot: Spot; labelOf: (id: string) => stri
   );
 }
 
-function Answers({ lines }: { lines: string[] }) {
+/** The answers behind a spot, one a line; `faint` dims the ones the engine counts for less. */
+function Answers({ lines, faint }: { lines: string[]; faint?: boolean[] }) {
   return (
     <View style={styles.answers}>
       {lines.map((line, index) => (
-        <Text key={index} style={styles.answer}>
+        <Text key={index} style={[styles.answer, faint?.[index] === true && styles.faint]}>
           {line}
         </Text>
       ))}
@@ -338,6 +348,7 @@ const styles = StyleSheet.create({
   chance: { ...typeScale.meta, fontFamily: fonts.body, color: colors.textSecondary },
   answers: { gap: space.xs },
   answer: { ...typeScale.meta, fontFamily: fonts.body, color: colors.textSecondary },
+  faint: { color: colors.textFaint },
   pairRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
   chip: {
     ...typeScale.meta,

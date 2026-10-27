@@ -166,8 +166,11 @@ Between and below the pair:
   the line again, a sentence for the level, and up to three spots still in
   doubt, each in terms of the user's own answers with their numbers ("Lisbon
   over Cape Breton Island, answer 15"), with what settles it. A circle of
-  answers is drawn as a loop. The window never gives a number beyond answer
-  numbers and counts, and never says the user changed their mind.
+  answers is drawn as a loop. When a pair was answered both ways, the answers
+  a later one outweighs are shown fainter, with "Your later answers count for
+  more, so the earlier ones the other way count for less." The window never
+  gives a number beyond answer numbers and counts, and never says the user
+  changed their mind.
 - a single split pill, **Can't decide | Don't recognize…**, centred - it
   belongs to the pair, not to either item. _Don't recognize…_ arms a choice in
   place: both cards highlight, and the pill becomes _Don't recognize either |
