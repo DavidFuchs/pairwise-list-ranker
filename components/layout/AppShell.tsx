@@ -1,6 +1,15 @@
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { Modal as RNModal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Image,
+  Modal as RNModal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { ExternalChangeNotice } from '@/components/layout/ExternalChangeNotice';
 import { HowItWorksModal } from '@/components/layout/HowItWorksModal';
@@ -11,6 +20,8 @@ import { GitHubIcon } from '@/components/ui/GitHubIcon';
 import { useScreenFocused } from '@/lib/hooks/useScreenFocused';
 import { SIDEBAR_DEFAULT_WIDTH, SIDEBAR_MIN_WIDTH, useSidebarWidth } from '@/lib/hooks/useSidebarWidth';
 import { colors, fonts, radius, space } from '@/lib/theme';
+
+import appIcon from '../../assets/icon.png';
 
 const REPO_URL = 'https://github.com/DavidFuchs/pairwise-list-ranker';
 
@@ -233,15 +244,18 @@ export function AppShell({
           dataSet={confirmingReset ? { resetPrompt: 'true' } : undefined}
         >
           <View style={styles.brand}>
-            <Text style={styles.wordmark} role="heading" aria-level={1}>
-              Pairwise
-            </Text>
-            {listSwitcher ??
-              (listName !== undefined && (
-                <Text style={styles.listName} numberOfLines={1}>
-                  {listName}
-                </Text>
-              ))}
+            <Image source={appIcon} accessibilityElementsHidden alt="" style={styles.logo} />
+            <View style={styles.brandText}>
+              <Text style={styles.wordmark} role="heading" aria-level={1}>
+                Pairwise
+              </Text>
+              {listSwitcher ??
+                (listName !== undefined && (
+                  <Text style={styles.listName} numberOfLines={1}>
+                    {listName}
+                  </Text>
+                ))}
+            </View>
           </View>
 
           <View style={styles.headerActions} dataSet={{ headerActions: 'true' }}>
@@ -450,7 +464,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     backgroundColor: colors.surface,
   },
-  brand: { flexDirection: 'row', alignItems: 'baseline', gap: space.md, flexShrink: 1 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexShrink: 1 },
+  brandText: { flexDirection: 'row', alignItems: 'baseline', gap: space.md, flexShrink: 1 },
+  logo: { width: 32, height: 32, borderRadius: 8, flexShrink: 0 },
   wordmark: {
     fontFamily: fonts.heading,
     fontSize: 20,

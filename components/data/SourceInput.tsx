@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { readTextFile } from '@/lib/browser/fileText';
 
 import { FileDrop } from '@/components/data/FileDrop';
@@ -46,35 +47,73 @@ export function SourceInput({
   availableOverrides = OVERRIDES.map((option) => option.key),
 }: SourceInputProps) {
   const visibleOverrides = OVERRIDES.filter((option) => availableOverrides.includes(option.key));
+  const [samplesOpen, setSamplesOpen] = useState(false);
+
+  // An open menu is dismissed by Escape or a press anywhere outside it.
+  useEffect(() => {
+    if (!samplesOpen || Platform.OS !== 'web') return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSamplesOpen(false);
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (target?.closest?.('[data-sample-menu]') == null) setSamplesOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('pointerdown', onPointerDown, true);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('pointerdown', onPointerDown, true);
+    };
+  }, [samplesOpen]);
   return (
     <View style={styles.panel} dataSet={{ surface: 'panel' }}>
       <View style={styles.header}>
-        <Text style={styles.title} role="heading" aria-level={2}>
-          Add your list
-        </Text>
-        <Text style={styles.subtitle}>
-          Paste it, type it, or drop a file. One item per line, or any YAML or JSON.
-        </Text>
-      </View>
+        <View style={styles.headerText}>
+          <Text style={styles.title} role="heading" aria-level={2}>
+            Add your list
+          </Text>
+          <Text style={styles.subtitle}>
+            Paste it, type it, or drop a file. One item per line, or any YAML or JSON.
+          </Text>
+        </View>
 
-      {/* Named for what they load, so trying the app is one obvious step
-          rather than a control hidden on a format tab. */}
-      <View style={styles.samples}>
-        <Text style={styles.samplesLabel}>No list handy? Try a sample:</Text>
-        {SAMPLES.map((sample) => (
+        {/* One control rather than a chip per sample: the chips, each with its
+            own description, wrapped to several lines on a laptop. */}
+        <View style={styles.samples} dataSet={{ sampleMenu: 'true' }}>
           <Pressable
-            key={sample.id}
             accessibilityRole="button"
-            accessibilityLabel={`Load the ${sample.label.toLowerCase()} sample`}
-            accessibilityHint={`Replaces the text below with ${sample.detail}`}
-            onPress={() => (onSample === undefined ? onChange(sample.text) : onSample(sample))}
-            dataSet={{ sample: 'button' }}
-            style={styles.sample}
+            accessibilityLabel="Try a sample list"
+            aria-expanded={samplesOpen}
+            onPress={() => setSamplesOpen(!samplesOpen)}
+            style={styles.samplesToggle}
           >
-            <Text style={styles.sampleLabel}>{sample.label}</Text>
-            <Text style={styles.sampleDetail}>{sample.detail}</Text>
+            <Text style={styles.sampleLabel}>Try a sample</Text>
+            <Text style={styles.sampleDetail}>{samplesOpen ? '▴' : '▾'}</Text>
           </Pressable>
-        ))}
+          {samplesOpen && (
+            <View style={styles.samplesMenu} role="menu">
+              {SAMPLES.map((sample) => (
+                <Pressable
+                  key={sample.id}
+                  role="menuitem"
+                  accessibilityLabel={`Load the ${sample.label.toLowerCase()} sample`}
+                  accessibilityHint={`Replaces the text below with ${sample.detail}`}
+                  onPress={() => {
+                    setSamplesOpen(false);
+                    if (onSample === undefined) onChange(sample.text);
+                    else onSample(sample);
+                  }}
+                  dataSet={{ sample: 'button' }}
+                  style={styles.sampleChoice}
+                >
+                  <Text style={styles.sampleLabel}>{sample.label}</Text>
+                  <Text style={styles.sampleDetail}>{sample.detail}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
       </View>
 
       <TextInput
@@ -138,7 +177,16 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  header: { gap: 2 },
+  header: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: space.sm,
+    // Above the editor, so the open sample menu floats over it.
+    zIndex: 1,
+  },
+  headerText: { gap: 2, flexShrink: 1 },
   title: {
     ...typeScale.sectionTitle,
     fontFamily: fonts.heading,
@@ -179,9 +227,8 @@ const styles = StyleSheet.create({
   overrideSelected: { borderColor: colors.accentSoftBorder, backgroundColor: colors.accentSoft },
   overrideLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
   overrideLabelSelected: { color: colors.accentStrong, fontWeight: '600' },
-  samples: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.sm },
-  samplesLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
-  sample: {
+  samples: { position: 'relative' },
+  samplesToggle: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: space.xs,
@@ -191,6 +238,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surfaceSunken,
+  },
+  // Floats over the editor instead of pushing it down.
+  samplesMenu: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: space.xs,
+    minWidth: 280,
+    gap: space.xs,
+    padding: space.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    boxShadow: '0 12px 28px -12px rgba(16, 17, 20, 0.35)',
+  },
+  sampleChoice: {
+    flexDirection: 'column',
+    gap: 2,
+    paddingVertical: space.xs,
+    paddingHorizontal: space.sm,
+    borderRadius: radius.sm,
   },
   sampleLabel: { fontFamily: fonts.body, fontSize: 12, fontWeight: '600', color: colors.textPrimary },
   sampleDetail: { fontFamily: fonts.body, fontSize: 11, color: colors.textFaint },

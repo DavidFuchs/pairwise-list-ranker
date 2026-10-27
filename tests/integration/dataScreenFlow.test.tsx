@@ -134,7 +134,8 @@ describe('the samples', () => {
   async function sampleThroughSetup(label: RegExp) {
     const user = userEvent.setup();
     const paste = render(<PasteScreen />);
-    await user.click(screen.getByRole('button', { name: label }));
+    await user.click(screen.getByRole('button', { name: /try a sample list/i }));
+    await user.click(screen.getByRole('menuitem', { name: label }));
     await pressContinue();
     paste.unmount();
     render(<SetupScreen />);
@@ -196,7 +197,8 @@ describe('the samples', () => {
     render(<PasteScreen />);
 
     await user.click(screen.getByRole('radio', { name: /read the text as a plain list/i }));
-    await user.click(screen.getByRole('button', { name: /load the movies sample/i }));
+    await user.click(screen.getByRole('button', { name: /try a sample list/i }));
+    await user.click(screen.getByRole('menuitem', { name: /load the movies sample/i }));
 
     expect(screen.getByText('Format').parentElement?.textContent).toBe('FormatYAML');
     expect(screen.getByText('Items').parentElement?.textContent).toBe('Items10');

@@ -58,7 +58,7 @@ describe('the paste page and the list setup', () => {
     render(<PasteScreen />);
 
     expect(screen.getByLabelText(/your list/i)).toBeDefined();
-    expect(screen.getByRole('button', { name: /load the songs sample/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /try a sample list/i })).toBeDefined();
     expectContinueDisabled();
     expect(screen.queryByRole('button', { name: /start ranking/i })).toBeNull();
     expect(screen.queryByText(/starting order/i)).toBeNull();
