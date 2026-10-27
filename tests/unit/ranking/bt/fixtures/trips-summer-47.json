@@ -1,0 +1,491 @@
+{
+  "source": "The owner's summer trips session of 2026-10-27, 47 answers",
+  "originalItemIds": [
+    "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+    "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+    "45f5dc65-9251-4f59-a24a-70789ffcc751",
+    "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+    "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+    "e87ae07b-39fa-49be-8273-ad580cf5c3b1"
+  ],
+  "labels": {
+    "3c0eb2c5-301e-4f45-b735-cffb465aecbc": "Lisbon",
+    "e0339aa9-bce3-4bc3-846b-bb28bed1002e": "Reykjavík",
+    "45f5dc65-9251-4f59-a24a-70789ffcc751": "Banff",
+    "e6af9b69-907a-4c2b-a75d-70616df5aaa0": "Dubrovnik",
+    "deb42aa8-bbc4-434d-bc35-de00ae722bd7": "Cape Breton Island",
+    "e87ae07b-39fa-49be-8273-ad580cf5c3b1": "Amalfi Coast"
+  },
+  "events": [
+    {
+      "id": "a6463522-8499-4837-b85a-d8c4805b8036",
+      "actionId": "d5059289-cb8e-45d9-9472-d34792ee86ea",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:14.004Z",
+      "kind": "pair",
+      "leftItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "rightItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "outcome": "right"
+    },
+    {
+      "id": "83319fb3-0728-48c6-8a61-611df33b623f",
+      "actionId": "137ffc16-d1eb-4f6d-b166-e2f16fa46175",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:15.376Z",
+      "kind": "pair",
+      "leftItemId": "45f5dc65-9251-4f59-a24a-70789ffcc751",
+      "rightItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "outcome": "left"
+    },
+    {
+      "id": "bc8fa6bb-c185-464d-aa68-79784e4dc1b8",
+      "actionId": "b990617e-17db-4cf8-8bb9-e62b52090596",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:18.620Z",
+      "kind": "pair",
+      "leftItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "left"
+    },
+    {
+      "id": "19a01183-f410-4caa-bac7-c9cd1968e8cb",
+      "actionId": "5e16c518-eb37-4653-a14a-bc8663bb351d",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:20.264Z",
+      "kind": "pair",
+      "leftItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "rightItemId": "45f5dc65-9251-4f59-a24a-70789ffcc751",
+      "outcome": "right"
+    },
+    {
+      "id": "a413a8bc-5312-4c35-80c8-ede8262b7601",
+      "actionId": "1d133c9c-9f4f-498c-90f8-461ab157e2c1",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:24.152Z",
+      "kind": "pair",
+      "leftItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "left"
+    },
+    {
+      "id": "4096d661-3717-4f96-9dfa-1dc0e5f26fa8",
+      "actionId": "7deeac95-7616-449c-a5fd-3e77e0a1bf20",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:26.083Z",
+      "kind": "pair",
+      "leftItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "rightItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "outcome": "left"
+    },
+    {
+      "id": "6a50e668-179d-4384-85c2-b0dbb2689ddc",
+      "actionId": "868ce56a-fa83-4194-ac44-ae9abf1d8a88",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:29.468Z",
+      "kind": "pair",
+      "leftItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "rightItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "outcome": "right"
+    },
+    {
+      "id": "ccd297ad-ecb7-4b98-af55-5d1e25483b6e",
+      "actionId": "b1984b84-ae57-4ad4-8a78-9318f97d7911",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:31.273Z",
+      "kind": "pair",
+      "leftItemId": "45f5dc65-9251-4f59-a24a-70789ffcc751",
+      "rightItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "outcome": "left"
+    },
+    {
+      "id": "e4538178-12ef-4be8-8d1d-bb54657d20b6",
+      "actionId": "a0915e74-951f-484d-b786-a2e43a07e492",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:34.683Z",
+      "kind": "pair",
+      "leftItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "left"
+    },
+    {
+      "id": "8062381a-4e8a-434c-8807-b10f0d92e79c",
+      "actionId": "e3fec4e4-f236-4ebb-8df5-371e2f396230",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:38.766Z",
+      "kind": "pair",
+      "leftItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "rightItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "outcome": "right"
+    },
+    {
+      "id": "b8f65937-1ccf-4ecc-be3d-70b8edcc6675",
+      "actionId": "7a28f907-13dd-4660-a373-dbd874b6382d",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:41.212Z",
+      "kind": "pair",
+      "leftItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "rightItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "outcome": "left"
+    },
+    {
+      "id": "bd0afcc9-eb8b-4905-acd2-ff73ae8f9a41",
+      "actionId": "791bc8d7-7d5f-4ce8-b193-97fa7c74230e",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:48.615Z",
+      "kind": "pair",
+      "leftItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "rightItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "outcome": "right"
+    },
+    {
+      "id": "dfd462df-98fd-41f7-8d1a-4ca0f5a12afd",
+      "actionId": "3704b8f5-a830-4836-95f6-a22b4e37186e",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:50.911Z",
+      "kind": "pair",
+      "leftItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "right"
+    },
+    {
+      "id": "1f3e0007-f8fe-40f2-b354-036ca298c634",
+      "actionId": "9d0e1905-20b9-4567-a9f3-d800c0ff51fa",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:53.639Z",
+      "kind": "pair",
+      "leftItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "rightItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "outcome": "left"
+    },
+    {
+      "id": "a5bbc602-6d92-4879-b37f-d448b151666b",
+      "actionId": "ad330ba9-22c1-4b6a-ab06-0471c283ead3",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:55.747Z",
+      "kind": "pair",
+      "leftItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "rightItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "outcome": "left"
+    },
+    {
+      "id": "186e8f5a-07fc-404b-9a2c-6e2b700e6471",
+      "actionId": "ceb32e5b-17a2-4e07-8a11-c586a78e57a5",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:58.347Z",
+      "kind": "pair",
+      "leftItemId": "45f5dc65-9251-4f59-a24a-70789ffcc751",
+      "rightItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "outcome": "right"
+    },
+    {
+      "id": "b8f7bc31-7b1f-412d-b4fd-08557207f15c",
+      "actionId": "a41eae6b-03c7-424a-ac37-88af3d24fbbe",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:06:59.545Z",
+      "kind": "pair",
+      "leftItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "right"
+    },
+    {
+      "id": "876d9e2f-59ab-44c2-b7a4-71a3907f452f",
+      "actionId": "162ca9bc-ab0f-4c44-941c-dbd3d33b5169",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:00.547Z",
+      "kind": "pair",
+      "leftItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "rightItemId": "45f5dc65-9251-4f59-a24a-70789ffcc751",
+      "outcome": "right"
+    },
+    {
+      "id": "c2d24cad-7a51-4130-a0b3-8beb00934844",
+      "actionId": "707683fe-ada1-47f9-b951-59e2bb837dd3",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:02.269Z",
+      "kind": "pair",
+      "leftItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "left"
+    },
+    {
+      "id": "01cf1c9d-cfcf-4158-bbad-234e96260f18",
+      "actionId": "b4371011-3f90-4689-9b77-35b88cf7bffd",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:03.726Z",
+      "kind": "pair",
+      "leftItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "left"
+    },
+    {
+      "id": "51ef4253-3542-47ce-bb8e-4c5260d41641",
+      "actionId": "93f6ae44-2b44-4bc8-bc8b-0d6dce10b1f2",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:04.719Z",
+      "kind": "pair",
+      "leftItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "left"
+    },
+    {
+      "id": "24f58eb9-c4bb-4395-84f3-dd35446b1a88",
+      "actionId": "33e64237-3ac9-4ac2-9915-71ef6206bb0a",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:06.067Z",
+      "kind": "pair",
+      "leftItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "rightItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "outcome": "left"
+    },
+    {
+      "id": "a0605f5d-8aaa-43e3-89ac-1c5ed927b8a7",
+      "actionId": "86541a7b-d0db-4d66-aecb-33ea824b733d",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:07.870Z",
+      "kind": "pair",
+      "leftItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "left"
+    },
+    {
+      "id": "cc5bed83-f341-46d1-98c7-53ac42f29cb9",
+      "actionId": "4bc8f1a1-cb57-4ad2-85af-875797c9a977",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:09.332Z",
+      "kind": "pair",
+      "leftItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "rightItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "outcome": "left"
+    },
+    {
+      "id": "20081922-abc5-4e4a-91ab-355792265798",
+      "actionId": "c8c5b866-1f59-4426-9102-1d7e89d856dd",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:10.443Z",
+      "kind": "pair",
+      "leftItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "rightItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "outcome": "left"
+    },
+    {
+      "id": "b93f06d3-523b-4315-b842-c668ade8e10d",
+      "actionId": "9f992888-0b5b-47f9-a8ef-efa45137b49d",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:31.266Z",
+      "kind": "pair",
+      "leftItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "rightItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "outcome": "left"
+    },
+    {
+      "id": "1287d3c6-391e-49de-a8c4-e4abfe14be55",
+      "actionId": "9cf2fbf7-e57f-4cd4-bf91-b5a146952ff7",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:32.430Z",
+      "kind": "pair",
+      "leftItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "rightItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "outcome": "left"
+    },
+    {
+      "id": "584cd62c-e679-4eeb-86f6-33b8a9f906e4",
+      "actionId": "cc636eba-3cb4-42d1-aec7-7b91d9ab3272",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:35.457Z",
+      "kind": "pair",
+      "leftItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "rightItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "outcome": "left"
+    },
+    {
+      "id": "6c34e331-65e2-47bc-8619-54e981148d3f",
+      "actionId": "fba52fa1-6f05-4a5b-9503-1428d3bbaf25",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:36.834Z",
+      "kind": "pair",
+      "leftItemId": "45f5dc65-9251-4f59-a24a-70789ffcc751",
+      "rightItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "outcome": "left"
+    },
+    {
+      "id": "bb502a78-821e-4ac5-8460-45ae2b7c85cb",
+      "actionId": "caf03ca5-8ec1-4463-bfe6-a8d5b1f431cc",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:38.112Z",
+      "kind": "pair",
+      "leftItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "rightItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "outcome": "left"
+    },
+    {
+      "id": "70290afb-a517-4f2c-aaee-fddadf687915",
+      "actionId": "3d366475-9aed-443e-bcf6-9b6b1250f8ea",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:40.090Z",
+      "kind": "pair",
+      "leftItemId": "45f5dc65-9251-4f59-a24a-70789ffcc751",
+      "rightItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "outcome": "left"
+    },
+    {
+      "id": "43045b93-87ca-41f5-80ad-6d917edf329a",
+      "actionId": "0f2b6ddd-5135-4af5-9240-b7c5dfdfd575",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:41.047Z",
+      "kind": "pair",
+      "leftItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "rightItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "outcome": "left"
+    },
+    {
+      "id": "5e5bca23-5e2b-4e2d-a937-5959becf2d76",
+      "actionId": "9ea320d1-958a-402f-88bf-c724e8c4ca16",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:41.898Z",
+      "kind": "pair",
+      "leftItemId": "45f5dc65-9251-4f59-a24a-70789ffcc751",
+      "rightItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "outcome": "left"
+    },
+    {
+      "id": "ab2a4947-6d8f-44e3-802b-080a6c33392a",
+      "actionId": "0150bae8-fcc3-47f6-8312-5baad8463e10",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:42.989Z",
+      "kind": "pair",
+      "leftItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "left"
+    },
+    {
+      "id": "e8adfac0-5baf-41c9-9ade-f90a86859af6",
+      "actionId": "5bf44705-df57-45b0-a5ec-15ec99f50f9d",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:44.012Z",
+      "kind": "pair",
+      "leftItemId": "45f5dc65-9251-4f59-a24a-70789ffcc751",
+      "rightItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "outcome": "left"
+    },
+    {
+      "id": "a6fc3afb-a7c1-4130-aff5-578f8a7e2e2c",
+      "actionId": "5cd4e9cf-5f53-46aa-a0b5-9c9bce36e6ea",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:45.206Z",
+      "kind": "pair",
+      "leftItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "left"
+    },
+    {
+      "id": "efd08ec2-f4e7-440d-9ad7-6433e46b811c",
+      "actionId": "d56b0e8c-4250-47bb-8721-a1b603f1026c",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:46.334Z",
+      "kind": "pair",
+      "leftItemId": "45f5dc65-9251-4f59-a24a-70789ffcc751",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "left"
+    },
+    {
+      "id": "65c85ceb-d691-475e-9c04-d8b6b5aca1ef",
+      "actionId": "e9c0270e-7509-47d9-9305-089c212df54f",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:48.088Z",
+      "kind": "pair",
+      "leftItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "rightItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "outcome": "left"
+    },
+    {
+      "id": "00d73b4d-d1d9-40ca-9156-bb4909900292",
+      "actionId": "d2f7e4c0-2245-4d15-b4ff-349a09ddb3b9",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:49.033Z",
+      "kind": "pair",
+      "leftItemId": "45f5dc65-9251-4f59-a24a-70789ffcc751",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "left"
+    },
+    {
+      "id": "21a8ab92-152e-441b-a4c0-5b64cda88787",
+      "actionId": "e7601645-1b2d-40f0-b453-74da9fdb23b5",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:07:50.957Z",
+      "kind": "pair",
+      "leftItemId": "45f5dc65-9251-4f59-a24a-70789ffcc751",
+      "rightItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "outcome": "left"
+    },
+    {
+      "id": "7053af32-4989-4dda-a789-2111c6a1b32e",
+      "actionId": "0c70ddb0-be54-4952-80ba-1ed7f9df1c5f",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:10:14.599Z",
+      "kind": "pair",
+      "leftItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "rightItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "outcome": "left"
+    },
+    {
+      "id": "7e3c09ad-a471-411c-85a2-6e302de4328c",
+      "actionId": "44dcda24-3e0f-4c19-951c-e58bf29ef4b4",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:10:18.999Z",
+      "kind": "pair",
+      "leftItemId": "e6af9b69-907a-4c2b-a75d-70616df5aaa0",
+      "rightItemId": "e0339aa9-bce3-4bc3-846b-bb28bed1002e",
+      "outcome": "left"
+    },
+    {
+      "id": "e4ad3de7-1d1c-4f9a-a788-d7588e5f3952",
+      "actionId": "647415ce-a94b-49b6-bcdc-69087e106ad9",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:10:31.363Z",
+      "kind": "pair",
+      "leftItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "rightItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "outcome": "right"
+    },
+    {
+      "id": "81979cec-82c2-4eab-a3cd-f8eac56eeebd",
+      "actionId": "1b47d24a-c34c-4aa3-8e42-29b87c1ffacb",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:10:38.690Z",
+      "kind": "pair",
+      "leftItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "rightItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "outcome": "left"
+    },
+    {
+      "id": "da3d98c9-0779-4163-a178-6340541c1cf1",
+      "actionId": "602304ae-1f9f-4acd-96a4-07479a9172bb",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:10:41.657Z",
+      "kind": "pair",
+      "leftItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "rightItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "outcome": "right"
+    },
+    {
+      "id": "765c9c81-f2dd-4abd-862a-64c5ff5a7d96",
+      "actionId": "ffbe18df-4c13-4f97-8ffa-0297abbc44eb",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:10:49.165Z",
+      "kind": "pair",
+      "leftItemId": "45f5dc65-9251-4f59-a24a-70789ffcc751",
+      "rightItemId": "deb42aa8-bbc4-434d-bc35-de00ae722bd7",
+      "outcome": "left"
+    },
+    {
+      "id": "9c490ea9-0bc0-4350-b171-64609e0a685d",
+      "actionId": "976092a7-d8e3-4688-a9cc-1fdeda8dcbe9",
+      "listId": "c9cb2cff-977a-4623-96d1-41ca2dc8a5b7",
+      "createdAt": "2026-10-27T22:10:51.080Z",
+      "kind": "pair",
+      "leftItemId": "3c0eb2c5-301e-4f45-b735-cffb465aecbc",
+      "rightItemId": "e87ae07b-39fa-49be-8273-ad580cf5c3b1",
+      "outcome": "left"
+    }
+  ]
+}

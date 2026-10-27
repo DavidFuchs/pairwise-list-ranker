@@ -1,10 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { EngineSession, type EngineState, replay, replayWithStats } from '@/lib/ranking/bt/engine';
 import { drivenHistory, gridBoundaryHistories } from '@/tests/helpers/engineCorpus';
 import { seededRandom, shuffled } from '@/tests/helpers/random';
 import type { UserModel } from '@/tests/helpers/simUser';
-import type { EngineList, StartingOrder } from '@/types/rankingEvents';
+import type { EngineList, RankingEvent, StartingOrder } from '@/types/rankingEvents';
+
+// The rule that later answers discount earlier ones is on, so every history here also checks it.
+vi.mock('@/lib/ranking/bt/constants', async (original) => ({
+  ...(await original<typeof import('@/lib/ranking/bt/constants')>()),
+  RECENCY_FACTOR: 0.5,
+}));
 
 const USERS: UserModel[] = ['careful', 'typical', 'fuzzy', 'sloppy'];
 const STARTS: StartingOrder[] = ['unordered', 'unordered', 'rough', 'ranked'];
@@ -172,5 +178,52 @@ describe('arrival sequence (docs/ARCHITECTURE.md 6.9)', () => {
     const after = replay({ ...driven, events: shuffledEvents });
     expect(after).toEqual(before);
     expect(before.ranked).not.toEqual(state.ranked);
+  });
+});
+
+describe('later answers discounting earlier ones (docs/ARCHITECTURE.md 6.1)', () => {
+  const ids = ['lisbon', 'reykjavik', 'banff', 'dubrovnik', 'cape-breton', 'amalfi'];
+  let counter = 0;
+  const ask = (winner: string, loser: string): RankingEvent => ({
+    id: `e${++counter}`,
+    listId: 'list',
+    createdAt: '2026-10-27T00:00:00.000Z',
+    kind: 'pair',
+    leftItemId: winner,
+    rightItemId: loser,
+    outcome: 'left',
+  });
+  const events = [
+    ask('banff', 'cape-breton'),
+    ask('lisbon', 'amalfi'),
+    ask('dubrovnik', 'reykjavik'),
+    ask('amalfi', 'lisbon'),
+    ask('cape-breton', 'dubrovnik'),
+    ask('amalfi', 'lisbon'),
+    ask('reykjavik', 'lisbon'),
+    ask('lisbon', 'amalfi'),
+    ask('lisbon', 'amalfi'),
+    ask('lisbon', 'amalfi'),
+  ];
+  const list: EngineList = { originalItemIds: ids, startingOrder: 'unordered', events };
+
+  const strengths = (state: EngineState): number[] =>
+    ids.map((id) => state.fit?.strengths[state.slots?.get(id) as number] as number);
+
+  it('warm path, cold replay and undo agree when later answers discount earlier ones', () => {
+    const session = new EngineSession({ ...list, events: [] });
+    for (const event of events) session.append(event);
+    const cold = replay(list);
+    expect(visible(session.state)).toEqual(visible(cold));
+    strengths(session.state).forEach((s, i) => expect(s).toBeCloseTo(strengths(cold)[i] as number, 6));
+
+    // Undoing the last three Lisbon answers puts the two Amalfi Coast answers back to full weight.
+    for (let k = 0; k < 3; k++) session.undo();
+    const earlier = replay({ ...list, events: events.slice(0, -3) });
+    expect(visible(session.state)).toEqual(visible(earlier));
+    strengths(session.state).forEach((s, i) => expect(s).toBeCloseTo(strengths(earlier)[i] as number, 6));
+    expect(session.state.fit?.pairs.some((term) => term.discounted)).toBe(
+      earlier.fit?.pairs.some((term) => term.discounted),
+    );
   });
 });
