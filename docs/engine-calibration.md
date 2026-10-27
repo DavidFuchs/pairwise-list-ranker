@@ -567,8 +567,8 @@ About one answer in five being a draw is why the weight matters: the gap between
 
 ### Later answers
 
-Calibrated 2026-10-27. `RECENCY_FACTOR` is **0.5**: each clear answer counts
-0.5^k of its weight, where k is the number of later clear answers between the
+Calibrated 2026-10-27. `RECENCY_FACTOR` is **0.6**: each clear answer counts
+0.6^k of its weight, where k is the number of later clear answers between the
 same two items that picked the other one (docs/ARCHITECTURE.md 6.1). Answers
 that agree never discount each other, and draws neither discount nor are
 discounted. A factor of 1 is off, the behaviour before this change.
@@ -576,67 +576,80 @@ discounted. A factor of 1 is off, the behaviour before this change.
 Why: on the owner's six-item summer trips list (47 answers), Lisbon and Amalfi
 Coast were answered six times, Lisbon in answer 9, Amalfi Coast in 13 and 15,
 then Lisbon in 43, 45 and 47. Counted equally that is 4 to 2 and a 34% chance of
-the pair being the wrong way round ("could go either way"). At 0.5 it counts
-3.25 to 0.25 and the chance is 4.8%, under the 5% doubt line, with the order
-unchanged (Banff, Cape Breton Island, Dubrovnik, Reykjavík, Lisbon, Amalfi
-Coast). `tests/unit/ranking/bt/laterAnswers.test.ts` holds that session.
+the pair being the wrong way round ("could go either way"). At 0.6 it counts
+3.36 to 0.43 and the chance is 7.8%, under the 10% the top level needs before it
+mentions a pair, with the order unchanged (Banff, Cape Breton Island, Dubrovnik,
+Reykjavík, Lisbon, Amalfi Coast). `tests/unit/ranking/bt/laterAnswers.test.ts`
+holds that session.
 
 Scenarios: `typical-unordered-drift-n6`, `-n12` and `-n100` (tag `cal-recency`;
 see docs/ARCHITECTURE.md 11), where 20% of the items, and at least two, take one
 another's values after 4n answers (3n at 100 items). Their gate is the answers
 after the change until the order is exactly right (under 26 items) or 90% of
-items are within 5% of their new place (100 items). Compared with
+items are within 5% of their new place (100 items); a run that never gets there
+counts its answers from the change too (the trace's `gateFrom`). Compared with
 `SIM_GROUPS=recency`: each drift scenario decides as its own group, every other
 scenario is a guard.
 
-Sweep: values 1 (current, the reference), 0.8, 0.6, 0.5, 0.3 and 0; 6 seeds;
-`--size full`; filter `cal-[rp][ea]`, which selects `cal-recency` and `cal-pairs`
-without a `|` (cmd.exe breaks on it) and also catches the `typical-ranked-*`
-scenarios (the `cal-ra` in "typical-ranked"), which are guards. Each run took
-about 3 minutes. Files: `engine-calibration-runs/RECENCY_FACTOR-<value>.json` and
+Sweep: values 1 (current, the reference), 0.8, 0.7, 0.6, 0.5, 0.3 and 0; 6
+seeds; `--size full`; filter `cal-[rp][ea]`, which selects `cal-recency` and
+`cal-pairs` without a `|` (cmd.exe breaks on it) and also catches the
+`typical-ranked-*` scenarios (the `cal-ra` in "typical-ranked"), which are
+guards. Each run took about 3 minutes. Files:
+`engine-calibration-runs/RECENCY_FACTOR-<value>.json` and
 [compare-RECENCY_FACTOR-0.8.md](engine-calibration-runs/compare-RECENCY_FACTOR-0.8.md).
 
 The 6-seed short-list gates were too noisy to read: 12 items went +15.1%,
-+7.0%, -0.7% and +13.3% at 0.8, 0.6, 0.3 and 0. The two short scenarios were run
-again with 40 seeds (`RECENCY_FACTOR-<value>-short40.json`,
++7.0%, -0.7% and +13.3% at 0.8, 0.6, 0.3 and 0, and the rule rejected 0.8, 0.7
+and 0 on that one scenario. The two short scenarios were run again with 40 seeds
+(`RECENCY_FACTOR-<value>-short40.json`,
 [compare-RECENCY_FACTOR-0.8-short40.md](engine-calibration-runs/compare-RECENCY_FACTOR-0.8-short40.md)).
 Mean answers after the change to the exact order, change against 1:
 
-| Factor      | 6 items | 12 items |   Mean | Verdict                                 |
-| ----------- | ------: | -------: | -----: | --------------------------------------- |
-| 1 (current) |       - |        - |      - | off                                     |
-| 0.8         |  -10.2% |    -9.1% |  -9.6% | eligible                                |
-| 0.6         |  -19.0% |   -14.5% | -16.7% | eligible                                |
-| 0.5         |  -24.4% |   -22.8% | -23.6% | **chosen**                              |
-| 0.3         |  -32.0% |   -23.1% | -27.6% | best by the rule; fails the spec, below |
-| 0           |  -28.1% |    -0.5% | -14.3% | eligible, 2 seeds censored against 3    |
+| Factor      | 6 items | 12 items |   Mean | Verdict                                        |
+| ----------- | ------: | -------: | -----: | ---------------------------------------------- |
+| 1 (current) |       - |        - |      - | off                                            |
+| 0.8         |  -10.2% |    -8.1% |  -9.2% | eligible; rejected on 6 seeds                  |
+| 0.7         |  -15.3% |   -11.4% | -13.3% | eligible; rejected on 6 seeds                  |
+| 0.6         |  -19.0% |   -13.9% | -16.4% | **chosen**                                     |
+| 0.5         |  -24.4% |   -21.9% | -23.2% | eligible; a "much better" stray flips a pair   |
+| 0.3         |  -32.0% |   -21.9% | -27.0% | best by the rule; one plain stray flips a pair |
+| 0           |  -28.1% |    -0.4% | -14.2% | eligible, 2 seeds censored against 3           |
 
 Guards: every `cal-pairs` scenario and the 100-item drift scenario reached the
 gate in exactly the same number of answers at every factor (+0.0%). At 100 items
 the picker rarely asks a pair twice before the gate, so the rule has nothing to
 act on there; it matters on short lists, where every pair comes round again.
 
-Decision: 0.5, not 0.3. The rule prefers 0.3 by 4 points, but the spec
+Decision: 0.6, not the rule's 0.3. The spec
 (docs/superpowers/specs/2026-10-27-later-answers-count-more-design.md) asks
-that one stray answer never overturn a settled pair: after three answers one
-way, a single answer the other way must not tip it. That needs a factor above
-1/3. At 0.5 the three count 1.5 against 1; at 0.3 they count 0.9 and one
-misclick would flip the pair. A factor of 0 (the latest answer alone counts)
-does worse than 0.5 on 12 items for the same reason.
+that one stray answer never overturn a settled pair: after three plain answers
+one way, a single answer the other way must not tip it. A plain stray needs a
+factor above 1/3 (three count 3f against 1); a "much better" stray, which counts
+1.75, needs one above 1.75/3, about 0.58. At 0.5 the three count 1.5 against
+1.75 and one "much better" misclick would flip the pair; at 0.6 they count 1.8.
+0.6 is the fastest factor above that line that the rule finds eligible on both
+the 6-seed and the 40-seed runs. It gives up about 7 points against 0.5. After
+only two answers one way, one "much better" answer the other way still tips the
+pair (1.2 against 1.75), as it would by a plain count at any factor under 0.875;
+the spec's line is three. `evidence.test.ts` pins the three-against-one case at
+the shipped factor.
 
-Checks at 0.5:
+Checks at 0.6:
 
 - Users whose mind never changes, on 6 and 12 items, 40 seeds, every user
   model (a one-off run with no drift, not kept): answers to the exact order are
-  the same as at 1 (sloppy at 12 items 33.4 against 34.1) and the share of pairs
-  the right way round at the end differs by at most 0.001.
+  the same as at 1 (fuzzy at 12 items 27.8 against 27.3, sloppy 33.5 against
+  34.1) and the share of pairs the right way round at the end differs by at most
+  0.001.
 - The short-list levels (lists of 5 to 25 items, every user model, unordered and
   rough, 8 seeds, every answer once every item had been compared; a one-off
   run): the true share within a place at each level is unchanged. "Close" holds a
-  mean of 96.5% with 10.7% below 90% (10.8% at 1); the top level 99.4% with 2.1%
+  mean of 96.5% with 11.0% below 90% (10.8% at 1); the top level 99.4% with 2.1%
   below 90% (2.3% at 1). `tests/unit/sim/progressGate.test.ts` passes.
-- `npm run bench:engine`: a warm answer went from 8.7 ms to 9.9 ms on the
-  benchmark list, inside the 100 ms budget (docs/ARCHITECTURE.md 6.11).
+- `npm run bench:engine`, measured at 0.5 (the code path is the same at any
+  factor under 1): a warm answer went from 8.7 ms to 9.9 ms on the benchmark
+  list, inside the 100 ms budget (docs/ARCHITECTURE.md 6.11).
 
 What the rule cannot say: the drift scenarios are one kind of change of mind, a
 handful of items swapping places at once. A gradual change, or one confined to

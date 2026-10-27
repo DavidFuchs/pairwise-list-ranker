@@ -198,7 +198,9 @@ const mean = (values: readonly number[]): number =>
 /** A trace's answers to the gate, a censored one counted as its last sample's answers. */
 function gateOf(trace: Trace): { answers: number; censored: boolean } {
   if (trace.answersToGate !== null) return { answers: trace.answersToGate, censored: false };
-  return { answers: trace.samples[trace.samples.length - 1]?.answers ?? 0, censored: true };
+  // Counted from where the gate is, as a reached gate is: a drift scenario's from its drift point.
+  const last = trace.samples[trace.samples.length - 1]?.answers ?? 0;
+  return { answers: last - (trace.gateFrom ?? 0), censored: true };
 }
 
 function tracesBySeed(file: ResultFile, scenario: string): Map<number, Trace> {

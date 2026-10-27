@@ -29,6 +29,8 @@ interface TraceSpec {
   samples?: Sample[];
   probes?: MoveProbe[];
   probesSkipped?: number;
+  /** The answers the gate is counted from (a drift scenario's drift point). */
+  gateFrom?: number;
 }
 
 function trace(scenario: string, seed: number, spec: TraceSpec): Trace {
@@ -39,6 +41,7 @@ function trace(scenario: string, seed: number, spec: TraceSpec): Trace {
     answersToGate: spec.gate,
     probes: spec.probes ?? [],
     probesSkipped: spec.probesSkipped ?? 0,
+    ...(spec.gateFrom === undefined ? {} : { gateFrom: spec.gateFrom }),
   };
 }
 
@@ -477,6 +480,27 @@ describe('formatDecision', () => {
     expect(text).toContain(
       'Groups: each drift scenario its own (the mean is over them; every other scenario is a guard).',
     );
+  });
+});
+
+describe('a drift scenario that never reached its gate', () => {
+  it('counts its answers from the drift, as a reached one is counted', () => {
+    const name = 'typical-unordered-drift-n12';
+    const current = result('cur', {
+      [name]: [
+        { gate: null, last: 144, gateFrom: 48 },
+        { gate: 40, gateFrom: 48 },
+      ],
+    });
+    const candidate = result('cand', {
+      [name]: [
+        { gate: 48, gateFrom: 48 },
+        { gate: 40, gateFrom: 48 },
+      ],
+    });
+    const decision = decide(current, [candidate], [name], { groupOf: parseGroups('recency') });
+    const cell = decision.table[0]!.comparison.cells[0]!;
+    expect(cell.currentMeanGate).toBe((96 + 40) / 2);
   });
 });
 

@@ -240,6 +240,20 @@ describe('discountEarlier', () => {
     ).toEqual([1]);
   });
 
+  it('at the shipped factor, one stray answer, plain or "much better", does not overturn three plain ones', async () => {
+    const { RECENCY_FACTOR } = await vi.importActual<typeof import('@/lib/ranking/bt/constants')>(
+      '@/lib/ranking/bt/constants',
+    );
+    for (const stray of ['right', 'right_strong'] as const) {
+      const { evidence, timeline } = record([...threeA, pair('a', 'b', stray)]);
+      const [a] = slotsOf(timeline, ['a']);
+      const terms = discountEarlier(evidence.activeTerms(timeline).pairs, RECENCY_FACTOR);
+      const forA = terms.filter((t) => t.winner === a).reduce((sum, t) => sum + t.weight, 0);
+      const forB = terms.filter((t) => t.winner !== a).reduce((sum, t) => sum + t.weight, 0);
+      expect(forA, stray).toBeGreaterThan(forB);
+    }
+  });
+
   it('a removed item keeps its answers and they still discount', () => {
     expect(weights([pair('a', 'b', 'left'), pair('a', 'b', 'right'), removal(['a'])])).toEqual([0.5, 1]);
   });

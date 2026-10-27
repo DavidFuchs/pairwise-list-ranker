@@ -480,5 +480,6 @@ describe('a drift scenario', () => {
     expect(before.filter((value, k) => value !== after[k]).length).toBeGreaterThanOrEqual(2);
     expect([...after].sort()).toEqual([...before].sort());
     expect(trace.answersToGate === null || trace.answersToGate <= 48).toBe(true);
+    expect(trace.gateFrom).toBe(24);
   });
 });

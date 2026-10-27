@@ -92,6 +92,8 @@ export interface Trace {
   probes: MoveProbe[];
   /** Probe moves the driver wanted to make but could not: no candidate place gave the displacement asked for. */
   probesSkipped: number;
+  /** The answers the gate is counted from: the drift point in a drift scenario, absent (0) otherwise. */
+  gateFrom?: number;
 }
 
 /** One recorded event, for tests that check what the driver did. */
@@ -414,5 +416,6 @@ export function runScenario(scenario: Scenario, seed: number, observe?: (step: D
       : answersToThreshold(gateSamples, GATE_WITHIN5),
     probes,
     probesSkipped,
+    ...(drift ? { gateFrom: drift.at } : {}),
   };
 }

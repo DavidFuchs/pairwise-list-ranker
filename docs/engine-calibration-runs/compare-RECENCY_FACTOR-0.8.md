@@ -10,6 +10,7 @@ Decision: **RECENCY_FACTOR-0.3** (fewest answers to the gate: -11.0% against REC
 | Candidate          | Mean change | Censored seeds (candidate / current) | Verdict                                                       |
 | ------------------ | ----------: | -----------------------------------: | ------------------------------------------------------------- |
 | RECENCY_FACTOR-0.8 |       +1.1% |                                0 / 0 | rejected: more than 10% slower on typical-unordered-drift-n12 |
+| RECENCY_FACTOR-0.7 |       -1.1% |                                0 / 0 | rejected: more than 10% slower on typical-unordered-drift-n12 |
 | RECENCY_FACTOR-0.6 |       -4.5% |                                0 / 0 | eligible: mean -4.5%                                          |
 | RECENCY_FACTOR-0.5 |       -5.6% |                                0 / 0 | eligible: mean -5.6%                                          |
 | RECENCY_FACTOR-0.3 |      -11.0% |                                0 / 0 | chosen: mean -11.0%                                           |
@@ -38,6 +39,32 @@ Decision: **RECENCY_FACTOR-0.3** (fewest answers to the gate: -11.0% against REC
 | Group                        | Change | Censored seeds (candidate / current) |
 | ---------------------------- | -----: | -----------------------------------: |
 | typical-unordered-drift-n6   | -11.8% |                                0 / 0 |
+| typical-unordered-drift-n12  | +15.1% |                                0 / 0 |
+| typical-unordered-drift-n100 |  +0.0% |                                0 / 0 |
+
+## RECENCY_FACTOR-0.7
+
+| Scenario                              | Group                        |           Gate, current |         Gate, candidate | Change | within5 last | within1 at 4n | within1 at 8n | Notes |
+| ------------------------------------- | ---------------------------- | ----------------------: | ----------------------: | -----: | -----------: | ------------: | ------------: | ----- |
+| typical-ranked-n100                   | guard                        |               0 (0.00n) |               0 (0.00n) |  +0.0% |  1.00 / 1.00 |   0.92 / 0.92 |   0.98 / 0.99 |       |
+| typical-ranked-n400                   | guard                        |               0 (0.00n) |               0 (0.00n) |  +0.0% |  1.00 / 1.00 |   0.79 / 0.79 |   0.91 / 0.91 |       |
+| typical-unordered-pairs-n100          | guard                        |             315 (3.15n) |             315 (3.15n) |  +0.0% |  1.00 / 1.00 |   0.65 / 0.65 |   0.94 / 0.96 |       |
+| typical-ranked-loose-n100             | guard                        | 800 (8.00n), 6 censored | 800 (8.00n), 6 censored |  +0.0% |  0.62 / 0.63 |   0.18 / 0.18 |   0.29 / 0.29 |       |
+| typical-ranked-reversed-sections-n100 | guard                        | 800 (8.00n), 6 censored | 800 (8.00n), 6 censored |  +0.0% |  0.09 / 0.10 |   0.09 / 0.09 |   0.01 / 0.00 |       |
+| careful-unordered-pairs-n100          | guard                        |             334 (3.34n) |             334 (3.34n) |  +0.0% |  1.00 / 1.00 |   0.66 / 0.66 |   1.00 / 1.00 |       |
+| careful-rough-pairs-n100              | guard                        |             260 (2.60n) |             260 (2.60n) |  +0.0% |  1.00 / 1.00 |   0.95 / 0.95 |   1.00 / 1.00 |       |
+| typical-rough-pairs-n100              | guard                        |             272 (2.72n) |             272 (2.72n) |  +0.0% |  1.00 / 1.00 |   0.74 / 0.74 |   0.95 / 0.97 |       |
+| fuzzy-unordered-pairs-n100            | guard                        |             366 (3.66n) |             366 (3.66n) |  +0.0% |  1.00 / 1.00 |   0.38 / 0.38 |   0.67 / 0.66 |       |
+| fuzzy-rough-pairs-n100                | guard                        |             372 (3.72n) |             372 (3.72n) |  +0.0% |  0.99 / 0.99 |   0.39 / 0.39 |   0.65 / 0.65 |       |
+| sloppy-unordered-pairs-n100           | guard                        |             498 (4.97n) |             498 (4.97n) |  +0.0% |  0.98 / 0.98 |   0.36 / 0.36 |   0.76 / 0.76 |       |
+| sloppy-rough-pairs-n100               | guard                        |             333 (3.33n) |             333 (3.33n) |  +0.0% |  1.00 / 1.00 |   0.59 / 0.59 |   0.92 / 0.92 |       |
+| typical-unordered-drift-n6            | typical-unordered-drift-n6   |              20 (3.36n) |              17 (2.75n) | -18.3% |  1.00 / 1.00 |   1.00 / 1.00 |   1.00 / 1.00 |       |
+| typical-unordered-drift-n12           | typical-unordered-drift-n12  |              27 (2.26n) |              30 (2.53n) | +15.1% |  1.00 / 1.00 |   1.00 / 1.00 |   0.92 / 0.96 |       |
+| typical-unordered-drift-n100          | typical-unordered-drift-n100 |             421 (4.21n) |             421 (4.21n) |  +0.0% |  0.99 / 0.99 |   0.46 / 0.46 |   0.49 / 0.49 |       |
+
+| Group                        | Change | Censored seeds (candidate / current) |
+| ---------------------------- | -----: | -----------------------------------: |
+| typical-unordered-drift-n6   | -18.3% |                                0 / 0 |
 | typical-unordered-drift-n12  | +15.1% |                                0 / 0 |
 | typical-unordered-drift-n100 |  +0.0% |                                0 / 0 |
 
