@@ -113,7 +113,7 @@ describe('session files', () => {
     expect(openList(listStore).roles.fieldRenderers).toEqual({ plays: 'compact' });
     expect(await screen.findByText(/Opened the session: 3 items · 1 change/)).toBeDefined();
     // Restored from the file's history: Two beat One.
-    expect(await screen.findByText('1 answer so far')).toBeDefined();
+    expect(await screen.findByText('3 items · 1 answer so far')).toBeDefined();
     expect(screen.getAllByRole('listitem')[0]?.textContent).toMatch(/^⠿1Two/);
   });
 

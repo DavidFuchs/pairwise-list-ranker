@@ -60,6 +60,12 @@ describe('ComparisonDeck layout', () => {
     expect(screen.getByText('1,312 answers so far')).toBeDefined();
   });
 
+  it('says how many items are being ranked', () => {
+    setup({ items: 40 });
+
+    expect(screen.getByText('40 items · 2 answers so far')).toBeDefined();
+  });
+
   const comparing = {
     text: "Can't tell how close you are yet. 3 of 9 items haven't been compared.",
     bar: 'coverage',
@@ -438,6 +444,12 @@ describe('states with nothing to compare', () => {
       screen.getByText('Both items are ranked. Drag a row to swap them, or undo your answer.'),
     ).toBeDefined();
     expect(screen.queryByText(/at least two items/i)).toBeNull();
+  });
+
+  it('keeps the size of the list with nothing left to ask', () => {
+    setup({ pair: null, answers: 1, activeItems: 2, items: 2 });
+
+    expect(screen.getByText('2 items · 1 answer so far')).toBeDefined();
   });
 
   it('names the list holding the undo, disabled, when Undo is on another list', () => {

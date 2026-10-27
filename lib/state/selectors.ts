@@ -282,3 +282,12 @@ export function formatCount(n: number): string {
 export function describeAnswers(answers: number): string {
   return `${formatCount(answers)} ${answers === 1 ? 'answer' : 'answers'} so far`;
 }
+
+/**
+ * The status strip in full: the size of the list being ranked, then the answers,
+ * as "120 items · 312 answers so far". Without a size, only the answers.
+ */
+export function describeCounts(items: number | undefined, answers: number): string {
+  if (items === undefined) return describeAnswers(answers);
+  return `${formatCount(items)} ${items === 1 ? 'item' : 'items'} · ${describeAnswers(answers)}`;
+}

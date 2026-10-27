@@ -117,7 +117,7 @@ describe('restoring a ranking', () => {
 
     await act(async () => builds().release());
 
-    expect(await screen.findByText('3 answers so far')).toBeDefined();
+    expect(await screen.findByText('4 items · 3 answers so far')).toBeDefined();
     expect(screen.queryByText(RESTORING)).toBeNull();
     expect(screen.getAllByLabelText(/^Choose (?!a download format)/)).toHaveLength(2);
     expect(screen.getAllByRole('listitem')).toHaveLength(4);
@@ -125,7 +125,7 @@ describe('restoring a ranking', () => {
 
     // And it answers again, warm.
     await userEvent.setup().keyboard('s');
-    expect(screen.getByText('4 answers so far')).toBeDefined();
+    expect(screen.getByText('4 items · 4 answers so far')).toBeDefined();
     expect(builds().pending).toBe(0);
   });
 
@@ -133,7 +133,7 @@ describe('restoring a ranking', () => {
     openSavedSession();
     render(<RankScreen />);
     await act(async () => builds().release());
-    await screen.findByText('3 answers so far');
+    await screen.findByText('4 items · 3 answers so far');
     const user = userEvent.setup();
     replays.count = 0;
 
@@ -142,7 +142,7 @@ describe('restoring a ranking', () => {
     // Warm: no cold build was started and the host replayed nothing.
     expect(builds().pending).toBe(0);
     expect(replays.count).toBe(0);
-    expect(screen.getByText('2 answers so far')).toBeDefined();
+    expect(screen.getByText('4 items · 2 answers so far')).toBeDefined();
     expect(openList(listStore).events).toHaveLength(2);
     expect(rankedIds()).toEqual(replay(toEngineList(openList(listStore))).ranked);
   });
@@ -167,12 +167,12 @@ describe('a two-item list with nothing left to ask', () => {
     expect(
       screen.getByText('Both items are ranked. Drag a row to swap them, or undo your answer.'),
     ).toBeDefined();
-    expect(screen.getByText('1 answer so far')).toBeDefined();
+    expect(screen.getByText('2 items · 1 answer so far')).toBeDefined();
     expect(screen.queryByText(/at least two items/i)).toBeNull();
 
     await user.keyboard('{Control>}z{/Control}');
 
-    expect(screen.getByText('0 answers so far')).toBeDefined();
+    expect(screen.getByText('2 items · 0 answers so far')).toBeDefined();
     expect(screen.getAllByLabelText(/^Choose (?!a download format)/)).toHaveLength(2);
   });
 });

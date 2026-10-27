@@ -654,7 +654,9 @@ The budgets are checked by `scripts/bench-engine-browser.mjs` and
 
 The strip says only what is true:
 
-- **Count:** "312 answers so far". It counts comparison activity: a pair answer
+- **Count:** "120 items · 312 answers so far". The items are the ones in the
+  ranking, the same total the progress line counts: removed and unrecognized
+  items are not in it. The answers count comparison activity: a pair answer
   and a draw are one answer each. "Don't recognize" marks, moves and removals
   are not answers. It is activity, not evidence.
 - **Phase:** none. With one kind of question there is no phase to name.

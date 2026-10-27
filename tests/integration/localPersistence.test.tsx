@@ -94,7 +94,7 @@ describe('local persistence', () => {
 
     // A reload is a cold open: restoring first, then the same order as before.
     expect(screen.getAllByText('Restoring your ranking…').length).toBeGreaterThan(0);
-    expect(await screen.findByText('1 answer so far')).toBeDefined();
+    expect(await screen.findByText('3 items · 1 answer so far')).toBeDefined();
     expect(openList(listStore).events).toHaveLength(1);
     const rows = screen.getAllByRole('listitem').map((row) => row.textContent);
     expect(rows).toEqual(before.map((value, index) => `⠿${index + 1}${String(value)}`));

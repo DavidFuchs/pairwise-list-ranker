@@ -123,16 +123,16 @@ describe('switching between lists in the same document', () => {
     const user = userEvent.setup();
     render(<RankScreen />);
     const stage = () => within(screen.getByRole('main'));
-    expect(stage().getByText('1 answer so far')).toBeDefined();
+    expect(stage().getByText('2 items · 1 answer so far')).toBeDefined();
 
     await user.click(screen.getByRole('button', { name: /switch list/i }));
     await user.click(screen.getByRole('radio', { name: /rank the list at actors/i }));
-    expect(await stage().findByText('0 answers so far')).toBeDefined();
+    expect(await stage().findByText('2 items · 0 answers so far')).toBeDefined();
 
     await user.click(screen.getByRole('button', { name: /switch list/i }));
     await user.click(screen.getByRole('radio', { name: /rank the list at movies/i }));
 
-    expect(await stage().findByText('1 answer so far')).toBeDefined();
+    expect(await stage().findByText('2 items · 1 answer so far')).toBeDefined();
     expect(screen.getAllByRole('listitem').map((row) => row.textContent)).toEqual(['⠿1Alien', '⠿2Arrival']);
   });
 });

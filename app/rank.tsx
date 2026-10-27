@@ -285,6 +285,8 @@ export default function RankScreen() {
             <ComparisonDeck
               pair={view.pair}
               answers={view.answers}
+              // The items the order is of, the same ones the progress line counts; none while not ready.
+              items={ready ? view.ranked.length : undefined}
               status={view.status}
               activeItems={activeItems(list).length}
               layout={layout}

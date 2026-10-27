@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   describeAnswers,
+  describeCounts,
   describeRoles,
   selectAvailableTabs,
   selectContextLine,
@@ -128,6 +129,21 @@ describe('describeAnswers', () => {
     expect(describeAnswers(1)).toBe('1 answer so far');
     expect(describeAnswers(312)).toBe('312 answers so far');
     expect(describeAnswers(12_400)).toBe('12,400 answers so far');
+  });
+});
+
+describe('describeCounts', () => {
+  it('puts the size of the list before the answers', () => {
+    expect(describeCounts(120, 312)).toBe('120 items · 312 answers so far');
+    expect(describeCounts(1_500, 1)).toBe('1,500 items · 1 answer so far');
+  });
+
+  it('counts a single item in the singular', () => {
+    expect(describeCounts(1, 0)).toBe('1 item · 0 answers so far');
+  });
+
+  it('says only the answers when the size is not known', () => {
+    expect(describeCounts(undefined, 4)).toBe('4 answers so far');
   });
 });
 

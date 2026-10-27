@@ -7,7 +7,7 @@ import { ProgressLine } from '@/components/comparison/ProgressLine';
 import { RecognizePill } from '@/components/comparison/RecognizePill';
 import { useComparisonShortcuts } from '@/lib/hooks/useComparisonShortcuts';
 import type { ProgressDisplay } from '@/lib/state/progress';
-import { describeAnswers, selectItemLabel } from '@/lib/state/selectors';
+import { describeCounts, selectItemLabel } from '@/lib/state/selectors';
 import { EMPTY_LAYOUT } from '@/lib/renderers';
 import type { CardLayout } from '@/lib/renderers';
 import { colors, fonts, radius, space, typeScale } from '@/lib/theme';
@@ -46,6 +46,8 @@ export interface ComparisonDeckProps {
   pair: readonly [ListItem, ListItem] | null;
   /** Answers so far, for the status strip (docs/ARCHITECTURE.md 6.12). */
   answers: number;
+  /** Items in the ranking, for the status strip ahead of the answers; left out, the strip says only the answers. */
+  items?: number;
   status?: DeckStatus;
   /**
    * Active items in the list. With two or more and no pair, the engine has
@@ -107,6 +109,7 @@ export function pairStacks(width: number, hasPicture: boolean): boolean {
 export function ComparisonDeck({
   pair: shownPair,
   answers,
+  items,
   status = 'ready',
   activeItems = 0,
   layout = EMPTY_LAYOUT,
@@ -258,7 +261,7 @@ export function ComparisonDeck({
         {(trailing !== undefined || answers > 0) && (
           <View style={styles.statusRow}>
             {answers > 0 ? (
-              <Text style={[styles.status, styles.statusGrow]}>{describeAnswers(answers)}</Text>
+              <Text style={[styles.status, styles.statusGrow]}>{describeCounts(items, answers)}</Text>
             ) : (
               <View style={styles.statusGrow} />
             )}
@@ -292,7 +295,7 @@ export function ComparisonDeck({
     <View style={styles.stage}>
       <View style={styles.statusStrip} accessibilityLiveRegion="polite">
         <View style={styles.statusRow}>
-          <Text style={[styles.status, styles.statusGrow]}>{describeAnswers(answers)}</Text>
+          <Text style={[styles.status, styles.statusGrow]}>{describeCounts(items, answers)}</Text>
           {trailing}
         </View>
         <Text style={styles.announcement}>
