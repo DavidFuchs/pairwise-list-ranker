@@ -7,6 +7,7 @@ import {
   decide,
   formatDecision,
   parseGroups,
+  restingShare,
   scenarioGroupOf,
   type ResultFile,
 } from '@/tests/sim/compare';
@@ -31,6 +32,7 @@ interface TraceSpec {
   probesSkipped?: number;
   /** The answers the gate is counted from (a drift scenario's drift point). */
   gateFrom?: number;
+  topSpotResting?: boolean | null;
 }
 
 function trace(scenario: string, seed: number, spec: TraceSpec): Trace {
@@ -42,6 +44,7 @@ function trace(scenario: string, seed: number, spec: TraceSpec): Trace {
     probes: spec.probes ?? [],
     probesSkipped: spec.probesSkipped ?? 0,
     ...(spec.gateFrom === undefined ? {} : { gateFrom: spec.gateFrom }),
+    ...(spec.topSpotResting === undefined ? {} : { topSpotResting: spec.topSpotResting }),
   };
 }
 
@@ -510,5 +513,15 @@ describe("parseGroups('recency')", () => {
     expect(groupOf('typical-unordered-drift-n6')).toBe('typical-unordered-drift-n6');
     expect(groupOf('typical-unordered-drift-n100')).toBe('typical-unordered-drift-n100');
     expect(groupOf('typical-unordered-pairs-n100')).toBeNull();
+  });
+});
+
+describe('restingShare', () => {
+  const t = (topSpotResting: boolean | null | undefined): Trace =>
+    trace('careful-unordered-n100', 1, { gate: 100, topSpotResting });
+
+  it('counts only traces that reached the top level', () => {
+    expect(restingShare([t(true), t(false), t(null), t(undefined)])).toBe(0.5);
+    expect(restingShare([t(null)])).toBeNull();
   });
 });

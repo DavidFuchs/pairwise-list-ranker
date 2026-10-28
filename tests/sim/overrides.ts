@@ -16,6 +16,7 @@ export const BT_CONSTANTS = [
   'PLACEMENT_SD_FRACTION',
   'REPEAT_FACTOR',
   'RECENCY_FACTOR',
+  'MAX_SHOWINGS_SPLIT',
 ] as const;
 
 /** Every constant a run may override. */

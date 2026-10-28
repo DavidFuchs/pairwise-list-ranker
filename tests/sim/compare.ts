@@ -95,6 +95,8 @@ export interface SideStats {
   /** At the sample nearest 8n answers (the earlier on a tie); null when the name gives no n. */
   at8n: Quality | null;
   probes: ProbeShares;
+  /** restingShare over the side's traces. */
+  resting: number | null;
 }
 
 export interface Cell {
@@ -266,12 +268,23 @@ function probeShares(traces: readonly Trace[]): ProbeShares {
   };
 }
 
+/**
+ * The share of traces whose top spot rested (Trace.topSpotResting) among those
+ * that have the figure: the run reached the top level with a pair in doubt.
+ * Null when none do. A report figure only; it does not enter the decision.
+ */
+export function restingShare(traces: readonly Trace[]): number | null {
+  const known = traces.filter((t) => typeof t.topSpotResting === 'boolean');
+  return known.length === 0 ? null : known.filter((t) => t.topSpotResting === true).length / known.length;
+}
+
 function sideStats(traces: readonly Trace[], n: number | null): SideStats {
   return {
     last: quality(traces.map((t) => t.samples[t.samples.length - 1])),
     at4n: n === null ? null : quality(traces.map((t) => nearest(t.samples, 4 * n))),
     at8n: n === null ? null : quality(traces.map((t) => nearest(t.samples, 8 * n))),
     probes: probeShares(traces),
+    resting: restingShare(traces),
   };
 }
 
@@ -530,10 +543,10 @@ export function formatDecision(
     const c = row.comparison;
     lines.push('', `## ${row.label}`, '');
     lines.push(
-      '| Scenario | Group | Gate, current | Gate, candidate | Change | within5 last | within1 at 4n | within1 at 8n | Notes |',
+      '| Scenario | Group | Gate, current | Gate, candidate | Change | within5 last | within1 at 4n | within1 at 8n | Top spot rests | Notes |',
     );
     lines.push(
-      '| -------- | ----- | ------------: | --------------: | -----: | -----------: | ------------: | ------------: | ----- |',
+      '| -------- | ----- | ------------: | --------------: | -----: | -----------: | ------------: | ------------: | -------------: | ----- |',
     );
     for (const cell of c.cells) {
       const n = sizeOf(cell.scenario);
@@ -544,7 +557,7 @@ export function formatDecision(
         .filter((s) => s !== '')
         .join('; ');
       lines.push(
-        `| ${cell.scenario} | ${cell.model ?? 'guard'} | ${gateText(cell.currentMeanGate, cell.currentCensored, n)} | ${gateText(cell.meanGate, cell.censored, n)} | ${cell.relativeChange === null ? 'n/a' : percent(cell.relativeChange)} | ${pair(cell.current.last.within5, cell.candidate.last.within5)} | ${pair(cell.current.at4n?.within1, cell.candidate.at4n?.within1)} | ${pair(cell.current.at8n?.within1, cell.candidate.at8n?.within1)} | ${notes} |`,
+        `| ${cell.scenario} | ${cell.model ?? 'guard'} | ${gateText(cell.currentMeanGate, cell.currentCensored, n)} | ${gateText(cell.meanGate, cell.censored, n)} | ${cell.relativeChange === null ? 'n/a' : percent(cell.relativeChange)} | ${pair(cell.current.last.within5, cell.candidate.last.within5)} | ${pair(cell.current.at4n?.within1, cell.candidate.at4n?.within1)} | ${pair(cell.current.at8n?.within1, cell.candidate.at8n?.within1)} | ${pair(cell.current.resting, cell.candidate.resting)} | ${notes} |`,
       );
     }
     if (c.byModel.size > 0) {
@@ -586,7 +599,7 @@ export function formatDecision(
   }
   lines.push(
     '',
-    'within5 and within1 columns are current / candidate, means over the paired seeds. A change is the mean over paired seeds of (candidate - current) / current.',
+    'within5 and within1 columns are current / candidate, means over the paired seeds. Top spot rests is the share of runs where, at the first answer reaching the top level, the one pair left in doubt is one the picker will not ask again (runs that never had such a pair are left out). A change is the mean over paired seeds of (candidate - current) / current.',
   );
   return `${lines.join('\n')}\n`;
 }

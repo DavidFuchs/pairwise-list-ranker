@@ -116,3 +116,10 @@ describe('RECENCY_FACTOR', () => {
     expect(parseOverrides('{"RECENCY_FACTOR":0.5}')).toEqual({ RECENCY_FACTOR: 0.5 });
   });
 });
+
+describe('MAX_SHOWINGS_SPLIT', () => {
+  it('can be overridden', () => {
+    expect(OVERRIDABLE).toContain('MAX_SHOWINGS_SPLIT');
+    expect(parseOverrides('{"MAX_SHOWINGS_SPLIT":4}')).toEqual({ MAX_SHOWINGS_SPLIT: 4 });
+  });
+});

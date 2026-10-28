@@ -37,6 +37,7 @@ const CONSTANTS = {
   PLACEMENT_SD_FRACTION: { above: 0 },
   REPEAT_FACTOR: { above: 0, atMost: 1 },
   RECENCY_FACTOR: { atLeast: 0, atMost: 1 },
+  MAX_SHOWINGS_SPLIT: { atLeast: 3 },
 };
 
 const PICKERS = ['current', 'adjacent'];

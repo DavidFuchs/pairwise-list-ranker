@@ -1,5 +1,7 @@
 import { EngineSession, type EngineState } from '@/lib/ranking/bt/engine';
-import { MIN_ITEMS_FOR_PAIR_SCALE } from '@/lib/ranking/bt/progress';
+import { disorderOfState, levelOf, MIN_ITEMS_FOR_PAIR_SCALE, pairChances } from '@/lib/ranking/bt/progress';
+import { openPairs, pairKey, rests } from '@/lib/ranking/bt/splitPairs';
+import { TOP_LEVEL_DOUBT } from '@/lib/state/progressExplain';
 import { seededRandom, shuffled } from '@/tests/helpers/random';
 import type { UserModel } from '@/tests/helpers/simUser';
 import { makeBehaviour, type StrongUse } from '@/tests/sim/behaviours';
@@ -95,6 +97,14 @@ export interface Trace {
   probesSkipped: number;
   /** The answers the gate is counted from: the drift point in a drift scenario, absent (0) otherwise. */
   gateFrom?: number;
+  /**
+   * At the first answer that reaches the top progress level: whether the likeliest
+   * wrong pair, if it is in doubt (past TOP_LEVEL_DOUBT), is one the picker
+   * will not ask again (it rests and is not the next pair). Null when the run
+   * never reaches the top level, or no pair is in doubt then. Absent in result
+   * files recorded before it was added.
+   */
+  topSpotResting?: boolean | null;
 }
 
 /** One recorded event, for tests that check what the driver did. */
@@ -348,6 +358,33 @@ export function runScenario(scenario: Scenario, seed: number, observe?: (step: D
   const gateSamples: { answers: number; within5: number }[] = [];
   let reached = false;
 
+  /** Times each unordered pair of items has been asked, by pairKey of their slots. */
+  const asked = new Map<number, number>();
+  let topSpotResting: boolean | null = null;
+  let topChecked = false;
+  /** At the first answer in the top progress level: whether the likeliest wrong pair rests. */
+  const checkTopSpot = (): void => {
+    const state = session.state;
+    const disorder = disorderOfState(state);
+    if (disorder === null || levelOf(disorder, state.ranked.length) !== 3) return;
+    topChecked = true;
+    let likeliest: { above: string; below: string; chance: number } | undefined;
+    for (const at of pairChances(state) ?? []) {
+      if (likeliest === undefined || at.chance > likeliest.chance) likeliest = at;
+    }
+    if (likeliest === undefined || likeliest.chance <= TOP_LEVEL_DOUBT) return;
+    const a = state.slots.get(likeliest.above);
+    const b = state.slots.get(likeliest.below);
+    if (a === undefined || b === undefined) return;
+    const key = pairKey(a, b);
+    const [x, y] = state.nextPair ?? [];
+    const isNext =
+      x !== undefined &&
+      y !== undefined &&
+      pairKey(state.slots.get(x) ?? -1, state.slots.get(y) ?? -1) === key;
+    topSpotResting = !isNext && rests(asked.get(key) ?? 0, openPairs(state.fit.pairs).has(key));
+  };
+
   const drift = extras.drift;
   const driftThreshold = n < DRIFT_EXACT_UNDER ? 1 : GATE_WITHIN5;
   /** The drift gate's reading: the share of pairs the right way round on a short list, within5 on a long one. */
@@ -379,6 +416,12 @@ export function runScenario(scenario: Scenario, seed: number, observe?: (step: D
       { kind: 'pair', leftItemId: left, rightItemId: right, outcome: behaviour.pair(left, right, true) },
       true,
     );
+    {
+      const a = session.state.slots.get(left);
+      const b = session.state.slots.get(right);
+      if (a !== undefined && b !== undefined) asked.set(pairKey(a, b), (asked.get(pairKey(a, b)) ?? 0) + 1);
+    }
+    if (!topChecked) checkTopSpot();
 
     for (const pending of pendingProbes) {
       const shown = session.state.ranked;
@@ -428,5 +471,6 @@ export function runScenario(scenario: Scenario, seed: number, observe?: (step: D
     probes,
     probesSkipped,
     ...(drift ? { gateFrom: drift.at } : {}),
+    topSpotResting,
   };
 }
