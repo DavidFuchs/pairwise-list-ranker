@@ -1,13 +1,12 @@
 import {
   K,
-  MAX_SHOWINGS,
   PICKER_EXACT_CHECKS,
   PICKER_OFFSETS,
   REPEAT_FACTOR,
   SCORE_GRID,
 } from '@/lib/ranking/bt/constants';
 import { normalTail } from '@/lib/ranking/bt/progress';
-import { pairKey } from '@/lib/ranking/bt/splitPairs';
+import { pairKey, rests } from '@/lib/ranking/bt/splitPairs';
 
 export { pairKey } from '@/lib/ranking/bt/splitPairs';
 
@@ -25,6 +24,11 @@ export interface PickerInput {
    * (flips.ts). Without it, the Gaussian estimate stands in.
    */
   flips?: { chance(a: number, b: number): number };
+  /**
+   * pairKeys of pairs answered both ways and not yet settled by two answers in
+   * a row (splitPairs.ts). Absent means none are open.
+   */
+  open?: ReadonlySet<number>;
 }
 
 /**
@@ -49,12 +53,20 @@ function gaussianFlip(input: PickerInput, a: number, b: number): number {
   return normalTail(gap / Math.sqrt(spread));
 }
 
-/** The discount for a pair shown `times` before: 0.3 per showing, and next to nothing from MAX_SHOWINGS on. */
+/**
+ * The discount for a pair shown `times` before: 0.3 per showing, and next to
+ * nothing once the pair rests (splitPairs.ts): from MAX_SHOWINGS on, or from
+ * MAX_SHOWINGS_SPLIT on while its answers still go back and forth.
+ */
 function repeatDiscount(input: PickerInput, a: number, b: number): number {
   // Skip the lookup when nothing has been shown (the common cold start).
-  const times = input.shown.size === 0 ? 0 : (input.shown.get(pairKey(a, b)) ?? 0);
+  if (input.shown.size === 0) return 1;
+  const key = pairKey(a, b);
+  const times = input.shown.get(key) ?? 0;
   if (times === 0) return 1;
-  return times >= MAX_SHOWINGS ? REPEAT_FACTOR ** times * SCORE_GRID : REPEAT_FACTOR ** times;
+  return rests(times, input.open?.has(key) ?? false)
+    ? REPEAT_FACTOR ** times * SCORE_GRID
+    : REPEAT_FACTOR ** times;
 }
 
 /**

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { MAX_SHOWINGS_SPLIT } from '@/lib/ranking/bt/constants';
 import { pairKey, pickPair, type PickerInput } from '@/lib/ranking/bt/picker';
 
 function input(n: number, overrides: Partial<PickerInput> = {}): PickerInput {
@@ -67,6 +68,30 @@ describe('pickPair', () => {
     expect(at(3)).toEqual([0, 2]);
     // With only one pair to ask, it is asked however often it was shown.
     expect(pickPair(input(2, { shown: new Map([[pairKey(0, 1), 5]]) }))).toEqual([0, 1]);
+  });
+
+  it('an open pair shown three times is still asked', () => {
+    const strengths = Float64Array.from([0, 0, 6]);
+    const open = new Set([pairKey(0, 1)]);
+    expect(pickPair(input(3, { strengths, shown: new Map([[pairKey(0, 1), 3]]), open }))).toEqual([0, 1]);
+  });
+
+  it('an open pair rests at MAX_SHOWINGS_SPLIT', () => {
+    const strengths = Float64Array.from([0, 0, 6]);
+    const open = new Set([pairKey(0, 1)]);
+    expect(
+      pickPair(input(3, { strengths, shown: new Map([[pairKey(0, 1), MAX_SHOWINGS_SPLIT]]), open })),
+    ).toEqual([0, 2]);
+  });
+
+  it('a resting pair comes back once every other pair is at its own limit', () => {
+    const strengths = Float64Array.from([0, 0, 6]);
+    const shown = new Map([
+      [pairKey(0, 1), MAX_SHOWINGS_SPLIT],
+      [pairKey(0, 2), 3],
+      [pairKey(1, 2), 3],
+    ]);
+    expect(pickPair(input(3, { strengths, shown, open: new Set([pairKey(0, 1)]) }))).toEqual([0, 1]);
   });
 
   it('skips a pair the answers have settled, even when the Gaussian estimate doubts it', () => {

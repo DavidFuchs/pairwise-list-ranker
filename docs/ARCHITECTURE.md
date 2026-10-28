@@ -513,8 +513,24 @@ score is below the best exact one, and the best exact score wins. Scores are
 compared on the grid of section 6.6, the shortlist too, so warm and fresh
 replays ask the same question.
 
-Multiply by `0.3^j` where `j` is how many times the pair has been shown; a pair
-shown three times is offered again only when every other pair has been too.
+Multiply by `0.3^j` where `j` is how many times the pair has been shown. A pair
+at its limit **rests**: it scores next to nothing (a further `SCORE_GRID`), so
+it is offered again only when every other pair it competes with has reached its
+own limit too. Resting is not for good: from then on the resting pairs compete
+on score again.
+
+The limit is three showings, except for a pair whose answers still go back and
+forth (`lib/ranking/bt/splitPairs.ts`). A pair answered clearly both ways is
+**open** while its latest run, the clear answers since the last one the other
+way, is shorter than two; an open pair is asked up to five times
+(`MAX_SHOWINGS_SPLIT`). Answers a move set aside are not counted, and a "Can't
+decide" answer neither extends a run nor breaks it. Two agreeing answers after a
+switch is the owner's choice: it is what the later-answers rule (6.1) needs to
+outweigh the answers before them, so the pair's own answers have said what they
+will. The five-showing backstop is for two items the user truly rates the
+same, which can alternate forever without a run of two; past it, the explainer's
+"drag it into place" takes over.
+
 Never offer the immediately previous pair. Removed items and items marked
 "don't recognize" are never offered. Against the earlier rule, which scored
 each item's own uncertainty, this one reached the gate in 2.5% fewer answers
@@ -636,7 +652,7 @@ From `lib/ranking/bt/constants.ts`; `docs/engine-calibration.md` has the runs.
 | Placement sd            | 10% of visible items, 1 to 25 places | a move is a firm regional statement; calibrated by simulation         |
 | Picker offsets          | 1 to 6, 8, 12 ... 768 places         | near and far opponents at a fixed cost                                |
 | Repeat penalty          | 0.3 per showing                      | the same pair again teaches little                                    |
-| Most showings           | 3, unless nothing else can be asked  | a pair the user cannot call is not asked forever                      |
+| Most showings           | 3, or 5 for an open split pair       | a pair the user cannot call is not asked forever; see 6.7             |
 | Exact picker checks     | 32 best Gaussian scores              | the exact flip chance at a bounded cost per answer                    |
 | Checkpoint              | every placement and 500 events       | warm rebuilds after an undo stay cheap                                |
 

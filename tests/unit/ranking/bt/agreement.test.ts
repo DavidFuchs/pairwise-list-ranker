@@ -226,4 +226,27 @@ describe('later answers discounting earlier ones (docs/ARCHITECTURE.md 6.1)', ()
       earlier.fit?.pairs.some((term) => term.discounted),
     );
   });
+
+  it('warm path, cold replay and undo agree while a pair answered both ways is open', () => {
+    // Reykjavík and Dubrovnik go Reykjavík, Dubrovnik, Reykjavík (open), then Reykjavík (a run of two).
+    const split = [
+      ask('banff', 'cape-breton'),
+      ask('reykjavik', 'dubrovnik'),
+      ask('lisbon', 'amalfi'),
+      ask('dubrovnik', 'reykjavik'),
+      ask('cape-breton', 'lisbon'),
+      ask('reykjavik', 'dubrovnik'),
+      ask('banff', 'amalfi'),
+      ask('reykjavik', 'dubrovnik'),
+    ];
+    const splitList: EngineList = { originalItemIds: ids, startingOrder: 'unordered', events: split };
+    const session = new EngineSession({ ...splitList, events: [] });
+    for (const event of split) session.append(event);
+    expect(visible(session.state)).toEqual(visible(replay(splitList)));
+
+    session.undo();
+    const shorter = replay({ ...splitList, events: split.slice(0, -1) });
+    expect(visible(session.state)).toEqual(visible(shorter));
+    expect(session.state.nextPair).toEqual(shorter.nextPair);
+  });
 });

@@ -14,6 +14,7 @@ import {
   matchesSlots,
 } from '@/lib/ranking/bt/snapshot';
 import { solve } from '@/lib/ranking/bt/solver';
+import { openPairs } from '@/lib/ranking/bt/splitPairs';
 import { Timeline } from '@/lib/ranking/bt/timeline';
 import type { EngineList, RankingEvent, StartingOrder } from '@/types/rankingEvents';
 
@@ -637,6 +638,7 @@ function describeState(state: ReplayState, { problem, curvature: fitted }: Fit):
     shown: state.shown,
     previousPair: state.previousPair,
     flips,
+    open: openPairs(problem.pairs),
   };
   const nextPair = pickPair(input);
   return {
