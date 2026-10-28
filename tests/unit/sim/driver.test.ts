@@ -482,4 +482,11 @@ describe('a drift scenario', () => {
     expect(trace.answersToGate === null || trace.answersToGate <= 48).toBe(true);
     expect(trace.gateFrom).toBe(24);
   });
+
+  it('fails loudly when the run ends before the drift point, rather than reading as a slow run', () => {
+    const neverDrifts = scenario({ ...drifting, name: 'drift-never', budgetAnswers: 20 });
+    expect(() => runScenario(neverDrifts, 1)).toThrow(
+      'drift-never seed 1 ended after 20 answers, before its drift at 24',
+    );
+  });
 });

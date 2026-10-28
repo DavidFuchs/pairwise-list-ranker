@@ -408,6 +408,12 @@ export function runScenario(scenario: Scenario, seed: number, observe?: (step: D
 
     if (answers < budgetAnswers) actBetween(answers);
   }
+  // A run that ends first never measures the change of mind; counted, it would read as a slow one.
+  if (drift && !drifted) {
+    throw new Error(
+      `${scenario.name} seed ${seed} ended after ${answers} answers, before its drift at ${drift.at}`,
+    );
+  }
 
   return {
     scenario: scenario.name,
