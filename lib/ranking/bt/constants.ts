@@ -50,6 +50,13 @@ export const PICKER_OFFSETS = [
 export const REPEAT_FACTOR = 0.3;
 /** A pair asked this many times is offered again only when every other pair has been too. */
 export const MAX_SHOWINGS = 3;
+/** A pair whose answers go back and forth is closed once this many clear answers in a row agree. */
+export const SPLIT_SETTLED_RUN = 2;
+/**
+ * The most times a pair still going back and forth is shown. Provisional until
+ * docs/engine-calibration.md "Split pairs"; a value of MAX_SHOWINGS turns the rule off.
+ */
+export const MAX_SHOWINGS_SPLIT = 5;
 /** The picker reads the exact flip chance for at most this many of its best-scoring candidates. */
 export const PICKER_EXACT_CHECKS = 32;
 

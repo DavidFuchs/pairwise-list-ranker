@@ -7,6 +7,9 @@ import {
   SCORE_GRID,
 } from '@/lib/ranking/bt/constants';
 import { normalTail } from '@/lib/ranking/bt/progress';
+import { pairKey } from '@/lib/ranking/bt/splitPairs';
+
+export { pairKey } from '@/lib/ranking/bt/splitPairs';
 
 export interface PickerInput {
   /** Offerable slots (visible) in displayed order. */
@@ -22,17 +25,6 @@ export interface PickerInput {
    * (flips.ts). Without it, the Gaussian estimate stands in.
    */
   flips?: { chance(a: number, b: number): number };
-}
-
-/**
- * Order-independent key for an unordered pair of slots: the pair's index in
- * the triangle of all pairs, so it is unique without knowing how many slots
- * there are. A number keeps the picker's many lookups free of string building.
- */
-export function pairKey(a: number, b: number): number {
-  const high = a > b ? a : b;
-  const low = a > b ? b : a;
-  return (high * (high + 1)) / 2 + low;
 }
 
 /**
