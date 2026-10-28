@@ -60,6 +60,21 @@ export type Spot = SpotBase &
       }
   );
 
+/**
+ * A pair answered directly both ways that the shown order puts against a plain
+ * count of those answers, because the later ones count for more. Said even
+ * when the pair is not in doubt, so the order never contradicts a count the
+ * user could make by hand without a word.
+ */
+export interface ChangedPair {
+  above: string;
+  below: string;
+  /** Every direct answer between them, in order. */
+  answers: AnswerRef[];
+  /** The next question on the cards is this pair. */
+  next: boolean;
+}
+
 export interface ProgressExplanation {
   state: ProgressState;
   level: ProgressLevel | null;
@@ -70,6 +85,10 @@ export interface ProgressExplanation {
   moreSpots: number;
   /** Pairs in doubt in no spot, given or not; none at the top level. */
   doubtful: number;
+  /** Pairs the later answers turned against the count, the latest first, outside any both-ways spot given. */
+  changed: ChangedPair[];
+  /** Changed pairs past the ones given. */
+  moreChanged: number;
   /**
    * The shown items in no pair in doubt, on a list under 26 items: by name when
    * there are a few, split into the run at the top, the run at the bottom and
@@ -177,6 +196,29 @@ function circleOf(
   };
 }
 
+/** The shown pairs whose order goes against the count of their clear direct answers, the latest answered first. */
+function changedPairs(
+  direct: ReadonlyMap<string, AnswerRef[]>,
+  position: ReadonlyMap<string, number>,
+  explained: ReadonlySet<string>,
+  next: string | null,
+): ChangedPair[] {
+  const changed: ChangedPair[] = [];
+  for (const [key, answers] of direct) {
+    if (explained.has(key)) continue;
+    const { winner, loser } = answers[0] as AnswerRef;
+    const winnerAt = position.get(winner);
+    const loserAt = position.get(loser);
+    if (winnerAt === undefined || loserAt === undefined) continue;
+    const [above, below] = winnerAt < loserAt ? [winner, loser] : [loser, winner];
+    const clear = answers.filter((answer) => !answer.draw);
+    const forAbove = clear.filter((answer) => answer.winner === above).length;
+    if (forAbove < clear.length - forAbove) changed.push({ above, below, answers, next: next === key });
+  }
+  const latest = (pair: ChangedPair): number => (pair.answers.at(-1) as AnswerRef).answer;
+  return changed.sort((a, b) => latest(b) - latest(a));
+}
+
 /** The shown items in no pair in doubt, as ProgressExplanation.settled says. */
 function settledOf(
   shown: readonly string[],
@@ -217,6 +259,8 @@ export function explainProgress(input: {
     spots: [],
     moreSpots: 0,
     doubtful: 0,
+    changed: [],
+    moreChanged: 0,
     settled: null,
   };
 
@@ -352,10 +396,17 @@ export function explainProgress(input: {
         : []
       : found.slice(0, MAX_SPOTS);
 
+  const explained = new Set(
+    given.flatMap(({ spot }) => (spot.kind === 'both-ways' ? [keyOf(spot.above, spot.below)] : [])),
+  );
+  const changed = changedPairs(direct, position, explained, next);
+
   const doubted = new Set(doubts.flatMap((pair) => [pair.above, pair.below]));
   return {
     ...empty,
     spots: given.map((at) => at.spot),
+    changed: changed.slice(0, MAX_SPOTS),
+    moreChanged: Math.max(0, changed.length - MAX_SPOTS),
     moreSpots: level === 3 ? 0 : found.length - given.length,
     doubtful: level === 3 ? 0 : doubts.length - found.reduce((total, at) => total + at.pairs, 0),
     settled: settledOf(shown, evidence.slots, doubted),

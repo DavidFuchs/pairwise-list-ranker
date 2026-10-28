@@ -168,7 +168,13 @@ Between and below the pair:
   over Cape Breton Island, answer 15"), with what settles it. A circle of
   answers is drawn as a loop. When a pair was answered both ways, the answers
   a later one outweighs are shown fainter, with "Your later answers count for
-  more, so the earlier ones the other way count for less." The window never
+  more, so the earlier ones the other way count for less." A pair the order
+  puts against a plain count of its answers, because the later ones went the
+  other way, gets a card of its own at every level, in doubt or not: "Your later
+  answers decided this", with the answers, "You picked Banff more often, but
+  your later answers picked Reykjavík, and later answers count for more."
+  and "If the earlier answers were the right ones, answer these two again." In a
+  drawn circle the answers that count for less are fainter too. The window never
   gives a number beyond answer numbers and counts, and never says the user
   changed their mind.
 - a single split pill, **Can't decide | Don't recognize…**, centred - it

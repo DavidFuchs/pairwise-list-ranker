@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { replay } from '@/lib/ranking/bt/engine';
 import { disorderOfState, levelOf } from '@/lib/ranking/bt/progress';
 import { selectProgressState } from '@/lib/state/progress';
-import { explainProgress, type Spot } from '@/lib/state/progressExplain';
+import { explainProgress, type ProgressExplanation, type Spot } from '@/lib/state/progressExplain';
 import { rankedList, recorded } from '@/tests/helpers/snapshots';
 import type { RankingEvent } from '@/types/rankingEvents';
 
@@ -27,26 +27,25 @@ function ask(winner: string, loser: string): RankingEvent {
   };
 }
 
+function explain(ids: string[], events: RankingEvent[]): ProgressExplanation {
+  const state = replay({ originalItemIds: ids, startingOrder: 'unordered', events });
+  const list = rankedList({
+    id: 'list',
+    originalItemIds: ids,
+    initialStartingOrder: 'unordered',
+    events: recorded(events),
+  });
+  const progress = selectProgressState(list, state.ranked, disorderOfState(state));
+  const level = progress.kind === 'level' ? levelOf(progress.disorder, progress.items) : null;
+  return explainProgress({ state: progress, level, events, shown: state.ranked, evidence: state });
+}
+
 describe('explainProgress with later answers counting more', () => {
   it('marks the answers a later answer the other way discounted', () => {
-    const ids = ['a', 'b', 'c', 'd'];
-    const events = [ask('a', 'b'), ask('a', 'b'), ask('b', 'c'), ask('b', 'a'), ask('c', 'd'), ask('a', 'c')];
-    const state = replay({ originalItemIds: ids, startingOrder: 'unordered', events });
-    const list = rankedList({
-      id: 'list',
-      originalItemIds: ids,
-      initialStartingOrder: 'unordered',
-      events: recorded(events),
-    });
-    const progress = selectProgressState(list, state.ranked, disorderOfState(state));
-    const level = progress.kind === 'level' ? levelOf(progress.disorder, progress.items) : null;
-    const explanation = explainProgress({
-      state: progress,
-      level,
-      events,
-      shown: state.ranked,
-      evidence: state,
-    });
+    const explanation = explain(
+      ['a', 'b', 'c', 'd'],
+      [ask('a', 'b'), ask('a', 'b'), ask('b', 'c'), ask('b', 'a'), ask('c', 'd'), ask('a', 'c')],
+    );
     const spot = explanation.spots.find((s) => s.kind === 'both-ways') as Extract<
       Spot,
       { kind: 'both-ways' | 'undecided' | 'one-answer' }
@@ -57,5 +56,42 @@ describe('explainProgress with later answers counting more', () => {
       [2, true],
       [4, false],
     ]);
+  });
+
+  it('names a pair the later answers turned against the count, though it is not in doubt', () => {
+    const events = [
+      ...Array.from({ length: 4 }, () => ask('a', 'b')),
+      ...Array.from({ length: 3 }, () => ask('b', 'a')),
+      ...['c', 'd'].flatMap((other) => [ask('b', other), ask('b', other), ask('a', other), ask('a', other)]),
+      ask('c', 'd'),
+      ask('c', 'd'),
+    ];
+    const explanation = explain(['a', 'b', 'c', 'd'], events);
+    expect(explanation.level).toBe(3);
+    expect(explanation.spots).toEqual([]);
+    expect(explanation.changed).toHaveLength(1);
+    const [pair] = explanation.changed;
+    expect([pair?.above, pair?.below]).toEqual(['b', 'a']);
+    expect(pair?.answers.map((answer) => [answer.answer, answer.discounted])).toEqual([
+      [1, true],
+      [2, true],
+      [3, true],
+      [4, true],
+      [5, false],
+      [6, false],
+      [7, false],
+    ]);
+    expect(explanation.moreChanged).toBe(0);
+  });
+
+  it('leaves a pair to its both-ways card when the card is shown', () => {
+    const events = [
+      ...Array.from({ length: 3 }, () => ask('a', 'b')),
+      ...Array.from({ length: 2 }, () => ask('b', 'a')),
+      ...['c', 'd'].flatMap((other) => [ask('b', other), ask('b', other), ask('a', other), ask('a', other)]),
+    ];
+    const explanation = explain(['a', 'b', 'c', 'd'], events);
+    expect(explanation.spots.some((spot) => spot.kind === 'both-ways')).toBe(true);
+    expect(explanation.changed).toEqual([]);
   });
 });

@@ -8,6 +8,7 @@ import { formatCount } from '@/lib/state/selectors';
 import {
   MAX_CIRCLE_PICTURE,
   type AnswerRef,
+  type ChangedPair,
   type ProgressExplanation,
   type Spot,
 } from '@/lib/state/progressExplain';
@@ -58,7 +59,7 @@ function Explanation({
   explanation: ProgressExplanation;
   labelOf: (id: string) => string;
 }) {
-  const { state, level, spots, moreSpots, doubtful } = explanation;
+  const { state, level, spots, moreSpots, doubtful, changed, moreChanged } = explanation;
 
   if (state.kind === 'comparing') {
     const named = explanation.uncompared.slice(0, MAX_UNCOMPARED_NAMED).map(labelOf);
@@ -101,6 +102,14 @@ function Explanation({
         <SpotCard key={index} spot={spot} labelOf={labelOf} />
       ))}
       {(moreSpots > 0 || doubtful > 0) && <Text style={styles.body}>{restOf(explanation)}</Text>}
+      {changed.map((pair) => (
+        <ChangedCard key={`${pair.above} ${pair.below}`} pair={pair} labelOf={labelOf} />
+      ))}
+      {moreChanged > 0 && (
+        <Text
+          style={styles.body}
+        >{`And ${plural(moreChanged, 'more pair')} your later answers decided.`}</Text>
+      )}
       {level === 3 ? (
         <Text style={styles.body}>You can stop here, or keep going to be sure.</Text>
       ) : (
@@ -163,12 +172,16 @@ export function chanceWords(chance: number): string | null {
 
 const NUMBER_WORDS = ['', 'one', 'two', 'three', 'four'];
 
+/** One answer as a line of its own. */
+function answerLine(ref: AnswerRef, labelOf: (id: string) => string): string {
+  return ref.draw
+    ? `Can't decide between ${labelOf(ref.winner)} and ${labelOf(ref.loser)}, answer ${ref.answer}.`
+    : `${labelOf(ref.winner)} over ${labelOf(ref.loser)}, answer ${ref.answer}.`;
+}
+
 function SpotCard({ spot, labelOf }: { spot: Spot; labelOf: (id: string) => string }) {
   const words = chanceWords(spot.chance);
-  const answer = (ref: AnswerRef): string =>
-    ref.draw
-      ? `Can't decide between ${labelOf(ref.winner)} and ${labelOf(ref.loser)}, answer ${ref.answer}.`
-      : `${labelOf(ref.winner)} over ${labelOf(ref.loser)}, answer ${ref.answer}.`;
+  const answer = (ref: AnswerRef): string => answerLine(ref, labelOf);
 
   let heading: string;
   let body: ReactNode = null;
@@ -180,7 +193,14 @@ function SpotCard({ spot, labelOf }: { spot: Spot; labelOf: (id: string) => stri
       body = (
         <>
           {spot.items.length <= MAX_CIRCLE_PICTURE ? (
-            <CirclePicture spot={spot} labelOf={labelOf} />
+            <>
+              <CirclePicture spot={spot} labelOf={labelOf} />
+              {spot.answers.some((ref) => ref.discounted) && (
+                <Text style={styles.body}>
+                  {'The faint answers count for less: you answered the same two the other way later.'}
+                </Text>
+              )}
+            </>
           ) : (
             <Text style={styles.body}>
               {[...spot.items, spot.items[0] as string].map(labelOf).join(' over ')}
@@ -255,6 +275,33 @@ function SpotCard({ spot, labelOf }: { spot: Spot; labelOf: (id: string) => stri
   );
 }
 
+/**
+ * A pair the order puts against a plain count of its answers, because the
+ * later ones count for more: said even when the pair is not in doubt, so the
+ * order never contradicts a count made by hand without a word.
+ */
+function ChangedCard({ pair, labelOf }: { pair: ChangedPair; labelOf: (id: string) => string }) {
+  const above = labelOf(pair.above);
+  const below = labelOf(pair.below);
+  return (
+    <View style={styles.spot}>
+      <Text style={styles.spotHeading}>Your later answers decided this</Text>
+      <PairRow above={above} below={below} />
+      <Answers
+        lines={pair.answers.map((ref) => answerLine(ref, labelOf))}
+        faint={pair.answers.map((ref) => ref.discounted)}
+      />
+      <Text style={styles.body}>
+        {`You picked ${below} more often, but your later answers picked ${above}, and later answers count for more.`}
+      </Text>
+      <Text style={styles.body}>
+        {'If the earlier answers were the right ones, answer these two again.'}
+        {pair.next && <Text style={styles.next}>{' The next question is about this.'}</Text>}
+      </Text>
+    </View>
+  );
+}
+
 /** The answers behind a spot, one a line; `faint` dims the ones the engine counts for less. */
 function Answers({ lines, faint }: { lines: string[]; faint?: boolean[] }) {
   return (
@@ -303,7 +350,7 @@ function CirclePicture({
             <Text style={[styles.chip, styles.circleChip]}>{labelOf(id)}</Text>
             {index < items.length - 1 && (
               <Text
-                style={styles.arrowDown}
+                style={[styles.arrowDown, (answers[index] as AnswerRef).discounted && styles.faint]}
               >{`↓  over, answer ${(answers[index] as AnswerRef).answer}`}</Text>
             )}
           </View>
@@ -312,7 +359,9 @@ function CirclePicture({
       <View style={styles.bracket}>
         <Text style={styles.arrowBack}>◀</Text>
       </View>
-      <Text style={styles.bracketLabel}>{`over, answer ${back.answer}`}</Text>
+      <Text
+        style={[styles.bracketLabel, back.discounted && styles.faint]}
+      >{`over, answer ${back.answer}`}</Text>
     </View>
   );
 }

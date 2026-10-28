@@ -750,8 +750,14 @@ The strip says only what is true:
     one spot. The three heaviest spots are shown, with what settles each, and
     a note when the next question is about one, then a count of the spots
     and pairs left out, each pair counted once. The top level shows only the
-    spot with the likeliest pair, and only past 10%. Answers a move set
-    aside are never cited, since they are not among the fit's terms. While
+    spot with the likeliest pair, and only past 10%. After the spots, at every
+    level, come the pairs answered directly both ways whose shown order goes
+    against a plain count of their clear answers (later answers count for
+    more, 6.1), in doubt or not, so the order never contradicts a count the
+    user could make by hand without a word: up to three, the latest answered
+    first, then a count of the rest. A pair already in a both-ways spot shown
+    is not named again. Answers a move set aside are never cited, since they
+    are not among the fit's terms. While
     items are still uncompared it names them instead. The words describe the
     answers, never the person: a circle is close calls, not a change of mind.
 

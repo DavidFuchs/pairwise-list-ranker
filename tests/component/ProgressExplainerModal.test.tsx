@@ -42,6 +42,8 @@ function atLevel(level: ProgressLevel, over: Partial<ProgressExplanation> = {}):
     spots: [],
     moreSpots: 0,
     doubtful: 0,
+    changed: [],
+    moreChanged: 0,
     settled: null,
     ...over,
   };
@@ -155,6 +157,67 @@ describe('ProgressExplainerModal', () => {
       }),
     );
     expect(screen.queryByText(/later answers count for more/)).toBeNull();
+  });
+
+  it('names a pair the later answers decided against the count, even at the top level', () => {
+    setup(
+      atLevel(3, {
+        changed: [
+          {
+            above: 'b',
+            below: 'a',
+            next: true,
+            answers: [
+              { winner: 'a', loser: 'b', answer: 2, draw: false, discounted: true },
+              { winner: 'a', loser: 'b', answer: 5, draw: false, discounted: true },
+              { winner: 'a', loser: 'b', answer: 8, draw: false, discounted: true },
+              { winner: 'b', loser: 'a', answer: 20, draw: false, discounted: false },
+              { winner: 'b', loser: 'a', answer: 23, draw: false, discounted: false },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(screen.getByText('Nothing is left in real doubt.')).toBeDefined();
+    expect(screen.getByText('Your later answers decided this')).toBeDefined();
+    expect(screen.getByText('Alpha over Bravo, answer 2.')).toBeDefined();
+    expect(screen.getByText('Bravo over Alpha, answer 23.')).toBeDefined();
+    expect(
+      screen.getByText(
+        'You picked Alpha more often, but your later answers picked Bravo, and later answers count for more.',
+      ),
+    ).toBeDefined();
+    expect(document.body.textContent).toContain(
+      'If the earlier answers were the right ones, answer these two again. The next question is about this.',
+    );
+    expect(screen.getByText('You can stop here, or keep going to be sure.')).toBeDefined();
+  });
+
+  it('counts the changed pairs past the ones it names', () => {
+    const answers = [
+      { winner: 'a', loser: 'b', answer: 1, draw: false, discounted: true },
+      { winner: 'a', loser: 'b', answer: 2, draw: false, discounted: true },
+      { winner: 'b', loser: 'a', answer: 3, draw: false, discounted: false },
+    ];
+    setup(atLevel(2, { changed: [{ above: 'b', below: 'a', next: false, answers }], moreChanged: 2 }));
+    expect(screen.getByText('And 2 more pairs your later answers decided.')).toBeDefined();
+  });
+
+  it('a drawn circle with a discounted answer says the faint ones count for less', () => {
+    const answers = tripsCircle.kind === 'circle' ? tripsCircle.answers : [];
+    setup(
+      atLevel(1, {
+        spots: [{ ...tripsCircle, answers: answers.map((ref, k) => ({ ...ref, discounted: k === 1 })) }],
+      }),
+    );
+    expect(
+      screen.getByText('The faint answers count for less: you answered the same two the other way later.'),
+    ).toBeDefined();
+  });
+
+  it('a drawn circle with no discounted answers has no such line', () => {
+    setup(atLevel(1, { spots: [tripsCircle] }));
+    expect(screen.queryByText(/count for less/)).toBeNull();
   });
 
   it('words each kind of spot with what settles it', () => {
