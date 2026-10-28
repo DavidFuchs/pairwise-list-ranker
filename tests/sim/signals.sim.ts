@@ -46,8 +46,8 @@ const seeds = seedsText.includes(',')
   ? seedsText.split(',').map(Number)
   : Array.from({ length: Number(seedsText) }, (_, k) => k + 1);
 const messy = process.env.SIGNALS_MESSY === '1';
-const out = process.env.SIGNALS_OUT;
-if (out === undefined) throw new Error('SIGNALS_OUT must name the file to write');
+// With no file to write there is nothing to evaluate, so `npm run sim` passes over it.
+const out = process.env.SIGNALS_OUT ?? '';
 
 /** Window lengths of the movement signal, as shares of n answers. */
 const WINDOWS = [0.05, 0.1, 0.25];
@@ -74,7 +74,7 @@ interface Row {
 }
 const rows: Row[] = [];
 
-describe('progress signal evaluation', () => {
+describe.skipIf(out === '')('progress signal evaluation', () => {
   it('records the rows', () => {
     for (const n of sizes) {
       for (const order of orders) {
