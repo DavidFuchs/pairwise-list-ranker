@@ -1,6 +1,6 @@
 import type { ShownEvidence } from '@/lib/engine/engineHost';
-import { MAX_SHOWINGS } from '@/lib/ranking/bt/constants';
 import { MIN_ITEMS_FOR_PAIR_SCALE, pairChances, type ProgressLevel } from '@/lib/ranking/bt/progress';
+import { openPairs, pairKey, rests } from '@/lib/ranking/bt/splitPairs';
 import type { ProgressState } from '@/lib/state/progress';
 import type { RankingEvent } from '@/types/rankingEvents';
 
@@ -131,13 +131,29 @@ function timesAsked(events: readonly RankingEvent[]): Map<string, number> {
   return asked;
 }
 
+/** The pairs the picker still asks about, by slot pairKey, and the slot of each shown item. */
+interface OpenSet {
+  open: ReadonlySet<number>;
+  slots: ReadonlyMap<string, number>;
+}
+
 /**
- * A pair asked MAX_SHOWINGS times is offered again only once every other pair
- * has been (lib/ranking/bt/picker.ts), so the window must not promise another
- * question about it, unless it is the next one.
+ * Whether the picker has set the pair aside (lib/ranking/bt/splitPairs.ts
+ * `rests`), so the window must not promise another question about it, unless it
+ * is the next one.
  */
-function restingPair(asked: ReadonlyMap<string, number>, key: string, next: string | null): boolean {
-  return key !== next && (asked.get(key) ?? 0) >= MAX_SHOWINGS;
+function restingPair(
+  asked: ReadonlyMap<string, number>,
+  key: string,
+  next: string | null,
+  { open, slots }: OpenSet,
+): boolean {
+  if (key === next) return false;
+  const [one, other] = key.split('\u0000') as [string, string];
+  const slotOne = slots.get(one);
+  const slotOther = slots.get(other);
+  const isOpen = slotOne !== undefined && slotOther !== undefined && open.has(pairKey(slotOne, slotOther));
+  return rests(asked.get(key) ?? 0, isOpen);
 }
 
 /** The counted answers, as the engine counts them: answers a move set aside are not among them. */
@@ -228,6 +244,7 @@ function changedPairs(
   explained: ReadonlySet<string>,
   next: string | null,
   asked: ReadonlyMap<string, number>,
+  openSet: OpenSet,
 ): ChangedPair[] {
   const changed: ChangedPair[] = [];
   for (const [key, answers] of direct) {
@@ -240,7 +257,13 @@ function changedPairs(
     const clear = answers.filter((answer) => !answer.draw);
     const forAbove = clear.filter((answer) => answer.winner === above).length;
     if (forAbove < clear.length - forAbove) {
-      changed.push({ above, below, answers, next: next === key, resting: restingPair(asked, key, next) });
+      changed.push({
+        above,
+        below,
+        answers,
+        next: next === key,
+        resting: restingPair(asked, key, next, openSet),
+      });
     }
   }
   const latest = (pair: ChangedPair): number => (pair.answers.at(-1) as AnswerRef).answer;
@@ -322,6 +345,7 @@ export function explainProgress(input: {
     .sort((a, b) => b.chance - a.chance);
   const next = evidence.nextPair === null ? null : keyOf(evidence.nextPair[0], evidence.nextPair[1]);
   const asked = timesAsked(events);
+  const openSet: OpenSet = { open: openPairs(evidence.fit.pairs), slots: evidence.slots };
 
   /** Each spot, with the sum of its pairs' chances to rank it by and the pairs it covers. */
   type Found = { spot: Spot; total: number; pairs: number };
@@ -371,7 +395,7 @@ export function explainProgress(input: {
     const key = keyOf(above, below);
     const isNext = next === key;
     const base = { chance, next: isNext };
-    const resting = restingPair(asked, key, next);
+    const resting = restingPair(asked, key, next, openSet);
 
     if (bothWays) {
       add({ ...base, kind: 'both-ways', above, below, answers: met, resting });
@@ -430,7 +454,7 @@ export function explainProgress(input: {
   const explained = new Set(
     given.flatMap(({ spot }) => (spot.kind === 'both-ways' ? [keyOf(spot.above, spot.below)] : [])),
   );
-  const changed = changedPairs(direct, position, explained, next, asked);
+  const changed = changedPairs(direct, position, explained, next, asked, openSet);
 
   const doubted = new Set(doubts.flatMap((pair) => [pair.above, pair.below]));
   return {

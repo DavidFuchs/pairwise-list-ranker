@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { MAX_SHOWINGS_SPLIT } from '@/lib/ranking/bt/constants';
 import { replay } from '@/lib/ranking/bt/engine';
 import { disorderOfState, levelOf } from '@/lib/ranking/bt/progress';
 import { selectProgressState } from '@/lib/state/progress';
@@ -84,20 +85,71 @@ describe('explainProgress with later answers counting more', () => {
     expect(explanation.moreChanged).toBe(0);
   });
 
-  it('marks a pair asked MAX_SHOWINGS times resting, and one asked fewer not', () => {
-    const asked = (times: number) =>
-      Array.from({ length: times }, (_, k) => (k % 2 === 0 ? ask('a', 'b') : ask('b', 'a')));
-    const restingOf = (explanation: ProgressExplanation) =>
-      explanation.spots.flatMap((spot) => (spot.kind === 'both-ways' ? [spot] : []))[0];
-    const others = () => [ask('c', 'd'), ask('a', 'c'), ask('b', 'd')];
+  describe('resting follows the picker: an open pair is asked until two answers in a row agree', () => {
+    const ids = ['a', 'b', 'c', 'd', 'e'];
+    // c and d each lose clearly to both a and b, and c beats d, and c and d split once, so a and b are not the next question.
+    const others = () => [
+      ...['c', 'd'].flatMap((other) => [ask('b', other), ask('b', other), ask('a', other), ask('a', other)]),
+      ask('c', 'd'),
+      ask('c', 'd'),
+      ask('d', 'e'),
+    ];
+    const asAnswered = (order: ('ab' | 'ba')[]) =>
+      order.map((way) => (way === 'ab' ? ask('a', 'b') : ask('b', 'a')));
+    const spotOf = (explanation: ProgressExplanation) =>
+      explanation.spots.find(
+        (s): s is Extract<Spot, { kind: 'both-ways' | 'undecided' | 'one-answer' }> =>
+          (s.kind === 'both-ways' || s.kind === 'undecided' || s.kind === 'one-answer') &&
+          [s.above, s.below].sort().join() === 'a,b',
+      );
 
-    const twice = explain(['a', 'b', 'c', 'd'], [...asked(2), ...others()]);
-    expect(restingOf(twice)?.resting).toBe(false);
+    it('a pair answered A, B, A is not resting: Pairwise will ask it again', () => {
+      const spot = spotOf(explain(ids, [...asAnswered(['ab', 'ba', 'ab']), ...others()]));
+      expect(spot?.kind).toBe('both-ways');
+      expect(spot?.next).toBe(false);
+      expect(spot?.resting).toBe(false);
+    });
 
-    const often = explain(['a', 'b', 'c', 'd'], [...asked(4), ...others()]);
-    const spot = restingOf(often);
-    expect(spot?.next).toBe(false);
-    expect(spot?.resting).toBe(true);
+    it('after two answers in a row agree it rests', () => {
+      const spot = spotOf(explain(ids, [...asAnswered(['ab', 'ab', 'ba', 'ba']), ...others()]));
+      expect(spot?.kind).toBe('both-ways');
+      expect(spot?.next).toBe(false);
+      expect(spot?.resting).toBe(true);
+    });
+
+    it('a split that came from an answer a move set aside does not count', () => {
+      // B, A, then a move of b sets b's earlier answers aside, then B: the one counted
+      // answer is not a split, so the pair, asked 3 times, rests. Counting the
+      // set-aside answers it would read B, A, B and stay open.
+      const events = [
+        ...asAnswered(['ba', 'ab']),
+        {
+          id: 'move',
+          listId: 'list',
+          createdAt: '2026-10-27T00:00:00.000Z',
+          kind: 'placement',
+          itemId: 'b',
+          belowItemId: 'a',
+        } as RankingEvent,
+        ...asAnswered(['ba']),
+        ...others(),
+      ];
+      const spot = spotOf(explain(ids, events));
+      expect(spot).toBeDefined();
+      expect(spot?.kind).not.toBe('both-ways');
+      expect(spot?.next).toBe(false);
+      expect(spot?.resting).toBe(true);
+    });
+
+    it('an open pair rests at MAX_SHOWINGS_SPLIT', () => {
+      const alternating = Array.from({ length: MAX_SHOWINGS_SPLIT }, (_, k): 'ab' | 'ba' =>
+        k % 2 === 0 ? 'ab' : 'ba',
+      );
+      const spot = spotOf(explain(ids, [...asAnswered(alternating), ...others()]));
+      expect(spot?.kind).toBe('both-ways');
+      expect(spot?.next).toBe(false);
+      expect(spot?.resting).toBe(true);
+    });
   });
 
   it('leaves a pair to its both-ways card when the card is shown', () => {

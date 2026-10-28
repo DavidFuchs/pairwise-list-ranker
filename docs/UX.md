@@ -176,8 +176,9 @@ Between and below the pair:
   and "If the earlier answers were the right ones, answer these two again." In a
   drawn circle the answers that count for less are fainter too. The window
   promises another question only about a pair Pairwise will still ask: once a
-  pair has been asked as often as the picker allows (MAX_SHOWINGS) and is not
-  the next question, its card says "Pairwise has asked about these two enough
+  pair has been asked as often as the picker allows (more often while its
+  answers still go back and forth, until two in a row agree) and is not the
+  next question, its card says "Pairwise has asked about these two enough
   that it won't ask again for a while. If you know which goes first, drag it
   into place in your list.", and a later-answers card says to drag the item
   the earlier answers picked above the other. At the top level with a spot
