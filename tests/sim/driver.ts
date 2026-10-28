@@ -1,4 +1,5 @@
 import { EngineSession, type EngineState } from '@/lib/ranking/bt/engine';
+import { MIN_ITEMS_FOR_PAIR_SCALE } from '@/lib/ranking/bt/progress';
 import { seededRandom, shuffled } from '@/tests/helpers/random';
 import type { UserModel } from '@/tests/helpers/simUser';
 import { makeBehaviour, type StrongUse } from '@/tests/sim/behaviours';
@@ -129,8 +130,12 @@ const USER_SALT = 0xc2b2ae35;
 const DRIVER_SALT = 0x85ebca6b;
 const DRIFT_SALT = 0x27d4eb2f;
 
-/** Under this many items, the drift gate is the exact order; from it up, the usual within5 gate. */
-const DRIFT_EXACT_UNDER = 26;
+/**
+ * Under this many items, the lists the engine gives exact flip chances, a drift
+ * comes at 4n answers and its gate is the exact order; from it up, at 3n and
+ * the usual within5 gate.
+ */
+export const DRIFT_EXACT_UNDER = MIN_ITEMS_FOR_PAIR_SCALE;
 
 function stamped(seed: number, index: number, body: EventBody): RankingEvent {
   return {

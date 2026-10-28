@@ -1,5 +1,5 @@
 import type { UserModel } from '@/tests/helpers/simUser';
-import type { Scenario } from '@/tests/sim/driver';
+import { DRIFT_EXACT_UNDER, type Scenario } from '@/tests/sim/driver';
 import type { StartingOrder } from '@/types/rankingEvents';
 
 /**
@@ -128,7 +128,7 @@ const DRIFT_MIN_ITEMS = 2;
  * then; longer ones at 3n.
  */
 function drift(n: number): Scenario {
-  const at = (n < 26 ? 4 : 3) * n;
+  const at = (n < DRIFT_EXACT_UNDER ? 4 : 3) * n;
   return {
     ...base('typical', 'unordered', n),
     name: `typical-unordered-drift-n${n}`,
