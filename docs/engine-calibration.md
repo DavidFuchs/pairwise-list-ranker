@@ -95,9 +95,9 @@ node scripts/sim-sweep.mjs --constant STRONG_WEIGHT --values 1.75,2.5 --filter c
 node scripts/sim-sweep.mjs --constant STRONG_WEIGHT --values 1.75,2.5 --filter cal-strong
 ```
 
-The sweep accepts only the six constants that can still be overridden:
+The sweep accepts only the seven constants that can still be overridden:
 `PAIR_WEIGHT`, `STRONG_WEIGHT`, `DRAW_WEIGHT_EACH_WAY`, `PLACEMENT_SD_FRACTION`,
-`REPEAT_FACTOR` and `RECENCY_FACTOR`. Another name stops the sweep before any run. The pairs-only
+`REPEAT_FACTOR`, `RECENCY_FACTOR` and `MAX_SHOWINGS_SPLIT`. Another name stops the sweep before any run. The pairs-only
 placement re-check used it this way:
 
 ```sh
@@ -656,6 +656,89 @@ handful of items swapping places at once. A gradual change, or one confined to
 the top of the list, was not simulated. And the 100-item scenario shows the
 rule does nothing measurable on long lists, so its benefit there is unproven
 either way.
+
+### Split pairs
+
+Calibrated 2026-10-28. `MAX_SHOWINGS_SPLIT` is **4**: a pair answered clearly
+both ways stays askable past `MAX_SHOWINGS` (3) until two clear answers in a row
+agree (`SPLIT_SETTLED_RUN`, fixed at 2 by the owner and not swept), and is shown
+at most four times while it still goes back and forth (docs/ARCHITECTURE.md 6.7,
+`lib/ranking/bt/splitPairs.ts`). A value of 3 is off, the behaviour before this
+change.
+
+Why: on the owner's six-item summer trips list, after 31 answers, the explainer's
+one remaining spot was Reykjavík and Dubrovnik, "could go either way": Reykjavík
+in answer 6, Dubrovnik in 12, Reykjavík in 14. The pair had been shown three
+times, so the picker rested it, and on six items a rested pair comes back only
+after every other pair has been shown three times too, about 45 answers. At 4
+the picker asks it once more: if that answer agrees with answer 14 the pair is
+settled by its own answers, and if not it rests and the explainer says to drag
+the item into place. The spec is
+docs/superpowers/specs/2026-10-27-picker-revisits-split-pairs-design.md.
+
+Scenarios and comparison as for "Later answers": `cal-recency` decides (each
+drift scenario its own group, `SIM_GROUPS=recency`), every other scenario is a
+guard. Sweep: values 3 (off, the reference), 4, 5, 6 and 8; 6 seeds;
+`--size full`; filter `cal-[rp][ea]`, which also takes in `cal-pairs` and the
+`typical-ranked-*` scenarios as guards. The five runs went side by side
+(`--parallel 5`) and each took about 4.5 minutes. Files:
+`engine-calibration-runs/MAX_SHOWINGS_SPLIT-<value>.json` and
+[compare-MAX_SHOWINGS_SPLIT-4.md](engine-calibration-runs/compare-MAX_SHOWINGS_SPLIT-4.md).
+The two short drift scenarios were run again with 40 seeds, as before
+(`MAX_SHOWINGS_SPLIT-<value>-short40.json`, filter `drift-n(6|12)$`,
+[compare-MAX_SHOWINGS_SPLIT-4-short40.md](engine-calibration-runs/compare-MAX_SHOWINGS_SPLIT-4-short40.md)).
+
+Mean answers after the change to the exact order, change against 3, on the
+40-seed runs. "Top spot rests" is the second measure the spec asks for: the
+share of runs where, at the first answer that reaches the top level, the pair
+left in doubt is resting.
+
+| Showings    | 6 items | 12 items |  Mean | Top spot rests (12 items) | Verdict                      |
+| ----------- | ------: | -------: | ----: | ------------------------: | ---------------------------- |
+| 3 (current) |       - |        - |     - |                   0 of 40 | off                          |
+| 4           |   -1.0% |    +1.4% | +0.2% |                   0 of 40 | **chosen**: passes, smallest |
+| 5           |   +4.5% |    +1.7% | +3.1% |                   0 of 40 | passes                       |
+| 6           |   +4.5% |    +1.7% | +3.1% |                   0 of 40 | passes; same runs as 5       |
+| 8           |   +4.5% |    +1.7% | +3.1% |                   0 of 40 | passes; same runs as 5       |
+
+On 6 seeds the same picture, noisier: 4 went -7.0% and +5.3% on 6 and 12
+items, 5, 6 and 8 each -2.3% and +6.1%. No value is more than 10% slower on any
+group, and none is 2% faster, so the compare report's own verdict is "no gain"
+for each. 5, 6 and 8 gave exactly the same answers on every seed: in these
+scenarios no pair is still going back and forth after its fifth showing before
+the gate, so a backstop above 5 never acts.
+
+Guards: every `cal-pairs` scenario, the `typical-ranked-*` scenarios and the
+100-item drift scenario reached the gate in exactly the same number of answers
+at every value (+0.0%). On long lists the picker rarely shows a pair three
+times before the gate, so the rule has nothing to act on there.
+
+Decision: 4. The deciding rule here is the spec's: the short drift scenarios
+decide, the guards reject a value more than 10% slower, and among the values
+that pass the lowest resting share wins, then the smallest value. Speed was
+never the point of the rule, so "no gain" does not reject a value. Every value
+passes, the resting share is the same (none), and 4 is the smallest. It is
+also the value that costs least when two items the user truly rates the same
+keep alternating: one extra question per such pair, against two at 5.
+
+The resting share does not separate the values, and that is a limit of the
+measure, not evidence that the rule does nothing:
+
+- It is a proxy. At the first answer that reaches the top level (by
+  `levelOf`), it takes the likeliest raw pair over `TOP_LEVEL_DOUBT` and asks
+  whether the picker would rest it. The real explainer folds circles, moved
+  items and inferred spots into its spots, so the two can differ.
+- On 6 items no run had a pair over `TOP_LEVEL_DOUBT` at that moment (the
+  report shows n/a), and on 12 items none of the pairs left was resting, even at 3. The owner's case came 31 answers into a six-item list, well after the top
+  level was first reached, and the simulated users do not reproduce it at that
+  moment. The rule's effect on that case rests on the reasoning above, and
+  `tests/unit/ranking/bt/splitPairsEngine.test.ts` holds the behaviour.
+
+What the rule cannot say: two items the user truly rates the same still end at
+"drag it into place". They alternate, never make a run of two, and rest after
+the fourth showing; the explainer then hands the pair to the user. The drift
+scenarios are also only one kind of change of mind (a handful of items swapping
+at once), as in "Later answers".
 
 ### "Much better" weight
 

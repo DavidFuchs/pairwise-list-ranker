@@ -522,12 +522,12 @@ on score again.
 The limit is three showings, except for a pair whose answers still go back and
 forth (`lib/ranking/bt/splitPairs.ts`). A pair answered clearly both ways is
 **open** while its latest run, the clear answers since the last one the other
-way, is shorter than two; an open pair is asked up to five times
-(`MAX_SHOWINGS_SPLIT`). Answers a move set aside are not counted, and a "Can't
+way, is shorter than two; an open pair is asked up to four times
+(`MAX_SHOWINGS_SPLIT`, docs/engine-calibration.md "Split pairs"). Answers a move set aside are not counted, and a "Can't
 decide" answer neither extends a run nor breaks it. Two agreeing answers after a
 switch is the owner's choice: it is what the later-answers rule (6.1) needs to
 outweigh the answers before them, so the pair's own answers have said what they
-will. The five-showing backstop is for two items the user truly rates the
+will. The four-showing backstop is for two items the user truly rates the
 same, which can alternate forever without a run of two; past it, the explainer's
 "drag it into place" takes over.
 
@@ -652,7 +652,7 @@ From `lib/ranking/bt/constants.ts`; `docs/engine-calibration.md` has the runs.
 | Placement sd            | 10% of visible items, 1 to 25 places | a move is a firm regional statement; calibrated by simulation         |
 | Picker offsets          | 1 to 6, 8, 12 ... 768 places         | near and far opponents at a fixed cost                                |
 | Repeat penalty          | 0.3 per showing                      | the same pair again teaches little                                    |
-| Most showings           | 3, or 5 for an open split pair       | a pair the user cannot call is not asked forever; see 6.7             |
+| Most showings           | 3, or 4 for an open split pair       | a pair the user cannot call is not asked forever; see 6.7; calibrated |
 | Exact picker checks     | 32 best Gaussian scores              | the exact flip chance at a bounded cost per answer                    |
 | Checkpoint              | every placement and 500 events       | warm rebuilds after an undo stay cheap                                |
 

@@ -53,10 +53,10 @@ export const MAX_SHOWINGS = 3;
 /** A pair whose answers go back and forth is closed once this many clear answers in a row agree. */
 export const SPLIT_SETTLED_RUN = 2;
 /**
- * The most times a pair still going back and forth is shown. Provisional until
- * docs/engine-calibration.md "Split pairs"; a value of MAX_SHOWINGS turns the rule off.
+ * The most times a pair still going back and forth is shown; a value of MAX_SHOWINGS turns
+ * the rule off. Calibrated 2026-10-28, see docs/engine-calibration.md "Split pairs".
  */
-export const MAX_SHOWINGS_SPLIT = 5;
+export const MAX_SHOWINGS_SPLIT = 4;
 /** The picker reads the exact flip chance for at most this many of its best-scoring candidates. */
 export const PICKER_EXACT_CHECKS = 32;
 
