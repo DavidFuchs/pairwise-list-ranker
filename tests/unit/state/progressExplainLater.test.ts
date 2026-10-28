@@ -152,6 +152,26 @@ describe('explainProgress with later answers counting more', () => {
     });
   });
 
+  it('a changed pair that is open is not resting: Pairwise will ask it again', () => {
+    // B, B, then A "much better": split, run of 1, asked 3 times. B wins the count 2 to 1, but the
+    // later answer outweighs the two earlier ones, and a beats c and d while b loses to them, so a sits above b.
+    const strongA = { ...ask('a', 'b'), outcome: 'left_strong' } as RankingEvent;
+    const events = [
+      ask('b', 'a'),
+      ask('b', 'a'),
+      strongA,
+      ...['c', 'd'].flatMap((other) => [ask(other, 'b'), ask(other, 'b'), ask('a', other), ask('a', other)]),
+      ask('c', 'd'),
+      ask('c', 'd'),
+      ask('d', 'e'),
+    ];
+    const explanation = explain(['a', 'b', 'c', 'd', 'e'], events);
+    const pair = explanation.changed.find((p) => [p.above, p.below].sort().join() === 'a,b');
+    expect(pair).toBeDefined();
+    expect(pair?.next).toBe(false);
+    expect(pair?.resting).toBe(false);
+  });
+
   it('leaves a pair to its both-ways card when the card is shown', () => {
     const events = [
       ...Array.from({ length: 3 }, () => ask('a', 'b')),

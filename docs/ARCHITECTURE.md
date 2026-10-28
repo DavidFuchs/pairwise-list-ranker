@@ -523,8 +523,9 @@ The limit is three showings, except for a pair whose answers still go back and
 forth (`lib/ranking/bt/splitPairs.ts`). A pair answered clearly both ways is
 **open** while its latest run, the clear answers since the last one the other
 way, is shorter than two; an open pair is asked up to four times
-(`MAX_SHOWINGS_SPLIT`, docs/engine-calibration.md "Split pairs"). Answers a move set aside are not counted, and a "Can't
-decide" answer neither extends a run nor breaks it. Two agreeing answers after a
+(`MAX_SHOWINGS_SPLIT`, docs/engine-calibration.md "Split pairs"). Answers a move
+set aside are not counted, and a "Can't decide" answer neither extends a run nor
+breaks it. Two agreeing answers after a
 switch is the owner's choice: it is what the later-answers rule (6.1) needs to
 outweigh the answers before them, so the pair's own answers have said what they
 will. The four-showing backstop is for two items the user truly rates the

@@ -193,6 +193,15 @@ describe('later answers discounting earlier ones (docs/ARCHITECTURE.md 6.1)', ()
     rightItemId: loser,
     outcome: 'left',
   });
+  const place = (itemId: string, aboveItemId: string, belowItemId: string): RankingEvent => ({
+    id: `e${++counter}`,
+    listId: 'list',
+    createdAt: '2026-10-27T00:00:00.000Z',
+    kind: 'placement',
+    itemId,
+    aboveItemId,
+    belowItemId,
+  });
   const events = [
     ask('banff', 'cape-breton'),
     ask('lisbon', 'amalfi'),
@@ -229,6 +238,7 @@ describe('later answers discounting earlier ones (docs/ARCHITECTURE.md 6.1)', ()
 
   it('warm path, cold replay and undo agree while a pair answered both ways is open', () => {
     // Reykjavík and Dubrovnik go Reykjavík, Dubrovnik, Reykjavík (open), then Reykjavík (a run of two).
+    // The placement forces a checkpoint, so the restore path is covered too.
     const split = [
       ask('banff', 'cape-breton'),
       ask('reykjavik', 'dubrovnik'),
@@ -236,6 +246,7 @@ describe('later answers discounting earlier ones (docs/ARCHITECTURE.md 6.1)', ()
       ask('dubrovnik', 'reykjavik'),
       ask('cape-breton', 'lisbon'),
       ask('reykjavik', 'dubrovnik'),
+      place('banff', 'lisbon', 'amalfi'),
       ask('banff', 'amalfi'),
       ask('reykjavik', 'dubrovnik'),
     ];

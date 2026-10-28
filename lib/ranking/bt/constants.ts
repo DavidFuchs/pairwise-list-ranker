@@ -48,7 +48,11 @@ export const PICKER_OFFSETS = [
 ] as const;
 /** Repeat penalty: a pair asked j times before scores 0.3^j of its value. */
 export const REPEAT_FACTOR = 0.3;
-/** A pair asked this many times is offered again only when every other pair has been too. */
+/**
+ * A pair that is not open and has been asked this many times is offered again only when every
+ * other pair has been too. Open pairs go on until MAX_SHOWINGS_SPLIT; see `rests` in
+ * lib/ranking/bt/splitPairs.ts.
+ */
 export const MAX_SHOWINGS = 3;
 /** A pair whose answers go back and forth is closed once this many clear answers in a row agree. */
 export const SPLIT_SETTLED_RUN = 2;

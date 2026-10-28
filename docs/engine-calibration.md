@@ -693,18 +693,20 @@ Mean answers after the change to the exact order, change against 3, on the
 share of runs where, at the first answer that reaches the top level, the pair
 left in doubt is resting.
 
-| Showings    | 6 items | 12 items |  Mean | Top spot rests (12 items) | Verdict                      |
-| ----------- | ------: | -------: | ----: | ------------------------: | ---------------------------- |
-| 3 (current) |       - |        - |     - |                   0 of 40 | off                          |
-| 4           |   -1.0% |    +1.4% | +0.2% |                   0 of 40 | **chosen**: passes, smallest |
-| 5           |   +4.5% |    +1.7% | +3.1% |                   0 of 40 | passes                       |
-| 6           |   +4.5% |    +1.7% | +3.1% |                   0 of 40 | passes; same runs as 5       |
-| 8           |   +4.5% |    +1.7% | +3.1% |                   0 of 40 | passes; same runs as 5       |
+| Showings           | 6 items | 12 items |  Mean | Top spot rests (12 items) | Verdict                      |
+| ------------------ | ------: | -------: | ----: | ------------------------: | ---------------------------- |
+| 3 (off, reference) |       - |        - |     - |                   0 of 40 | off                          |
+| 4                  |   -1.0% |    +1.4% | +0.2% |                   0 of 40 | **chosen**: passes, smallest |
+| 5                  |   +4.5% |    +1.7% | +3.1% |                   0 of 40 | passes                       |
+| 6                  |   +4.5% |    +1.7% | +3.1% |                   0 of 40 | passes; same runs as 5       |
+| 8                  |   +4.5% |    +1.7% | +3.1% |                   0 of 40 | passes; same runs as 5       |
 
 On 6 seeds the same picture, noisier: 4 went -7.0% and +5.3% on 6 and 12
 items, 5, 6 and 8 each -2.3% and +6.1%. No value is more than 10% slower on any
 group, and none is 2% faster, so the compare report's own verdict is "no gain"
-for each. 5, 6 and 8 gave exactly the same answers on every seed: in these
+for each. At 4 the spec's drift goal, "no more answers than today", holds only
+within noise: +0.2% on the mean, -1.0% at 6 items and +1.4% at 12 items over 40
+seeds. 5, 6 and 8 gave exactly the same answers on every seed: in these
 scenarios no pair is still going back and forth after its fifth showing before
 the gate, so a backstop above 5 never acts.
 
@@ -715,9 +717,11 @@ times before the gate, so the rule has nothing to act on there.
 
 Decision: 4. The deciding rule here is the spec's: the short drift scenarios
 decide, the guards reject a value more than 10% slower, and among the values
-that pass the lowest resting share wins, then the smallest value. Speed was
-never the point of the rule, so "no gain" does not reject a value. Every value
-passes, the resting share is the same (none), and 4 is the smallest. It is
+that pass the lowest resting share wins, then the smallest value. So 4 ships
+although the compare report's own verdict is "no gain" for every value: this
+rule rejects only values more than 10% slower on a guard, and speed was never
+the point of the rule. Setting `MAX_SHOWINGS_SPLIT` to 3 turns the rule off.
+Every value passes, the resting share is the same (none), and 4 is the smallest. It is
 also the value that costs least when two items the user truly rates the same
 keep alternating: one extra question per such pair, against two at 5.
 
@@ -729,10 +733,12 @@ measure, not evidence that the rule does nothing:
   whether the picker would rest it. The real explainer folds circles, moved
   items and inferred spots into its spots, so the two can differ.
 - On 6 items no run had a pair over `TOP_LEVEL_DOUBT` at that moment (the
-  report shows n/a), and on 12 items none of the pairs left was resting, even at 3. The owner's case came 31 answers into a six-item list, well after the top
-  level was first reached, and the simulated users do not reproduce it at that
-  moment. The rule's effect on that case rests on the reasoning above, and
-  `tests/unit/ranking/bt/splitPairsEngine.test.ts` holds the behaviour.
+  report shows n/a), and on 12 items none of the pairs left was resting, even
+  at 3. The owner's case came 31 answers into a six-item list, well after
+  the top level was first reached, and the simulated users do not reproduce it
+  at that moment. The rule's effect on that case depends on the reasoning
+  above, and `tests/unit/ranking/bt/splitPairsEngine.test.ts` holds the
+  behaviour.
 
 What the rule cannot say: two items the user truly rates the same still end at
 "drag it into place". They alternate, never make a run of two, and rest after
