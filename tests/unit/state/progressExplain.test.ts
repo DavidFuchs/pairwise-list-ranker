@@ -371,5 +371,7 @@ describe('explainProgress', () => {
     const spots = explanation.spots.length + explanation.moreSpots;
     expect(explanation.doubtful).toBeLessThanOrEqual(inDoubt - spots);
     expect(explanation.doubtful).toBeGreaterThanOrEqual(inDoubt - 200);
-  });
+    // The replay and the chances of half a million pairs take most of the time;
+    // the explanation has its own budget above.
+  }, 120_000);
 });
