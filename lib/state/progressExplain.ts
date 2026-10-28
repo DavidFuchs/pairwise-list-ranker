@@ -1,4 +1,5 @@
 import type { ShownEvidence } from '@/lib/engine/engineHost';
+import { MAX_SHOWINGS } from '@/lib/ranking/bt/constants';
 import { MIN_ITEMS_FOR_PAIR_SCALE, pairChances, type ProgressLevel } from '@/lib/ranking/bt/progress';
 import type { ProgressState } from '@/lib/state/progress';
 import type { RankingEvent } from '@/types/rankingEvents';
@@ -45,6 +46,8 @@ export type Spot = SpotBase &
         above: string;
         below: string;
         answers: AnswerRef[];
+        /** The picker has stopped asking about the pair (see `restingPair`). */
+        resting: boolean;
       }
     | {
         /** Never asked directly; `chain` is the shortest run of answers that puts `above` over `below`, if any. */
@@ -73,6 +76,8 @@ export interface ChangedPair {
   answers: AnswerRef[];
   /** The next question on the cards is this pair. */
   next: boolean;
+  /** The picker has stopped asking about the pair (see `restingPair`). */
+  resting: boolean;
 }
 
 export interface ProgressExplanation {
@@ -114,6 +119,26 @@ const MAX_SETTLED_NAMED = 6;
 const MOVED_CONFIRMED_AFTER = 2;
 
 const keyOf = (a: string, b: string): string => (a < b ? `${a}\u0000${b}` : `${b}\u0000${a}`);
+
+/** Times each pair has been asked, by keyOf, counting answers a move set aside as the picker does. */
+function timesAsked(events: readonly RankingEvent[]): Map<string, number> {
+  const asked = new Map<string, number>();
+  for (const event of events) {
+    if (event.kind !== 'pair') continue;
+    const key = keyOf(event.leftItemId, event.rightItemId);
+    asked.set(key, (asked.get(key) ?? 0) + 1);
+  }
+  return asked;
+}
+
+/**
+ * A pair asked MAX_SHOWINGS times is offered again only once every other pair
+ * has been (lib/ranking/bt/picker.ts), so the window must not promise another
+ * question about it, unless it is the next one.
+ */
+function restingPair(asked: ReadonlyMap<string, number>, key: string, next: string | null): boolean {
+  return key !== next && (asked.get(key) ?? 0) >= MAX_SHOWINGS;
+}
 
 /** The counted answers, as the engine counts them: answers a move set aside are not among them. */
 function countedAnswers(events: readonly RankingEvent[], evidence: ShownEvidence): AnswerRef[] {
@@ -202,6 +227,7 @@ function changedPairs(
   position: ReadonlyMap<string, number>,
   explained: ReadonlySet<string>,
   next: string | null,
+  asked: ReadonlyMap<string, number>,
 ): ChangedPair[] {
   const changed: ChangedPair[] = [];
   for (const [key, answers] of direct) {
@@ -213,7 +239,9 @@ function changedPairs(
     const [above, below] = winnerAt < loserAt ? [winner, loser] : [loser, winner];
     const clear = answers.filter((answer) => !answer.draw);
     const forAbove = clear.filter((answer) => answer.winner === above).length;
-    if (forAbove < clear.length - forAbove) changed.push({ above, below, answers, next: next === key });
+    if (forAbove < clear.length - forAbove) {
+      changed.push({ above, below, answers, next: next === key, resting: restingPair(asked, key, next) });
+    }
   }
   const latest = (pair: ChangedPair): number => (pair.answers.at(-1) as AnswerRef).answer;
   return changed.sort((a, b) => latest(b) - latest(a));
@@ -293,6 +321,7 @@ export function explainProgress(input: {
     .filter((pair) => pair.chance >= DOUBT && shownSet.has(pair.above) && shownSet.has(pair.below))
     .sort((a, b) => b.chance - a.chance);
   const next = evidence.nextPair === null ? null : keyOf(evidence.nextPair[0], evidence.nextPair[1]);
+  const asked = timesAsked(events);
 
   /** Each spot, with the sum of its pairs' chances to rank it by and the pairs it covers. */
   type Found = { spot: Spot; total: number; pairs: number };
@@ -339,11 +368,13 @@ export function explainProgress(input: {
 
   for (const { above, below, chance, met, clear, bothWays, down, up, made } of looked) {
     if (made) continue;
-    const isNext = next === keyOf(above, below);
+    const key = keyOf(above, below);
+    const isNext = next === key;
     const base = { chance, next: isNext };
+    const resting = restingPair(asked, key, next);
 
     if (bothWays) {
-      add({ ...base, kind: 'both-ways', above, below, answers: met });
+      add({ ...base, kind: 'both-ways', above, below, answers: met, resting });
       continue;
     }
 
@@ -357,7 +388,7 @@ export function explainProgress(input: {
     }
 
     if (met.length > 0 && clear.length === 0) {
-      add({ ...base, kind: 'undecided', above, below, answers: met });
+      add({ ...base, kind: 'undecided', above, below, answers: met, resting });
       continue;
     }
 
@@ -377,7 +408,7 @@ export function explainProgress(input: {
       continue;
     }
     if (clear.length === 1) {
-      add({ ...base, kind: 'one-answer', above, below, answers: met });
+      add({ ...base, kind: 'one-answer', above, below, answers: met, resting });
       continue;
     }
   }
@@ -399,7 +430,7 @@ export function explainProgress(input: {
   const explained = new Set(
     given.flatMap(({ spot }) => (spot.kind === 'both-ways' ? [keyOf(spot.above, spot.below)] : [])),
   );
-  const changed = changedPairs(direct, position, explained, next);
+  const changed = changedPairs(direct, position, explained, next, asked);
 
   const doubted = new Set(doubts.flatMap((pair) => [pair.above, pair.below]));
   return {

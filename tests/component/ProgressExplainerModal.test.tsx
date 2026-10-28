@@ -123,6 +123,7 @@ describe('ProgressExplainerModal', () => {
             chance: 0.15,
             next: false,
             kind: 'both-ways',
+            resting: false,
             answers: [
               { winner: 'b', loser: 'a', answer: 3, draw: false, discounted: true },
               { winner: 'a', loser: 'b', answer: 12, draw: false, discounted: false },
@@ -148,6 +149,7 @@ describe('ProgressExplainerModal', () => {
             chance: 0.25,
             next: false,
             kind: 'both-ways',
+            resting: false,
             answers: [
               { winner: 'b', loser: 'a', answer: 3, draw: false, discounted: false },
               { winner: 'a', loser: 'b', answer: 12, draw: false, discounted: false },
@@ -167,6 +169,7 @@ describe('ProgressExplainerModal', () => {
             above: 'b',
             below: 'a',
             next: true,
+            resting: false,
             answers: [
               { winner: 'a', loser: 'b', answer: 2, draw: false, discounted: true },
               { winner: 'a', loser: 'b', answer: 5, draw: false, discounted: true },
@@ -199,8 +202,82 @@ describe('ProgressExplainerModal', () => {
       { winner: 'a', loser: 'b', answer: 2, draw: false, discounted: true },
       { winner: 'b', loser: 'a', answer: 3, draw: false, discounted: false },
     ];
-    setup(atLevel(2, { changed: [{ above: 'b', below: 'a', next: false, answers }], moreChanged: 2 }));
+    setup(
+      atLevel(2, {
+        changed: [{ above: 'b', below: 'a', next: false, resting: true, answers }],
+        moreChanged: 2,
+      }),
+    );
     expect(screen.getByText('And 2 more pairs your later answers decided.')).toBeDefined();
+  });
+
+  it('a changed pair the picker has stopped asking about says to drag it, not to answer again', () => {
+    const answers = [
+      { winner: 'a', loser: 'b', answer: 1, draw: false, discounted: true },
+      { winner: 'a', loser: 'b', answer: 2, draw: false, discounted: true },
+      { winner: 'b', loser: 'a', answer: 3, draw: false, discounted: false },
+    ];
+    setup(atLevel(2, { changed: [{ above: 'b', below: 'a', next: false, resting: true, answers }] }));
+    expect(
+      screen.getByText('If the earlier answers were the right ones, drag Alpha above Bravo in your list.'),
+    ).toBeDefined();
+    expect(document.body.textContent).not.toContain('answer these two again');
+  });
+
+  it('a both-ways card the picker has stopped asking about promises no more questions', () => {
+    // The owner's trips session: answered three times, and still could go either way.
+    setup(
+      atLevel(3, {
+        spots: [
+          {
+            above: 'reykjavik',
+            below: 'dubrovnik',
+            chance: 0.22,
+            next: false,
+            kind: 'both-ways',
+            resting: true,
+            answers: [
+              { winner: 'reykjavik', loser: 'dubrovnik', answer: 6, draw: false, discounted: true },
+              { winner: 'dubrovnik', loser: 'reykjavik', answer: 12, draw: false, discounted: true },
+              { winner: 'reykjavik', loser: 'dubrovnik', answer: 14, draw: false, discounted: false },
+            ],
+          },
+        ],
+      }),
+      { text: 'Changes from here should be small.', bar: 'level', share: 1 },
+    );
+    expect(screen.getByText('The order is close to final. One spot could still change:')).toBeDefined();
+    expect(screen.queryByText(/real doubt/)).toBeNull();
+    expect(
+      screen.getByText(
+        "Pairwise has asked about these two enough that it won't ask again for a while. If you know which goes first, drag it into place in your list.",
+      ),
+    ).toBeDefined();
+    expect(document.body.textContent).not.toContain('Another answer');
+  });
+
+  it('a both-ways card still being asked about says another answer helps', () => {
+    setup(
+      atLevel(1, {
+        spots: [
+          {
+            above: 'a',
+            below: 'b',
+            chance: 0.25,
+            next: true,
+            kind: 'both-ways',
+            resting: false,
+            answers: [
+              { winner: 'b', loser: 'a', answer: 3, draw: false, discounted: true },
+              { winner: 'a', loser: 'b', answer: 12, draw: false, discounted: false },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(document.body.textContent).toContain(
+      'Another answer between these two will help settle it. The next question is about this.',
+    );
   });
 
   it('a drawn circle with a discounted answer says the faint ones count for less', () => {
@@ -228,6 +305,7 @@ describe('ProgressExplainerModal', () => {
           {
             ...pairOf,
             kind: 'both-ways',
+            resting: false,
             answers: [
               { winner: 'a', loser: 'b', answer: 4, draw: false, discounted: false },
               { winner: 'b', loser: 'a', answer: 19, draw: false, discounted: false },
@@ -236,6 +314,7 @@ describe('ProgressExplainerModal', () => {
           {
             ...pairOf,
             kind: 'undecided',
+            resting: false,
             answers: [{ winner: 'a', loser: 'b', answer: 2, draw: true, discounted: false }],
           },
           { ...pairOf, kind: 'inferred', chain: [] },
@@ -268,6 +347,7 @@ describe('ProgressExplainerModal', () => {
         spots: [
           {
             kind: 'one-answer',
+            resting: false,
             above: 'a',
             below: 'b',
             chance: 0.14,

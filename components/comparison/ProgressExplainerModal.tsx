@@ -89,7 +89,7 @@ function Explanation({
           : level === 2
             ? 'Only fine adjustments left. The last doubts:'
             : spots.length > 0
-              ? 'Nothing is left in real doubt. The likeliest remaining change:'
+              ? 'The order is close to final. One spot could still change:'
               : 'Nothing is left in real doubt.';
 
   return (
@@ -172,6 +172,10 @@ export function chanceWords(chance: number): string | null {
 
 const NUMBER_WORDS = ['', 'one', 'two', 'three', 'four'];
 
+/** What settles a pair the picker has stopped asking about: not another question. */
+const RESTING =
+  "Pairwise has asked about these two enough that it won't ask again for a while. If you know which goes first, drag it into place in your list.";
+
 /** One answer as a line of its own. */
 function answerLine(ref: AnswerRef, labelOf: (id: string) => string): string {
   return ref.draw
@@ -226,13 +230,14 @@ function SpotCard({ spot, labelOf }: { spot: Spot; labelOf: (id: string) => stri
           )}
         </>
       );
-      settles = 'Another answer between these two decides it.';
+      settles = spot.resting ? RESTING : 'Another answer between these two will help settle it.';
       break;
     case 'undecided':
       heading = "You couldn't decide between these";
       body = <PairRow above={labelOf(spot.above)} below={labelOf(spot.below)} />;
-      settles =
-        "If they really are even, their order doesn't matter much. If not, a clear answer settles it.";
+      settles = spot.resting
+        ? `If they really are even, their order doesn't matter much. ${RESTING}`
+        : "If they really are even, their order doesn't matter much. If not, a clear answer settles it.";
       break;
     case 'inferred':
       heading = 'Never compared directly';
@@ -256,7 +261,7 @@ function SpotCard({ spot, labelOf }: { spot: Spot; labelOf: (id: string) => stri
       heading =
         spot.answers.length > 1 ? 'Only one clear answer between these' : 'Only one answer between these';
       body = <Answers lines={spot.answers.map(answer)} />;
-      settles = 'Another answer would confirm it.';
+      settles = spot.resting ? RESTING : 'Another answer would confirm it.';
       break;
   }
 
@@ -295,7 +300,9 @@ function ChangedCard({ pair, labelOf }: { pair: ChangedPair; labelOf: (id: strin
         {`You picked ${below} more often, but your later answers picked ${above}, and later answers count for more.`}
       </Text>
       <Text style={styles.body}>
-        {'If the earlier answers were the right ones, answer these two again.'}
+        {pair.resting
+          ? `If the earlier answers were the right ones, drag ${below} above ${above} in your list.`
+          : 'If the earlier answers were the right ones, answer these two again.'}
         {pair.next && <Text style={styles.next}>{' The next question is about this.'}</Text>}
       </Text>
     </View>

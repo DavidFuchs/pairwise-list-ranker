@@ -84,6 +84,22 @@ describe('explainProgress with later answers counting more', () => {
     expect(explanation.moreChanged).toBe(0);
   });
 
+  it('marks a pair asked MAX_SHOWINGS times resting, and one asked fewer not', () => {
+    const asked = (times: number) =>
+      Array.from({ length: times }, (_, k) => (k % 2 === 0 ? ask('a', 'b') : ask('b', 'a')));
+    const restingOf = (explanation: ProgressExplanation) =>
+      explanation.spots.flatMap((spot) => (spot.kind === 'both-ways' ? [spot] : []))[0];
+    const others = () => [ask('c', 'd'), ask('a', 'c'), ask('b', 'd')];
+
+    const twice = explain(['a', 'b', 'c', 'd'], [...asked(2), ...others()]);
+    expect(restingOf(twice)?.resting).toBe(false);
+
+    const often = explain(['a', 'b', 'c', 'd'], [...asked(4), ...others()]);
+    const spot = restingOf(often);
+    expect(spot?.next).toBe(false);
+    expect(spot?.resting).toBe(true);
+  });
+
   it('leaves a pair to its both-ways card when the card is shown', () => {
     const events = [
       ...Array.from({ length: 3 }, () => ask('a', 'b')),

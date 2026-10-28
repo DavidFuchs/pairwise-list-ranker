@@ -174,7 +174,16 @@ Between and below the pair:
   answers decided this", with the answers, "You picked Banff more often, but
   your later answers picked Reykjavík, and later answers count for more."
   and "If the earlier answers were the right ones, answer these two again." In a
-  drawn circle the answers that count for less are fainter too. The window never
+  drawn circle the answers that count for less are fainter too. The window
+  promises another question only about a pair Pairwise will still ask: once a
+  pair has been asked as often as the picker allows (MAX_SHOWINGS) and is not
+  the next question, its card says "Pairwise has asked about these two enough
+  that it won't ask again for a while. If you know which goes first, drag it
+  into place in your list.", and a later-answers card says to drag the item
+  the earlier answers picked above the other. At the top level with a spot
+  left, the window opens "The order is close to final. One spot could still
+  change:", so it never says nothing is in doubt beside a card that says
+  otherwise. The window never
   gives a number beyond answer numbers and counts, and never says the user
   changed their mind.
 - a single split pill, **Can't decide | Don't recognize…**, centred - it
